@@ -1,0 +1,148 @@
+/* ==========================================================================
+   Componente: Footer General (Sutil y Elegante)
+   ========================================================================== */
+.app-footer {
+    background-color: #ffffff;
+    color: #94a3b8;
+    font-family: 'Inter', sans-serif;
+    padding: 30px 0 0 0;
+    width: 100%;
+    position: relative;
+    z-index: 10;
+    box-sizing: border-box;
+    margin-left: var(--drawer-width, 0);
+}
+
+.drawer-collapsed .app-footer {
+    margin-left: 0;
+    width: 100%;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px 24px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px;
+    box-sizing: border-box;
+}
+
+/* Parte Izquierda: Iconos de Redes (pequeños) + Enlaces de Navegación */
+.footer-left {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+}
+
+.footer-social-icons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.social-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.social-icon-btn svg {
+    width: 25px;
+    height: 25px;
+}
+
+.social-icon-btn:hover {
+    color: #ffffff;
+    background-color: #005187;
+    transform: translateY(-2px);
+}
+
+.footer-nav-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+}
+
+.footer-nav-link {
+    color: #223a5c;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.footer-nav-link:hover {
+    color: #0088ff;
+}
+
+/* Parte Derecha: Descripción de la empresa con fuente pequeña */
+.footer-right {
+    max-width: 380px;
+    text-align: right;
+}
+
+.footer-desc {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Pie de página inferior: Copyright */
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 14px 32px;
+    text-align: center;
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+/* Adaptación Responsiva Móvil */
+@media (max-width: 768px) {
+    .footer-container {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 20px;
+        padding: 0 20px 20px 20px;
+    }
+
+    .footer-left {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        gap: 16px;
+    }
+
+    .footer-social-icons {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .footer-nav-links {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .footer-right {
+        max-width: 100%;
+        text-align: center;
+    }
+}

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galería de Inspiración Espacios Reales - TuEstante</title>
+    <meta name="description"
+        content="Explora la galería de inspiración de Espacios Reales con mobiliario TuEstante: Lockers, estantes metálicos y archivadores en hogares, oficinas y espacios creativos en Venezuela.">
+
+    <!-- Fuentes de Google: Inter (cuerpo) y Outfit (encabezados) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Hoja de Estilos Global del Sistema y Componentes -->
+    <link rel="stylesheet" href="../../index.css">
+    <link rel="stylesheet" href="../../components/navbar/navbar.css">
+    <link rel="stylesheet" href="../../components/footer/footer.css">
+
+    <!-- Hoja de Estilos Específica de la Galería -->
+    <link rel="stylesheet" href="gallery.css">
+</head>
+
+<body>
+    <!-- Placeholder para Inyección Dinámica de la Barra de Navegación (Navbar) -->
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal de la Galería de Inspiración -->
+    <main class="main-content">
+
+        <!-- Header / Encabezado Principal de la Galería -->
+        <header class="gallery-header-section">
+            <div class="gallery-header-container">
+                <span class="gallery-tagline">INSPIRACIÓN REAL</span>
+                <h1 class="gallery-main-title">GALERÍA DE INSPIRACIÓN ESPACIOS REALES</h1>
+                <div class="gallery-header-divider"></div>
+                <p class="gallery-header-description">
+                    Echemos un vistazo dentro de algunos de tus <strong>Espacios Reales</strong>. Ya sea que hayas encontrado el lugar perfecto para tu Locker o hayas organizado tu oficina o estudio con nuestras Estanterías, nos encanta ver cómo has hecho que estas piezas de mobiliario metálico formen parte de tu día a día.
+                </p>
+                <p class="gallery-header-subtext">
+                    ¿Quieres ser destacado? Menciona a <strong>@tuestante.ve</strong> en <a href="https://www.instagram.com/tuestante.ve/" target="_blank" rel="noopener" class="gallery-social-link">Instagram</a> o <a href="https://www.tiktok.com/@tuestante.ve" target="_blank" rel="noopener" class="gallery-social-link">TikTok</a> o sube tus fotos para mostrar tu estilo a nuestra comunidad.
+                </p>
+            </div>
+        </header>
+
+        <!-- Sección Principal de la Galería de Fotos -->
+        <section class="gallery-section">
+            <div class="gallery-container">
+
+                <!-- Filtros Opcionales de la Galería (Todos, Lockers, Estantes, Oficina, Hogar) -->
+                <div class="gallery-filter-bar" id="gallery-filter-bar">
+                    <button class="gallery-filter-btn active" data-filter="all">Todos</button>
+                    <button class="gallery-filter-btn" data-filter="lockers">Lockers</button>
+                    <button class="gallery-filter-btn" data-filter="estantes">Estantes</button>
+                    <button class="gallery-filter-btn" data-filter="oficina">Oficina</button>
+                    <button class="gallery-filter-btn" data-filter="hogar">Hogar</button>
+                </div>
+
+                <!-- Cuadrícula Asimétrica de la Galería Inspirada en la Referencia -->
+                <div class="gallery-grid" id="gallery-grid-container">
+                    <!-- Las tarjetas de imágenes e interactivas se inyectan dinámicamente desde gallery.js -->
+                </div>
+
+                <!-- Botón Cargar Más / Mostrar Más Fotografías -->
+                <div class="gallery-actions-wrapper">
+                    <button id="load-more-btn" class="btn btn-gallery-load-more">
+                        <span class="btn-text">Mostrar más</span>
+                        <svg class="btn-icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display: none;">
+                            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"></circle>
+                        </svg>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Lightbox para Visualización de Imágenes Ampliadas -->
+    <div id="gallery-lightbox" class="lightbox-modal" aria-hidden="true">
+        <div class="lightbox-overlay" id="lightbox-overlay"></div>
+        <div class="lightbox-content">
+            <button class="lightbox-close-btn" id="lightbox-close-btn" aria-label="Cerrar imagen">&times;</button>
+            <div class="lightbox-img-wrapper" id="lightbox-media-wrapper">
+                <img id="lightbox-img" src="" alt="Fotografía o video ampliado de la galería">
+            </div>
+            <div class="lightbox-caption">
+                <h3 id="lightbox-title" class="lightbox-title">Espacio Real</h3>
+                <p id="lightbox-desc" class="lightbox-desc">Descripción del espacio</p>
+                <span id="lightbox-tag" class="lightbox-tag">@tuestante.ve</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placeholder para Inyección Dinámica del Pie de Página (Footer) -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Script JS del Módulo de Galería -->
+    <script type="module" src="gallery.js"></script>
+</body>
+
+</html>

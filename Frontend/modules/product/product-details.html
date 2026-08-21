@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del Producto - TuEstante</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Estilos base y de componentes -->
+    <link rel="stylesheet" href="../../index.css">
+    <link rel="stylesheet" href="../../components/navbar/navbar.css">
+    <link rel="stylesheet" href="../../components/footer/footer.css">
+    <link rel="stylesheet" href="products.css">
+    <link rel="stylesheet" href="product-details.css">
+</head>
+
+<body>
+    <!-- Navbar Placeholder -->
+    <div id="navbar-placeholder"></div>
+
+    <main class="main-content">
+        <!-- Breadcrumb / Migas de Pan -->
+        <nav class="breadcrumb-container" aria-label="breadcrumb">
+            <div class="breadcrumb-wrapper">
+                <a href="../../index.html" class="breadcrumb-link">Inicio</a>
+                <span class="breadcrumb-separator">/</span>
+                <a href="products.html" class="breadcrumb-link">Productos</a>
+                <span class="breadcrumb-separator">/</span>
+                <span id="breadcrumb-type" class="breadcrumb-current">Tipo</span>
+                <span class="breadcrumb-separator">/</span>
+                <span id="breadcrumb-product" class="breadcrumb-current">Detalle</span>
+            </div>
+        </nav>
+
+        <!-- Hero de Detalle del Producto -->
+        <section class="product-detail-hero">
+            <div class="detail-container">
+                <!-- Columna Izquierda: Galería de Imagen + Paleta de Colores Debajo -->
+                <div class="product-gallery-column">
+                    <div class="product-gallery-card">
+                        <!-- Icono de Estrella "Producto Destacado" -->
+                        <div class="badge-destacado-star" title="Producto Destacado">
+                            <svg class="star-icon" viewBox="0 0 24 24" fill="#94A3B8" stroke="#64748B"
+                                stroke-width="1.5">
+                                <polygon
+                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                </polygon>
+                            </svg>
+                            <span class="star-label">Producto Destacado</span>
+                        </div>
+
+                        <!-- Barra lateral de miniaturas (Ángulos + Video) -->
+                        <div class="product-thumbnails-sidebar" id="product-thumbnails-sidebar" style="display: none;"></div>
+
+                        <!-- Contenedor con Lente Selector de Lupa -->
+                        <div class="main-image-container" id="main-image-container">
+                            <div class="zoom-lens-box" id="zoom-lens-box">
+                                <svg class="lens-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </div>
+                            <img id="detail-product-img" src="" alt="Cargando producto..." class="main-product-img">
+                            <video id="detail-product-video" controls autoplay loop playsinline class="main-product-video" style="display: none;"></video>
+                        </div>
+
+                        <!-- Único Botón de Encender / Apagar Lupa en Esquina Inferior Izquierda -->
+                        <button type="button" class="lupa-toggle-btn active" id="toggle-lupa-btn"
+                            title="Encender / Apagar Lupa">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <span id="lupa-btn-text">Lupa: ACTIVADA</span>
+                        </button>
+                    </div>
+
+                    <!-- Sección de Variedad de Colores Disponibles (Debajo de la Imagen) -->
+                    <div class="product-colors-section">
+                        <div class="colors-header">
+                            <span class="colors-label-title">Variedad de Colores:</span>
+                            <span class="selected-color-name" id="selected-color-name">Amarillo Sol</span>
+                        </div>
+                        <div class="colors-swatch-list" id="colors-swatch-list">
+                            <!-- Inyectados por JS -->
+                        </div>
+                        <!-- Mensaje Informativo para Colores Personalizados -->
+                        <div class="custom-color-notice">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" class="notice-icon">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <span>¿Deseas otro color especial? <a href="https://wa.link/lpe0md" target="_blank"
+                                    class="custom-color-link">Contáctanos aquí</a> y fabricamos tu pedido a la
+                                medida.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Panel de Información del Producto -->
+                <div class="product-info-panel">
+                    <!-- Esquina: Tipo de Producto (Gris suave - Siempre visible) -->
+                    <div class="product-type-corner" id="detail-product-type">
+                        TIPO DE PRODUCTO
+                    </div>
+
+                    <!-- Nombre del Producto (Siempre visible) -->
+                    <h1 class="product-title" id="detail-product-name">Cargando Nombre...</h1>
+
+                    <!-- Categorías del Producto (Píldoras 1 o más) -->
+                    <div class="product-tags-bar" id="detail-product-categories-container">
+                        <!-- Categorías inyectadas dinámicamente -->
+                    </div>
+
+                    <!-- Precio (Siempre visible arriba) -->
+                    <div class="product-price-container">
+                        <span class="price-amount" id="detail-product-price">$0.00</span>
+                        <span class="price-vat">IVA incluido</span>
+                    </div>
+
+                    <!-- ÁREA INFERIOR: Descripción y Especificaciones + Pantalla Espejo de Lupa -->
+                    <div class="product-info-lower-area">
+                        <!-- Pantalla Espejo de la Lupa (Superpuesta ÚNICAMENTE sobre Descripción y Especificaciones) -->
+                        <div class="zoom-mirror-panel" id="zoom-mirror-panel">
+                            <div class="mirror-header">
+                                <span class="mirror-title">🔍 Pantalla Espejo de Lupa</span>
+                                <span class="mirror-hint">Mueve el cursor sobre el producto</span>
+                            </div>
+                            <div class="mirror-viewport">
+                                <img id="zoom-mirror-img" src="" alt="Vista espejo ampliada" class="zoom-mirror-img">
+                            </div>
+                        </div>
+
+                        <!-- Descripción Completa -->
+                        <div class="product-desc-box">
+                            <h3 class="desc-heading">Descripción General</h3>
+                            <p class="product-full-desc" id="detail-product-desc">Cargando descripción...</p>
+                        </div>
+
+                        <!-- Especificaciones Técnicas (Alto, Largo, Ancho en cm, Seguridad) -->
+                        <div class="specs-card">
+                            <h3 class="specs-heading">Especificaciones Técnicas</h3>
+                            <div class="specs-grid">
+                                <div class="spec-item">
+                                    <span class="spec-label">📐 Alto (cm):</span>
+                                    <span class="spec-value" id="detail-spec-height">180 cm</span>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">📐 Largo (cm):</span>
+                                    <span class="spec-value" id="detail-spec-length">90 cm</span>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">📐 Ancho (cm):</span>
+                                    <span class="spec-value" id="detail-spec-width">45 cm</span>
+                                </div>
+                                <div class="spec-item spec-full" id="detail-spec-security-container">
+                                    <span class="spec-label">🔒 Nivel de Seguridad:</span>
+                                    <span class="spec-value" id="detail-spec-security">Cerradura con llave
+                                        maestra</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="product-actions-bar">
+                        <a href="https://wa.link/lpe0md" target="_blank" class="btn-whatsapp-quote">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                                </path>
+                            </svg>
+                            Cotizar por WhatsApp
+                        </a>
+                        <a href="products.html" class="btn-back-catalog">
+                            ← Volver al Catálogo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Carrusel de Productos Relacionados en 1 Fila -->
+        <section class="related-products-section">
+            <div class="related-container">
+                <div class="related-header">
+                    <div>
+                        <h2 class="related-title">Productos del Mismo Tipo</h2>
+                        <p class="related-subtitle" id="related-subtitle-text">Explora otros modelos y alternativas de
+                            este tipo de producto</p>
+                    </div>
+                </div>
+
+                <div class="product-carousel-wrapper">
+                    <button class="carousel-nav-btn prev-btn" id="related-prev-btn" aria-label="Anterior">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <button class="carousel-nav-btn next-btn" id="related-next-btn" aria-label="Siguiente">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+
+                    <div class="product-carousel-viewport" id="related-carousel-viewport">
+                        <div class="product-grid-track related-single-row-track" id="related-grid-track">
+                            <!-- Productos relacionados inyectados por JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Lightbox Modal Flotante (Sin Marco Blanco y Botón X en la Esquina de la Pantalla) -->
+    <div id="image-lightbox-modal" class="lightbox-modal" aria-hidden="true">
+        <div class="lightbox-overlay" id="lightbox-overlay"></div>
+        <button class="lightbox-screen-close" id="lightbox-close" aria-label="Cerrar ventana">&times;</button>
+        <div class="lightbox-content">
+            <img id="lightbox-img" src="" alt="Imagen ampliada del producto" class="lightbox-image">
+            <video id="lightbox-video" controls autoplay loop playsinline class="lightbox-video" style="display: none;"></video>
+        </div>
+    </div>
+
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <script type="module" src="product-details.js"></script>
+</body>
+
+</html>

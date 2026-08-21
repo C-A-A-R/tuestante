@@ -1,0 +1,796 @@
+/* Variables del Componente Navbar */
+:root {
+  --navbar-height: 128px;
+  --navbar-bg: #ffffff;
+  --navbar-bg-scrolled: rgba(255, 255, 255, 0.95);
+  --navbar-text: #0f172a;
+  --navbar-text-muted: #64748b;
+  --navbar-text-active: #005187;
+  /* Azul corporativo profundo */
+  --navbar-border-top: #005187;
+  --transition-speed: 0.3s;
+}
+
+.app-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--navbar-height);
+  background-color: var(--navbar-bg);
+  border-top: 4px solid var(--navbar-border-top);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  transition: background-color var(--transition-speed) ease,
+    backdrop-filter var(--transition-speed) ease,
+    box-shadow var(--transition-speed) ease,
+    height var(--transition-speed) ease;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+/* -------------------------------------------------------------
+   FILA SUPERIOR (Logo a la izquierda | Menú a la derecha)
+------------------------------------------------------------- */
+.navbar-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding-top: 4px;
+}
+
+/* Logo a la izquierda */
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--navbar-text);
+  font-weight: 700;
+  margin-left: 18px;
+  margin-top: 10px;
+  transition: transform 0.2s ease;
+}
+
+.navbar-logo:hover {
+  transform: scale(1.02);
+}
+
+.logo-img {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
+.logo-text {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  color: var(--navbar-text-active);
+  font-size: 1.3rem;
+  letter-spacing: 1.5px;
+  font-weight: 800;
+}
+
+/* Menú a la derecha arriba (Ayuda, Búsqueda, Contacto) */
+.navbar-top-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-right: 18px;
+  margin-top: 10px;
+}
+
+/* 1. Enlace Ayuda (Solo texto) */
+.navbar-top-link {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--navbar-text-muted);
+  text-decoration: none;
+  padding: 5px 12px;
+  border-radius: 20px;
+  transition: all var(--transition-speed) ease;
+}
+
+.navbar-top-link:hover {
+  color: var(--navbar-text-active);
+  background-color: rgba(0, 81, 135, 0.06);
+}
+
+/* 2. Cuadro de Búsqueda de Productos */
+.navbar-search-form {
+  position: relative;
+}
+
+.navbar-search-form .search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-search-input {
+  width: 210px;
+  height: 34px;
+  padding: 0 36px 0 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  color: var(--navbar-text);
+  background-color: #f1f5f9;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.navbar-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.navbar-search-input:focus {
+  width: 250px;
+  background-color: #ffffff;
+  border-color: var(--navbar-text-active);
+  box-shadow: 0 0 0 3px rgba(0, 81, 135, 0.12);
+}
+
+.navbar-search-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  border-radius: 50%;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.navbar-search-btn:hover {
+  color: var(--navbar-text-active);
+  transform: scale(1.1);
+}
+
+.navbar-search-form .search-icon {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+/* 3. Botón de Contacto Expansible al hacer Hover */
+.navbar-contact-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 35px;
+  width: 35px;
+  border-radius: 20px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  text-decoration: none;
+  overflow: hidden;
+  padding: 0px 9px;
+  cursor: pointer;
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease,
+    padding 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.contact-icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  transition: stroke 0.2s ease, transform 0.2s ease;
+}
+
+.contact-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  max-width: 0;
+  margin-left: 0;
+  overflow: hidden;
+  transition: opacity 0.25s ease, max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.25s ease;
+}
+
+.navbar-contact-btn:hover {
+  width: 125px;
+  background-color: var(--navbar-text-active);
+  border-color: var(--navbar-text-active);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 81, 135, 0.25);
+  padding: 0 12px;
+}
+
+.navbar-contact-btn:hover .contact-icon {
+  stroke: #ffffff;
+}
+
+.navbar-contact-btn:hover .contact-text {
+  opacity: 1;
+  max-width: 80px;
+  margin-left: 6px;
+  color: #ffffff;
+}
+
+.mobile-drawer-utilities {
+  display: none;
+}
+
+/* -------------------------------------------------------------
+   FILA INFERIOR (Menú Centrado de Categorías 1 a 5)
+   - Sin línea / barra divisora intermedia
+   - Fuente más pequeña y elegante
+------------------------------------------------------------- */
+.navbar-bottom-row {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding-bottom: 0px;
+  border-top: none;
+}
+
+.navbar-categories-menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Item de Categoría con Posicionamiento Estático para Centrado Global */
+.navbar-cat-item {
+  position: static;
+}
+
+.navbar-cat-link {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--navbar-text);
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  position: relative;
+  transition: color var(--transition-speed) ease;
+}
+
+.navbar-cat-link:hover,
+.navbar-cat-link.active {
+  color: var(--navbar-text-active);
+}
+
+/* Animación de línea inferior al hacer hover */
+.navbar-cat-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--navbar-text-active);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--transition-speed) ease;
+}
+
+.navbar-cat-link:hover::after,
+.navbar-cat-link.active::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* -------------------------------------------------------------
+   SUBMENÚ DESPLEGABLE ESTÁTICO DE ANCHO COMPLETO (100vw x 440px Altura)
+------------------------------------------------------------- */
+.category-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 100vw;
+  height: 620px;
+  transform: translateX(-50%) translateY(10px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0.35s ease;
+  z-index: 1200;
+  padding-top: 0px;
+  box-sizing: border-box;
+  background-color: transparent;
+}
+
+.navbar-cat-item:hover .category-dropdown,
+.category-dropdown:hover {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.category-products-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px 24px;
+  background: #ffffff;
+  padding: 70px 36px 30px 36px;
+  border-radius: 0;
+  box-sizing: border-box;
+  align-items: flex-start;
+}
+
+.dropdown-store-btn {
+  grid-column: 1;
+  grid-row: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  margin-top: 36px;
+  background-color: var(--navbar-text-active);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 81, 135, 0.2);
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.dropdown-store-btn .btn-arrow {
+  width: 15px;
+  height: 15px;
+  stroke: #ffffff;
+  transition: transform 0.25s ease;
+}
+
+.dropdown-store-btn:hover {
+  background-color: #003a61;
+  box-shadow: 0 6px 18px rgba(0, 81, 135, 0.35);
+  transform: translateY(-2px);
+}
+
+.dropdown-store-btn:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+.dropdown-product-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--navbar-text);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-product-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Campo de Imagen en Gris del mismo tamaño que el destacado (235px de altura) */
+.product-img-beige {
+  width: 100%;
+  height: 260px;
+  background-color: #ffffff;
+  border: 1.5px solid #ffffff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  box-shadow: inset 0 3px 8px rgba(255, 255, 255, 0.8), 0 4px 14px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.product-img-beige img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+  transition: transform 0.3s ease;
+}
+
+.product-img-beige svg {
+  width: 54px;
+  height: 54px;
+  stroke: #ffffff;
+  transition: stroke 0.25s ease, transform 0.25s ease;
+}
+
+.dropdown-product-card:hover .product-img-beige {
+  background-color: #ffffff;
+  border-color: #000000;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.22);
+}
+
+.dropdown-product-card:hover .product-img-beige svg {
+  stroke: var(--navbar-text-active);
+  transform: scale(1.1);
+}
+
+.dropdown-product-card:hover .product-img-beige img {
+  transform: scale(1.08);
+}
+
+.product-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: center;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.dropdown-product-card:hover .product-name {
+  color: var(--navbar-text-active);
+}
+
+/* -------------------------------------------------------------
+   PRODUCTO DESTACADO (Categoría 1)
+------------------------------------------------------------- */
+.category-products-grid.has-featured {
+  grid-template-columns: repeat(4, 1fr) 1fr;
+  gap: 14px 20px;
+}
+
+.featured-product-column {
+  grid-column: 5;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  height: 100%;
+  border-left: 2px dashed #cbd5e1;
+  padding-left: 18px;
+  transform: translateY(-35px);
+}
+
+.featured-header-title {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #000000;
+  /* Negro pegado a la línea discontinua */
+  letter-spacing: 1px;
+  align-self: flex-start;
+  margin-bottom: 4px;
+}
+
+.dropdown-product-card.featured-card {
+  width: 100%;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.featured-img-beige {
+  width: 100%;
+  height: 260px;
+  /* Ajustado proporcionalmente para acomodar info y características */
+  background-color: #ffffff;
+  border: 1.5px solid #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(194, 129, 56, 0.15);
+}
+
+.featured-img-beige svg {
+  stroke: #c28138;
+}
+
+.dropdown-product-card.featured-card:hover .featured-img-beige {
+  background-color: #ffffff;
+  border-color: #000000;
+  box-shadow: 0 10px 25px rgba(194, 129, 56, 0.28);
+}
+
+.dropdown-product-card.featured-card:hover .featured-img-beige svg {
+  stroke: #c28138;
+  transform: scale(1.12) rotate(5deg);
+}
+
+/* Fila de Nombre y Precio en Negro a la Derecha */
+.featured-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 2px;
+  gap: 6px;
+}
+
+.featured-info-row .product-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: left;
+}
+
+.product-price {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #000000;
+  /* Color negro situado a la derecha */
+  white-space: nowrap;
+}
+
+/* Lista de Característica 1 y Característica 2 con fuente menor */
+.featured-features-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.featured-features-list li {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.76rem;
+  /* Fuente de menor tamaño */
+  font-weight: 500;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.featured-features-list li::before {
+  content: '•';
+  color: var(--navbar-text-active);
+  font-weight: bold;
+}
+
+/* Botón Hamburguesa */
+.navbar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 1100;
+}
+
+.hamburger-line {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background-color: var(--navbar-text);
+  transition: transform var(--transition-speed) ease,
+    opacity var(--transition-speed) ease,
+    background-color var(--transition-speed) ease;
+}
+
+/* -------------------------------------------------------------
+   RESPONSIVO / MOBILE (max-width: 900px)
+------------------------------------------------------------- */
+@media (max-width: 900px) {
+  :root {
+    --navbar-height: 70px;
+  }
+
+  .app-navbar.navbar-scrolled {
+    --navbar-height: 65px;
+  }
+
+  .navbar-container {
+    padding: 0 16px;
+    gap: 0;
+  }
+
+  .navbar-top-row {
+    padding-top: 0;
+    align-items: center;
+    height: 100%;
+  }
+
+  .navbar-logo {
+    margin-left: 0;
+    margin-top: 0;
+    align-items: center;
+  }
+
+  .logo-img {
+    height: 38px;
+    max-height: 38px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .logo-text {
+    font-size: 1.15rem;
+  }
+
+  /* Ocultar utilidades de la barra superior en móvil para no recargar el header */
+  .navbar-top-right {
+    display: none !important;
+  }
+
+  /* Botón Hamburguesa */
+  .navbar-toggle {
+    display: flex;
+    margin-left: auto;
+    z-index: 1100;
+  }
+
+  /* Mostrar utilidades dentro de la Hamburguesa */
+  .mobile-drawer-utilities {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .mobile-search-form {
+    width: 100%;
+  }
+
+  .mobile-search-input {
+    width: 100% !important;
+    height: 42px;
+    font-size: 0.9rem;
+    padding: 0 42px 0 14px;
+    background-color: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 20px;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .mobile-nav-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    width: 100%;
+  }
+
+  .mobile-nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background-color: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    color: #0f172a;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .mobile-nav-link:hover,
+  .mobile-nav-link:active {
+    background-color: var(--navbar-text-active);
+    color: #ffffff;
+    border-color: var(--navbar-text-active);
+  }
+
+  .mobile-nav-link svg {
+    width: 17px;
+    height: 17px;
+    stroke: currentColor;
+    flex-shrink: 0;
+  }
+
+  .mobile-drawer-divider {
+    width: 100%;
+    height: 1px;
+    background-color: #e2e8f0;
+    margin-top: 8px;
+  }
+
+  /* Drawer / Menú Lateral Móvil */
+  .navbar-bottom-row {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 300px;
+    height: 100vh;
+    background-color: #ffffff;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.15);
+    padding: 75px 20px 30px 20px;
+    transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1050;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    border-top: none;
+    overflow-y: auto;
+    box-sizing: border-box;
+  }
+
+  .app-navbar.menu-open .navbar-bottom-row {
+    right: 0;
+  }
+
+  .navbar-categories-menu {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .navbar-cat-item {
+    width: 100%;
+  }
+
+  /* Fuente de categorías en menú lateral igual a menú central */
+  .navbar-cat-link {
+    font-size: 0.95rem;
+    display: block;
+    width: 100%;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .navbar-cat-link::after {
+    display: none;
+  }
+
+  /* Animación del icono hamburguesa al abrir */
+  .app-navbar.menu-open .line-top {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .app-navbar.menu-open .line-middle {
+    opacity: 0;
+  }
+
+  .app-navbar.menu-open .line-bottom {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+}

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Productos - TuEstante</title>
+    <meta name="description"
+        content="Explora el catálogo completo de productos de TuEstante: Lockers, Estantes Industriales, Armarios y Mobiliario Metálico de alta durabilidad en Venezuela.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Estilos Globales y de Componentes -->
+    <link rel="stylesheet" href="../../index.css">
+    <link rel="stylesheet" href="../../components/navbar/navbar.css">
+    <link rel="stylesheet" href="../../components/footer/footer.css">
+    <link rel="stylesheet" href="products.css">
+</head>
+
+<body>
+    <!-- Navbar Placeholder -->
+    <div id="navbar-placeholder"></div>
+
+    <main class="main-content">
+        <!-- 1. Encabezado / Carrusel de Tipos de Producto -->
+        <section class="product-types-hero-section">
+            <div class="product-types-carousel-container" id="types-carousel">
+                <div class="types-carousel-slides-wrapper" id="types-slides-wrapper">
+                    <!-- Slides cargadas dinámicamente -->
+                </div>
+
+                <!-- Botones de Navegación -->
+                <button class="types-carousel-arrow prev" id="types-prev-btn" aria-label="Tipo de producto anterior">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+                <button class="types-carousel-arrow next" id="types-next-btn" aria-label="Siguiente tipo de producto">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+
+                <!-- Puntos Indicadores -->
+                <div class="types-carousel-dots" id="types-carousel-dots"></div>
+            </div>
+        </section>
+
+        <!-- 2. Barra de Filtrado y Búsqueda -->
+        <section class="products-filter-section">
+            <div class="filter-container">
+                <div class="filter-group search-group">
+                    <label for="search-input" class="filter-label">Buscador por Nombre</label>
+                    <div class="search-input-wrapper">
+                        <svg class="filter-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="search-input" class="filter-input"
+                            placeholder="Escribe el nombre del producto...">
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label for="filter-type" class="filter-label">Tipo de Producto</label>
+                    <select id="filter-type" class="filter-select">
+                        <option value="all">Todos los Tipos</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="filter-category" class="filter-label">Categoría</label>
+                    <select id="filter-category" class="filter-select">
+                        <option value="all">Todas las Categorías</option>
+                    </select>
+                </div>
+
+                <div class="filter-group filter-actions-group">
+                    <label class="filter-label">&nbsp;</label>
+                    <button type="button" id="clear-filters-btn" class="btn-clear-filters"
+                        title="Deshacer todos los filtros">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                            <path d="M3 3v5h5"></path>
+                        </svg>
+                        Limpiar Filtros
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Listado de Productos Agrupados por Tipo (Carruseles de 2 Filas) -->
+        <section class="products-grouped-section" id="products-catalog-container">
+            <!-- Renderizado dinámico de grupos y carruseles -->
+        </section>
+    </main>
+
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Script principal de la pantalla -->
+    <script type="module" src="products.js"></script>
+</body>
+
+</html>
