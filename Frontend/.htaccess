@@ -46,3 +46,8 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
 </IfModule>
+
+# =====================================================
+<FilesMatch "config.js">
+    Require all denied
+</FilesMatch>

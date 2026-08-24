@@ -6,7 +6,6 @@
 User-agent: *
 Allow: /
 Disallow: /modules/admin/
-Disallow: /js/config.js
 
 # ----- OpenAI / ChatGPT -----
 User-agent: GPTBot
