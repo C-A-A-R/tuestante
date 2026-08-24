@@ -1,28 +1,8 @@
 import { initNavbar } from './components/navbar/navbar.js';
 import { initFooter } from './components/footer/footer.js';
 import { obtenerCategorias, obtenerTiposProducto, obtenerProductosDestacados, obtenerProductos } from './modules/product/product.api.js';
-import { backendOrigin } from './js/config.js';
-
-/**
- * Extrae un arreglo uniforme de resultados de la API (maneja listas simples y respuestas paginadas).
- */
-function extractList(apiResult) {
-  if (!apiResult) return [];
-  if (Array.isArray(apiResult)) return apiResult;
-  if (Array.isArray(apiResult.results)) return apiResult.results;
-  return [];
-}
-
-/**
- * Resuelve la URL completa de una imagen proveniente del backend.
- */
-function resolveImageUrl(path, fallback = '') {
-  if (!path) return fallback;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  const origin = backendOrigin.startsWith('http://') || backendOrigin.startsWith('https://') ? backendOrigin : `http://${backendOrigin}`;
-  if (path.startsWith('/')) return `${origin}${path}`;
-  return `${origin}/${path}`;
-}
+import { obtenerProyectos } from './modules/project/project.api.js';
+import { extractList, resolveImageUrl } from './js/api.js';
 
 /**
  * Carga un componente HTML dinámicamente y lo inserta en un contenedor placeholder.
@@ -55,12 +35,19 @@ async function loadHomeCategories() {
   try {
     const response = await obtenerCategorias();
     const categories = extractList(response);
-    if (categories.length === 0) return;
+    if (categories.length === 0) {
+      container.innerHTML = `
+        <div class="empty-categories-message" style="grid-column: 1 / -1; text-align: center; padding: 2rem 1rem; color: #64748b; font-size: 1rem;">
+          <p>Actualmente no hay categorías disponibles.</p>
+        </div>
+      `;
+      return;
+    }
 
     container.innerHTML = categories.map(cat => {
       const name = cat.category_name || cat.name || 'Categoría';
       const desc = cat.description || 'Mobiliario metálico seguro y resistente para tus espacios.';
-      const img = resolveImageUrl(cat.category_image || cat.image, 'assets/images/categoria/estante.png');
+      const img = resolveImageUrl(cat.category_image || cat.image, 'assets/images/carrusel-index/Carrousel.png');
       return `
         <a href="modules/product/products.html?cat=${cat.id}" class="category-card">
           <div class="category-bg" style="background-image: url('${img}');"></div>
@@ -75,6 +62,11 @@ async function loadHomeCategories() {
     }).join('');
   } catch (error) {
     console.error('Error al cargar categorías en el home:', error);
+    container.innerHTML = `
+      <div class="empty-categories-message" style="grid-column: 1 / -1; text-align: center; padding: 2rem 1rem; color: #64748b; font-size: 1rem;">
+        <p>Actualmente no hay categorías disponibles.</p>
+      </div>
+    `;
   }
 }
 
@@ -94,41 +86,20 @@ async function loadHomeProductTypes() {
       types = [];
     }
 
-    const fallbackTypes = [
-      { id: 1, name: 'Lockers', description: 'Lockers metálicos de alta seguridad.', image: 'assets/images/carrusel-index/LocekrL4Gris.jpg' },
-      { id: 2, name: 'Estantes', description: 'Estanterías metálicas de gran resistencia.', image: 'assets/images/carrusel-index/Carrousel.png' },
-      { id: 3, name: 'Archivadores', description: 'Archivadores metálicos para oficinas.', image: 'assets/images/productos/estante-blanco.jpeg' },
-      { id: 4, name: 'Gabinetes', description: 'Gabinetes metálicos para almacenamiento seguro.', image: 'assets/images/productos/locker-verde.jpeg' }
-    ];
-
     if (!types || types.length === 0) {
-      types = fallbackTypes;
-    } else {
-      types = types.map(t => {
-        let name = t.product_type_name || t.name || 'Tipo de Producto';
-        if (name.trim().toLowerCase() === 'estante') name = 'Estantes';
-        return { ...t, name };
-      });
-
-      const hasGabinetes = types.some(t => t.name.toLowerCase().includes('gabinete'));
-      if (!hasGabinetes) {
-        types.push({ id: 4, name: 'Gabinetes', description: 'Gabinetes metálicos para almacenamiento seguro.', image: 'assets/images/productos/locker-verde.jpeg' });
-      }
-
-      for (const fb of fallbackTypes) {
-        if (types.length >= 4) break;
-        if (!types.some(t => t.name.toLowerCase() === fb.name.toLowerCase())) {
-          types.push(fb);
-        }
-      }
-      types = types.slice(0, 4);
+      container.innerHTML = `
+        <div class="empty-product-types-message" style="grid-column: 1 / -1; text-align: center; padding: 2rem 1rem; color: #64748b; font-size: 1rem;">
+          <p>Actualmente no hay tipos de productos disponibles.</p>
+        </div>
+      `;
+      return;
     }
 
     container.innerHTML = types.map(type => {
       let name = type.product_type_name || type.name || 'Tipo de Producto';
       if (name.trim().toLowerCase() === 'estante') name = 'Estantes';
       const desc = type.description || 'Soluciones profesionales diseñadas para optimizar tus espacios.';
-      const img = resolveImageUrl(type.product_type_image || type.image, 'assets/images/categoria/estante.png');
+      const img = resolveImageUrl(type.product_type_image || type.image, 'assets/images/carrusel-index/Carrousel.png');
 
       return `
         <a href="modules/product/products.html?type=${type.id}" class="product-type-card">
@@ -144,6 +115,11 @@ async function loadHomeProductTypes() {
     }).join('');
   } catch (error) {
     console.error('Error al cargar tipos de producto en el home:', error);
+    container.innerHTML = `
+      <div class="empty-product-types-message" style="grid-column: 1 / -1; text-align: center; padding: 2rem 1rem; color: #64748b; font-size: 1rem;">
+        <p>Actualmente no hay tipos de productos disponibles.</p>
+      </div>
+    `;
   }
 }
 
@@ -181,7 +157,7 @@ async function loadHomeFeaturedProducts() {
       const catName = prod.category_detail?.category_name || prod.categoryName || 'General';
       const desc = prod.description || '';
       const price = typeof prod.price === 'number' ? prod.price : parseFloat(prod.price) || 0;
-      const img = resolveImageUrl(prod.product_image || prod.image, 'assets/images/productos/estante-blanco.jpeg');
+      const img = resolveImageUrl(prod.product_image || prod.image, 'assets/images/gallery/real_space_1.jpg');
 
       return `
         <a href="modules/product/product-details.html?id=${prod.id}" class="catalog-product-card" style="text-decoration: none; color: inherit;">

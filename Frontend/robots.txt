@@ -1,0 +1,93 @@
+# =====================================================
+# TuEstante — Permisos para robots y crawlers de IA
+# =====================================================
+
+# ----- Rastreadores web tradicionales -----
+User-agent: *
+Allow: /
+Disallow: /modules/admin/
+Disallow: /js/config.js
+
+# ----- OpenAI / ChatGPT -----
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+# ----- Google AI (Gemini / AI Overviews / Bard) -----
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+# ----- Anthropic / Claude -----
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# ----- Perplexity AI -----
+User-agent: PerplexityBot
+Allow: /
+
+# ----- Microsoft / Bing AI / Copilot -----
+User-agent: Bingbot
+Allow: /
+
+User-agent: msnbot
+Allow: /
+
+User-agent: BingPreview
+Allow: /
+
+# ----- Meta / Llama -----
+User-agent: FacebookBot
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+# ----- Amazon Alexa / Kendra -----
+User-agent: Amazonbot
+Allow: /
+
+# ----- Apple -----
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# ----- Otros crawlers de IA -----
+User-agent: YouBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: AI2Bot
+Allow: /
+
+User-agent: Omgilibot
+Allow: /
+
+User-agent: FriendlyCrawler
+Allow: /
+
+# ----- Sitemap -----
+Sitemap: https://tuestante.com/sitemap.xml
+
+# ----- Archivo de descripción para IAs -----
+# llms.txt: https://tuestante.com/llms.txt

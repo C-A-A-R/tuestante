@@ -1,25 +1,4 @@
-import { obtenerCategorias, obtenerProductos } from '../../modules/product/product.api.js';
-import { backendOrigin } from '../../js/config.js';
-
-/**
- * Extrae un arreglo de la respuesta de la API (maneja listas directas o paginadas).
- */
-function extractList(apiResult) {
-  if (!apiResult) return [];
-  if (Array.isArray(apiResult)) return apiResult;
-  if (Array.isArray(apiResult.results)) return apiResult.results;
-  return [];
-}
-
-/**
- * Resuelve la URL completa para imágenes de productos/categorías.
- */
-function resolveImageUrl(path, fallback = '') {
-  if (!path) return fallback;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  if (path.startsWith('/')) return `${backendOrigin}${path}`;
-  return `${backendOrigin}/${path}`;
-}
+import { obtenerCategorias, obtenerProductos, extractList, resolveImageUrl } from '../../modules/product/product.api.js';
 
 /**
  * Configura dinámicamente el favicon con el logo de la empresa y el título en la pestaña del navegador.
@@ -169,7 +148,10 @@ async function loadNavbarCategories(navbar, isModulePath, prefix) {
     const categories = extractList(catsRes);
     const products = extractList(prodsRes);
 
-    if (!categories || categories.length === 0) return;
+    if (!categories || categories.length === 0) {
+      menuContainer.innerHTML = '';
+      return;
+    }
 
     menuContainer.innerHTML = categories.map(cat => {
       const catId = cat.id;
@@ -192,7 +174,7 @@ async function loadNavbarCategories(navbar, isModulePath, prefix) {
       const productsHTML = catProducts.map(p => {
         const pId = p.id;
         const pName = p.product_name || p.name || 'Producto';
-        const pImg = resolveImageUrl(p.product_image || p.image, `${prefix}assets/images/productos/estante-blanco.jpeg`);
+        const pImg = resolveImageUrl(p.product_image || p.image, `${prefix}assets/images/carrusel-index/Carrousel.png`);
         const pLink = `${prefix}modules/product/product-details.html?id=${pId}`;
 
         return `
@@ -221,7 +203,7 @@ async function loadNavbarCategories(navbar, isModulePath, prefix) {
         const featName = featuredProduct.product_name || featuredProduct.name || 'Producto Destacado';
         const featPrice = typeof featuredProduct.price === 'number' ? featuredProduct.price : parseFloat(featuredProduct.price) || 0;
         const featDesc = featuredProduct.description || 'Producto destacado de la categoría';
-        const featImg = resolveImageUrl(featuredProduct.product_image || featuredProduct.image, `${prefix}assets/images/productos/locker-fondo.png`);
+        const featImg = resolveImageUrl(featuredProduct.product_image || featuredProduct.image, `${prefix}assets/images/carrusel-index/LocekrL4Gris.jpg`);
         const featLink = `${prefix}modules/product/product-details.html?id=${featId}`;
 
         featuredHTML = `
@@ -258,6 +240,7 @@ async function loadNavbarCategories(navbar, isModulePath, prefix) {
     bindCategoryLinkEvents(navbar);
   } catch (err) {
     console.error('Error al cargar categorías en el navbar:', err);
+    if (menuContainer) menuContainer.innerHTML = '';
   }
 }
 

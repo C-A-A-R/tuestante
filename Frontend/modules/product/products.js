@@ -1,36 +1,5 @@
 import { initNavbar } from '../../components/navbar/navbar.js';
-import { obtenerProductos, obtenerCategorias, obtenerTiposProducto } from './product.api.js';
-import { backendOrigin } from '../../js/config.js';
-
-function resolveImageUrl(imagePath, fallback = '../../assets/images/categoria/estante.png') {
-    if (!imagePath) return fallback;
-
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        if (imagePath.includes('/media/')) {
-            const mediaPath = imagePath.substring(imagePath.indexOf('/media/'));
-            return `${backendOrigin}${mediaPath}`;
-        }
-        return imagePath;
-    }
-
-    if (imagePath.startsWith('/media/') || imagePath.startsWith('media/')) {
-        const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-        return `${backendOrigin}${cleanPath}`;
-    }
-
-    if (imagePath.includes('assets/')) {
-        if (!imagePath.startsWith('../') && !imagePath.startsWith('/')) {
-            return `../../${imagePath}`;
-        }
-        return imagePath;
-    }
-
-    if (imagePath.startsWith('/')) {
-        return `${backendOrigin}${imagePath}`;
-    }
-
-    return `${backendOrigin}/${imagePath}`;
-}
+import { obtenerProductos, obtenerCategorias, obtenerTiposProducto, resolveImageUrl } from './product.api.js';
 
 
 
@@ -504,7 +473,7 @@ function mapProductType(t) {
         id: t.id,
         name: t.product_type_name || t.name || 'Tipo General',
         description: t.description || '',
-        image: resolveImageUrl(t.product_type_image || t.image, '../../assets/images/categoria/estante.png')
+        image: resolveImageUrl(t.product_type_image || t.image, '../../assets/images/carrusel-index/Carrousel.png')
     };
 }
 
@@ -514,7 +483,7 @@ function mapCategory(c) {
         id: c.id,
         name: c.category_name || c.name || 'Categoría General',
         description: c.description || '',
-        image: resolveImageUrl(c.category_image || c.image, '../../assets/images/categoria/estante.png')
+        image: resolveImageUrl(c.category_image || c.image, '../../assets/images/carrusel-index/Carrousel.png')
     };
 }
 
@@ -551,7 +520,7 @@ function mapProduct(p) {
         name: p.product_name || p.name || 'Producto sin nombre',
         description: p.description || '',
         price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
-        image: resolveImageUrl(p.product_image || p.image, '../../assets/images/productos/estante-blanco.jpeg'),
+        image: resolveImageUrl(p.product_image || p.image, '../../assets/images/gallery/real_space_1.jpg'),
         badge: p.is_feature_product ? 'Destacado' : (p.badge || '')
     };
 }

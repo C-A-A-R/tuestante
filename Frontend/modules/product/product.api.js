@@ -1,5 +1,7 @@
 import { getRequest, postRequest, putRequest, patchRequest, deleteRequest, apiRequest } from '../../js/api.js';
 
+export { extractList, resolveImageUrl } from '../../js/api.js';
+
 /**
  * Obtiene la lista de productos del servidor, con filtros opcionales.
  * @param {Object} [params] Parámetros de búsqueda o filtrado.

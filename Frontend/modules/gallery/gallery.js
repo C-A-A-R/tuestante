@@ -43,27 +43,6 @@ let visibleCount = 13; // Lote inicial (1 ciclo completo del patrón: 13 imágen
 let currentFilter = 'all';
 
 /**
- * Extrae una lista homogénea desde la respuesta de la API de Django (paginada o directa).
- */
-function extractList(apiResult) {
-    if (!apiResult) return [];
-    if (Array.isArray(apiResult)) return apiResult;
-    if (Array.isArray(apiResult.results)) return apiResult.results;
-    return [];
-}
-
-/**
- * Resuelve la URL completa para una imagen proveniente del backend o un asset local.
- */
-function resolveImageUrl(path, fallback = '../../assets/images/categoria/estante.png') {
-    if (!path) return fallback;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    const origin = backendOrigin.startsWith('http://') || backendOrigin.startsWith('https://') ? backendOrigin : `http://${backendOrigin}`;
-    if (path.startsWith('/')) return `${origin}${path}`;
-    return `${origin}/${path}`;
-}
-
-/**
  * Carga componentes estáticos HTML (Navbar / Footer) dinámicamente.
  */
 async function loadComponent(placeholderId, filePath) {

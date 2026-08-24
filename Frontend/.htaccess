@@ -1,0 +1,48 @@
+# =====================================================
+# TuEstante - Configuración Apache/LiteSpeed
+# =====================================================
+
+# Archivo de inicio por defecto
+DirectoryIndex index.html
+
+# Deshabilitar el listado de directorios (CRÍTICO para SEO)
+Options -Indexes
+
+# =====================================================
+# Redirección HTTP → HTTPS
+# =====================================================
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Redirección www → sin www (o viceversa, elige uno)
+# RewriteCond %{HTTP_HOST} ^www\.tuestante\.com [NC]
+# RewriteRule ^(.*)$ https://tuestante.com/$1 [L,R=301]
+
+# =====================================================
+# Caché del navegador para recursos estáticos
+# =====================================================
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType text/html "access plus 1 day"
+</IfModule>
+
+# =====================================================
+# Compresión GZIP
+# =====================================================
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json
+</IfModule>
+
+# =====================================================
+# Headers de seguridad y SEO
+# =====================================================
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+</IfModule>

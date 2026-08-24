@@ -1,36 +1,5 @@
 import { initNavbar } from '../../components/navbar/navbar.js';
-import { obtenerProductoPorId, obtenerProductos } from './product.api.js';
-import { backendOrigin } from '../../js/config.js';
-
-function resolveImageUrl(imagePath, fallback = '../../assets/images/productos/estante-blanco.jpeg') {
-    if (!imagePath) return fallback;
-
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        if (imagePath.includes('/media/')) {
-            const mediaPath = imagePath.substring(imagePath.indexOf('/media/'));
-            return `${backendOrigin}${mediaPath}`;
-        }
-        return imagePath;
-    }
-
-    if (imagePath.startsWith('/media/') || imagePath.startsWith('media/')) {
-        const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-        return `${backendOrigin}${cleanPath}`;
-    }
-
-    if (imagePath.includes('assets/')) {
-        if (!imagePath.startsWith('../') && !imagePath.startsWith('/')) {
-            return `../../${imagePath}`;
-        }
-        return imagePath;
-    }
-
-    if (imagePath.startsWith('/')) {
-        return `${backendOrigin}${imagePath}`;
-    }
-
-    return `${backendOrigin}/${imagePath}`;
-}
+import { obtenerProductoPorId, obtenerProductos, resolveImageUrl } from './product.api.js';
 
 
 
@@ -89,7 +58,7 @@ function isColorLight(hexColor) {
 function mapProduct(p) {
     if (!p) return null;
 
-    const mainImage = resolveImageUrl(p.product_image || p.image, '../../assets/images/productos/estante-blanco.jpeg');
+    const mainImage = resolveImageUrl(p.product_image || p.image, '../../assets/images/gallery/real_space_1.jpg');
 
     let categoryIds = [];
     if (Array.isArray(p.categories) && p.categories.length > 0) {

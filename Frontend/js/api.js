@@ -6,16 +6,26 @@
  * ==========================================================================
  */
 
-import { API_BASE_URL } from "./config.js";
+import { API_BASE_URL, backendOrigin } from "./config.js";
 import { clearCurrentUser, clearTokens, getAccessToken, getRefreshToken, setAccessToken, setRefreshToken } from "./storage.js";
 
 let refreshInFlight = null;
 
 function buildUrl(path, params) {
   let base = API_BASE_URL.endsWith("/") ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
-  if (!base.startsWith("http://") && !base.startsWith("https://") && !base.startsWith("/")) {
-    base = `http://${base}`;
+
+  // Prevenir bloqueo por Contenido Mixto (Mixed Content) en produccion (HTTPS -> HTTP)
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && base.startsWith("http://")) {
+    if (!base.includes("localhost") && !base.includes("127.0.0.1")) {
+      base = base.replace("http://", "https://");
+    }
   }
+
+  if (!base.startsWith("http://") && !base.startsWith("https://") && !base.startsWith("/")) {
+    const protocol = typeof window !== "undefined" ? window.location.protocol : "http:";
+    base = `${protocol}//${base}`;
+  }
+
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const isAbsolute = base.startsWith("http://") || base.startsWith("https://");
   const url = isAbsolute
@@ -68,11 +78,22 @@ export async function apiRequest({
     finalHeaders["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(buildUrl(path, params), {
-    method,
-    headers: finalHeaders,
-    body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
-  });
+  const targetUrl = buildUrl(path, params);
+  let response;
+
+  try {
+    response = await fetch(targetUrl, {
+      method,
+      headers: finalHeaders,
+      body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
+    });
+  } catch (networkError) {
+    console.error(`[API Network Error] No se pudo conectar con ${targetUrl}:`, networkError);
+    const apiError = new Error(`Error de red o conexión al servidor (${networkError.message})`);
+    apiError.status = 0;
+    apiError.isNetworkError = true;
+    throw apiError;
+  }
 
   if (response.status === 204) {
     return null;
@@ -194,3 +215,66 @@ async function refreshAccessTokenIfNeeded() {
 
   return refreshInFlight;
 }
+
+/**
+ * Extrae un arreglo uniforme de resultados de la API (maneja listas simples y respuestas paginadas).
+ * @param {any} apiResult - Respuesta cruda devuelta por la API.
+ * @returns {Array} Arreglo de datos extraído.
+ */
+export function extractList(apiResult) {
+  if (!apiResult) return [];
+  if (Array.isArray(apiResult)) return apiResult;
+  if (Array.isArray(apiResult.results)) return apiResult.results;
+  return [];
+}
+
+/**
+ * Resuelve la URL completa de una imagen o recurso proveniente del backend.
+ * Procesa rutas relativas, absolutas, estáticas (assets) y entornos de producción/desarrollo.
+ * @param {string} imagePath - Ruta o URL recibida de la API o assets.
+ * @param {string} fallback - Ruta por defecto si imagePath es vacío.
+ * @returns {string} URL resuelta para mostrar en la interfaz.
+ */
+export function resolveImageUrl(imagePath, fallback = "") {
+  if (!imagePath) return fallback;
+
+  if (imagePath.includes("assets/")) {
+    return imagePath;
+  }
+
+  let origin = backendOrigin || "";
+  if (!origin.startsWith("http://") && !origin.startsWith("https://")) {
+    const protocol = typeof window !== "undefined" ? window.location.protocol : "http:";
+    origin = `${protocol}//${origin}`;
+  }
+
+  let finalUrl = imagePath;
+
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    if (imagePath.includes("/media/")) {
+      const mediaPath = imagePath.substring(imagePath.indexOf("/media/"));
+      finalUrl = `${origin.endsWith("/") ? origin.slice(0, -1) : origin}${mediaPath}`;
+    } else {
+      finalUrl = imagePath;
+    }
+  } else if (imagePath.startsWith("/media/") || imagePath.startsWith("media/")) {
+    const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
+    const cleanOrigin = origin.endsWith("/") ? origin.slice(0, -1) : origin;
+    finalUrl = `${cleanOrigin}${cleanPath}`;
+  } else if (imagePath.startsWith("/")) {
+    const cleanOrigin = origin.endsWith("/") ? origin.slice(0, -1) : origin;
+    finalUrl = `${cleanOrigin}${imagePath}`;
+  } else {
+    const cleanOrigin = origin.endsWith("/") ? origin.slice(0, -1) : origin;
+    finalUrl = `${cleanOrigin}/${imagePath}`;
+  }
+
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && finalUrl.startsWith("http://")) {
+    if (!finalUrl.includes("localhost") && !finalUrl.includes("127.0.0.1")) {
+      finalUrl = finalUrl.replace("http://", "https://");
+    }
+  }
+
+  return finalUrl;
+}
+
