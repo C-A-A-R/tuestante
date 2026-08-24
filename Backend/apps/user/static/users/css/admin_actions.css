@@ -1,0 +1,72 @@
+.actions-col {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.btn-action {
+	--size: 32px;
+	width: var(--size);
+	height: var(--size);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 8px;
+	text-decoration: none;
+	color: #ffffff; /* base para currentColor en los SVG */
+	font-size: 0; /* ocultar posible texto */
+	position: relative;
+	transition: background-color .18s ease, transform .15s ease, box-shadow .18s ease;
+	box-shadow: 0 2px 4px rgba(0,0,0,.25);
+	will-change: transform;
+}
+
+/* Forzar blanco en todos los estados del enlace para que los SVG (currentColor) sean blancos */
+.btn-action,
+.btn-action:link,
+.btn-action:visited,
+.btn-action:hover,
+.btn-action:active,
+.btn-edit,
+.btn-delete { color: #ffffff !important; }
+
+.btn-action:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 2px;
+}
+
+.btn-action svg {
+	width: 18px;
+	height: 18px;
+	pointer-events: none;
+}
+
+/* Editar (verde) */
+.btn-edit {
+	background: linear-gradient(135deg,#16a34a,#0f7a35);
+}
+.btn-edit:hover {background: linear-gradient(135deg,#22c55e,#128541);}
+.btn-edit:active {transform: scale(.94); background: linear-gradient(135deg,#0f7a35,#0a5a26);} 
+
+/* Eliminar (rojo) */
+.btn-delete {
+	background: linear-gradient(135deg,#dc2626,#9f1d1d);
+}
+.btn-delete:hover {background: linear-gradient(135deg,#ef4444,#b91c1c);} 
+.btn-delete:active {transform: scale(.94); background: linear-gradient(135deg,#9f1d1d,#7a1414);} 
+
+/* Aumentar tamaño suave en hover */
+.btn-action:hover { transform: scale(2); }
+
+/* Accesibilidad: tooltip mediante title ya existe; reforzar cursor */
+.btn-action {cursor: pointer;}
+
+/* Modo oscuro de admin (si está aplicado) */
+@media (prefers-color-scheme: dark) {
+	.btn-action {box-shadow: 0 2px 4px rgba(0,0,0,.5);}  
+}
+
+/* Pequeña animación de entrada opcional */
+.actions-col .btn-action {animation: fadeInBtns .25s ease both;}
+@keyframes fadeInBtns {from {opacity:0; transform:scale(.9);} to {opacity:1; transform:scale(1);} }
+

@@ -1,0 +1,9 @@
+Hola {{ user.username }},
+
+Gracias por registrarte. Para activar tu cuenta, haz clic en el siguiente enlace:
+{{ activation_link }}
+
+Si no creaste esta cuenta, puedes ignorar este correo.
+
+Gracias,
+El equipo de Diegos Grill

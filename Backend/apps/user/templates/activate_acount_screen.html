@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Activación de Cuenta</title>
+</head>
+<body>
+    <div style="max-width: 400px; margin: 50px auto; padding: 30px; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
+        {% if success %}
+            <h2 style="color: green;">✔️</h2>
+        {% else %}
+            <h2 style="color: red;">❌</h2>
+        {% endif %}
+        <h3>{{ message }}</h3>
+        <a href="/login">Ir al login</a>
+    </div>
+</body>
+</html>
