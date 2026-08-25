@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from simple_history.models import HistoricalRecords
 
 
@@ -17,7 +18,7 @@ class BaseModel(models.Model):
     def _find_soft_deleted_duplicate(self):
         """
         Busca si existe un registro previamente borrado lógicamente (is_deleted=True)
-        que coincida en los campos con unique=True o en unique_together.
+        que coincida en los campos con unique=True, unique_together o UniqueConstraint.
         """
         if self.pk is not None:
             return None
@@ -51,7 +52,65 @@ class BaseModel(models.Model):
                     if existing:
                         return existing
 
+        # 3. Buscar por Meta.constraints (UniqueConstraint)
+        if hasattr(opts, 'constraints'):
+            for constraint in opts.constraints:
+                if isinstance(constraint, models.UniqueConstraint):
+                    filter_kwargs = {'is_deleted': True}
+                    match = True
+                    for field_name in constraint.fields:
+                        val = getattr(self, field_name, None)
+                        if val is None or val == '':
+                            match = False
+                            break
+                        filter_kwargs[field_name] = val
+                    if match:
+                        existing = model_class.objects.filter(**filter_kwargs).first()
+                        if existing:
+                            return existing
+
         return None
+
+    def validate_unique(self, exclude=None):
+        """
+        Sobrescribe validate_unique para ignorar conflictos de unicidad con
+        registros borrados lógicamente (is_deleted=True). Si sólo existe un
+        registro borrado lógicamente con este valor único, save() lo restaurará.
+        """
+        try:
+            super().validate_unique(exclude=exclude)
+        except ValidationError as e:
+            error_dict = e.error_dict if hasattr(e, 'error_dict') else {}
+            filtered_errors = {}
+
+            for field_name, errors in error_dict.items():
+                keep_errors = []
+                for error in errors:
+                    is_unique_err = (
+                        getattr(error, 'code', None) == 'unique' or
+                        'ya existe' in str(getattr(error, 'message', '')).lower() or
+                        'already exists' in str(getattr(error, 'message', '')).lower()
+                    )
+                    if is_unique_err:
+                        val = getattr(self, field_name, None)
+                        if val is not None and hasattr(self.__class__, 'is_deleted'):
+                            # Verificar si existe un registro ACTIVO (is_deleted=False) distinto a este
+                            active_exists = self.__class__.objects.filter(
+                                **{field_name: val, 'is_deleted': False}
+                            ).exclude(pk=self.pk if self.pk else None).exists()
+
+                            if active_exists:
+                                keep_errors.append(error)
+                        else:
+                            keep_errors.append(error)
+                    else:
+                        keep_errors.append(error)
+
+                if keep_errors:
+                    filtered_errors[field_name] = keep_errors
+
+            if filtered_errors:
+                raise ValidationError(filtered_errors)
 
     def save(self, *args, **kwargs):
         """
@@ -66,12 +125,12 @@ class BaseModel(models.Model):
                 for field in self._meta.fields:
                     if field.primary_key or field.name in ('created_at', 'is_deleted', 'deleted_at'):
                         continue
-                    setattr(existing, field.name, getattr(self, field.name))
+                    new_val = getattr(self, field.name, None)
+                    setattr(existing, field.name, new_val)
 
                 existing.is_deleted = False
                 existing.deleted_at = None
 
-                # Eliminar force_insert de kwargs al actualizar el registro existente
                 save_kwargs = kwargs.copy()
                 save_kwargs.pop('force_insert', None)
                 existing.save(**save_kwargs)
@@ -94,7 +153,7 @@ class BaseModel(models.Model):
         self.save()
 
     class Meta:
-        """Meta definición para BaseModel."""
         abstract = True
         verbose_name = 'Modelo Base'
         verbose_name_plural = 'Modelos Base'
+

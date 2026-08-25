@@ -1,176 +1,154 @@
-from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from apps.usuarios.models import Usuario
+from apps.user.models import User
 
 
-class UsuarioSerializer(serializers.ModelSerializer):
-    """Serializador para el modelo Usuario con nombres en espanol."""
+class UserSerializer(serializers.ModelSerializer):
+    """Serializador para el modelo User."""
 
-    nombre_usuario = serializers.CharField(source="username")
-    correo_electronico = serializers.EmailField(source="email", allow_blank=True)
-    nombre = serializers.CharField(source="first_name", allow_blank=True)
-    apellido = serializers.CharField(source="last_name", allow_blank=True)
-    nombre_completo = serializers.SerializerMethodField()
-    grupos = serializers.SerializerMethodField()
-    ultimo_acceso = serializers.DateTimeField(source="last_login", allow_null=True)
-    esta_activo = serializers.BooleanField(source="is_active")
-    es_administrador = serializers.BooleanField(source="is_staff")
-    es_super_usuario = serializers.BooleanField(source="is_superuser")
-    fecha_registro = serializers.DateTimeField(source="date_joined")
-    estado = serializers.BooleanField(source="state")
+    full_name = serializers.SerializerMethodField()
 
     class Meta:
-        model = Usuario
+        model = User
         fields = [
             "id",
-            "habitante",
-            "nombre_usuario",
-            "correo_electronico",
-            "nombre",
-            "apellido",
-            "nombre_completo",
-            "ultimo_acceso",
-            "esta_activo",
-            "es_administrador",
-            "es_super_usuario",
-            "fecha_registro",
-            "estado",
-            "grupos",
+            "username",
+            "email",
+            "first_name",
+            "second_name",
+            "first_last_name",
+            "second_last_name",
+            "identity_document",
+            "full_name",
+            "birth_date",
+            "phone",
+            "last_login",
+            "is_active",
+            "is_staff",
+            "is_superuser",
+            "date_joined",
+            "is_deleted",
+            "created_at",
+            "updated_at",
         ]
 
-    def get_nombre_completo(self, obj):
-        # Prefer the related Habitante if available (contains two names and two surnames)
-        habitante = getattr(obj, "habitante", None)
-        if habitante:
-            try:
-                return habitante.nombre_completo()
-            except Exception:
-                partes_h = [
-                    getattr(habitante, "primer_nombre", ""),
-                    getattr(habitante, "segundo_nombre", ""),
-                    getattr(habitante, "primer_apellido", ""),
-                    getattr(habitante, "segundo_apellido", ""),
-                ]
-                return " ".join(p for p in partes_h if p)
-
-        # Fallback to user first_name/last_name
-        partes = [getattr(obj, "first_name", ""), getattr(obj, "last_name", "")]
-        return " ".join(p for p in partes if p)
-
-    def get_grupos(self, obj):
-        # Devuelve una lista de nombres de los grupos a los que pertenece el usuario
-        try:
-            nombres = list(obj.groups.values_list("name", flat=True))
-            return nombres[0] if nombres else None
-        except Exception:
-            return None
+    def get_full_name(self, obj):
+        """Obtiene el nombre completo del usuario."""
+        return obj.get_full_name() or obj.username
 
 
-class UsuarioCrearSerializer(serializers.ModelSerializer):
-    """Serializador para crear usuarios con rol asignado."""
+class UserCreateSerializer(serializers.ModelSerializer):
+    """Serializador para crear usuarios (clientes o administradores)."""
 
-    nombre_usuario = serializers.CharField(source="username")
-    correo_electronico = serializers.EmailField(source="email", allow_blank=True, required=False)
-    nombre = serializers.CharField(source="first_name", allow_blank=True, required=False)
-    apellido = serializers.CharField(source="last_name", allow_blank=True, required=False)
-    contrasena = serializers.CharField(
+    username = serializers.CharField()
+    email = serializers.EmailField(allow_blank=True, required=False)
+    first_name = serializers.CharField(allow_blank=True, required=False)
+    second_name = serializers.CharField(allow_blank=True, required=False)
+    first_last_name = serializers.CharField(allow_blank=True, required=False)
+    second_last_name = serializers.CharField(allow_blank=True, required=False)
+    identity_document = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    birth_date = serializers.DateField(allow_null=True, required=False)
+    phone = serializers.CharField(allow_blank=True, required=False)
+    password = serializers.CharField(
         write_only=True,
         required=True,
         validators=[validate_password],
         style={"input_type": "password"},
     )
-    contrasena2 = serializers.CharField(
+    confirm_password = serializers.CharField(
         write_only=True, required=True, style={"input_type": "password"}
     )
-    rol = serializers.ChoiceField(choices=["Lider", "Vocero"], default="Vocero")
-    esta_activo = serializers.BooleanField(source="is_active", required=False, default=True)
+    is_staff = serializers.BooleanField(required=False, default=False)
+    is_active = serializers.BooleanField(required=False, default=True)
 
     class Meta:
-        model = Usuario
+        model = User
         fields = [
-            "habitante",
-            "nombre_usuario",
-            "correo_electronico",
-            "nombre",
-            "apellido",
-            "contrasena",
-            "contrasena2",
-            "rol",
-            "esta_activo",
+            "username",
+            "email",
+            "first_name",
+            "second_name",
+            "first_last_name",
+            "second_last_name",
+            "identity_document",
+            "birth_date",
+            "phone",
+            "password",
+            "confirm_password",
+            "is_staff",
+            "is_active",
         ]
 
     def validate(self, attrs):
-        if attrs["contrasena"] != attrs["contrasena2"]:
-            raise serializers.ValidationError({"contrasena": "Las contrasenas no coinciden."})
+        if attrs["password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError({"password": "Las contraseñas no coinciden."})
         return attrs
 
     def create(self, validated_data):
-        rol = validated_data.pop("rol", "Vocero")
-        validated_data.pop("contrasena2", None)
-        password = validated_data.pop("contrasena", None)
-        usuario = Usuario.objects.create_user(password=password, **validated_data)
-
-        grupo, _ = Group.objects.get_or_create(name=rol)
-        usuario.groups.add(grupo)
-        return usuario
+        validated_data.pop("confirm_password", None)
+        password = validated_data.pop("password", None)
+        user = User.objects.create_user(password=password, **validated_data)
+        return user
 
 
-class CambioContrasenaSerializer(serializers.Serializer):
-    """Serializador para cambiar contrasena."""
 
-    usuario_id = serializers.IntegerField(required=False, allow_null=True)
-    contrasena_actual = serializers.CharField(required=False, allow_blank=True, style={"input_type": "password"})
-    nueva_contrasena = serializers.CharField(
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """Serializador para cambiar contraseña."""
+
+    user_id = serializers.IntegerField(required=False, allow_null=True)
+    current_password = serializers.CharField(required=False, allow_blank=True, style={"input_type": "password"})
+    new_password = serializers.CharField(
         required=True, validators=[validate_password], style={"input_type": "password"}
     )
-    nueva_contrasena2 = serializers.CharField(required=True, style={"input_type": "password"})
+    confirm_new_password = serializers.CharField(required=True, style={"input_type": "password"})
 
     def validate(self, attrs):
-        if attrs["nueva_contrasena"] != attrs["nueva_contrasena2"]:
+        if attrs["new_password"] != attrs["confirm_new_password"]:
             raise serializers.ValidationError(
-                {"nueva_contrasena": "Las nuevas contrasenas no coinciden."}
+                {"new_password": "Las nuevas contraseñas no coinciden."}
             )
         
         # Verificar si se requiere la contraseña actual
         request = self.context.get("request")
-        usuario_id = attrs.get("usuario_id")
+        user_id = attrs.get("user_id")
         
-        # Si no se proporciona usuario_id o es el mismo usuario, se requiere contrasena_actual
-        if not usuario_id or (request and request.user.id == usuario_id):
-            if not attrs.get("contrasena_actual"):
+        # Si no se proporciona user_id o es el mismo usuario, se requiere current_password
+        if not user_id or (request and request.user.id == user_id):
+            if not attrs.get("current_password"):
                 raise serializers.ValidationError(
-                    {"contrasena_actual": "La contraseña actual es requerida para cambiar su propia contraseña."}
+                    {"current_password": "La contraseña actual es requerida para cambiar su propia contraseña."}
                 )
         
         return attrs
 
-    def validate_contrasena_actual(self, value):
+    def validate_current_password(self, value):
         # Solo validar si se proporciona un valor
         if value:
             request = self.context.get("request")
-            usuario = request.user if request else None
+            user = request.user if request else None
             
-            if usuario and not usuario.check_password(value):
-                raise serializers.ValidationError("La contrasena actual es incorrecta.")
+            if user and not user.check_password(value):
+                raise serializers.ValidationError("La contraseña actual es incorrecta.")
         
         return value
 
 
-class SolicitudRestablecimientoContrasenaSerializer(serializers.Serializer):
-    """Serializador para solicitar restablecimiento de contrasena."""
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializador para solicitar restablecimiento de contraseña."""
 
-    correo_electronico = serializers.EmailField()
+    email = serializers.EmailField()
 
 
-class ConfirmacionRestablecimientoContrasenaSerializer(serializers.Serializer):
-    """Serializador para confirmar restablecimiento de contrasena."""
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Serializador para confirmar restablecimiento de contraseña."""
 
-    nueva_contrasena = serializers.CharField(write_only=True, min_length=8)
-    nueva_contrasena2 = serializers.CharField(write_only=True, min_length=8)
+    new_password = serializers.CharField(write_only=True, min_length=8)
+    confirm_new_password = serializers.CharField(write_only=True, min_length=8)
 
-    def validate(self, data):
-        if data["nueva_contrasena"] != data["nueva_contrasena2"]:
-            raise serializers.ValidationError({"nueva_contrasena": "Las contrasenas no coinciden."})
-        return data
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_new_password"]:
+            raise serializers.ValidationError({"new_password": "Las contraseñas no coinciden."})
+        return attrs
+

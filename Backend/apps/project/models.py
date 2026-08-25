@@ -29,9 +29,9 @@ class Project(BaseModel):
         ordering = ['id']
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
         if self.project_images:
             compress_and_save_image(self.project_images)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.project_name

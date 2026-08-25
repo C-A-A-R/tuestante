@@ -14,19 +14,29 @@ from apps.product.api.serializers import (
 class CategoryViewSet(BaseViewSet):
     """
     ViewSet para la gestión CRUD de Categorías.
-    Hereda de BaseViewSet para borrado lógico.
+    - Lectura pública.
+    - Creación/Edición/Eliminación: restringido a usuarios administradores.
     """
     serializer_class = CategorySerializer
-    permission_classes = [permissions.AllowAny]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
 
 
 class ProductTypeViewSet(BaseViewSet):
     """
     ViewSet para la gestión CRUD de Tipos de Productos.
-    Hereda de BaseViewSet para borrado lógico.
+    - Lectura pública.
+    - Creación/Edición/Eliminación: restringido a usuarios administradores.
     """
     serializer_class = ProductTypeSerializer
-    permission_classes = [permissions.AllowAny]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
 
 
 class FeaturedProductsAPIView(generics.ListAPIView):
@@ -37,16 +47,24 @@ class FeaturedProductsAPIView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return Product.objects.filter(is_deleted=False, is_feature_product=True)
+        return Product.objects.filter(
+            is_deleted=False,
+            is_feature_product=True
+        ).prefetch_related('categories', 'color_images', 'angle_images').select_related('product_type')
 
 
 class ProductViewSet(BaseViewSet):
     """
     ViewSet para la gestión CRUD de Productos.
-    Soporta múltiples categorías por producto y filtrado directo.
+    - Lectura pública.
+    - Creación/Edición/Eliminación: restringido a usuarios administradores.
     """
     serializer_class = ProductSerializer
-    permission_classes = [permissions.AllowAny]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve', 'featured']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
 
     def get_queryset(self):
         queryset = Product.objects.filter(is_deleted=False).prefetch_related('categories', 'color_images', 'angle_images').select_related('product_type')
@@ -63,13 +81,14 @@ class ProductViewSet(BaseViewSet):
     @action(detail=False, methods=['get'], url_path='featured')
     def featured(self, request, *args, **kwargs):
         """Endpoint dentro del ViewSet para listar solo productos destacados."""
-        featured_products = Product.objects.filter(is_deleted=False, is_feature_product=True)
+        featured_products = self.get_queryset().filter(is_feature_product=True)
         page = self.paginate_queryset(featured_products)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(featured_products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)

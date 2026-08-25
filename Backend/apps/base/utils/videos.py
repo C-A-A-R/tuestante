@@ -173,24 +173,29 @@ def compress_and_save_video(video_field,
         with open(tmp_output_path, 'rb') as f:
             compressed_bytes = f.read()
 
-        # Determinar el directorio de salida preservando la carpeta original o el nombre de la clase
-        dirname = folder_name
-        if not dirname and video_field.name:
-            dirname = os.path.dirname(video_field.name)
-        if not dirname and hasattr(video_field, 'instance') and video_field.instance:
-            dirname = video_field.instance.__class__.__name__.lower()
-        if not dirname:
-            dirname = 'videos'
+        if not is_committed:
+            # Caso A: El archivo aún no se ha guardado en disco (_committed == False).
+            orig_name = getattr(video_field.file, 'name', '') or getattr(video_field, 'name', '')
+            base = os.path.splitext(os.path.basename(orig_name))[0] if orig_name else uuid.uuid4().hex
+            new_filename = f"{base}.{VIDEO_OUTPUT_EXT}"
 
-        new_filename = f"{uuid.uuid4().hex}.{VIDEO_OUTPUT_EXT}"
-        new_path = os.path.join(dirname, new_filename)
+            content_file = ContentFile(compressed_bytes, name=new_filename)
+            video_field.file = content_file
+            video_field.name = new_filename
+        else:
+            # Caso B: El archivo ya está guardado en almacenamiento (_committed == True).
+            storage = video_field.storage
+            target_path = video_field.name
 
-        video_field.save(new_path, ContentFile(compressed_bytes), save=False)
+            if target_path:
+                if storage.exists(target_path):
+                    storage.delete(target_path)
+                storage.save(target_path, ContentFile(compressed_bytes))
 
         logger.info(
             "compress_and_save_video: '%s' comprimido. "
             "Original: %d KB → Comprimido: %d KB",
-            new_path,
+            getattr(video_field, 'name', '?'),
             len(input_bytes) // 1024,
             len(compressed_bytes) // 1024
         )

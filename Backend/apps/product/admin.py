@@ -20,15 +20,14 @@ class CategoryAdmin(BaseAdmin):
     """Configuración del panel de administración para el modelo Category."""
 
     list_display = (
-        'id',
         'category_name',
         'description',
-        'is_deleted',
+        'category_image',
         'created_at',
         'updated_at'
     )
     search_fields = ('category_name', 'description')
-    list_filter = ('is_deleted', 'created_at')
+    list_filter = ('created_at',)
     ordering = ('id',)
 
 
@@ -37,15 +36,14 @@ class ProductTypeAdmin(BaseAdmin):
     """Configuración del panel de administración para el modelo ProductType."""
 
     list_display = (
-        'id',
         'product_type_name',
         'description',
-        'is_deleted',
+        'product_type_image',
         'created_at',
         'updated_at'
     )
     search_fields = ('product_type_name', 'description')
-    list_filter = ('is_deleted', 'created_at')
+    list_filter = ('created_at',)
     ordering = ('id',)
 
 
@@ -55,7 +53,6 @@ class ProductAdmin(BaseAdmin):
 
     inlines = [ProductColorImageInline, ProductAngleImageInline]
     list_display = (
-        'id',
         'product_name',
         'get_categories',
         'product_type',
@@ -66,12 +63,11 @@ class ProductAdmin(BaseAdmin):
         'width_cm',
         'product_image',
         'product_video',
-        'is_deleted',
         'created_at'
     )
     list_editable = ('is_feature_product',)
     search_fields = ('product_name', 'description', 'product_type__product_type_name', 'security')
-    list_filter = ('is_feature_product', 'categories', 'product_type', 'is_deleted', 'created_at')
+    list_filter = ('is_feature_product', 'categories', 'product_type', 'created_at')
     ordering = ('id',)
     filter_horizontal = ('categories',)
 
@@ -84,9 +80,9 @@ class ProductAdmin(BaseAdmin):
 class ProductColorImageAdmin(BaseAdmin):
     """Configuración del panel de administración para el modelo ProductColorImage."""
 
-    list_display = ('id', 'product', 'color_hex', 'color_name', 'color_image', 'is_deleted', 'created_at')
+    list_display = ('product', 'color_hex', 'color_name', 'color_image', 'created_at')
     search_fields = ('product__product_name', 'color_hex', 'color_name')
-    list_filter = ('is_deleted', 'created_at')
+    list_filter = ('created_at',)
     ordering = ('id',)
 
 
@@ -94,8 +90,8 @@ class ProductColorImageAdmin(BaseAdmin):
 class ProductAngleImageAdmin(BaseAdmin):
     """Configuración del panel de administración para el modelo ProductAngleImage."""
 
-    list_display = ('id', 'product', 'angle', 'image', 'is_deleted', 'created_at')
+    list_display = ('product', 'angle', 'image', 'created_at')
     search_fields = ('product__product_name', 'angle')
-    list_filter = ('is_deleted', 'created_at')
+    list_filter = ('created_at',)
     ordering = ('id',)
 

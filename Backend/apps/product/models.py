@@ -22,9 +22,9 @@ class Category(BaseModel):
         return self.category_name
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
         if self.category_image:
             compress_and_save_image(self.category_image)
+        super().save(*args, **kwargs)
 
 
 class ProductType(BaseModel):
@@ -43,9 +43,9 @@ class ProductType(BaseModel):
         return self.product_type_name
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
         if self.product_type_image:
             compress_and_save_image(self.product_type_image)
+        super().save(*args, **kwargs)
 
 
 class Product(BaseModel):
@@ -85,11 +85,11 @@ class Product(BaseModel):
         return self.categories.first()
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
         if self.product_image:
             compress_and_save_image(self.product_image)
         if self.product_video:
             compress_and_save_video(self.product_video)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.product_name
@@ -129,9 +129,9 @@ class ProductColorImage(BaseModel):
         verbose_name_plural = 'Colores de los Productos'
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
         if self.color_image:
             compress_and_save_image(self.color_image)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Imagen ({self.color_hex}) - {self.product.product_name}"
@@ -166,9 +166,9 @@ class ProductAngleImage(BaseModel):
         ordering = ['id']
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
         if self.image:
             compress_and_save_image(self.image)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         angle_str = f" - {self.angle}" if self.angle else ""

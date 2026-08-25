@@ -29,9 +29,17 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/products/', include('apps.product.api.routers')),
     path('api/projects/', include('apps.project.api.routers')),
-
-
+    path('api/gallery/', include('apps.gallery.api.routers')),
+    path('api/', include('apps.orders.api.routers')),
+    path('api/', include('apps.payment.api.routers')),
+    path('api/', include('apps.shipment.api.routers')),
+    path('api/', include('apps.notification.api.routers')),
 ]
+
+
+
+
+
 
 # Configuración para servir archivos multimedia en desarrollo
 if settings.DEBUG:

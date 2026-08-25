@@ -4,16 +4,17 @@ Cada mensaje es un dict con `titulo`, `mensaje` y `tipo` ('success'|'error').
 """
 
 MESSAGES = {
-    "CAMBIO_DE_CONTRASEÑA_EXITOSO": {
-        "titulo": "Borrado de familia",
-        "mensaje": "Borrado de familia exitoso",
+    "PASSWORD_CHANGE_SUCCESS": {
+        "titulo": "Cambio de contraseña",
+        "mensaje": "La contraseña se actualizó exitosamente",
         "tipo": "success",
     },
-    "CAMBIO_DE_CONTRASEÑA_ERROR": {
-        "titulo": "Borrado de familia",
-        "mensaje": "Borrado de familia exitoso",
-        "tipo": "success",
+    "PASSWORD_CHANGE_ERROR": {
+        "titulo": "Cambio de contraseña",
+        "mensaje": "Error al cambiar la contraseña",
+        "tipo": "error",
     },
 }
 
 __all__ = ["MESSAGES"]
+

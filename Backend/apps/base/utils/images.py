@@ -66,20 +66,18 @@ def compress_and_save_image(image_field, folder_name=None, max_width=IMAGE_MAX_W
                              output_format=IMAGE_OUTPUT_FORMAT):
     """
     Comprime y redimensiona la imagen almacenada en un ``ImageField`` (o
-    cualquier ``FileField`` que contenga una imagen). Preserva la estructura
-    de directorio basada en la clase del modelo o el parámetro ``folder_name``.
+    cualquier ``FileField`` que contenga una imagen).
 
-    Llamar desde ``save()`` del modelo **después** del primer ``super().save()``,
-    o en una señal ``post_save``.
+    Si se llama antes de ``super().save()`` (cuando ``_committed`` es ``False``),
+    modifica la imagen en memoria para que Django guarde únicamente la versión
+    comprimida y descarte la original sin dejar archivos huérfanos ni dobles
+    escrituras en disco.
 
-    Ejemplo de uso en un modelo::
+    Si se llama después de ``super().save()`` o sobre un archivo ya guardado
+    (cuando ``_committed`` es ``True``), sobrescribe en el almacenamiento la ruta
+    actual con la imagen comprimida.
 
-        def save(self, *args, **kwargs):
-            super().save(*args, **kwargs)
-            if self.image:
-                compress_and_save_image(self.image)
-
-    :param image_field:  Instancia de ``ImageFieldFile`` (ej. ``instance.image``).
+    :param image_field:  Instancia de ``ImageFieldFile`` (ej. ``instance.category_image``).
     :param folder_name:  Nombre del directorio personalizado (opcional).
     :param max_width:    Ancho máximo en píxeles.
     :param max_height:   Alto máximo en píxeles.
@@ -91,12 +89,33 @@ def compress_and_save_image(image_field, folder_name=None, max_width=IMAGE_MAX_W
         return False
 
     try:
+        if not hasattr(image_field, 'file') or not image_field.file:
+            return False
+    except (ValueError, AttributeError):
+        return False
+
+    is_committed = getattr(image_field, '_committed', True)
+
+    try:
         image_field.open()
         img = Image.open(image_field)
 
-        # Convertir a RGB si es necesario (e.g., PNG con transparencia RGBA)
-        if img.mode not in ('RGB', 'RGBA') or (output_format == 'JPEG' and img.mode == 'RGBA'):
-            img = img.convert('RGB')
+        # Auto-rotación según orientación EXIF si está presente
+        try:
+            from PIL import ImageOps
+            img = ImageOps.exif_transpose(img)
+        except Exception:
+            pass
+
+        # Conversión de modo según formato de salida (preservar transparencia si es WEBP)
+        has_alpha = img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info)
+        if output_format.upper() == 'WEBP':
+            target_mode = 'RGBA' if has_alpha else 'RGB'
+        else:
+            target_mode = 'RGB'
+
+        if img.mode != target_mode:
+            img = img.convert(target_mode)
 
         # Redimensionar respetando la proporción
         original_width, original_height = img.size
@@ -108,26 +127,36 @@ def compress_and_save_image(image_field, folder_name=None, max_width=IMAGE_MAX_W
         # Guardar en buffer
         buffer = io.BytesIO()
         save_kwargs = {'format': output_format, 'quality': quality, 'optimize': True}
-        if output_format == 'WEBP':
+        if output_format.upper() == 'WEBP':
             save_kwargs['method'] = 6  # mayor compresión
-        img.save(buffer, **save_kwargs)
-        buffer.seek(0)
 
-        # Determinar directorio preservando la carpeta original o el nombre de la clase
-        dirname = folder_name
-        if not dirname and image_field.name:
-            dirname = os.path.dirname(image_field.name)
-        if not dirname and hasattr(image_field, 'instance') and image_field.instance:
-            dirname = image_field.instance.__class__.__name__.lower()
-        if not dirname:
-            dirname = 'images'
+        img.save(buffer, **save_kwargs)
+        compressed_bytes = buffer.getvalue()
+        image_field.close()
 
         ext = IMAGE_OUTPUT_EXT
-        new_filename = f"{uuid.uuid4().hex}.{ext}"
-        new_path = os.path.join(dirname, new_filename)
+        if not is_committed:
+            # Caso A: El archivo aún no se ha guardado en disco (_committed == False).
+            # Reemplazamos el stream en memoria con la versión comprimida.
+            orig_name = getattr(image_field.file, 'name', '') or getattr(image_field, 'name', '')
+            base = os.path.splitext(os.path.basename(orig_name))[0] if orig_name else uuid.uuid4().hex
+            new_filename = f"{base}.{ext}"
 
-        image_field.save(new_path, ContentFile(buffer.read()), save=False)
-        return True
+            content_file = ContentFile(compressed_bytes, name=new_filename)
+            image_field.file = content_file
+            image_field.name = new_filename
+            return True
+        else:
+            # Caso B: El archivo ya está guardado en almacenamiento (_committed == True).
+            # Reemplazamos el contenido en storage en la misma ruta sin crear duplicados.
+            storage = image_field.storage
+            target_path = image_field.name
+
+            if target_path:
+                if storage.exists(target_path):
+                    storage.delete(target_path)
+                storage.save(target_path, ContentFile(compressed_bytes))
+            return True
 
     except Exception as exc:
         logger.warning(

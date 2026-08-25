@@ -32,9 +32,10 @@ def check_activation_token(uidb64, token):
     """
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid, eliminado=False)
+        user = User.objects.get(pk=uid, is_deleted=False)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
     if user and account_activation_token.check_token(user, token):
         return user
     return None
+

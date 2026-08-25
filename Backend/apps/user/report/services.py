@@ -1,19 +1,19 @@
 from apps.base.reportes.services.services import BaseReportService
-from apps.usuarios.models import Usuario
+from apps.user.models import User
 
 
 class UsuariosReportService(BaseReportService):
 
     # ------------------------------------------------------------------
-    # Queryset base: usuarios no eliminados lógicamente (state=True)
+    # Queryset base: usuarios no eliminados lógicamente (is_deleted=False)
     # ------------------------------------------------------------------
     @staticmethod
     def _get_qs():
         return (
-            Usuario.objects
-            .filter(state=True)
-            .select_related("habitante")
+            User.objects
+            .filter(is_deleted=False)
         )
+
 
     # ------------------------------------------------------------------
     # Reporte: todos los usuarios activos del sistema (single_table)
@@ -44,7 +44,6 @@ class UsuariosReportService(BaseReportService):
             "Estado",
             "Último acceso",
             "Fecha de registro",
-            "Habitante vinculado",
         ]
 
         rows = [
@@ -57,7 +56,6 @@ class UsuariosReportService(BaseReportService):
                 "Activo" if u.is_active else "Inactivo",
                 u.last_login.strftime("%d/%m/%Y %H:%M") if u.last_login else "Nunca",
                 u.date_joined.strftime("%d/%m/%Y") if u.date_joined else "—",
-                u.habitante.nombre_completo() if u.habitante else "—",
             ]
             for u in qs
         ]
@@ -124,8 +122,8 @@ class UsuariosReportService(BaseReportService):
             ("Estado", "Activo" if u.is_active else "Inactivo"),
             ("Último acceso", u.last_login.strftime("%d/%m/%Y %H:%M") if u.last_login else "Nunca"),
             ("Fecha de registro", u.date_joined.strftime("%d/%m/%Y") if u.date_joined else "—"),
-            ("Habitante vinculado", u.habitante.nombre_completo() if u.habitante else "—"),
         ]
+
 
         return {
             "filename": f"detalle_usuario_{pk}",

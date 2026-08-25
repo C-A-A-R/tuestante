@@ -4,16 +4,21 @@ import pymysql
 
 pymysql.install_as_MySQLdb()
 
+# Channel Layers — InMemory para desarrollo local (no requiere Redis)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
+
 # Permitir peticiones desde cualquier origen y con credenciales (inseguro para producción)
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 ALLOWED_HOSTS = ['*']
 
-# Database
-# https://docs.djangoproject.com/en/3.1/ref/settings/#databases
-
-bd_local= 'mysql_nube2'
+media = 'cpanel'
+bd_local= 'mysql_cpanel'
 
 if bd_local == 'mysql':
     DATABASES = {
@@ -26,28 +31,19 @@ if bd_local == 'mysql':
             'PORT': '3306',
         }
     }
-elif bd_local == 'mysql_nube':
+
+elif bd_local == 'mysql_cpanel':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': '84b053e2-26e3-4c36-bb99-577ae658f414',
-            'USER': 'root',
-            'PASSWORD': 'sk_753f0637dbeafe23392690f82c4683a95fe944542a85bdcd8a7917e70b216cfb',
-            'HOST': 'cloud.layerbase.dev',
-            'PORT': '20414',
+            'NAME': 'tuestante',
+            'USER': 'tuestante',
+            'PASSWORD': 'fwRwL3GqRmAHrBy',
+            'HOST': 'bectronix.net',
+            'PORT': '3306',
         }
     }
-elif bd_local == 'mysql_nube2':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'tuestantedb',
-            'USER': 'root',
-            'PASSWORD': 'S3QPkL9wjjiboE7EYXG5iwPa',
-            'HOST': 'cloud.layerbase.dev',
-            'PORT': '20415',
-        }
-    }
+
 else:
     DATABASES = {
     'default': {
@@ -57,10 +53,61 @@ else:
 }
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/3.1/howto/static-files/
+if media == "local":
+    STATIC_URL = '/static/'
+    STATICFILES_DIRS = (BASE_DIR, 'static')
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    
+else:
+    # --- Configuración de almacenamiento Multimedia vía FTP ---
+    # =========================================================
+    # FTPS
+    # =========================================================
 
-STATIC_URL = '/static/'
-STATICFILES_DIRS = (BASE_DIR, 'static')
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    FTP_USER = env("FTP_USER", default="").strip()
+    FTP_PASSWORD = env("FTP_PASSWORD", default="")
+    FTP_HOST = env("FTP_HOST", default="").strip()
+    FTP_PORT = env("FTP_PORT", default="21").strip()
+
+
+
+    FTP_LOCATION = (
+        f"ftps://"
+        f"{FTP_USER}:"
+        f"{FTP_PASSWORD}@"
+        f"{FTP_HOST}:"
+        f"{FTP_PORT}/"
+    )
+
+
+    # =========================================================
+    # MEDIA
+    # =========================================================
+
+    MEDIA_URL = env(
+        "MEDIA_BASE_URL",
+        default="https://imagenes-tu-estante.tuestante.com/"
+    )
+
+
+    # =========================================================
+    # STORAGE
+    # =========================================================
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.ftp.FTPStorage",
+            "OPTIONS": {
+                "location": FTP_LOCATION,
+                "base_url": MEDIA_URL,
+            },
+        },
+
+        "staticfiles": {
+            "BACKEND": (
+                "django.contrib.staticfiles.storage."
+                "StaticFilesStorage"
+            ),
+        },
+    }

@@ -1,7 +1,7 @@
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from apps.usuarios.utils.email_tokens import account_activation_token
-from apps.usuarios.utils.email_service import send_html_email
+from apps.user.utils.email_tokens import account_activation_token
+from apps.user.utils.email_service import send_html_email
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -13,13 +13,13 @@ def send_password_reset_email(user, request):
     """
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = account_activation_token.make_token(user)
-    reset_link = f"{request.scheme}://{request.get_host()}/api/usuarios/restablecer-contrasena/confirmar/{uid}/{token}/"
+    reset_link = f"{request.scheme}://{request.get_host()}/api/user/password/reset/confirm/{uid}/{token}/"
     text_content = (
         f"Hola {user.username},\n\n"
         "Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace para cambiarla:\n"
         f"{reset_link}\n\n"
         "Si no solicitaste este cambio, puedes ignorar este correo.\n\n"
-        "Gracias,\nEl equipo de Diegos Grill"
+        "Gracias,\nEl equipo"
     )
     send_html_email(
         subject='Restablecimiento de Contraseña',
@@ -44,7 +44,7 @@ def get_user_by_uidb64(uidb64):
     """
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid, state=True, eliminado=False)
+        user = User.objects.get(pk=uid, is_deleted=False)
         return user
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         return None
@@ -55,4 +55,5 @@ def is_valid_password_reset_token(user, token):
     Valida si el token de restablecimiento de contraseña es válido para el usuario.
     """
     return account_activation_token.check_token(user, token)
+
 

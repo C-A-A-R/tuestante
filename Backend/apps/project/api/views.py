@@ -7,10 +7,16 @@ from apps.project.api.serializers import ProjectSerializer
 class ProjectViewSet(BaseViewSet):
     """
     ViewSet para la gestión CRUD de Proyectos.
-    Hereda de BaseViewSet para borrado lógico.
+    - Lectura pública.
+    - Creación/Edición/Eliminación: restringido a usuarios administradores.
     """
     serializer_class = ProjectSerializer
-    permission_classes = [permissions.AllowAny]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
 
     def get_queryset(self):
         return Project.objects.filter(is_deleted=False)
+

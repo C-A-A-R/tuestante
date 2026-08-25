@@ -1,9 +1,10 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound
 
+from apps.user.api.permisos import IsAdmin
 from apps.base.reportes.views.base_export_view import BaseExportView
 from apps.base.reportes.constantes import REPORT_FORMAT_PDF, REPORT_FORMAT_EXCEL
-from apps.usuarios.report.services import UsuariosReportService
+from apps.user.report.services import UsuariosReportService
 
 
 class UsuariosReportView(BaseExportView):
@@ -11,7 +12,8 @@ class UsuariosReportView(BaseExportView):
     Vista de exportación de reportes del módulo de usuarios.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
+
 
     REPORTS = {
         "usuarios": UsuariosReportService.usuarios,

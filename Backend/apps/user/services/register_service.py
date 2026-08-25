@@ -1,7 +1,8 @@
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from apps.usuarios.utils.email_tokens import account_activation_token
-from apps.usuarios.utils.email_service import send_html_email
+from apps.user.utils.email_tokens import account_activation_token
+from apps.user.utils.email_service import send_html_email
+
 
 
 def send_account_activation_email(user, request):

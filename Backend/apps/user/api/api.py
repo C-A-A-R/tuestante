@@ -1,33 +1,37 @@
+from django.utils import timezone
 from rest_framework import viewsets
 
-from apps.usuarios.api.permisos import EsLider, EsAdmin
-from apps.usuarios.api.serializers import UsuarioSerializer
-from apps.usuarios.models import Usuario
+from apps.user.api.permisos import IsAdmin
+from apps.user.api.serializers import UserSerializer
+from apps.user.models import User
 from apps.base.api import BaseViewSet
 
 
-class UsuarioViewSet(BaseViewSet):
-    """ViewSet para el modelo Usuario."""
+class UserViewSet(BaseViewSet):
+    """ViewSet para el modelo User. Acceso restringido a administradores y superusuarios."""
 
-    serializer_class = UsuarioSerializer
-    permission_classes = [EsLider]
+    serializer_class = UserSerializer
+    permission_classes = [IsAdmin]
 
     def get_queryset(self):
-        # Exclude users that belong to the Admin group (developer superusers)
+        # Filtrar usuarios no eliminados lógicamente
+        queryset = User.objects.filter(is_deleted=False)
+        
+        is_active = self.request.query_params.get("is_active") or self.request.query_params.get("esta_activo")
+        if is_active is not None:
+            is_active_normalized = is_active.lower() in ["1", "true", "si", "yes"]
+            queryset = queryset.filter(is_active=is_active_normalized)
 
-        queryset = Usuario.objects.filter(eliminado=False).exclude(groups__name="Admin")
-        print(queryset)
-        activo = self.request.query_params.get("esta_activo")
-        if activo is not None:
-            activo_normalizado = activo.lower() in ["1", "true", "si", "yes"]
-            queryset = queryset.filter(is_active=activo_normalizado)
-        estado = self.request.query_params.get("estado")
-        if estado is not None:
-            estado_normalizado = estado.lower() in ["1", "true", "si", "yes"]
-            queryset = queryset.filter(state=estado_normalizado)
+        is_staff = self.request.query_params.get("is_staff")
+        if is_staff is not None:
+            is_staff_normalized = is_staff.lower() in ["1", "true", "si", "yes"]
+            queryset = queryset.filter(is_staff=is_staff_normalized)
+            
         return queryset
 
     def perform_destroy(self, instance):
         instance.is_active = False
-        instance.state = False
-        instance.save(update_fields=["is_active", "state"])
+        instance.is_deleted = True
+        instance.deleted_at = timezone.now().date()
+        instance.save(update_fields=["is_active", "is_deleted", "deleted_at"])
+

@@ -19,6 +19,7 @@ DEBUG = env.bool('DEBUG')
 # Application definition
 
 BASE_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -29,9 +30,16 @@ BASE_APPS = [
 
 LOCAL_APPS = [
     'apps.base',
+    'apps.user',
     'apps.product',
     'apps.project',
+    'apps.orders',
+    'apps.payment',
+    'apps.shipment',
+    'apps.notification',
+    'apps.gallery',
 ]
+
 
 THIRD_APPS = [
     'corsheaders',
@@ -40,10 +48,15 @@ THIRD_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'simple_history',
     'drf_yasg',
+    'storages',
+    'channels',
     # 'import_export',
 ]
 
-INSTALLED_APPS =  BASE_APPS  + THIRD_APPS + LOCAL_APPS
+INSTALLED_APPS = BASE_APPS + THIRD_APPS + LOCAL_APPS
+
+ASGI_APPLICATION = 'core.asgi.application'
+
 
 
 X_FRAME_OPTIONS = "SAMEORIGIN"
@@ -66,6 +79,7 @@ REST_FRAMEWORK = {
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -125,18 +139,27 @@ USE_L10N = True
 
 USE_TZ = True
 
-# AUTH_USER_MODEL = 'usuarios.Usuario'
+AUTH_USER_MODEL = 'user.User'
+
 
 DATE_INPUT_FORMATS = [
     '%d-%m-%Y', 
     '%Y-%m-%d',
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-    "http://localhost:3000",
-    "http://localhost:5500",
-]
+CORS_ALLOWED_ORIGINS = env.list(
+    'CORS_ALLOWED_ORIGINS',
+    default=[
+        "http://localhost:8000",
+        "http://localhost:3000",
+        "http://localhost:5500",
+        "https://tuestante.com",
+        "https://www.tuestante.com",
+    ]
+)
+
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
+CORS_ALLOW_CREDENTIALS = env.bool('CORS_ALLOW_CREDENTIALS', default=True)
 
 SIMPLE_JWT = {
     # Access token corto para reducir la ventana de exposición si se filtra
@@ -177,3 +200,12 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
