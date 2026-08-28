@@ -42,18 +42,21 @@ class ShipmentAdmin(BaseAdmin):
         'id',
         'order',
         'distributor',
+        'state',
+        'city',
         'status',
-        'phone',
         'estimated_date',
         'delivered_at',
         'created_at',
     ]
-    list_filter = ['status', 'distributor', 'created_at', 'is_deleted']
+    list_filter = ['status', 'state', 'distributor', 'created_at', 'is_deleted']
     search_fields = [
         'id',
         'order__id',
+        'state',
+        'municipality',
+        'city',
         'address',
-        'phone',
         'notes',
         'distributor__name',
     ]

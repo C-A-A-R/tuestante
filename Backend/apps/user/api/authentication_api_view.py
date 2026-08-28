@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from django.db.models import Q
 from django.shortcuts import render
 from rest_framework import serializers, status, permissions
 from rest_framework.response import Response
@@ -29,7 +30,18 @@ class UserRegisterView(APIView):
     permission_classes = [IsAdmin]
 
     def post(self, request):
-        serializer = UserCreateSerializer(data=request.data)
+        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+
+        username = data.get("username") or data.get("nombre_usuario")
+        email = data.get("email") or data.get("correo")
+        is_staff = data.get("is_staff", False)
+        is_superuser = data.get("is_superuser", False)
+
+        # Cuando no se recibe username y no sea un administrador, reemplaza el username por el correo
+        if not username and not is_staff and not is_superuser and email:
+            data["username"] = email
+
+        serializer = UserCreateSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response(
@@ -106,7 +118,12 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        username = request.data.get("username") or request.data.get("nombre_usuario")
+        username = (
+            request.data.get("username")
+            or request.data.get("nombre_usuario")
+            or request.data.get("email")
+            or request.data.get("correo")
+        )
         password = request.data.get("password") or request.data.get("contrasena")
 
         if not username or not password:
@@ -115,9 +132,13 @@ class LoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
+        # Buscar usuario por nombre de usuario o por correo
+        user = User.objects.filter(
+            Q(username=username) | Q(email=username),
+            is_deleted=False
+        ).first()
+
+        if not user:
             return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
 
         if not user.is_active:
@@ -126,13 +147,7 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        if user.is_deleted:
-            return Response(
-                {"error": "La cuenta ha sido eliminada"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        auth_user = authenticate(request, username=username, password=password)
+        auth_user = authenticate(request, username=user.username, password=password)
         if not auth_user:
             return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -151,6 +166,7 @@ class LoginView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
 
 
 class LogoutView(APIView):

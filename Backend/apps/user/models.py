@@ -126,9 +126,16 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         """Retorna el nombre corto del usuario."""
         return self.first_name or self.username
 
+    def save(self, *args, **kwargs):
+        """Si no se especifica username y el usuario no es staff/superuser, se asigna su email como username."""
+        if not self.username and not self.is_staff and not self.is_superuser and self.email:
+            self.username = self.email
+        super().save(*args, **kwargs)
+
     def delete(self, using=None, keep_parents=False):
         """Desactiva el usuario al realizar el borrado lógico."""
         self.is_active = False
         super().delete(using=using, keep_parents=keep_parents)
+
 
 

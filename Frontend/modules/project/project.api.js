@@ -1,7 +1,5 @@
 import { getRequest, apiRequest } from '../../js/api.js';
 
-export { extractList, resolveImageUrl } from '../../js/api.js';
-
 /**
  * Obtiene la lista de proyectos del servidor.
  * @param {Object} [params] Parámetros de consulta opcionales.

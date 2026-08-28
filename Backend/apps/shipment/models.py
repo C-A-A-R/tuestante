@@ -76,12 +76,27 @@ class Shipment(BaseModel):
         related_name='shipments',
         verbose_name="Distribuidor"
     )
-    address = models.TextField(
-        'Dirección de entrega'
+    state = models.CharField(
+        'Estado',
+        max_length=100,
+        default='',
+        help_text='Estado de entrega (ej. Apure)'
     )
-    phone = models.CharField(
-        'Teléfono de contacto',
-        max_length=20
+    municipality = models.CharField(
+        'Municipio',
+        max_length=100,
+        default='',
+        help_text='Municipio de entrega (ej. Páez)'
+    )
+    city = models.CharField(
+        'Ciudad / Localidad',
+        max_length=100,
+        default='',
+        help_text='Ciudad o localidad de entrega (ej. Guasdualito)'
+    )
+    address = models.TextField(
+        'Sector / Dirección exacta',
+        help_text='Indica la calle, avenida, urbanización, edificio o punto de referencia'
     )
     status = models.CharField(
         'Estado',

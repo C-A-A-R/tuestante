@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from apps.base.api import BaseViewSet
 from apps.payment.models import Payment
 from apps.payment.api.serializers import PaymentSerializer
+from apps.invoice.services import create_invoice_for_order
 
 
 class PaymentViewSet(BaseViewSet):
@@ -81,6 +82,7 @@ class PaymentViewSet(BaseViewSet):
                 order.status = 'manufacturing'
             else:
                 order.status = 'shipped'
+                create_invoice_for_order(order)
         else:  # rejected
             payment.rejection_reason = rejection_reason or "Rechazado por administración"
             # Si el pago es rechazado, devolvemos el pedido a pendiente de pago

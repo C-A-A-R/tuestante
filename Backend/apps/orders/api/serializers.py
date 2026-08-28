@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from apps.orders.models import Order, OrderDetail, OrderProduct, ManufacturingOrder
 from apps.product.api.serializers import ProductSerializer
+from apps.shipment.api.serializers import ShipmentSerializer
 
 
 class OrderProductSerializer(serializers.ModelSerializer):
@@ -76,18 +77,21 @@ class OrderSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
     details = OrderDetailSerializer(many=True, read_only=True)
     manufacturing_orders = ManufacturingOrderSerializer(many=True, read_only=True)
+    shipments = ShipmentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Order
         fields = [
             'id',
+            'order_number',
             'user',
             'status',
             'total_price',
             'notes',
             'details',
             'manufacturing_orders',
+            'shipments',
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'user', 'total_price', 'details', 'manufacturing_orders', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'order_number', 'user', 'total_price', 'details', 'manufacturing_orders', 'shipments', 'created_at', 'updated_at']

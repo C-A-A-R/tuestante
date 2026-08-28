@@ -36,6 +36,14 @@ class Order(BaseModel):
         related_name='orders',
         verbose_name="Cliente"
     )
+    order_number = models.CharField(
+        'Número de orden',
+        max_length=50,
+        unique=True,
+        blank=True,
+        null=True,
+        help_text='Formato ORD-nnnn-año (ej. ORD-0001-2026)'
+    )
     status = models.CharField(
         'Estado',
         max_length=30,
@@ -60,8 +68,16 @@ class Order(BaseModel):
         verbose_name_plural = 'Pedidos'
         ordering = ['-created_at']
 
+    def save(self, *args, **kwargs):
+        """Asigna automáticamente el número de orden si no está establecido."""
+        if not self.order_number:
+            from apps.orders.utils import generate_order_number
+            self.order_number = generate_order_number()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Pedido #{self.id} — {self.user.username} [{self.get_status_display()}]"
+        number = self.order_number or f"#{self.id}"
+        return f"Pedido {number} — {self.user.username} [{self.get_status_display()}]"
 
 
 class OrderDetail(BaseModel):

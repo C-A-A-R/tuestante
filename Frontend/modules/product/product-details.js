@@ -1,5 +1,37 @@
 import { initNavbar } from '../../components/navbar/navbar.js';
-import { obtenerProductoPorId, obtenerProductos, resolveImageUrl } from './product.api.js';
+import { obtenerProductoPorId, obtenerProductos } from './product.api.js';
+import { backendOrigin } from '../../js/config.js';
+import { showCartModal } from '../../components/cart-modal/cart-modal.js';
+
+function resolveImageUrl(imagePath, fallback = '../../assets/images/productos/estante-blanco.jpeg') {
+    if (!imagePath) return fallback;
+
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        if (imagePath.includes('/media/')) {
+            const mediaPath = imagePath.substring(imagePath.indexOf('/media/'));
+            return `${backendOrigin}${mediaPath}`;
+        }
+        return imagePath;
+    }
+
+    if (imagePath.startsWith('/media/') || imagePath.startsWith('media/')) {
+        const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+        return `${backendOrigin}${cleanPath}`;
+    }
+
+    if (imagePath.includes('assets/')) {
+        if (!imagePath.startsWith('../') && !imagePath.startsWith('/')) {
+            return `../../${imagePath}`;
+        }
+        return imagePath;
+    }
+
+    if (imagePath.startsWith('/')) {
+        return `${backendOrigin}${imagePath}`;
+    }
+
+    return `${backendOrigin}/${imagePath}`;
+}
 
 
 
@@ -9,7 +41,8 @@ import { obtenerProductoPorId, obtenerProductos, resolveImageUrl } from './produ
 
 async function loadComponent(placeholderId, filePath) {
     try {
-        const response = await fetch(filePath);
+        const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
+        const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) throw new Error(`Error al cargar ${filePath}`);
         const html = await response.text();
         const container = document.getElementById(placeholderId);
@@ -58,7 +91,7 @@ function isColorLight(hexColor) {
 function mapProduct(p) {
     if (!p) return null;
 
-    const mainImage = resolveImageUrl(p.product_image || p.image, '../../assets/images/gallery/real_space_1.jpg');
+    const mainImage = resolveImageUrl(p.product_image || p.image, '../../assets/images/productos/estante-blanco.jpeg');
 
     let categoryIds = [];
     if (Array.isArray(p.categories) && p.categories.length > 0) {
@@ -147,6 +180,94 @@ function mapProduct(p) {
     };
 }
 
+const LOCAL_5_PRODUCTS = [
+    {
+        id: 101,
+        typeId: 1,
+        typeName: 'Lockers',
+        categoryId: 1,
+        categoryName: 'Lockers Metálicos',
+        name: 'LOCKER METÁLICO EJECUTIVO L4',
+        description: 'Locker metálico de 4 compartimentos con cerradura individual y ventilación reforzada.',
+        fullDescription: 'Locker metálico de alta resistencia fabricado en lámina de acero de 0.8mm con recubrimiento en pintura electrostática gris industrial. Ideal para vestuarios, empresas y gimnasios.',
+        price: 399.00,
+        image: '../../assets/images/carrusel-index/LocekrL4Gris.jpg',
+        heightCm: 180,
+        lengthCm: 90,
+        widthCm: 45,
+        security: 'Cerradura de cilindro con 2 llaves por casilla',
+        badge: 'Destacado'
+    },
+    {
+        id: 102,
+        typeId: 2,
+        typeName: 'Armarios',
+        categoryId: 2,
+        categoryName: 'Armarios Metálicos',
+        name: 'ARMARIO METÁLICO MODULAR VERDE',
+        description: 'Armario metálico con puertas de cristal y estantes ajustables para almacenamiento.',
+        fullDescription: 'Armario metálico multifuncional estilo vintage-industrial en acabado verde menta. Incluye 4 niveles de estantería interna regulables y cerradura centralizada.',
+        price: 610.00,
+        image: '../../assets/images/gallery/real_space_11.jpg',
+        heightCm: 190,
+        lengthCm: 100,
+        widthCm: 50,
+        security: 'Cerradura de falleba de 3 puntos',
+        badge: 'Destacado'
+    },
+    {
+        id: 103,
+        typeId: 3,
+        typeName: 'Gabinetes',
+        categoryId: 3,
+        categoryName: 'Gabinetes de Oficina',
+        name: 'GABINETE ORGANIZADOR COMPACTO',
+        description: 'Gabinete organizador compacto de 4 cajones para oficina y hogar.',
+        fullDescription: 'Gabinete metálico moderno en tono rosado pastel para oficinas creativas y del hogar. Dispone de correderas telescópicas con apertura suave y alta capacidad de carga.',
+        price: 280.00,
+        image: '../../assets/images/gallery/real_space_1.jpg',
+        heightCm: 110,
+        lengthCm: 80,
+        widthCm: 40,
+        security: 'Cerradura llave maestra única',
+        badge: ''
+    },
+    {
+        id: 104,
+        typeId: 4,
+        typeName: 'Estantes',
+        categoryId: 4,
+        categoryName: 'Estanterías Industriales',
+        name: 'ESTANTE INDUSTRIAL DE ALTA CARGA',
+        description: 'Estantería metálica con 5 baldas de alta resistencia para depósitos y talleres.',
+        fullDescription: 'Estantería metálica reforzada capaz de soportar hasta 250kg por bandeja. Ensamblado sin tornillos por sistema de encaje a presión con acabado anti-corrosión.',
+        price: 195.00,
+        image: '../../assets/images/gallery/real_space_4.jpg',
+        heightCm: 200,
+        lengthCm: 120,
+        widthCm: 60,
+        security: 'Estructura auto-portante con anclaje a pared',
+        badge: ''
+    },
+    {
+        id: 105,
+        typeId: 3,
+        typeName: 'Gabinetes',
+        categoryId: 3,
+        categoryName: 'Gabinetes de Oficina',
+        name: 'GABINETE ARCHIVADOR TURQUESA',
+        description: 'Archivador metálico de carpeta suspendida en elegante color turquesa.',
+        fullDescription: 'Archivador ejecutivo de 4 gavetas para carpetas oficio y carta. Sistema anti-vuelco de seguridad que permite la apertura de una sola gaveta a la vez.',
+        price: 320.00,
+        image: '../../assets/images/gallery/real_space_9.jpg',
+        heightCm: 135,
+        lengthCm: 50,
+        widthCm: 65,
+        security: 'Cerradura central anti-vuelco',
+        badge: ''
+    }
+];
+
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Cargar Navbar y Footer
     await Promise.all([
@@ -174,6 +295,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             console.error(`Error al obtener el producto ${productId} desde el backend:`, err);
         }
+
+        if (!product) {
+            const localMatch = LOCAL_5_PRODUCTS.find(p => String(p.id) === String(productId));
+            if (localMatch) {
+                product = mapProduct(localMatch);
+            }
+        }
     }
 
     // Intentar obtener listado de productos para relacionales
@@ -186,7 +314,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             allProducts = listData.map(mapProduct).filter(Boolean);
         }
     } catch (err) {
-        console.error('Error al obtener productos relacionados:', err);
+        // Fallback silencioso a productos locales cuando el backend no está disponible
+        allProducts = [];
+    }
+
+    if (!allProducts || allProducts.length === 0) {
+        allProducts = LOCAL_5_PRODUCTS.map(mapProduct).filter(Boolean);
     }
 
     if (product) {
@@ -214,6 +347,13 @@ document.addEventListener('DOMContentLoaded', async () => {
  * Poblar todos los datos del producto en la vista.
  */
 function populateProductDetails(product) {
+    // Estrella "Producto Destacado" (Solo visible si el producto es efectivamente un producto destacado)
+    const starBadgeEl = document.getElementById('badge-destacado-star');
+    const isFeatured = !!(product.badge === 'Destacado' || product.is_feature_product || product.isFeatured);
+    if (starBadgeEl) {
+        starBadgeEl.style.display = isFeatured ? 'inline-flex' : 'none';
+    }
+
     // Imagen principal
     const imgEl = document.getElementById('detail-product-img');
     if (imgEl) {
@@ -228,15 +368,20 @@ function populateProductDetails(product) {
         mirrorImgEl.alt = product.name;
     }
 
-    // Esquina: Tipo de Producto (Gris suave)
+    // Esquina: Tipo de Producto (Pill badge en mayúsculas)
     const typeCornerEl = document.getElementById('detail-product-type');
     if (typeCornerEl) {
-        typeCornerEl.textContent = product.typeName;
+        typeCornerEl.textContent = (product.typeName || 'General').toUpperCase();
     }
 
     // Breadcrumbs
+    const bcTypeLink = document.getElementById('breadcrumb-type-link');
+    if (bcTypeLink) {
+        bcTypeLink.href = `products.html?type=${encodeURIComponent(product.typeId || '')}`;
+    }
+
     const bcTypeEl = document.getElementById('breadcrumb-type');
-    if (bcTypeEl) bcTypeEl.textContent = product.typeName;
+    if (bcTypeEl) bcTypeEl.textContent = product.typeName || 'Productos';
 
     const bcProdEl = document.getElementById('breadcrumb-product');
     if (bcProdEl) bcProdEl.textContent = product.name;
@@ -280,6 +425,85 @@ function populateProductDetails(product) {
 
     // Actualizar título de la página
     document.title = `${product.name} - TuEstante`;
+
+    // Conectar botón Agregar al Carrito (Utiliza la misma estructura e identificación data-* que en catálogo)
+    const btnAddCart = document.getElementById('btn-add-to-cart');
+    if (btnAddCart) {
+        btnAddCart.setAttribute('data-id', product.id);
+        btnAddCart.setAttribute('data-name', product.name);
+        btnAddCart.setAttribute('data-price', product.price);
+        btnAddCart.setAttribute('data-image', product.image);
+
+        btnAddCart.onclick = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            const id = parseInt(btnAddCart.getAttribute('data-id'), 10) || product.id;
+            const name = btnAddCart.getAttribute('data-name') || product.name;
+            const price = parseFloat(btnAddCart.getAttribute('data-price')) || product.price || 0;
+            const image = btnAddCart.getAttribute('data-image') || product.image;
+
+            let selectedColor = 'Bisley Orange';
+            const activeSwatch = document.querySelector('.color-swatch-btn.active');
+            if (activeSwatch) {
+                const colorTitle = activeSwatch.getAttribute('title') || activeSwatch.getAttribute('data-color-name');
+                if (colorTitle) selectedColor = colorTitle;
+            }
+
+            const qtyInput = document.getElementById('detail-qty-input');
+            const addQty = qtyInput ? Math.max(1, parseInt(qtyInput.value, 10) || 1) : 1;
+
+            const CART_STORAGE_KEY = 'tuestante_cart';
+            let items = [];
+            try {
+                const raw = localStorage.getItem(CART_STORAGE_KEY);
+                if (raw) items = JSON.parse(raw);
+            } catch (e) {
+                items = [];
+            }
+
+            const existingIndex = items.findIndex(i => String(i.id) === String(id) && i.color === selectedColor);
+            if (existingIndex > -1) {
+                items[existingIndex].qty += addQty;
+            } else {
+                items.push({ id, name, price, image, color: selectedColor, qty: addQty });
+            }
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+            window.dispatchEvent(new Event('cart-updated'));
+
+            showCartModal({ id, name, price, image });
+        };
+    }
+
+    // Configuración de los botones de cantidad +/-
+    const qtyMinus = document.getElementById('qty-minus');
+    const qtyPlus = document.getElementById('qty-plus');
+    const qtyInput = document.getElementById('detail-qty-input');
+
+    if (qtyMinus && qtyInput) {
+        qtyMinus.onclick = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            let val = parseInt(qtyInput.value, 10) || 1;
+            if (val > 1) {
+                qtyInput.value = val - 1;
+            }
+        };
+    }
+    if (qtyPlus && qtyInput) {
+        qtyPlus.onclick = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            let val = parseInt(qtyInput.value, 10) || 1;
+            qtyInput.value = val + 1;
+        };
+    }
 }
 
 /**
@@ -289,46 +513,65 @@ function renderProductThumbnails(product) {
     const sidebarEl = document.getElementById('product-thumbnails-sidebar');
     if (!sidebarEl) return;
 
-    const hasAngles = product.angles && product.angles.length > 0;
-    const hasVideo = Boolean(product.video);
-
-    if (!hasAngles && !hasVideo) {
-        sidebarEl.style.display = 'none';
-        sidebarEl.innerHTML = '';
-        return;
-    }
+    const hasVideo = !!(product && product.video && String(product.video).trim() !== '');
 
     sidebarEl.style.display = 'flex';
 
+    const EXISTING_GALLERY_IMAGES = [
+        '../../assets/images/gallery/real_space_1.jpg',
+        '../../assets/images/gallery/real_space_2.jpg',
+        '../../assets/images/gallery/real_space_3.jpg',
+        '../../assets/images/gallery/real_space_4.jpg',
+        '../../assets/images/gallery/real_space_5.jpg',
+        '../../assets/images/gallery/real_space_6.jpg',
+        '../../assets/images/gallery/real_space_7.jpg',
+        '../../assets/images/gallery/real_space_8.jpg',
+        '../../assets/images/gallery/real_space_9.jpg',
+        '../../assets/images/gallery/real_space_10.jpg',
+        '../../assets/images/gallery/real_space_11.jpg'
+    ];
+
+    const pId = parseInt(product.id, 10) || 1;
+    const secondImg = EXISTING_GALLERY_IMAGES[(pId + 1) % EXISTING_GALLERY_IMAGES.length];
+    const thirdImg = EXISTING_GALLERY_IMAGES[(pId + 3) % EXISTING_GALLERY_IMAGES.length];
+
+    // Construir lista de 3 miniaturas distintas utilizando imágenes existentes del proyecto
+    let thumbnailItems = [];
+
+    // 1. Imagen Principal del Producto
+    thumbnailItems.push({
+        url: product.image,
+        title: `Vista Frontal - ${product.name}`,
+        active: true
+    });
+
+    // 2. Segunda Vista (Imagen de Galería Existente 1)
+    thumbnailItems.push({
+        url: (product.angles && product.angles[0]?.image) || secondImg,
+        title: `Vista Lateral - ${product.name}`,
+        active: false
+    });
+
+    // 3. Tercera Vista (Imagen de Galería Existente 2)
+    thumbnailItems.push({
+        url: (product.angles && product.angles[1]?.image) || thirdImg,
+        title: `Vista Ambientada - ${product.name}`,
+        active: false
+    });
+
     let html = '';
-
-    // 1. Imagen Principal como primera miniatura
-    html += `
-        <button type="button" 
-                class="thumbnail-btn active" 
-                data-image-url="${product.image}"
-                data-title="Vista Principal - ${product.name}"
-                title="Vista Principal"
-                aria-label="Vista Principal">
-            <img src="${product.image}" alt="${product.name}">
-        </button>
-    `;
-
-    // 2. Miniaturas de Ángulos
-    if (hasAngles) {
-        product.angles.forEach((angleObj) => {
-            html += `
-                <button type="button" 
-                        class="thumbnail-btn" 
-                        data-image-url="${angleObj.image}"
-                        data-title="${angleObj.angle}"
-                        title="${angleObj.angle}"
-                        aria-label="${angleObj.angle}">
-                    <img src="${angleObj.image}" alt="${angleObj.angle}">
-                </button>
-            `;
-        });
-    }
+    thumbnailItems.forEach((item, idx) => {
+        html += `
+            <button type="button" 
+                    class="thumbnail-btn ${idx === 0 ? 'active' : ''}" 
+                    data-image-url="${item.url}"
+                    data-title="${item.title}"
+                    title="${item.title}"
+                    aria-label="${item.title}">
+                <img src="${item.url}" alt="${item.title}">
+            </button>
+        `;
+    });
 
     // 3. Botón/Icono de Video en la lista de miniaturas
     if (hasVideo) {
@@ -419,26 +662,35 @@ function renderProductColors(product) {
     const selectedNameEl = document.getElementById('selected-color-name');
     if (!swatchListEl) return;
 
-    const primaryColorOption = {
-        name: 'Color Primario',
-        hex: '#005187',
-        image: product.image,
-        isLight: false,
-        isPrimary: true
-    };
+    const DEFAULT_SWATCHES = [
+        { name: 'Slate Dark', hex: '#334155', image: product.image },
+        { name: 'Negro Mate', hex: '#1e293b', image: product.image },
+        { name: 'Bisley Orange', hex: '#EA580C', image: product.image, isPrimary: true },
+        { name: 'Verde Oliva', hex: '#556b2f', image: product.image },
+        { name: 'Azul Rey', hex: '#3b82f6', image: product.image },
+        { name: 'Gris Claro', hex: '#cbd5e1', image: product.image },
+        { name: 'Rosa Pastel', hex: '#fda4af', image: product.image },
+        { name: 'Amarillo Mostaza', hex: '#d97706', image: product.image },
+        { name: 'Blanco Ostra', hex: '#ffffff', isLight: true, image: product.image },
+        { name: 'Beige Cálido', hex: '#d4a373', image: product.image },
+        { name: 'Verde Azulado', hex: '#0f4c5c', image: product.image }
+    ];
 
-    const colors = product.colors && product.colors.length > 0
+    const colors = product.colors && product.colors.length > 1
         ? product.colors
-        : [primaryColorOption];
+        : DEFAULT_SWATCHES;
 
-    // Establecer primer color por defecto (Color Primario)
+    // Buscar color primario o activo por defecto (Bisley Orange)
+    const initialIndex = colors.findIndex(c => c.isPrimary || c.name.includes('Orange') || c.name.includes('Naranja'));
+    const defaultIdx = initialIndex > -1 ? initialIndex : 0;
+
     if (selectedNameEl) {
-        selectedNameEl.textContent = colors[0].name;
+        selectedNameEl.textContent = colors[defaultIdx].name;
     }
 
     let html = '';
     colors.forEach((color, idx) => {
-        const activeClass = idx === 0 ? 'active' : '';
+        const activeClass = idx === defaultIdx ? 'active' : '';
         const lightClass = color.isLight ? 'is-light' : '';
         const primaryClass = color.isPrimary ? 'is-primary' : '';
         const colorImgUrl = color.color_image || color.image || product.image;
@@ -573,30 +825,61 @@ function initImageInteractions(product) {
                 return;
             }
 
-            const rect = mainImgContainer.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const containerRect = mainImgContainer.getBoundingClientRect();
+            const imgRect = mainImg.getBoundingClientRect();
 
-            const lensW = lensBox.offsetWidth || 160;
-            const lensH = lensBox.offsetHeight || 160;
+            // Dimensiones y límites de la imagen real dentro del contenedor
+            const imgLeft = imgRect.left - containerRect.left;
+            const imgTop = imgRect.top - containerRect.top;
+            const imgW = imgRect.width || 1;
+            const imgH = imgRect.height || 1;
 
-            let lensX = x - lensW / 2;
-            let lensY = y - lensH / 2;
+            const lensW = lensBox.offsetWidth || 150;
+            const lensH = lensBox.offsetHeight || 150;
 
-            if (lensX < 0) lensX = 0;
-            if (lensY < 0) lensY = 0;
-            if (lensX > rect.width - lensW) lensX = rect.width - lensW;
-            if (lensY > rect.height - lensH) lensY = rect.height - lensH;
+            // Posición del cursor en el contenedor
+            const containerX = e.clientX - containerRect.left;
+            const containerY = e.clientY - containerRect.top;
+
+            // Mantener la lente dentro de la imagen del producto
+            let lensX = containerX - lensW / 2;
+            let lensY = containerY - lensH / 2;
+
+            if (lensX < imgLeft) lensX = imgLeft;
+            if (lensY < imgTop) lensY = imgTop;
+            if (lensX > imgLeft + imgW - lensW) lensX = imgLeft + imgW - lensW;
+            if (lensY > imgTop + imgH - lensH) lensY = imgTop + imgH - lensH;
 
             lensBox.style.left = `${lensX}px`;
             lensBox.style.top = `${lensY}px`;
 
-            // Reflejo en la Pantalla Espejo (Sigue exactamente al cursor)
-            const percentX = Math.max(0, Math.min(1, x / rect.width));
-            const percentY = Math.max(0, Math.min(1, y / rect.height));
+            // Centro exacto del recuadro azul de la lente sobre la imagen
+            const lensCenterX = (lensX + lensW / 2) - imgLeft;
+            const lensCenterY = (lensY + lensH / 2) - imgTop;
 
-            mirrorImg.style.transformOrigin = `${percentX * 100}% ${percentY * 100}%`;
-            mirrorImg.style.transform = 'scale(2.5)';
+            const ratioX = Math.max(0, Math.min(1, lensCenterX / imgW));
+            const ratioY = Math.max(0, Math.min(1, lensCenterY / imgH));
+
+            // Dimensiones del visor espejo
+            const viewport = mirrorImg.parentElement;
+            const viewW = viewport ? viewport.clientWidth : 500;
+            const viewH = viewport ? viewport.clientHeight : 500;
+
+            const scale = 2.5;
+
+            // Ajustar imagen espejo al tamaño de la imagen original
+            mirrorImg.style.width = `${imgW}px`;
+            mirrorImg.style.height = `${imgH}px`;
+
+            // Traslación exacta para que el punto central de la lente quede en el centro del visor
+            const targetX = ratioX * imgW * scale;
+            const targetY = ratioY * imgH * scale;
+
+            const tx = (viewW / 2) - targetX;
+            const ty = (viewH / 2) - targetY;
+
+            mirrorImg.style.transformOrigin = '0 0';
+            mirrorImg.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${scale})`;
         });
 
         mainImgContainer.addEventListener('mouseleave', () => {
@@ -671,59 +954,113 @@ function initImageInteractions(product) {
  * Renderiza el carrusel de productos relacionados del mismo tipo (EN 1 SOLA FILA).
  */
 function renderRelatedProducts(currentProduct, allProducts = []) {
+    const section = document.querySelector('.related-products-section');
     const track = document.getElementById('related-grid-track');
     const viewport = document.getElementById('related-carousel-viewport');
     const prevBtn = document.getElementById('related-prev-btn');
     const nextBtn = document.getElementById('related-next-btn');
 
-    if (!track || !viewport) return;
+    if (!track || !viewport) {
+        if (section) section.style.display = 'none';
+        return;
+    }
 
     const sourceList = Array.isArray(allProducts) ? allProducts : [];
 
     // Obtener productos del mismo tipo omitiendo el producto actual
-    let relatedProducts = sourceList.filter(p => String(p.typeId) === String(currentProduct.typeId) && String(p.id) !== String(currentProduct.id));
+    const currentTypeId = currentProduct?.typeId || currentProduct?.product_type || currentProduct?.product_type_detail?.id;
+    const currentProdId = currentProduct?.id;
 
-
-    if (relatedProducts.length < 3) {
-        const others = sourceList.filter(p => String(p.id) !== String(currentProduct.id) && !relatedProducts.some(r => String(r.id) === String(p.id)));
-        relatedProducts = relatedProducts.concat(others.slice(0, 4 - relatedProducts.length));
+    let relatedProducts = [];
+    if (currentTypeId !== undefined && currentTypeId !== null) {
+        relatedProducts = sourceList.filter(p => {
+            const pTypeId = p.typeId || p.product_type || p.product_type_detail?.id;
+            return String(pTypeId) === String(currentTypeId) && String(p.id) !== String(currentProdId);
+        });
     }
 
+    // Si NO existen productos del mismo tipo, no mostrar el carrusel
+    if (!relatedProducts || relatedProducts.length === 0) {
+        if (section) section.style.display = 'none';
+        return;
+    }
+
+    // Si existen productos, asegurarse de que la sección sea visible
+    if (section) section.style.display = 'block';
 
     const totalCols = relatedProducts.length;
 
     function getVisibleCols() {
         const width = window.innerWidth;
-        if (width <= 600) return 1;
-        if (width <= 960) return 2;
-        return 3;
+        if (width <= 480) return 1;
+        if (width <= 768) return 2;
+        if (width <= 1100) return 3;
+        return 4;
+    }
+
+    function getGapPixels() {
+        const width = window.innerWidth;
+        if (width <= 480) return 12;
+        if (width <= 768) return 16;
+        if (width <= 1100) return 20;
+        return 20;
     }
 
     const visibleCols = getVisibleCols();
     const isInfinite = totalCols > visibleCols;
 
     function createCardHTML(p, col) {
+        const isFeatured = !!(p.rating === 5.0 || p.badge === 'Destacado' || p.is_feature_product !== false);
+        const starBadgeHTML = isFeatured ? `
+            <div class="badge-destacado-star" title="Producto Destacado">
+                <svg class="star-icon" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="1.5">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <span class="star-label">Producto Destacado</span>
+            </div>
+        ` : '';
+
         return `
-            <div class="catalog-product-card" style="grid-row: 1; grid-column: ${col};">
-                <a href="product-details.html?id=${p.id}" class="catalog-product-img-wrapper">
-                    <div class="badge-destacado-star" title="Producto Destacado">
-                        <svg class="star-icon" viewBox="0 0 24 24" fill="#94A3B8" stroke="#64748B" stroke-width="1.5">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            <div class="unified-product-card" style="grid-row: 1; grid-column: ${col}; height: 100%;">
+                <div class="unified-card-media">
+                    <a href="product-details.html?id=${p.id}" class="unified-card-img-link">
+                        <img src="${p.image}" alt="${p.name}" class="unified-card-img">
+                    </a>
+                    
+                    ${starBadgeHTML}
+                    
+                    <button class="unified-wishlist-btn" title="Añadir a lista de deseos" aria-label="Añadir a favoritos">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                         </svg>
-                        <span class="star-label">Producto Destacado</span>
-                    </div>
-                    <img src="${p.image}" alt="${p.name}" class="catalog-product-img">
-                </a>
-                <div class="catalog-product-body">
+                    </button>
+                </div>
+
+                <div class="unified-card-body">
                     <div>
-                        <h3 class="catalog-product-name">
-                            <a href="product-details.html?id=${p.id}" style="color: inherit; text-decoration: none;">${p.name}</a>
-                        </h3>
-                        <p class="catalog-product-desc">${p.description}</p>
+                        <div class="unified-card-header">
+                            <h3 class="unified-card-title">
+                                <a href="product-details.html?id=${p.id}">${p.name}</a>
+                            </h3>
+                            <span class="unified-card-price">$${parseFloat(p.price || 0).toFixed(2)}</span>
+                        </div>
+
+                        <p class="unified-card-desc">${p.description || ''}</p>
+
+                        <div class="unified-card-swatches">
+                            <span class="swatch-dot" style="background-color: #ea580c;" title="Naranja"></span>
+                            <span class="swatch-dot" style="background-color: #0f172a;" title="Gris Oscuro"></span>
+                            <span class="swatch-dot" style="background-color: #15803d;" title="Verde Sabana"></span>
+                            <span class="swatch-dot" style="background-color: #005187;" title="Azul"></span>
+                            <span class="swatch-more">+4</span>
+                        </div>
                     </div>
-                    <div class="catalog-product-footer">
-                        <span class="catalog-product-price">$${p.price.toFixed(2)}</span>
-                        <a href="product-details.html?id=${p.id}" class="catalog-product-btn">Ver Detalle</a>
+
+                    <div class="unified-card-actions">
+                        <a href="product-details.html?id=${p.id}" class="unified-btn btn-details">Ver Detalle</a>
+                        <button class="unified-btn btn-card-add-cart" data-id="${p.id}" data-name="${p.name}" data-price="${p.price}" data-image="${p.image}">
+                            + Carrito
+                        </button>
                     </div>
                 </div>
             </div>
@@ -769,7 +1106,7 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
 
     function getColOffsetPixels(colIndex) {
         const vCols = getVisibleCols();
-        const gap = 20;
+        const gap = getGapPixels();
         const viewportWidth = viewport.clientWidth;
         const colWidth = (viewportWidth - (vCols - 1) * gap) / vCols;
 
@@ -864,4 +1201,40 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
 
     updatePosition(false);
     startAutoSlide();
+
+    // Eventos para botones de tarjetas relacionadas (+ Carrito y Lista de Deseos)
+    track.addEventListener('click', (e) => {
+        const wishlistBtn = e.target.closest('.unified-wishlist-btn');
+        if (wishlistBtn) {
+            wishlistBtn.classList.toggle('active');
+            return;
+        }
+
+        const btn = e.target.closest('.btn-card-add-cart');
+        if (btn) {
+            const id = parseInt(btn.getAttribute('data-id'), 10);
+            const name = btn.getAttribute('data-name');
+            const price = parseFloat(btn.getAttribute('data-price')) || 0;
+            const image = btn.getAttribute('data-image');
+
+            const CART_STORAGE_KEY = 'tuestante_cart';
+            let items = [];
+            try {
+                const raw = localStorage.getItem(CART_STORAGE_KEY);
+                if (raw) items = JSON.parse(raw);
+            } catch (err) {
+                items = [];
+            }
+
+            const existingIndex = items.findIndex(i => String(i.id) === String(id));
+            if (existingIndex > -1) {
+                items[existingIndex].qty += 1;
+            } else {
+                items.push({ id, name, price, image, color: 'Estándar', qty: 1 });
+            }
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+            window.dispatchEvent(new Event('cart-updated'));
+            showCartModal({ id, name, price, image });
+        }
+    });
 }

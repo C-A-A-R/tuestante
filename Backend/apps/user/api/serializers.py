@@ -41,7 +41,7 @@ class UserSerializer(serializers.ModelSerializer):
 class UserCreateSerializer(serializers.ModelSerializer):
     """Serializador para crear usuarios (clientes o administradores)."""
 
-    username = serializers.CharField()
+    username = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     email = serializers.EmailField(allow_blank=True, required=False)
     first_name = serializers.CharField(allow_blank=True, required=False)
     second_name = serializers.CharField(allow_blank=True, required=False)
@@ -81,9 +81,28 @@ class UserCreateSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        if attrs["password"] != attrs["confirm_password"]:
+        if attrs.get("password") != attrs.get("confirm_password"):
             raise serializers.ValidationError({"password": "Las contraseñas no coinciden."})
+
+        username = attrs.get("username")
+        email = attrs.get("email")
+        is_staff = attrs.get("is_staff", False)
+
+        # Si no se recibe username y el usuario no es administrador, reemplazar username por email
+        if not username or not str(username).strip():
+            if not is_staff:
+                if not email or not str(email).strip():
+                    raise serializers.ValidationError(
+                        {"email": "El correo electrónico es requerido cuando no se proporciona nombre de usuario."}
+                    )
+                attrs["username"] = email
+            else:
+                raise serializers.ValidationError(
+                    {"username": "El nombre de usuario es requerido para administradores."}
+                )
+
         return attrs
+
 
     def create(self, validated_data):
         validated_data.pop("confirm_password", None)

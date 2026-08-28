@@ -1,5 +1,37 @@
 import { initNavbar } from '../../components/navbar/navbar.js';
-import { obtenerProductos, obtenerCategorias, obtenerTiposProducto, resolveImageUrl } from './product.api.js';
+import { obtenerProductos, obtenerCategorias, obtenerTiposProducto } from './product.api.js';
+import { backendOrigin } from '../../js/config.js';
+import { showCartModal } from '../../components/cart-modal/cart-modal.js';
+
+function resolveImageUrl(imagePath, fallback = '../../assets/images/categoria/estante.png') {
+    if (!imagePath) return fallback;
+
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        if (imagePath.includes('/media/')) {
+            const mediaPath = imagePath.substring(imagePath.indexOf('/media/'));
+            return `${backendOrigin}${mediaPath}`;
+        }
+        return imagePath;
+    }
+
+    if (imagePath.startsWith('/media/') || imagePath.startsWith('media/')) {
+        const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+        return `${backendOrigin}${cleanPath}`;
+    }
+
+    if (imagePath.includes('assets/')) {
+        if (!imagePath.startsWith('../') && !imagePath.startsWith('/')) {
+            return `../../${imagePath}`;
+        }
+        return imagePath;
+    }
+
+    if (imagePath.startsWith('/')) {
+        return `${backendOrigin}${imagePath}`;
+    }
+
+    return `${backendOrigin}/${imagePath}`;
+}
 
 
 
@@ -32,6 +64,22 @@ function initHeaderCarousel(types) {
                 <img src="${type.image}" alt="${type.name}">
             </div>
         `;
+        const typeBtn = slide.querySelector('.type-btn');
+        if (typeBtn) {
+            typeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const filterTypeSelect = document.getElementById('filter-type');
+                if (filterTypeSelect) {
+                    filterTypeSelect.value = type.id;
+                    const event = new Event('change');
+                    filterTypeSelect.dispatchEvent(event);
+                }
+                const catalogContainer = document.getElementById('products-catalog-container');
+                if (catalogContainer) {
+                    catalogContainer.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        }
         wrapper.appendChild(slide);
 
         // Generar Dot
@@ -96,49 +144,76 @@ function initFilters(types, categories, products) {
     const filterTypeSelect = document.getElementById('filter-type');
     const filterCategorySelect = document.getElementById('filter-category');
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
+    const sortSelect = document.getElementById('sort-select');
 
-    // Llenar Select de Tipos
-    types.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.id;
-        opt.textContent = t.name;
-        filterTypeSelect.appendChild(opt);
-    });
+    // Llenar Select de Tipos si existe
+    if (filterTypeSelect) {
+        types.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.id;
+            opt.textContent = t.name;
+            filterTypeSelect.appendChild(opt);
+        });
+    }
 
-    // Llenar Select de Categorías
-    categories.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        filterCategorySelect.appendChild(opt);
-    });
+    // Llenar Select de Categorías si existe
+    if (filterCategorySelect) {
+        categories.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            filterCategorySelect.appendChild(opt);
+        });
+    }
 
     function applyFilters() {
-        const query = searchInput.value.trim().toLowerCase();
-        const selectedType = filterTypeSelect.value;
-        const selectedCat = filterCategorySelect.value;
+        const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        const selectedType = filterTypeSelect ? filterTypeSelect.value : 'all';
+        const selectedCat = filterCategorySelect ? filterCategorySelect.value : 'all';
+        const sortMode = sortSelect ? sortSelect.value : 'date-desc';
 
-        const filtered = products.filter(p => {
-            const matchesSearch = p.name.toLowerCase().includes(query) || p.description.toLowerCase().includes(query);
-            const matchesType = selectedType === 'all' || p.typeId.toString() === selectedType.toString();
-            const matchesCat = selectedCat === 'all' || p.categoryIds.some(id => id.toString() === selectedCat.toString());
+        let filtered = products.filter(p => {
+            const matchesSearch = !query || p.name.toLowerCase().includes(query) || p.description.toLowerCase().includes(query);
+            const matchesType = selectedType === 'all' || (p.typeId !== undefined && p.typeId.toString() === selectedType.toString());
+            const pCatIds = Array.isArray(p.categoryIds) ? p.categoryIds : (p.categoryId !== undefined ? [p.categoryId] : [1]);
+            const matchesCat = selectedCat === 'all' || pCatIds.some(id => id !== undefined && id.toString() === selectedCat.toString());
 
             return matchesSearch && matchesType && matchesCat;
         });
 
-        renderGroupedProducts(types, filtered);
+        // Ordenamiento
+        filtered.sort((a, b) => {
+            if (sortMode === 'price-asc') {
+                return a.price - b.price;
+            } else if (sortMode === 'price-desc') {
+                return b.price - a.price;
+            } else if (sortMode === 'name-asc') {
+                return a.name.localeCompare(b.name);
+            } else if (sortMode === 'featured') {
+                const aFeat = (a.badge && a.badge.toLowerCase().includes('destacado')) ? 1 : 0;
+                const bFeat = (b.badge && b.badge.toLowerCase().includes('destacado')) ? 1 : 0;
+                return bFeat - aFeat;
+            } else {
+                // date-desc (por ID descendente)
+                return b.id - a.id;
+            }
+        });
+
+        renderUnifiedProducts(filtered);
     }
 
-    searchInput.addEventListener('input', applyFilters);
-    filterTypeSelect.addEventListener('change', applyFilters);
-    filterCategorySelect.addEventListener('change', applyFilters);
+    if (searchInput) searchInput.addEventListener('input', applyFilters);
+    if (filterTypeSelect) filterTypeSelect.addEventListener('change', applyFilters);
+    if (filterCategorySelect) filterCategorySelect.addEventListener('change', applyFilters);
+    if (sortSelect) sortSelect.addEventListener('change', applyFilters);
 
     // Botón de Limpiar Filtros
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            filterTypeSelect.value = 'all';
-            filterCategorySelect.value = 'all';
+            if (searchInput) searchInput.value = '';
+            if (filterTypeSelect) filterTypeSelect.value = 'all';
+            if (filterCategorySelect) filterCategorySelect.value = 'all';
+            if (sortSelect) sortSelect.value = 'date-desc';
             applyFilters();
         });
     }
@@ -146,47 +221,110 @@ function initFilters(types, categories, products) {
     // Leer parámetros de URL (?search=..., ?cat=..., ?type=...)
     const urlParams = new URLSearchParams(window.location.search);
     const paramSearch = urlParams.get('search') || urlParams.get('q') || '';
-    const paramCat = urlParams.get('cat');
-    const paramType = urlParams.get('type');
+    const paramCat = urlParams.get('cat') || urlParams.get('category') || urlParams.get('categoryId');
+    const paramType = urlParams.get('type') || urlParams.get('typeId');
 
     if (paramSearch && searchInput) {
         searchInput.value = paramSearch;
     }
 
     if (paramCat && filterCategorySelect) {
-        const hasOption = Array.from(filterCategorySelect.options).some(o => o.value.toString() === paramCat.toString());
-        if (hasOption) {
-            filterCategorySelect.value = paramCat;
+        const matchOpt = Array.from(filterCategorySelect.options).find(o => 
+            o.value.toString() === paramCat.toString() || 
+            o.textContent.toLowerCase().includes(paramCat.toLowerCase())
+        );
+        if (matchOpt) {
+            filterCategorySelect.value = matchOpt.value;
         }
     }
 
     if (paramType && filterTypeSelect) {
-        const hasOption = Array.from(filterTypeSelect.options).some(o => o.value.toString() === paramType.toString());
-        if (hasOption) {
-            filterTypeSelect.value = paramType;
+        const matchOpt = Array.from(filterTypeSelect.options).find(o => 
+            o.value.toString() === paramType.toString() || 
+            o.textContent.toLowerCase().includes(paramType.toLowerCase())
+        );
+        if (matchOpt) {
+            filterTypeSelect.value = matchOpt.value;
         }
     }
 
-    // Ejecutar filtrado inicial respetando parámetros de URL o mostrando todo por defecto
     applyFilters();
 }
 
 /* ==========================================================================
-   LÓGICA DEL LISTADO DE PRODUCTOS (Carruseles en 2 Filas por Tipo)
+   RENDERIZADO UNIFICADO DE PRODUCTOS (GRID MEZCLADO SIN CAJAS NI GRUPOS)
    ========================================================================== */
 
-function renderGroupedProducts(types, products) {
+function createUnifiedCardHTML(p) {
+    const isFeatured = !!(p.rating === 5.0 || p.badge === 'Destacado' || p.is_feature_product);
+    const starBadgeHTML = isFeatured ? `
+        <div class="badge-destacado-star" title="Producto Destacado">
+            <svg class="star-icon" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="1.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <span class="star-label">Producto Destacado</span>
+        </div>
+    ` : '';
+    
+    return `
+        <div class="unified-product-card">
+            <div class="unified-card-media">
+                <a href="product-details.html?id=${p.id}" class="unified-card-img-link">
+                    <img src="${p.image}" alt="${p.name}" class="unified-card-img">
+                </a>
+                
+                ${starBadgeHTML}
+                
+                <button class="unified-wishlist-btn" title="Añadir a lista de deseos" aria-label="Añadir a favoritos">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="unified-card-body">
+                <div>
+                    <div class="unified-card-header">
+                        <h3 class="unified-card-title">
+                            <a href="product-details.html?id=${p.id}">${p.name}</a>
+                        </h3>
+                        <span class="unified-card-price">$${p.price.toFixed(2)}</span>
+                    </div>
+
+                    <p class="unified-card-desc">${p.description}</p>
+
+                    <div class="unified-card-swatches">
+                        <span class="swatch-dot" style="background-color: #ea580c;" title="Naranja"></span>
+                        <span class="swatch-dot" style="background-color: #0f172a;" title="Gris Oscuro"></span>
+                        <span class="swatch-dot" style="background-color: #15803d;" title="Verde Sabana"></span>
+                        <span class="swatch-dot" style="background-color: #005187;" title="Azul"></span>
+                        <span class="swatch-more">+4</span>
+                    </div>
+                </div>
+
+                <div class="unified-card-actions">
+                    <a href="product-details.html?id=${p.id}" class="unified-btn btn-details">Ver Detalle</a>
+                    <button class="unified-btn btn-card-add-cart" data-id="${p.id}" data-name="${p.name}" data-price="${p.price}" data-image="${p.image}">
+                        + Carrito
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderUnifiedProducts(products) {
     const catalogContainer = document.getElementById('products-catalog-container');
+    const countNumberEl = document.getElementById('products-count-number');
     if (!catalogContainer) return;
 
-    catalogContainer.innerHTML = '';
+    if (countNumberEl) {
+        countNumberEl.textContent = products ? products.length : 0;
+    }
 
-    // Filtrar sólo los tipos que tengan productos tras la búsqueda/filtro
-    const activeTypes = types.filter(type => products.some(p => p.typeId === type.id));
-
-    if (activeTypes.length === 0) {
+    if (!products || products.length === 0) {
         catalogContainer.innerHTML = `
-            <div class="empty-results-box">
+            <div class="empty-results-box" style="grid-column: 1 / -1; width: 100%;">
                 <div class="empty-results-icon">🔍</div>
                 <h3 class="empty-results-title">No se encontraron productos</h3>
                 <p class="empty-results-desc">Intenta ajustar tu búsqueda o presiona el botón "Limpiar Filtros" para ver todo el catálogo.</p>
@@ -195,253 +333,7 @@ function renderGroupedProducts(types, products) {
         return;
     }
 
-    activeTypes.forEach(type => {
-        const typeProducts = products.filter(p => p.typeId === type.id);
-
-        const groupSection = document.createElement('div');
-        groupSection.className = 'product-type-group';
-        groupSection.id = `group-type-${type.id}`;
-
-        groupSection.innerHTML = `
-            <div class="group-header">
-                <div class="group-title-box">
-                    <h2 class="group-title">${type.name}</h2>
-                    <p class="group-subtitle">${type.description}</p>
-                </div>
-                <span class="group-counter">${typeProducts.length} producto(s)</span>
-            </div>
-
-            <div class="product-carousel-wrapper">
-                <button class="carousel-nav-btn prev-btn" aria-label="Anterior">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                </button>
-                <button class="carousel-nav-btn next-btn" aria-label="Siguiente">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                </button>
-
-                <div class="product-carousel-viewport">
-                    <div class="product-grid-track"></div>
-                </div>
-            </div>
-        `;
-
-        catalogContainer.appendChild(groupSection);
-
-        // Configurar carrusel interactivo circular continuo con pausa al estar hover
-        setupTwoRowCarousel(groupSection, typeProducts);
-    });
-}
-
-/**
- * Configura la lógica del carrusel interactivo continuo (infinito) con desplazamiento continuo hacia adelante y pausa en hover.
- * @param {HTMLElement} groupSection Elemento contenedor de la sección del tipo
- * @param {Array} typeProducts Lista de productos de este tipo
- */
-function setupTwoRowCarousel(groupSection, typeProducts) {
-    const track = groupSection.querySelector('.product-grid-track');
-    const viewport = groupSection.querySelector('.product-carousel-viewport');
-    const prevBtn = groupSection.querySelector('.prev-btn');
-    const nextBtn = groupSection.querySelector('.next-btn');
-
-    if (!track || !viewport || !typeProducts || typeProducts.length === 0) return;
-
-    let autoTimer = null;
-    const slideDuration = 3000;
-    let isTransitioning = false;
-
-    function getVisibleCols() {
-        const width = window.innerWidth;
-        if (width <= 600) return 1;
-        if (width <= 960) return 2;
-        return 3;
-    }
-
-    const itemsPerRow = 3; // 3 productos por fila en escritorio
-
-    function getCardPos(index, colOffset = 0) {
-        const b = Math.floor(index / (2 * itemsPerRow));
-        const pos = index % (2 * itemsPerRow);
-        const row = pos < itemsPerRow ? 1 : 2;
-        const col = (b * itemsPerRow) + (pos % itemsPerRow) + 1 + colOffset;
-        return { row, col };
-    }
-
-    let totalCols = 0;
-    typeProducts.forEach((_, idx) => {
-        const pos = getCardPos(idx);
-        if (pos.col > totalCols) totalCols = pos.col;
-    });
-
-    const visibleCols = getVisibleCols();
-    const isInfinite = totalCols > visibleCols;
-
-    function createCardHTML(p, row, col) {
-        return `
-            <div class="catalog-product-card" style="grid-row: ${row}; grid-column: ${col};">
-                <a href="product-details.html?id=${p.id}" class="catalog-product-img-wrapper">
-                    <div class="badge-destacado-star" title="Producto Destacado">
-                        <svg class="star-icon" viewBox="0 0 24 24" fill="#94A3B8" stroke="#64748B" stroke-width="1.5">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                        </svg>
-                        <span class="star-label">Producto Destacado</span>
-                    </div>
-                    <img src="${p.image}" alt="${p.name}" class="catalog-product-img">
-                </a>
-                <div class="catalog-product-body">
-                    <div>
-                        <h3 class="catalog-product-name">
-                            <a href="product-details.html?id=${p.id}" style="color: inherit; text-decoration: none;">${p.name}</a>
-                        </h3>
-                        <p class="catalog-product-desc">${p.description}</p>
-                    </div>
-                    <div class="catalog-product-footer">
-                        <span class="catalog-product-price">$${p.price.toFixed(2)}</span>
-                        <a href="product-details.html?id=${p.id}" class="catalog-product-btn">Ver Detalle</a>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    const cloneCount = Math.max(visibleCols, 3);
-    let htmlContent = '';
-
-    if (isInfinite) {
-        // Clones al inicio (de las últimas columnas)
-        typeProducts.forEach((p, idx) => {
-            const pos = getCardPos(idx);
-            if (pos.col > totalCols - cloneCount) {
-                const cloneCol = pos.col - totalCols;
-                htmlContent += createCardHTML(p, pos.row, cloneCol);
-            }
-        });
-
-        // Productos reales
-        typeProducts.forEach((p, idx) => {
-            const pos = getCardPos(idx);
-            htmlContent += createCardHTML(p, pos.row, pos.col);
-        });
-
-        // Clones al final (de las primeras columnas)
-        typeProducts.forEach((p, idx) => {
-            const pos = getCardPos(idx);
-            if (pos.col <= cloneCount) {
-                const cloneCol = pos.col + totalCols;
-                htmlContent += createCardHTML(p, pos.row, cloneCol);
-            }
-        });
-    } else {
-        typeProducts.forEach((p, idx) => {
-            const pos = getCardPos(idx);
-            htmlContent += createCardHTML(p, pos.row, pos.col);
-        });
-    }
-
-    track.innerHTML = htmlContent;
-
-    let currentCol = 0;
-
-    function getColOffsetPixels(colIndex) {
-        const vCols = getVisibleCols();
-        const gap = 20;
-        const viewportWidth = viewport.clientWidth;
-        const colWidth = (viewportWidth - (vCols - 1) * gap) / vCols;
-
-        if (isInfinite) {
-            return (colIndex + cloneCount) * (colWidth + gap);
-        } else {
-            return colIndex * (colWidth + gap);
-        }
-    }
-
-    function updatePosition(animate = true) {
-        const offset = getColOffsetPixels(currentCol);
-        if (animate) {
-            track.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
-        } else {
-            track.style.transition = 'none';
-        }
-        track.style.transform = `translateX(-${offset}px)`;
-
-        if (!isInfinite) {
-            if (prevBtn) prevBtn.style.display = 'none';
-            if (nextBtn) nextBtn.style.display = 'none';
-        } else {
-            if (prevBtn) prevBtn.style.display = 'flex';
-            if (nextBtn) nextBtn.style.display = 'flex';
-        }
-    }
-
-    function slideNext() {
-        if (!isInfinite || isTransitioning) return;
-        isTransitioning = true;
-        currentCol++;
-        updatePosition(true);
-
-        setTimeout(() => {
-            if (currentCol >= totalCols) {
-                currentCol = 0;
-                updatePosition(false);
-            }
-            isTransitioning = false;
-        }, 500);
-    }
-
-    function slidePrev() {
-        if (!isInfinite || isTransitioning) return;
-        isTransitioning = true;
-        currentCol--;
-        updatePosition(true);
-
-        setTimeout(() => {
-            if (currentCol < 0) {
-                currentCol = totalCols - 1;
-                updatePosition(false);
-            }
-            isTransitioning = false;
-        }, 500);
-    }
-
-    function startAutoSlide() {
-        if (!isInfinite) return;
-        stopAutoSlide();
-        autoTimer = setInterval(slideNext, slideDuration);
-    }
-
-    function stopAutoSlide() {
-        if (autoTimer) {
-            clearInterval(autoTimer);
-            autoTimer = null;
-        }
-    }
-
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            slidePrev();
-            startAutoSlide();
-        });
-    }
-
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            slideNext();
-            startAutoSlide();
-        });
-    }
-
-    viewport.addEventListener('mouseenter', stopAutoSlide);
-    viewport.addEventListener('mouseleave', startAutoSlide);
-
-    window.addEventListener('resize', () => {
-        updatePosition(false);
-    });
-
-    updatePosition(false);
-    startAutoSlide();
+    catalogContainer.innerHTML = products.map(p => createUnifiedCardHTML(p)).join('');
 }
 
 /* ==========================================================================
@@ -450,7 +342,8 @@ function setupTwoRowCarousel(groupSection, typeProducts) {
 
 async function loadComponent(placeholderId, filePath) {
     try {
-        const response = await fetch(filePath);
+        const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
+        const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) throw new Error(`Error al cargar ${filePath}`);
         const html = await response.text();
         const container = document.getElementById(placeholderId);
@@ -473,7 +366,7 @@ function mapProductType(t) {
         id: t.id,
         name: t.product_type_name || t.name || 'Tipo General',
         description: t.description || '',
-        image: resolveImageUrl(t.product_type_image || t.image, '../../assets/images/carrusel-index/Carrousel.png')
+        image: resolveImageUrl(t.product_type_image || t.image, '../../assets/images/categoria/estante.png')
     };
 }
 
@@ -483,7 +376,7 @@ function mapCategory(c) {
         id: c.id,
         name: c.category_name || c.name || 'Categoría General',
         description: c.description || '',
-        image: resolveImageUrl(c.category_image || c.image, '../../assets/images/carrusel-index/Carrousel.png')
+        image: resolveImageUrl(c.category_image || c.image, '../../assets/images/categoria/estante.png')
     };
 }
 
@@ -520,8 +413,9 @@ function mapProduct(p) {
         name: p.product_name || p.name || 'Producto sin nombre',
         description: p.description || '',
         price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
-        image: resolveImageUrl(p.product_image || p.image, '../../assets/images/gallery/real_space_1.jpg'),
-        badge: p.is_feature_product ? 'Destacado' : (p.badge || '')
+        rating: p.rating !== undefined ? parseFloat(p.rating) : (p.badge === 'Destacado' ? 5.0 : 4.5),
+        image: resolveImageUrl(p.product_image || p.image, '../../assets/images/productos/estante-blanco.jpeg'),
+        badge: (p.rating === 5.0 || p.badge === 'Destacado' || p.is_feature_product) ? 'Destacado' : ''
     };
 }
 
@@ -567,6 +461,79 @@ async function loadCatalogData() {
     return { types, categories, products };
 }
 
+export const LOCAL_5_PRODUCTS = [
+    {
+        id: 101,
+        typeId: 1,
+        typeName: 'Lockers',
+        categoryId: 1,
+        categoryIds: [1],
+        categoryName: 'Lockers Metálicos',
+        name: 'LOCKER METÁLICO EJECUTIVO L4',
+        description: 'Locker metálico de 4 compartimentos con cerradura individual y ventilación reforzada.',
+        price: 399.00,
+        rating: 5.0,
+        image: '../../assets/images/carrusel-index/LocekrL4Gris.jpg',
+        badge: 'Destacado'
+    },
+    {
+        id: 102,
+        typeId: 2,
+        typeName: 'Armarios',
+        categoryId: 2,
+        categoryIds: [2],
+        categoryName: 'Armarios Metálicos',
+        name: 'ARMARIO METÁLICO MODULAR VERDE',
+        description: 'Armario metálico con puertas de cristal y estantes ajustables para almacenamiento.',
+        price: 610.00,
+        rating: 4.5,
+        image: '../../assets/images/gallery/real_space_11.jpg',
+        badge: ''
+    },
+    {
+        id: 103,
+        typeId: 1,
+        typeName: 'Lockers',
+        categoryId: 1,
+        categoryIds: [1],
+        categoryName: 'Lockers Metálicos',
+        name: 'LOCKER GABINETE MODULAR M3',
+        description: 'Locker gabinete modular compacto de 3 casilla para vestuarios y oficinas.',
+        price: 280.00,
+        rating: 4.8,
+        image: '../../assets/images/gallery/real_space_1.jpg',
+        badge: ''
+    },
+    {
+        id: 104,
+        typeId: 4,
+        typeName: 'Estantes',
+        categoryId: 4,
+        categoryIds: [4],
+        categoryName: 'Estanterías Industriales',
+        name: 'ESTANTE INDUSTRIAL DE ALTA CARGA',
+        description: 'Estantería metálica con 5 baldas de alta resistencia para depósitos y talleres.',
+        price: 195.00,
+        rating: 4.0,
+        image: '../../assets/images/gallery/real_space_4.jpg',
+        badge: ''
+    },
+    {
+        id: 105,
+        typeId: 3,
+        typeName: 'Gabinetes',
+        categoryId: 3,
+        categoryIds: [3],
+        categoryName: 'Gabinetes de Oficina',
+        name: 'GABINETE ARCHIVADOR TURQUESA',
+        description: 'Archivador metálico de carpeta suspendida en elegante color turquesa.',
+        price: 320.00,
+        rating: 5.0,
+        image: '../../assets/images/gallery/real_space_9.jpg',
+        badge: 'Destacado'
+    }
+];
+
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Cargar Navbar y Footer
     await Promise.all([
@@ -580,10 +547,68 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Ajuste de layout de footer
     document.body.classList.add('drawer-collapsed');
 
-    // 3. Cargar datos desde el backend (con fallback dummy)
-    const { types, categories, products } = await loadCatalogData();
+    // 3. Cargar datos desde el backend (con fallback a los 5 productos locales)
+    let { types, categories, products } = await loadCatalogData();
+
+    if (!products || products.length === 0) {
+        products = LOCAL_5_PRODUCTS;
+    }
+
+    if (!types || types.length === 0) {
+        types = [
+            { id: 1, name: 'Lockers', description: 'Lockers metálicos de seguridad', image: '../../assets/images/carrusel-index/LocekrL4Gris.jpg' },
+            { id: 2, name: 'Armarios', description: 'Armarios metálicos ejecutivos', image: '../../assets/images/gallery/real_space_11.jpg' },
+            { id: 3, name: 'Gabinetes', description: 'Gabinetes y archivadores de oficina', image: '../../assets/images/gallery/real_space_1.jpg' },
+            { id: 4, name: 'Estantes', description: 'Estanterías industriales reforzadas', image: '../../assets/images/gallery/real_space_4.jpg' }
+        ];
+    }
+
+    if (!categories || categories.length === 0) {
+        categories = [
+            { id: 1, name: 'Lockers Metálicos' },
+            { id: 2, name: 'Armarios Metálicos' },
+            { id: 3, name: 'Gabinetes de Oficina' },
+            { id: 4, name: 'Estanterías Industriales' }
+        ];
+    }
 
     initHeaderCarousel(types);
     initFilters(types, categories, products);
+
+    // Event listener delegado para wishlist y botones + Carrito
+    document.addEventListener('click', (e) => {
+        const wishlistBtn = e.target.closest('.unified-wishlist-btn');
+        if (wishlistBtn) {
+            wishlistBtn.classList.toggle('active');
+            return;
+        }
+
+        const btn = e.target.closest('.btn-card-add-cart');
+        if (btn) {
+            const id = parseInt(btn.getAttribute('data-id'), 10);
+            const name = btn.getAttribute('data-name');
+            const price = parseFloat(btn.getAttribute('data-price')) || 0;
+            const image = btn.getAttribute('data-image');
+
+            const CART_STORAGE_KEY = 'tuestante_cart';
+            let items = [];
+            try {
+                const raw = localStorage.getItem(CART_STORAGE_KEY);
+                if (raw) items = JSON.parse(raw);
+            } catch (err) {
+                items = [];
+            }
+
+            const existingIndex = items.findIndex(i => String(i.id) === String(id));
+            if (existingIndex > -1) {
+                items[existingIndex].qty += 1;
+            } else {
+                items.push({ id, name, price, image, color: 'Estándar', qty: 1 });
+            }
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+            window.dispatchEvent(new Event('cart-updated'));
+            showCartModal({ id, name, price, image });
+        }
+    });
 });
 

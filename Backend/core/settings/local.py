@@ -17,8 +17,8 @@ CORS_ALLOW_CREDENTIALS = True
 
 ALLOWED_HOSTS = ['*']
 
-media = 'cpanel'
-bd_local= 'mysql_cpanel'
+media = 'local'
+bd_local= 'local'
 
 if bd_local == 'mysql':
     DATABASES = {

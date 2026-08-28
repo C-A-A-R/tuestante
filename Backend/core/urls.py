@@ -30,10 +30,13 @@ urlpatterns = [
     path('api/products/', include('apps.product.api.routers')),
     path('api/projects/', include('apps.project.api.routers')),
     path('api/gallery/', include('apps.gallery.api.routers')),
+    path('api/user/', include('apps.user.api.routers')),
     path('api/', include('apps.orders.api.routers')),
+
     path('api/', include('apps.payment.api.routers')),
     path('api/', include('apps.shipment.api.routers')),
     path('api/', include('apps.notification.api.routers')),
+    path('api/', include('apps.invoice.api.routers')),
 ]
 
 

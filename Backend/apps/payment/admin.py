@@ -3,6 +3,7 @@ from django.utils import timezone
 
 from apps.base.admin import BaseAdmin
 from apps.payment.models import Payment
+from apps.invoice.services import create_invoice_for_order
 
 
 @admin.register(Payment)
@@ -51,6 +52,7 @@ class PaymentAdmin(BaseAdmin):
             elif payment.payment_stage == 'final' and order.status in ['waiting_final_payment', 'final_payment_review']:
                 order.status = 'shipped'
                 order.save()
+                create_invoice_for_order(order)
 
         self.message_user(request, f"{queryset.count()} pago(s) aprobado(s) exitosamente.")
 

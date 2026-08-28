@@ -1,6 +1,6 @@
 from django.contrib import admin
 from apps.base.admin import BaseAdmin
-from apps.product.models import Category, ProductType, Product, ProductColorImage, ProductAngleImage
+from apps.product.models import Category, ProductType, Product, ProductColorImage, ProductAngleImage, FavoriteProduct
 
 
 class ProductColorImageInline(admin.TabularInline):
@@ -94,4 +94,15 @@ class ProductAngleImageAdmin(BaseAdmin):
     search_fields = ('product__product_name', 'angle')
     list_filter = ('created_at',)
     ordering = ('id',)
+
+
+@admin.register(FavoriteProduct)
+class FavoriteProductAdmin(BaseAdmin):
+    """Configuración del panel de administración para el modelo FavoriteProduct."""
+
+    list_display = ('id', 'user', 'product', 'created_at', 'is_deleted')
+    search_fields = ('user__username', 'user__email', 'product__product_name')
+    list_filter = ('is_deleted', 'created_at')
+    ordering = ('-created_at',)
+
 

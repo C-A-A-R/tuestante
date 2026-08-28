@@ -1,6 +1,7 @@
 import os
 import uuid
 from django.db import models
+from django.conf import settings
 from apps.base.models import BaseModel
 from apps.base.utils.images import rename_image_upload_to, compress_and_save_image
 from apps.base.utils.videos import rename_video_upload_to, compress_and_save_video
@@ -173,4 +174,31 @@ class ProductAngleImage(BaseModel):
     def __str__(self):
         angle_str = f" - {self.angle}" if self.angle else ""
         return f"Ángulo{angle_str} - {self.product.product_name}"
+
+
+class FavoriteProduct(BaseModel):
+    """Modelo para representar los productos favoritos o deseados de los usuarios (Wishlist)."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='favorite_products',
+        verbose_name='Usuario'
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='favorites',
+        verbose_name='Producto'
+    )
+
+    class Meta:
+        verbose_name = 'Producto Favorito'
+        verbose_name_plural = 'Productos Favoritos'
+        ordering = ['-created_at']
+        unique_together = ('user', 'product')
+
+    def __str__(self):
+        return f"{self.user} ❤️ {self.product.product_name}"
+
 

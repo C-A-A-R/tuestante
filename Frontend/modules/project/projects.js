@@ -7,8 +7,44 @@
  */
 
 import { initNavbar } from '../../components/navbar/navbar.js';
-import { obtenerProyectos, resolveImageUrl, extractList } from './project.api.js';
+import { obtenerProyectos } from './project.api.js';
 import { backendOrigin } from '../../js/config.js';
+
+/**
+ * Resuelve la ruta completa de las imágenes del proyecto desde el servidor backend o assets locales.
+ * @param {string} imagePath Ruta relativa o absoluta de la imagen
+ * @param {string} fallback Imagen por defecto en caso de no existir
+ * @returns {string} URL resuelta de la imagen
+ */
+function resolveImageUrl(imagePath, fallback = '../../assets/images/categoria/estante.png') {
+    if (!imagePath) return fallback;
+
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        if (imagePath.includes('/media/')) {
+            const mediaPath = imagePath.substring(imagePath.indexOf('/media/'));
+            return `${backendOrigin}${mediaPath}`;
+        }
+        return imagePath;
+    }
+
+    if (imagePath.startsWith('/media/') || imagePath.startsWith('media/')) {
+        const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+        return `${backendOrigin}${cleanPath}`;
+    }
+
+    if (imagePath.includes('assets/')) {
+        if (!imagePath.startsWith('../') && !imagePath.startsWith('/')) {
+            return `../../${imagePath}`;
+        }
+        return imagePath;
+    }
+
+    if (imagePath.startsWith('/')) {
+        return `${backendOrigin}${imagePath}`;
+    }
+
+    return `${backendOrigin}/${imagePath}`;
+}
 
 function resolveDocumentUrl(docPath) {
     if (!docPath) return null;
@@ -54,7 +90,7 @@ function mapProject(p) {
         id: p.id,
         title: p.project_name || p.name || 'Proyecto TuEstante',
         description: p.description || 'Proyecto de estantería y mobiliario metálico industrial diseñado y ejecutado por TuEstante.',
-        image: resolveImageUrl(p.project_images || p.image, '../../assets/images/carrusel-index/Carrousel.png'),
+        image: resolveImageUrl(p.project_images || p.image, '../../assets/images/categoria/estante.png'),
         document: resolveDocumentUrl(p.project_document || p.document)
     };
 }
