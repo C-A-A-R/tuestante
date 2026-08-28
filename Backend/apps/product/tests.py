@@ -181,6 +181,96 @@ class FavoriteProductAPITest(TestCase):
         ids_sort = [p['id'] for p in response_sort.data]
         self.assertEqual(ids_sort, [self.product3.id, self.product1.id, self.product2.id])
 
+    def test_product_auto_featured_when_reaching_twenty_favorites(self):
+        """
+        Verifica que cuando 20 usuarios asocian un producto como favorito,
+        este se marca automáticamente como producto destacado (is_feature_product=True).
+        """
+        new_product = Product.objects.create(
+            product_name='Estante Popular 20',
+            product_type=self.product_type,
+            price=200.00,
+            is_feature_product=False
+        )
+        self.assertFalse(new_product.is_feature_product)
+
+        # Crear 19 favoritos -> aún no debe ser destacado
+        for i in range(1, 20):
+            u = User.objects.create_user(
+                username=f'user_batch_{i}',
+                email=f'user_batch_{i}@test.com',
+                password='password123'
+            )
+            FavoriteProduct.objects.create(user=u, product=new_product)
+
+        new_product.refresh_from_db()
+        self.assertFalse(new_product.is_feature_product)
+        self.assertEqual(new_product.favorites.filter(is_deleted=False).count(), 19)
+
+        # Crear el favorito número 20
+        u20 = User.objects.create_user(
+            username='user_batch_20',
+            email='user_batch_20@test.com',
+            password='password123'
+        )
+        FavoriteProduct.objects.create(user=u20, product=new_product)
+
+        new_product.refresh_from_db()
+        self.assertTrue(new_product.is_feature_product)
+        self.assertEqual(new_product.favorites.filter(is_deleted=False).count(), 20)
+
+    def test_featured_products_least_favorites_apiview(self):
+        """
+        Verifica que FeaturedProductsLeastFavoritesAPIView retorne los productos destacados
+        ordenados desde el que MENOS favoritos tiene al que MÁS tiene.
+        """
+        # Crear 3 productos destacados con diferentes cantidades de favoritos
+        feat1 = Product.objects.create(
+            product_name='Destacado con 1 fav',
+            product_type=self.product_type,
+            price=100.00,
+            is_feature_product=True
+        )
+        feat2 = Product.objects.create(
+            product_name='Destacado con 3 favs',
+            product_type=self.product_type,
+            price=110.00,
+            is_feature_product=True
+        )
+        feat3 = Product.objects.create(
+            product_name='Destacado con 0 favs',
+            product_type=self.product_type,
+            price=120.00,
+            is_feature_product=True
+        )
+
+        # Producto no destacado (no debe salir)
+        non_feat = Product.objects.create(
+            product_name='No Destacado',
+            product_type=self.product_type,
+            price=90.00,
+            is_feature_product=False
+        )
+
+        # Asignar favoritos
+        FavoriteProduct.objects.create(user=self.user, product=feat1)
+
+        FavoriteProduct.objects.create(user=self.user, product=feat2)
+        FavoriteProduct.objects.create(user=self.user2, product=feat2)
+        FavoriteProduct.objects.create(user=self.user3, product=feat2)
+
+        FavoriteProduct.objects.create(user=self.user, product=non_feat)
+
+        response = self.client.get('/api/products/featured-products/least-favorites/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Solo deben salir los 3 destacados y ordenados de menor a mayor favorito (0 -> 1 -> 3)
+        returned_ids = [p['id'] for p in response.data]
+        self.assertEqual(returned_ids, [feat3.id, feat1.id, feat2.id])
+
+        returned_counts = [p['favorites_count'] for p in response.data]
+        self.assertEqual(returned_counts, [0, 1, 3])
+
     def test_unauthenticated_toggle_favorite_forbidden(self):
         """Verifica que un usuario anónimo no pueda marcar productos como favoritos."""
         response = self.client.post(f'/api/products/favorites/{self.product1.id}/toggle/')

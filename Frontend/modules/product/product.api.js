@@ -1,12 +1,15 @@
 import { getRequest, postRequest, putRequest, patchRequest, deleteRequest, apiRequest } from '../../js/api.js';
+import { getAccessToken } from '../../js/storage.js';
 
 /**
  * Obtiene la lista de productos del servidor, con filtros opcionales.
+ * Envía el token de autenticación si existe para identificar los favoritos del usuario.
  * @param {Object} [params] Parámetros de búsqueda o filtrado.
  * @returns {Promise<Object>} Respuesta con el listado de productos.
  */
 export async function obtenerProductos(params = {}) {
-  return getRequest('/products/products/', params, { auth: false });
+  const hasToken = Boolean(getAccessToken());
+  return getRequest('/products/products/', params, { auth: hasToken });
 }
 
 /**
@@ -16,7 +19,8 @@ export async function obtenerProductos(params = {}) {
  * @returns {Promise<Object>} Detalle del producto.
  */
 export async function obtenerProductoPorId(id, params = {}) {
-  return getRequest(`/products/products/${id}/`, params, { auth: false });
+  const hasToken = Boolean(getAccessToken());
+  return getRequest(`/products/products/${id}/`, params, { auth: hasToken });
 }
 
 /**
@@ -43,7 +47,28 @@ export async function obtenerTiposProducto(params = {}) {
  * @returns {Promise<Object>} Lista de productos destacados.
  */
 export async function obtenerProductosDestacados(params = {}) {
-  return getRequest('/products/featured-products/', params, { auth: false });
+  const hasToken = Boolean(getAccessToken());
+  return getRequest('/products/featured-products/', params, { auth: hasToken });
+}
+
+/**
+ * Obtiene únicamente los productos deseados / favoritos del usuario autenticado.
+ * Endpoint: GET /api/products/favorites/ o /api/products/wishlist/
+ * @param {Object} [params] Parámetros de consulta.
+ * @returns {Promise<Object>} Lista de productos favoritos.
+ */
+export async function obtenerFavoritosUsuario(params = {}) {
+  return getRequest('/products/favorites/', params, { auth: true });
+}
+
+/**
+ * Alterna el estado de favorito de un producto para el usuario autenticado.
+ * Endpoint: POST /api/products/favorites/<id>/toggle/
+ * @param {number|string} id ID del producto.
+ * @returns {Promise<{is_favorite: boolean, message: string, product_id: number}>} Resultado de la operación.
+ */
+export async function alternarFavoritoProducto(id) {
+  return postRequest(`/products/favorites/${id}/toggle/`, {}, { auth: true });
 }
 
 /**

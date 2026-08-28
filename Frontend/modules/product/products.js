@@ -1,7 +1,9 @@
 import { initNavbar } from '../../components/navbar/navbar.js';
-import { obtenerProductos, obtenerCategorias, obtenerTiposProducto } from './product.api.js';
+import { obtenerProductos, obtenerCategorias, obtenerTiposProducto, alternarFavoritoProducto } from './product.api.js';
 import { backendOrigin } from '../../js/config.js';
+import { getAccessToken } from '../../js/storage.js';
 import { showCartModal } from '../../components/cart-modal/cart-modal.js';
+import { showSuccessToast, showInfoToast, showErrorToast } from '../../components/toast/toast.js';
 
 function resolveImageUrl(imagePath, fallback = '../../assets/images/categoria/estante.png') {
     if (!imagePath) return fallback;
@@ -136,18 +138,19 @@ function initHeaderCarousel(types) {
 }
 
 /* ==========================================================================
-   LÓGICA DE FILTRADO Y BÚSQUEDA
+   LÓGICA DE FILTRADO Y BÚSQUEDA DEL CATÁLOGO
    ========================================================================== */
 
 function initFilters(types, categories, products) {
     const searchInput = document.getElementById('search-input');
     const filterTypeSelect = document.getElementById('filter-type');
     const filterCategorySelect = document.getElementById('filter-category');
+    const filterFeaturedSelect = document.getElementById('filter-featured');
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
-    const sortSelect = document.getElementById('sort-select');
 
-    // Llenar Select de Tipos si existe
+    // 1. Llenar Select de Tipos
     if (filterTypeSelect) {
+        filterTypeSelect.innerHTML = '<option value="all">Todos los Tipos</option>';
         types.forEach(t => {
             const opt = document.createElement('option');
             opt.value = t.id;
@@ -156,8 +159,9 @@ function initFilters(types, categories, products) {
         });
     }
 
-    // Llenar Select de Categorías si existe
+    // 2. Llenar Select de Categorías
     if (filterCategorySelect) {
+        filterCategorySelect.innerHTML = '<option value="all">Todas las Categorías</option>';
         categories.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.id;
@@ -166,38 +170,49 @@ function initFilters(types, categories, products) {
         });
     }
 
+    // 3. Función principal de aplicación de filtros
     function applyFilters() {
         const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
         const selectedType = filterTypeSelect ? filterTypeSelect.value : 'all';
         const selectedCat = filterCategorySelect ? filterCategorySelect.value : 'all';
-        const sortMode = sortSelect ? sortSelect.value : 'date-desc';
+        const isFeaturedOnly = filterFeaturedSelect ? (filterFeaturedSelect.value === 'featured') : false;
 
         let filtered = products.filter(p => {
-            const matchesSearch = !query || p.name.toLowerCase().includes(query) || p.description.toLowerCase().includes(query);
-            const matchesType = selectedType === 'all' || (p.typeId !== undefined && p.typeId.toString() === selectedType.toString());
+            const matchesSearch = !query || 
+                (p.name && p.name.toLowerCase().includes(query)) || 
+                (p.description && p.description.toLowerCase().includes(query));
+            
+            const matchesType = selectedType === 'all' || 
+                (p.typeId !== undefined && p.typeId.toString() === selectedType.toString());
+            
             const pCatIds = Array.isArray(p.categoryIds) ? p.categoryIds : (p.categoryId !== undefined ? [p.categoryId] : [1]);
-            const matchesCat = selectedCat === 'all' || pCatIds.some(id => id !== undefined && id.toString() === selectedCat.toString());
+            const matchesCat = selectedCat === 'all' || 
+                pCatIds.some(id => id !== undefined && id.toString() === selectedCat.toString());
 
-            return matchesSearch && matchesType && matchesCat;
+            // Filtro de destacados / más deseados
+            const isFeaturedProduct = Boolean(
+                p.badge === 'Destacado' || 
+                p.is_feature_product || 
+                (p.rating && p.rating >= 4.8) || 
+                (p.favorites_count && p.favorites_count > 0)
+            );
+            const matchesFeatured = !isFeaturedOnly || isFeaturedProduct;
+
+            return matchesSearch && matchesType && matchesCat && matchesFeatured;
         });
 
-        // Ordenamiento
-        filtered.sort((a, b) => {
-            if (sortMode === 'price-asc') {
-                return a.price - b.price;
-            } else if (sortMode === 'price-desc') {
-                return b.price - a.price;
-            } else if (sortMode === 'name-asc') {
-                return a.name.localeCompare(b.name);
-            } else if (sortMode === 'featured') {
-                const aFeat = (a.badge && a.badge.toLowerCase().includes('destacado')) ? 1 : 0;
-                const bFeat = (b.badge && b.badge.toLowerCase().includes('destacado')) ? 1 : 0;
-                return bFeat - aFeat;
-            } else {
-                // date-desc (por ID descendente)
-                return b.id - a.id;
-            }
-        });
+        // Ordenamiento prioritario
+        if (isFeaturedOnly) {
+            // Ordenar de más deseado/destacado a menos deseado
+            filtered.sort((a, b) => {
+                const aScore = (a.favorites_count || 0) + (a.badge === 'Destacado' || a.is_feature_product ? 100 : 0);
+                const bScore = (b.favorites_count || 0) + (b.badge === 'Destacado' || b.is_feature_product ? 100 : 0);
+                return bScore - aScore || b.id - a.id;
+            });
+        } else {
+            // Orden predeterminado (por fecha / ID descendente)
+            filtered.sort((a, b) => b.id - a.id);
+        }
 
         renderUnifiedProducts(filtered);
     }
@@ -205,24 +220,25 @@ function initFilters(types, categories, products) {
     if (searchInput) searchInput.addEventListener('input', applyFilters);
     if (filterTypeSelect) filterTypeSelect.addEventListener('change', applyFilters);
     if (filterCategorySelect) filterCategorySelect.addEventListener('change', applyFilters);
-    if (sortSelect) sortSelect.addEventListener('change', applyFilters);
+    if (filterFeaturedSelect) filterFeaturedSelect.addEventListener('change', applyFilters);
 
-    // Botón de Limpiar Filtros
+    // Botón Limpiar Filtros
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', () => {
             if (searchInput) searchInput.value = '';
             if (filterTypeSelect) filterTypeSelect.value = 'all';
             if (filterCategorySelect) filterCategorySelect.value = 'all';
-            if (sortSelect) sortSelect.value = 'date-desc';
+            if (filterFeaturedSelect) filterFeaturedSelect.value = 'all';
             applyFilters();
         });
     }
 
-    // Leer parámetros de URL (?search=..., ?cat=..., ?type=...)
+    // Leer parámetros de URL (?search=..., ?cat=..., ?type=..., ?featured=...)
     const urlParams = new URLSearchParams(window.location.search);
     const paramSearch = urlParams.get('search') || urlParams.get('q') || '';
     const paramCat = urlParams.get('cat') || urlParams.get('category') || urlParams.get('categoryId');
     const paramType = urlParams.get('type') || urlParams.get('typeId');
+    const paramFeatured = urlParams.get('featured') || urlParams.get('destacados') || urlParams.get('most_favorited');
 
     if (paramSearch && searchInput) {
         searchInput.value = paramSearch;
@@ -245,6 +261,12 @@ function initFilters(types, categories, products) {
         );
         if (matchOpt) {
             filterTypeSelect.value = matchOpt.value;
+        }
+    }
+
+    if (paramFeatured && filterFeaturedSelect) {
+        if (['true', '1', 'yes', 'si', 'featured'].includes(paramFeatured.toLowerCase())) {
+            filterFeaturedSelect.value = 'featured';
         }
     }
 
@@ -275,7 +297,7 @@ function createUnifiedCardHTML(p) {
                 
                 ${starBadgeHTML}
                 
-                <button class="unified-wishlist-btn" title="Añadir a lista de deseos" aria-label="Añadir a favoritos">
+                <button class="unified-wishlist-btn ${p.is_favorite ? 'active' : ''}" data-id="${p.id}" title="${p.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos'}" aria-label="Añadir a favoritos">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                     </svg>
@@ -415,7 +437,9 @@ function mapProduct(p) {
         price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
         rating: p.rating !== undefined ? parseFloat(p.rating) : (p.badge === 'Destacado' ? 5.0 : 4.5),
         image: resolveImageUrl(p.product_image || p.image, '../../assets/images/productos/estante-blanco.jpeg'),
-        badge: (p.rating === 5.0 || p.badge === 'Destacado' || p.is_feature_product) ? 'Destacado' : ''
+        badge: (p.rating === 5.0 || p.badge === 'Destacado' || p.is_feature_product) ? 'Destacado' : '',
+        is_favorite: Boolean(p.is_favorite),
+        favorites_count: p.favorites_count || 0
     };
 }
 
@@ -576,10 +600,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     initFilters(types, categories, products);
 
     // Event listener delegado para wishlist y botones + Carrito
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', async (e) => {
         const wishlistBtn = e.target.closest('.unified-wishlist-btn');
         if (wishlistBtn) {
-            wishlistBtn.classList.toggle('active');
+            const id = wishlistBtn.getAttribute('data-id') || wishlistBtn.closest('.unified-product-card')?.querySelector('.btn-card-add-cart')?.getAttribute('data-id');
+            if (!id) return;
+
+            const token = getAccessToken();
+            if (!token) {
+                showInfoToast('Inicia Sesión', 'Debes iniciar sesión para guardar productos en tu lista de deseos.');
+                return;
+            }
+
+            wishlistBtn.disabled = true;
+            try {
+                const res = await alternarFavoritoProducto(id);
+                if (res && typeof res.is_favorite === 'boolean') {
+                    wishlistBtn.classList.toggle('active', res.is_favorite);
+                    wishlistBtn.setAttribute('title', res.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos');
+                    
+                    // Actualizar estado en array local
+                    const targetProd = products.find(prod => String(prod.id) === String(id));
+                    if (targetProd) {
+                        targetProd.is_favorite = res.is_favorite;
+                    }
+
+                    if (res.is_favorite) {
+                        showSuccessToast('Lista de Deseos', res.message || 'Producto agregado a tus favoritos.');
+                    } else {
+                        showInfoToast('Lista de Deseos', res.message || 'Producto eliminado de tus favoritos.');
+                    }
+                }
+            } catch (err) {
+                console.error('Error al alternar favorito en catálogo:', err);
+                showErrorToast('Error', 'No se pudo actualizar la lista de deseos.');
+            } finally {
+                wishlistBtn.disabled = false;
+            }
             return;
         }
 

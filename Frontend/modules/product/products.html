@@ -52,39 +52,60 @@
             </div>
         </section>
 
-        <!-- 2. Barra de Control de Catálogo Ultra Elegante -->
+        <!-- 2. Barra de Filtros del Catálogo -->
         <section class="products-toolbar-section">
-            <div class="toolbar-container">
-                <div class="products-count-badge">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="14" width="7" height="7"></rect>
-                        <rect x="3" y="14" width="7" height="7"></rect>
-                    </svg>
-                    Catálogo Completo (<span id="products-count-number">0</span> productos)
-                </div>
-                
-                <div class="sort-box-wrapper">
-                    <span class="sort-icon-bg">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="11" y1="5" x2="21" y2="5"></line>
-                            <line x1="11" y1="12" x2="21" y2="12"></line>
-                            <line x1="11" y1="19" x2="21" y2="19"></line>
-                            <polyline points="3 8 6 5 9 8"></polyline>
-                            <line x1="6" y1="5" x2="6" y2="19"></line>
+            <div class="filter-card-container">
+                <!-- 1. Buscador por Nombre -->
+                <div class="filter-group filter-search-group">
+                    <label for="search-input" class="filter-field-label">Buscador por Nombre</label>
+                    <div class="filter-input-wrapper">
+                        <svg class="filter-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
-                    </span>
-                    <div class="sort-content">
-                        <label for="sort-select" class="sort-label">Ordenar por:</label>
-                        <select id="sort-select" class="sort-select">
-                            <option value="date-desc">Lo Más Reciente</option>
-                            <option value="price-asc">Precio: Menor a Mayor</option>
-                            <option value="price-desc">Precio: Mayor a Menor</option>
-                            <option value="name-asc">Nombre: A - Z</option>
-                            <option value="featured">Destacados Primero</option>
+                        <input type="text" id="search-input" class="filter-text-input" placeholder="Escribe el nombre del producto..." aria-label="Buscar por nombre del producto">
+                    </div>
+                </div>
+
+                <!-- 2. Tipo de Producto -->
+                <div class="filter-group">
+                    <label for="filter-type" class="filter-field-label">Tipo de Producto</label>
+                    <div class="filter-select-wrapper">
+                        <select id="filter-type" class="filter-select" aria-label="Filtrar por tipo de producto">
+                            <option value="all">Todos los Tipos</option>
                         </select>
                     </div>
+                </div>
+
+                <!-- 3. Categoría -->
+                <div class="filter-group">
+                    <label for="filter-category" class="filter-field-label">Categoría</label>
+                    <div class="filter-select-wrapper">
+                        <select id="filter-category" class="filter-select" aria-label="Filtrar por categoría">
+                            <option value="all">Todas las Categorías</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 4. Destacados / Más Deseados -->
+                <div class="filter-group">
+                    <label for="filter-featured" class="filter-field-label">Destacados</label>
+                    <div class="filter-select-wrapper">
+                        <select id="filter-featured" class="filter-select" aria-label="Filtrar productos destacados o más deseados">
+                            <option value="all">Todos los Productos</option>
+                            <option value="featured">⭐ Más Deseados (Destacados)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 5. Botón Limpiar Filtros -->
+                <div class="filter-action-group">
+                    <button type="button" id="clear-filters-btn" class="btn-clear-filters" title="Limpiar todos los filtros">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l6.73-6.19"></path>
+                        </svg>
+                        <span>Limpiar Filtros</span>
+                    </button>
                 </div>
             </div>
         </section>

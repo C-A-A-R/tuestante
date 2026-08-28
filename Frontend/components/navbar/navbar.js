@@ -1,4 +1,61 @@
-import { obtenerCategorias, obtenerProductos, extractList, resolveImageUrl } from '../../modules/product/product.api.js';
+import { obtenerCategorias, obtenerProductos } from '../../modules/product/product.api.js';
+import { backendOrigin } from '../../js/config.js';
+import { getAccessToken, clearTokens, clearCurrentUser } from '../../js/storage.js';
+
+/**
+ * Comprueba si existe una sesión de usuario activa (JWT o storage).
+ */
+export function checkUserSession() {
+  try {
+    const token = getAccessToken() || 
+                  localStorage.getItem('cc_access_token') || 
+                  localStorage.getItem('tuestante_token') || 
+                  localStorage.getItem('token') || 
+                  localStorage.getItem('access_token');
+    return Boolean(token && token !== 'null' && token !== 'undefined' && String(token).trim() !== '');
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Actualiza la interfaz del Navbar según el estado de sesión (logueado o no logueado).
+ */
+export function updateAuthUI(navbar) {
+  if (!navbar) return;
+  const isLoggedIn = checkUserSession();
+
+  if (isLoggedIn) {
+    navbar.classList.add('user-logged-in');
+    navbar.classList.remove('user-logged-out');
+  } else {
+    navbar.classList.remove('user-logged-in');
+    navbar.classList.add('user-logged-out');
+  }
+}
+
+/**
+ * Extrae un arreglo de la respuesta de la API (maneja listas directas o paginadas).
+ */
+function extractList(apiResult) {
+  if (!apiResult) return [];
+  if (Array.isArray(apiResult)) return apiResult;
+  if (Array.isArray(apiResult.results)) return apiResult.results;
+  return [];
+}
+
+/**
+ * Resuelve la URL completa para imágenes de productos/categorías.
+ */
+function resolveImageUrl(path, fallback = '') {
+  if (!path) return fallback;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('assets/') || path.startsWith('./assets/') || path.startsWith('../')) return path;
+  const origin = (backendOrigin && typeof backendOrigin === 'string') ? backendOrigin : 'http://localhost:8000';
+  const cleanOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${cleanOrigin}${cleanPath}`;
+}
 
 /**
  * Configura dinámicamente el favicon con el logo de la empresa y el título en la pestaña del navegador.
@@ -57,6 +114,11 @@ function fixNavbarPaths(navbar) {
     link.setAttribute('href', `${prefix}index.html#contacto`);
   });
 
+  const cartLinks = navbar.querySelectorAll('[data-link="carrito"]');
+  cartLinks.forEach(link => {
+    link.setAttribute('href', `${prefix}modules/cart/cart.html`);
+  });
+
   const productLinks = navbar.querySelectorAll('[data-link="productos"]');
   productLinks.forEach(link => {
     link.setAttribute('href', `${prefix}modules/product/products.html`);
@@ -75,6 +137,46 @@ function fixNavbarPaths(navbar) {
   const galleryLinks = navbar.querySelectorAll('[data-link="galeria"]');
   galleryLinks.forEach(link => {
     link.setAttribute('href', `${prefix}modules/gallery/gallery.html`);
+  });
+
+  const helpLinks = navbar.querySelectorAll('[data-link="ayuda"]');
+  helpLinks.forEach(link => {
+    link.setAttribute('href', `${prefix}index.html#ayuda`);
+  });
+
+  const distLinks = navbar.querySelectorAll('[data-link="distribuidores"]');
+  distLinks.forEach(link => {
+    link.setAttribute('href', `${prefix}index.html#distribuidores`);
+  });
+
+  const notifLinks = navbar.querySelectorAll('[data-link="notificaciones"]');
+  notifLinks.forEach(link => {
+    link.setAttribute('href', `${prefix}index.html#notificaciones`);
+  });
+
+  const profileLinks = navbar.querySelectorAll('[data-link="perfil"]');
+  profileLinks.forEach(link => {
+    link.setAttribute('href', `${prefix}modules/profile/profile.html`);
+  });
+
+  const loginLinks = navbar.querySelectorAll('[data-link="login"], .navbar-btn-login');
+  loginLinks.forEach(link => {
+    link.setAttribute('href', `${prefix}modules/auth/login.html`);
+  });
+
+  const registerLinks = navbar.querySelectorAll('[data-link="registro"], .navbar-btn-register');
+  registerLinks.forEach(link => {
+    link.setAttribute('href', `${prefix}modules/auth/login.html`);
+  });
+
+  const comprasLinks = navbar.querySelectorAll('[data-link="compras"]');
+  comprasLinks.forEach(link => {
+    link.setAttribute('href', `${prefix}modules/order/my-orders.html`);
+  });
+
+  const deseadosLinks = navbar.querySelectorAll('[data-link="deseados"]');
+  deseadosLinks.forEach(link => {
+    link.setAttribute('href', `${prefix}modules/product/wishlist.html`);
   });
 
   const catLinks = navbar.querySelectorAll('.navbar-cat-link');
@@ -99,6 +201,15 @@ function fixNavbarPaths(navbar) {
     if (rawHref) {
       const cleanHref = rawHref.replace(/^(\.\.\/)+/, '').replace(/^modules\/product\//, '');
       card.setAttribute('href', `${prefix}modules/product/${cleanHref}`);
+    }
+  });
+
+  const prodImgs = navbar.querySelectorAll('.product-img-beige img, .featured-img-beige img');
+  prodImgs.forEach(img => {
+    const rawSrc = img.getAttribute('src');
+    if (rawSrc && !rawSrc.startsWith('http') && !rawSrc.startsWith('/')) {
+      const cleanSrc = rawSrc.replace(/^(\.\.\/)+/, '');
+      img.setAttribute('src', `${prefix}${cleanSrc}`);
     }
   });
 }
@@ -132,6 +243,14 @@ function setupSearchForms(navbar, isModulePath, prefix) {
   });
 }
 
+const STORE_NAVBAR_CATEGORIES = [
+  { id: 1, name: 'Lockers Metálicos' },
+  { id: 2, name: 'Armarios Metálicos' },
+  { id: 3, name: 'Estanterías Industriales' },
+  { id: 4, name: 'Gabinetes de Oficina' },
+  { id: 5, name: 'Archivadores y Cajoneras' }
+];
+
 /**
  * Carga dinámicamente las categorías y sus productos desde el backend en el menú del Navbar.
  */
@@ -145,12 +264,14 @@ async function loadNavbarCategories(navbar, isModulePath, prefix) {
       obtenerProductos().catch(() => null)
     ]);
 
-    const categories = extractList(catsRes);
+    let categories = extractList(catsRes);
     const products = extractList(prodsRes);
 
     if (!categories || categories.length === 0) {
-      menuContainer.innerHTML = '';
-      return;
+      categories = STORE_NAVBAR_CATEGORIES.map(c => ({
+        id: c.id,
+        category_name: c.name
+      }));
     }
 
     menuContainer.innerHTML = categories.map(cat => {
@@ -171,10 +292,13 @@ async function loadNavbarCategories(navbar, isModulePath, prefix) {
       const hasFeatured = Boolean(featuredProduct);
       const gridClass = hasFeatured ? 'category-products-grid has-featured' : 'category-products-grid';
 
-      const productsHTML = catProducts.map(p => {
+      const productsHTML = (catProducts.length > 0 ? catProducts : [
+        { id: 101, product_name: `${catName} Estándar`, product_image: 'assets/images/productos/estante-blanco.jpeg' },
+        { id: 102, product_name: `${catName} Reforzado`, product_image: 'assets/images/productos/locker-verde.jpeg' }
+      ]).map(p => {
         const pId = p.id;
         const pName = p.product_name || p.name || 'Producto';
-        const pImg = resolveImageUrl(p.product_image || p.image, `${prefix}assets/images/carrusel-index/Carrousel.png`);
+        const pImg = resolveImageUrl(p.product_image || p.image, `${prefix}assets/images/productos/estante-blanco.jpeg`);
         const pLink = `${prefix}modules/product/product-details.html?id=${pId}`;
 
         return `
@@ -203,7 +327,7 @@ async function loadNavbarCategories(navbar, isModulePath, prefix) {
         const featName = featuredProduct.product_name || featuredProduct.name || 'Producto Destacado';
         const featPrice = typeof featuredProduct.price === 'number' ? featuredProduct.price : parseFloat(featuredProduct.price) || 0;
         const featDesc = featuredProduct.description || 'Producto destacado de la categoría';
-        const featImg = resolveImageUrl(featuredProduct.product_image || featuredProduct.image, `${prefix}assets/images/carrusel-index/LocekrL4Gris.jpg`);
+        const featImg = resolveImageUrl(featuredProduct.product_image || featuredProduct.image, `${prefix}assets/images/productos/locker-fondo.png`);
         const featLink = `${prefix}modules/product/product-details.html?id=${featId}`;
 
         featuredHTML = `
@@ -240,7 +364,7 @@ async function loadNavbarCategories(navbar, isModulePath, prefix) {
     bindCategoryLinkEvents(navbar);
   } catch (err) {
     console.error('Error al cargar categorías en el navbar:', err);
-    if (menuContainer) menuContainer.innerHTML = '';
+    bindCategoryLinkEvents(navbar);
   }
 }
 
@@ -354,4 +478,100 @@ export function initNavbar() {
 
   window.addEventListener('scroll', handleScroll, { passive: true });
   handleScroll();
+
+  // Configurar comportamiento interactivo de los submenús desplegables (Conócenos, Notificaciones, Contacto y Perfil)
+  const dropdownContainers = navbar.querySelectorAll('.nav-dropdown-container');
+  dropdownContainers.forEach(container => {
+    const btn = container.querySelector('.nav-dropdown-btn, .navbar-profile-btn, .navbar-contact-btn, .navbar-notif-btn, button');
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = container.classList.contains('open');
+        dropdownContainers.forEach(c => {
+          if (c !== container) c.classList.remove('open');
+        });
+        if (isOpen) {
+          container.classList.remove('open');
+          btn.setAttribute('aria-expanded', 'false');
+        } else {
+          container.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    dropdownContainers.forEach(container => {
+      if (!container.contains(e.target)) {
+        container.classList.remove('open');
+        const btn = container.querySelector('.nav-dropdown-btn, .navbar-profile-btn, .navbar-contact-btn, .navbar-notif-btn, button');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
+
+  // Actualizar estado visual de autenticación (login / perfil / notificaciones)
+  updateAuthUI(navbar);
+
+  // Manejador de Cerrar Sesión
+  const logoutItems = navbar.querySelectorAll('[data-link="logout"]');
+  logoutItems.forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      clearTokens();
+      clearCurrentUser();
+      try {
+        localStorage.removeItem('tuestante_token');
+        localStorage.removeItem('tuestante_user');
+        localStorage.removeItem('token');
+        localStorage.removeItem('access_token');
+      } catch (err) {}
+      updateAuthUI(navbar);
+      window.location.href = `${prefix}modules/auth/login.html`;
+    });
+  });
+
+  // Actualizar e inicializar el contador del Carrito
+  updateCartCount();
+}
+
+/**
+ * Actualiza dinámicamente el badge de cantidad de productos en el icono del Carrito.
+ */
+export function updateCartCount() {
+  const badgeElements = document.querySelectorAll('#cart-badge, .cart-badge');
+  if (!badgeElements || badgeElements.length === 0) return;
+
+  let count = 0;
+  try {
+    const rawData = localStorage.getItem('tuestante_cart');
+    const cartItems = rawData ? JSON.parse(rawData) : [];
+    count = cartItems.reduce((acc, item) => acc + (parseInt(item.qty, 10) || 1), 0);
+  } catch (e) {
+    count = 0;
+  }
+
+  badgeElements.forEach(badge => {
+    const currentCount = parseInt(badge.textContent, 10) || 0;
+    badge.textContent = count;
+    badge.style.display = 'flex';
+    if (count > 0 && currentCount !== count) {
+      badge.classList.add('pop');
+      setTimeout(() => badge.classList.remove('pop'), 250);
+    }
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', () => {
+    updateCartCount();
+    const navbar = document.querySelector('.app-navbar');
+    if (navbar) updateAuthUI(navbar);
+  });
+  window.addEventListener('cart-updated', updateCartCount);
+  window.addEventListener('auth-changed', () => {
+    const navbar = document.querySelector('.app-navbar');
+    if (navbar) updateAuthUI(navbar);
+  });
 }

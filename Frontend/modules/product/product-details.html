@@ -14,11 +14,11 @@
         rel="stylesheet">
 
     <!-- Estilos base y de componentes -->
-    <link rel="stylesheet" href="../../index.css?v=3.2">
-    <link rel="stylesheet" href="../../components/navbar/navbar.css?v=3.2">
-    <link rel="stylesheet" href="../../components/footer/footer.css?v=3.2">
-    <link rel="stylesheet" href="products.css?v=3.2">
-    <link rel="stylesheet" href="product-details.css?v=3.2">
+    <link rel="stylesheet" href="../../index.css">
+    <link rel="stylesheet" href="../../components/navbar/navbar.css">
+    <link rel="stylesheet" href="../../components/footer/footer.css">
+    <link rel="stylesheet" href="products.css">
+    <link rel="stylesheet" href="product-details.css">
 </head>
 
 <body>
@@ -96,22 +96,48 @@
                         </div>
                     </div>
 
-                    <!-- Cabecera de Producto: Nombre y Tipo de Producto en la Esquina -->
-                    <div class="product-header-top-row">
-                        <h1 class="product-title" id="detail-product-name">Cargando Nombre...</h1>
-                        <span class="product-type-corner-badge" id="detail-product-type">TIPO</span>
+                    <!-- Tipo de Producto en la Esquina Superior Derecha -->
+                    <div class="product-type-badge-container">
+                        <span class="product-type-corner-badge" id="detail-product-type">TIPO DE PRODUCTO</span>
                     </div>
 
-                    <!-- Precio del producto + IVA -->
+                    <!-- 1. Nombre del producto -->
+                    <h1 class="product-title" id="detail-product-name">Cargando Nombre...</h1>
+
+                    <!-- 4. Precio del producto + IVA -->
                     <div class="product-price-container">
                         <span class="price-amount" id="detail-product-price">$0.00</span>
                         <span class="price-vat">IVA incluido</span>
                     </div>
 
-                    <!-- Descripción General -->
-                    <div class="product-desc-container">
-                        <h3 class="product-desc-title">Descripción General</h3>
-                        <p class="product-short-desc" id="detail-product-desc">Cargando descripción...</p>
+                    <!-- 2. Pequeña descripción -->
+                    <p class="product-short-desc" id="detail-product-desc">Cargando descripción...</p>
+
+                    <!-- Especificaciones Técnicas (Listado Simple) -->
+                    <div class="product-specs-simple-list">
+                        <h4 class="specs-list-title">ESPECIFICACIONES TÉCNICAS</h4>
+                        <ul class="specs-items-list">
+                            <li class="spec-list-item">
+                                <span class="spec-list-icon">📐</span>
+                                <span class="spec-list-label">Alto (cm):</span>
+                                <strong class="spec-list-value" id="detail-spec-height">180 cm</strong>
+                            </li>
+                            <li class="spec-list-item">
+                                <span class="spec-list-icon">📐</span>
+                                <span class="spec-list-label">Largo (cm):</span>
+                                <strong class="spec-list-value" id="detail-spec-length">90 cm</strong>
+                            </li>
+                            <li class="spec-list-item">
+                                <span class="spec-list-icon">📐</span>
+                                <span class="spec-list-label">Ancho (cm):</span>
+                                <strong class="spec-list-value" id="detail-spec-width">45 cm</strong>
+                            </li>
+                            <li class="spec-list-item" id="detail-spec-security-container">
+                                <span class="spec-list-icon">🔒</span>
+                                <span class="spec-list-label">Tipo de Seguridad:</span>
+                                <strong class="spec-list-value" id="detail-spec-security">Porta candado</strong>
+                            </li>
+                        </ul>
                     </div>
 
                     <!-- 5. Variedad de Colores (Estilo exacto de la primera imagen de referencia) -->
@@ -131,7 +157,7 @@
                             <span class="qty-label">Cantidad:</span>
                             <div class="qty-control">
                                 <button type="button" class="qty-btn" id="qty-minus" title="Reducir cantidad">−</button>
-                                <input type="number" id="detail-qty-input" value="1" min="1" class="qty-input" readonly>
+                                <input type="number" id="detail-qty-input" value="1" min="1" max="9999" maxlength="4" step="1" inputmode="numeric" class="qty-input">
                                 <button type="button" class="qty-btn" id="qty-plus" title="Aumentar cantidad">+</button>
                             </div>
                         </div>
@@ -143,6 +169,12 @@
                                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                             </svg>
                             <span>+ Carrito</span>
+                        </button>
+
+                        <button type="button" id="btn-detail-wishlist" class="btn-detail-wishlist" title="Añadir a lista de deseos" aria-label="Añadir a lista de deseos">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -197,7 +229,7 @@
     <!-- Footer Placeholder -->
     <div id="footer-placeholder"></div>
 
-    <script type="module" src="product-details.js?v=3.2"></script>
+    <script type="module" src="product-details.js"></script>
 </body>
 
 </html>

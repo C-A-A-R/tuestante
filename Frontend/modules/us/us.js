@@ -8,7 +8,8 @@ import { initFooter } from '../../components/footer/footer.js';
  */
 async function loadComponent(placeholderId, filePath) {
   try {
-    const response = await fetch(filePath);
+    const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
+    const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
       throw new Error(`Error al cargar el componente: ${response.statusText}`);
     }

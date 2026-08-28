@@ -198,7 +198,32 @@ class FavoriteProduct(BaseModel):
         ordering = ['-created_at']
         unique_together = ('user', 'product')
 
+    def check_and_update_featured_status(self):
+        """
+        Si el producto alcanza 20 o más favoritos activos de distintos usuarios,
+        se marca automáticamente como producto destacado (is_feature_product=True).
+        """
+        if not self.is_deleted and self.product_id:
+            active_favorites_count = FavoriteProduct.objects.filter(
+                product_id=self.product_id,
+                is_deleted=False
+            ).count()
+
+            if active_favorites_count >= 20:
+                try:
+                    product = self.product or Product.objects.get(id=self.product_id)
+                    if not product.is_feature_product:
+                        product.is_feature_product = True
+                        product.save(update_fields=['is_feature_product'])
+                except Product.DoesNotExist:
+                    pass
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.check_and_update_featured_status()
+
     def __str__(self):
         return f"{self.user} ❤️ {self.product.product_name}"
+
 
 

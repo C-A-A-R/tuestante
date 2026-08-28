@@ -1,27 +1,43 @@
 import { initNavbar } from './components/navbar/navbar.js';
 import { initFooter } from './components/footer/footer.js';
-import { obtenerCategorias, obtenerTiposProducto, obtenerProductosDestacados, obtenerProductos } from './modules/product/product.api.js';
-import { backendOrigin } from './js/config.js';
+import { obtenerCategorias, obtenerTiposProducto, obtenerProductosDestacados, obtenerProductos, alternarFavoritoProducto } from './modules/product/product.api.js';
+import { obtenerProyectos } from './modules/project/project.api.js';
+import { extractList, resolveImageUrl } from './js/api.js';
+import { getAccessToken } from './js/storage.js';
+import { showCartModal } from './components/cart-modal/cart-modal.js';
+import { showSuccessToast, showInfoToast, showErrorToast } from './components/toast/toast.js';
 
 /**
- * Extrae un arreglo uniforme de resultados de la API (maneja listas simples y respuestas paginadas).
+ * Genera el HTML para un mensaje de error amigable cuando la API no responde.
  */
-function extractList(apiResult) {
-  if (!apiResult) return [];
-  if (Array.isArray(apiResult)) return apiResult;
-  if (Array.isArray(apiResult.results)) return apiResult.results;
-  return [];
+function createApiErrorFeedback(message = 'No se pudo conectar con el servidor', hint = 'Por favor, verifica tu conexión o intenta recargar la página.') {
+  return `
+    <div class="api-feedback-card error-feedback" style="grid-column: 1 / -1; width: 100%; text-align: center; padding: 2.5rem 1.5rem; background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; margin: 12px 0;">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px; display: inline-block;">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <p style="color: #334155; font-family: 'Outfit', 'Inter', sans-serif; font-weight: 700; font-size: 1rem; margin: 0 0 4px 0;">${message}</p>
+      <p style="color: #64748b; font-family: 'Inter', sans-serif; font-size: 0.88rem; margin: 0;">${hint}</p>
+    </div>
+  `;
 }
 
 /**
- * Resuelve la URL completa de una imagen proveniente del backend.
+ * Genera el HTML para un mensaje amigable cuando la API responde con 0 registros.
  */
-function resolveImageUrl(path, fallback = '') {
-  if (!path) return fallback;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  const origin = backendOrigin.startsWith('http://') || backendOrigin.startsWith('https://') ? backendOrigin : `http://${backendOrigin}`;
-  if (path.startsWith('/')) return `${origin}${path}`;
-  return `${origin}/${path}`;
+function createApiEmptyFeedback(message = 'No hay registros disponibles', hint = 'Pronto agregaremos nuevo contenido en esta sección.') {
+  return `
+    <div class="api-feedback-card empty-feedback" style="grid-column: 1 / -1; width: 100%; text-align: center; padding: 2.5rem 1.5rem; background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; margin: 12px 0;">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#005187" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px; display: inline-block;">
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+      </svg>
+      <p style="color: #334155; font-family: 'Outfit', 'Inter', sans-serif; font-weight: 700; font-size: 1rem; margin: 0 0 4px 0;">${message}</p>
+      <p style="color: #64748b; font-family: 'Inter', sans-serif; font-size: 0.88rem; margin: 0;">${hint}</p>
+    </div>
+  `;
 }
 
 /**
@@ -31,7 +47,8 @@ function resolveImageUrl(path, fallback = '') {
  */
 async function loadComponent(placeholderId, filePath) {
   try {
-    const response = await fetch(filePath);
+    const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
+    const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
       throw new Error(`Error al cargar el componente: ${response.statusText}`);
     }
@@ -55,7 +72,10 @@ async function loadHomeCategories() {
   try {
     const response = await obtenerCategorias();
     const categories = extractList(response);
-    if (categories.length === 0) return;
+    if (!categories || categories.length === 0) {
+      container.innerHTML = createApiEmptyFeedback('No hay categorías registradas por el momento.', 'Explora nuestro catálogo para conocer todos los productos disponibles.');
+      return;
+    }
 
     container.innerHTML = categories.map(cat => {
       const name = cat.category_name || cat.name || 'Categoría';
@@ -75,6 +95,7 @@ async function loadHomeCategories() {
     }).join('');
   } catch (error) {
     console.error('Error al cargar categorías en el home:', error);
+    container.innerHTML = createApiErrorFeedback('No se pudieron cargar las categorías.', 'Verifica la conexión con el servidor backend o recarga la página.');
   }
 }
 
@@ -86,42 +107,12 @@ async function loadHomeProductTypes() {
   if (!container) return;
 
   try {
-    let types = [];
-    try {
-      const response = await obtenerTiposProducto();
-      types = extractList(response);
-    } catch {
-      types = [];
-    }
-
-    const fallbackTypes = [
-      { id: 1, name: 'Lockers', description: 'Lockers metálicos de alta seguridad.', image: 'assets/images/carrusel-index/LocekrL4Gris.jpg' },
-      { id: 2, name: 'Estantes', description: 'Estanterías metálicas de gran resistencia.', image: 'assets/images/carrusel-index/Carrousel.png' },
-      { id: 3, name: 'Archivadores', description: 'Archivadores metálicos para oficinas.', image: 'assets/images/productos/estante-blanco.jpeg' },
-      { id: 4, name: 'Gabinetes', description: 'Gabinetes metálicos para almacenamiento seguro.', image: 'assets/images/productos/locker-verde.jpeg' }
-    ];
+    const response = await obtenerTiposProducto();
+    const types = extractList(response);
 
     if (!types || types.length === 0) {
-      types = fallbackTypes;
-    } else {
-      types = types.map(t => {
-        let name = t.product_type_name || t.name || 'Tipo de Producto';
-        if (name.trim().toLowerCase() === 'estante') name = 'Estantes';
-        return { ...t, name };
-      });
-
-      const hasGabinetes = types.some(t => t.name.toLowerCase().includes('gabinete'));
-      if (!hasGabinetes) {
-        types.push({ id: 4, name: 'Gabinetes', description: 'Gabinetes metálicos para almacenamiento seguro.', image: 'assets/images/productos/locker-verde.jpeg' });
-      }
-
-      for (const fb of fallbackTypes) {
-        if (types.length >= 4) break;
-        if (!types.some(t => t.name.toLowerCase() === fb.name.toLowerCase())) {
-          types.push(fb);
-        }
-      }
-      types = types.slice(0, 4);
+      container.innerHTML = createApiEmptyFeedback('No hay tipos de productos registrados actualmente.', 'Visita nuestra tienda para descubrir todos los modelos.');
+      return;
     }
 
     container.innerHTML = types.map(type => {
@@ -144,15 +135,18 @@ async function loadHomeProductTypes() {
     }).join('');
   } catch (error) {
     console.error('Error al cargar tipos de producto en el home:', error);
+    container.innerHTML = createApiErrorFeedback('No se pudieron cargar los tipos de producto.', 'Verifica la conexión con el servidor backend.');
   }
 }
 
 /**
- * Carga dinámicamente los Productos Destacados desde la API de Django.
+ * Carga dinámicamente el Carrusel de Productos Destacados desde la API de Django con Scroll Táctil.
  */
 async function loadHomeFeaturedProducts() {
-  const container = document.getElementById('home-featured-products-container');
-  if (!container) return;
+  const track = document.getElementById('home-featured-products-container');
+  const viewport = document.getElementById('home-featured-carousel-viewport');
+
+  if (!track || !viewport) return;
 
   try {
     let response;
@@ -162,56 +156,125 @@ async function loadHomeFeaturedProducts() {
       response = await obtenerProductos();
     }
     const products = extractList(response);
-    if (products.length === 0) return;
-
-    // Mostrar 6 productos destacados (2 filas de 3 productos)
-    let displayProducts = [...products];
-    if (displayProducts.length < 6) {
-      const initialLen = displayProducts.length;
-      let i = 0;
-      while (displayProducts.length < 6) {
-        displayProducts.push(products[i % initialLen]);
-        i++;
-      }
+    if (!products || products.length === 0) {
+      track.innerHTML = createApiEmptyFeedback('No hay productos destacados registrados en este momento.', 'Consulta nuestro catálogo completo para ver todas las opciones.');
+      return;
     }
-    displayProducts = displayProducts.slice(0, 6);
 
-    container.innerHTML = displayProducts.map(prod => {
+    track.innerHTML = products.map((prod, idx) => {
+      const id = prod.id;
       const name = prod.product_name || prod.name || 'Producto Destacado';
-      const catName = prod.category_detail?.category_name || prod.categoryName || 'General';
-      const desc = prod.description || '';
+      const desc = prod.description || 'Estructura metálica de alta durabilidad y resistencia para optimizar tus espacios.';
       const price = typeof prod.price === 'number' ? prod.price : parseFloat(prod.price) || 0;
       const img = resolveImageUrl(prod.product_image || prod.image, 'assets/images/productos/estante-blanco.jpeg');
+      const isFeatured = !!(prod.rating === 5.0 || prod.badge === 'Destacado' || prod.is_feature_product !== false);
+      const link = `modules/product/product-details.html?id=${id}`;
+
+      const starBadgeHTML = isFeatured ? `
+        <div class="badge-destacado-star" title="Producto Destacado">
+          <svg class="star-icon" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="1.5">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+          <span class="star-label">Producto Destacado</span>
+        </div>
+      ` : '';
 
       return `
-        <a href="modules/product/product-details.html?id=${prod.id}" class="catalog-product-card" style="text-decoration: none; color: inherit;">
-          <div class="catalog-product-img-wrapper">
-            <div class="badge-destacado-star" title="Producto Destacado">
-              <svg class="star-icon" viewBox="0 0 24 24" fill="#94A3B8" stroke="#64748B" stroke-width="1.5">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        <div class="unified-product-card" data-index="${idx}">
+          <div class="unified-card-media">
+            <a href="${link}" class="unified-card-img-link">
+              <img src="${img}" alt="${name}" class="unified-card-img" loading="lazy">
+            </a>
+            
+            ${starBadgeHTML}
+            
+            <button class="unified-wishlist-btn ${prod.is_favorite ? 'active' : ''}" data-id="${id}" title="${prod.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos'}" aria-label="Añadir a favoritos">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
-              <span class="star-label">Producto Destacado</span>
-            </div>
-            <img src="${img}" alt="${name}" class="catalog-product-img">
+            </button>
           </div>
-          <div class="catalog-product-body">
+
+          <div class="unified-card-body">
             <div>
-              <div class="catalog-product-meta">
-                <span class="catalog-product-category">${catName}</span>
+              <div class="unified-card-header">
+                <h3 class="unified-card-title">
+                  <a href="${link}">${name}</a>
+                </h3>
+                <span class="unified-card-price">$${price.toFixed(2)}</span>
               </div>
-              <h3 class="catalog-product-name">${name}</h3>
-              <p class="catalog-product-desc">${desc}</p>
+
+              <p class="unified-card-desc">${desc}</p>
+
+              <div class="unified-card-swatches">
+                <span class="swatch-dot" style="background-color: #ea580c;" title="Naranja"></span>
+                <span class="swatch-dot" style="background-color: #0f172a;" title="Gris Oscuro"></span>
+                <span class="swatch-dot" style="background-color: #15803d;" title="Verde Sabana"></span>
+                <span class="swatch-dot" style="background-color: #005187;" title="Azul"></span>
+                <span class="swatch-more">+4</span>
+              </div>
             </div>
-            <div class="catalog-product-footer">
-              <span class="catalog-product-price">$${price.toFixed(2)}</span>
-              <span class="catalog-product-btn">Ver Detalle</span>
+
+            <div class="unified-card-actions">
+              <a href="${link}" class="unified-btn btn-details">Ver Detalle</a>
+              <button class="unified-btn btn-card-add-cart" data-id="${id}" data-name="${name}" data-price="${price}" data-image="${img}">
+                + Carrito
+              </button>
             </div>
           </div>
-        </a>
+        </div>
       `;
     }).join('');
+
+    // Soporte para arrastrar con el ratón en escritorio (Mouse Drag Scroll)
+    let isMouseDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    let isDragging = false;
+
+    viewport.addEventListener('mousedown', (e) => {
+      isMouseDown = true;
+      isDragging = false;
+      startX = e.pageX - viewport.offsetLeft;
+      scrollLeft = viewport.scrollLeft;
+      viewport.classList.add('is-dragging');
+    });
+
+    viewport.addEventListener('mouseleave', () => {
+      isMouseDown = false;
+      viewport.classList.remove('is-dragging');
+    });
+
+    viewport.addEventListener('mouseup', () => {
+      isMouseDown = false;
+      setTimeout(() => {
+        isDragging = false;
+        viewport.classList.remove('is-dragging');
+      }, 50);
+    });
+
+    viewport.addEventListener('mousemove', (e) => {
+      if (!isMouseDown) return;
+      e.preventDefault();
+      const x = e.pageX - viewport.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      if (Math.abs(walk) > 5) {
+        isDragging = true;
+      }
+      viewport.scrollLeft = scrollLeft - walk;
+    });
+
+    // Prevenir clic accidental si el usuario estaba arrastrando
+    viewport.addEventListener('click', (e) => {
+      if (isDragging) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+
   } catch (error) {
-    console.error('Error al cargar productos destacados en el home:', error);
+    console.error('Error al cargar carrusel de productos destacados en el home:', error);
+    track.innerHTML = createApiErrorFeedback('No se pudieron cargar los productos destacados.', 'Por favor, intenta de nuevo más tarde.');
   }
 }
 
@@ -474,15 +537,66 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Añadir por defecto la clase de drawer cerrado para ajustar el layout del footer
   document.body.classList.add('drawer-collapsed');
 
-  // Desplazamiento suave si la URL contiene ancla (#contacto o #ayuda)
-  if (window.location.hash) {
-    const rawHash = window.location.hash.substring(1);
-    const targetSection = document.getElementById(rawHash) || (rawHash === 'contacto' || rawHash === 'contactos' ? document.getElementById('contacto') : null);
-    if (targetSection) {
-      setTimeout(() => {
-        targetSection.scrollIntoView({ behavior: 'smooth' });
-      }, 350);
+  // Delegación de eventos para botones de productos destacados (+ Carrito y Lista de Deseos)
+  document.addEventListener('click', async (e) => {
+    const wishlistBtn = e.target.closest('.unified-wishlist-btn');
+    if (wishlistBtn) {
+      const id = wishlistBtn.getAttribute('data-id') || wishlistBtn.closest('.unified-product-card')?.querySelector('.btn-card-add-cart')?.getAttribute('data-id');
+      if (!id) return;
+
+      const token = getAccessToken();
+      if (!token) {
+        showInfoToast('Inicia Sesión', 'Debes iniciar sesión para guardar productos en tu lista de deseos.');
+        return;
+      }
+
+      wishlistBtn.disabled = true;
+      try {
+        const res = await alternarFavoritoProducto(id);
+        if (res && typeof res.is_favorite === 'boolean') {
+          wishlistBtn.classList.toggle('active', res.is_favorite);
+          wishlistBtn.setAttribute('title', res.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos');
+          if (res.is_favorite) {
+            showSuccessToast('Lista de Deseos', res.message || 'Producto agregado a tus favoritos.');
+          } else {
+            showInfoToast('Lista de Deseos', res.message || 'Producto eliminado de tus favoritos.');
+          }
+        }
+      } catch (err) {
+        console.error('Error al alternar favorito en home:', err);
+        showErrorToast('Error', 'No se pudo actualizar la lista de deseos.');
+      } finally {
+        wishlistBtn.disabled = false;
+      }
+      return;
     }
-  }
+
+    const btn = e.target.closest('.btn-card-add-cart');
+    if (btn) {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      const name = btn.getAttribute('data-name');
+      const price = parseFloat(btn.getAttribute('data-price')) || 0;
+      const image = btn.getAttribute('data-image');
+
+      const CART_STORAGE_KEY = 'tuestante_cart';
+      let items = [];
+      try {
+        const raw = localStorage.getItem(CART_STORAGE_KEY);
+        if (raw) items = JSON.parse(raw);
+      } catch (err) {
+        items = [];
+      }
+
+      const existingIndex = items.findIndex(i => String(i.id) === String(id));
+      if (existingIndex > -1) {
+        items[existingIndex].qty += 1;
+      } else {
+        items.push({ id, name, price, image, color: 'Estándar', qty: 1 });
+      }
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+      window.dispatchEvent(new Event('cart-updated'));
+      showCartModal({ id, name, price, image });
+    }
+  });
 });
 

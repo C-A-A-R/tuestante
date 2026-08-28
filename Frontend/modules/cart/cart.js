@@ -9,7 +9,8 @@ const CART_STORAGE_KEY = 'tuestante_cart';
  */
 async function loadComponent(placeholderId, filePath) {
     try {
-        const response = await fetch(filePath);
+        const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
+        const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) throw new Error(`Error al cargar ${filePath}`);
         const html = await response.text();
         const container = document.getElementById(placeholderId);
@@ -38,6 +39,7 @@ export function getCartItems() {
 export function saveCartItems(items) {
     try {
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+        window.dispatchEvent(new Event('cart-updated'));
     } catch (e) {
         console.error('Error al guardar el carrito en localStorage:', e);
     }
@@ -67,17 +69,6 @@ export function addToCart(product) {
 
     saveCartItems(items);
 }
-
-// Variables de estado del cupón
-let appliedDiscountPercent = 0;
-let appliedCouponCode = '';
-
-const VALID_COUPONS = {
-    'TUESTANTE10': 0.10,
-    'DESCUENTO10': 0.10,
-    'PROMO15': 0.15,
-    'PROMO20': 0.20
-};
 
 /**
  * Renderiza la interfaz principal del Carrito.
@@ -139,7 +130,7 @@ function renderCart() {
 
                                 <div class="qty-control">
                                     <button class="qty-btn btn-qty-minus" data-index="${index}">-</button>
-                                    <input type="number" class="qty-input" value="${item.qty}" min="1" max="99" data-index="${index}">
+                                    <input type="number" class="qty-input" value="${item.qty}" min="1" max="9999" maxlength="4" data-index="${index}">
                                     <button class="qty-btn btn-qty-plus" data-index="${index}">+</button>
                                 </div>
 
@@ -162,44 +153,6 @@ function renderCart() {
                     ← Seguir Comprando
                 </a>
 
-                <div class="shipping-state-box">
-                    <span class="shipping-state-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
-                        </svg>
-                    </span>
-                    <div class="shipping-state-content">
-                        <label for="shipping-state-select" class="shipping-state-label">Estado de Envío:</label>
-                        <select id="shipping-state-select" class="shipping-state-select">
-                            <option value="Táchira">Táchira (Sede Principal)</option>
-                            <option value="Mérida">Mérida</option>
-                            <option value="Trujillo">Trujillo</option>
-                            <option value="Barinas">Barinas</option>
-                            <option value="Zulia">Zulia</option>
-                            <option value="Lara">Lara</option>
-                            <option value="Portuguesa">Portuguesa</option>
-                            <option value="Falcón">Falcón</option>
-                            <option value="Yaracuy">Yaracuy</option>
-                            <option value="Cojedes">Cojedes</option>
-                            <option value="Apure">Apure</option>
-                            <option value="Carabobo">Carabobo</option>
-                            <option value="Aragua">Aragua</option>
-                            <option value="Distrito Capital (Caracas)">Distrito Capital (Caracas)</option>
-                            <option value="Miranda">Miranda</option>
-                            <option value="Guárico">Guárico</option>
-                            <option value="La Guaira">La Guaira</option>
-                            <option value="Anzoátegui">Anzoátegui</option>
-                            <option value="Monagas">Monagas</option>
-                            <option value="Sucre">Sucre</option>
-                            <option value="Bolívar">Bolívar</option>
-                            <option value="Nueva Esparta (Margarita)">Nueva Esparta (Margarita)</option>
-                            <option value="Amazonas">Amazonas</option>
-                            <option value="Delta Amacuro">Delta Amacuro</option>
-                        </select>
-                    </div>
-                </div>
-
                 <button id="btn-empty-cart" class="btn-clear-cart">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 6 5 6 21 6"></polyline>
@@ -221,24 +174,8 @@ function renderCart() {
                 </div>
 
                 <div class="summary-row">
-                    <span>Envío (<span id="shipping-state-name">Táchira</span>)</span>
-                    <span id="summary-shipping" class="summary-val free-badge">Gratis (Táchira)</span>
-                </div>
-
-                <div id="coupon-applied-row" class="summary-row coupon-applied-row" style="${appliedDiscountPercent > 0 ? '' : 'display: none;'}">
-                    <span>Descuento (<span id="coupon-code-text">${appliedCouponCode}</span>)</span>
-                    <span id="summary-discount" class="summary-val discount-val">-$0.00</span>
-                </div>
-
-                <div class="summary-promo-box">
-                    <label for="promo-code-input" class="promo-label">¿Tienes un cupón?</label>
-                    <div class="promo-input-wrapper">
-                        <input type="text" id="promo-code-input" placeholder="Ej: TUESTANTE10" aria-label="Código de descuento" autocomplete="off" value="${appliedCouponCode}">
-                        <button id="btn-apply-promo" class="btn-promo-apply">Aplicar</button>
-                    </div>
-                    <span id="promo-message" class="promo-message ${appliedDiscountPercent > 0 ? 'success' : ''}">
-                        ${appliedDiscountPercent > 0 ? `¡Cupón aplicado (${appliedDiscountPercent * 100}% de descuento)!` : ''}
-                    </span>
+                    <span>Envío</span>
+                    <span id="summary-shipping" class="summary-val free-badge">Envío Gratis</span>
                 </div>
 
                 <div class="summary-divider"></div>
@@ -249,14 +186,13 @@ function renderCart() {
                 </div>
 
                 <div class="summary-buttons">
-                    <button id="btn-checkout-whatsapp" class="btn btn-primary btn-checkout-whatsapp">
+                    <button id="btn-realizar-compra" class="btn btn-primary btn-checkout-action">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                            <circle cx="9" cy="21" r="1"></circle>
+                            <circle cx="20" cy="21" r="1"></circle>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                         </svg>
-                        Cotizar por WhatsApp
-                    </button>
-                    <button id="btn-checkout-direct" class="btn btn-secondary btn-checkout-direct">
-                        Finalizar Compra
+                        Realizar Compra
                     </button>
                 </div>
 
@@ -324,43 +260,17 @@ function formatShortStateName(name) {
 function updateSummary() {
     const items = getCartItems();
     const subtotal = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
-    const discountAmount = subtotal * appliedDiscountPercent;
-
-    const selectedState = localStorage.getItem('tuestante_selected_state') || 'Táchira';
-    const shippingInfo = getShippingInfo(selectedState);
-
-    const total = Math.max(0, subtotal - discountAmount + shippingInfo.price);
 
     const subtotalEl = document.getElementById('summary-subtotal');
-    const shippingNameEl = document.getElementById('shipping-state-name');
     const shippingEl = document.getElementById('summary-shipping');
-    const discountRow = document.getElementById('coupon-applied-row');
-    const discountEl = document.getElementById('summary-discount');
     const totalEl = document.getElementById('summary-total');
 
     if (subtotalEl) subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
-    if (shippingNameEl) shippingNameEl.textContent = formatShortStateName(selectedState);
-
     if (shippingEl) {
-        if (shippingInfo.isFree) {
-            shippingEl.textContent = 'Gratis (Táchira)';
-            shippingEl.className = 'summary-val free-badge';
-        } else {
-            shippingEl.textContent = `$${shippingInfo.price.toFixed(2)}`;
-            shippingEl.className = 'summary-val';
-        }
+        shippingEl.textContent = 'Envío Gratis';
+        shippingEl.className = 'summary-val free-badge';
     }
-
-    if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
-
-    if (discountRow && discountEl) {
-        if (appliedDiscountPercent > 0) {
-            discountRow.style.display = 'flex';
-            discountEl.textContent = `-$${discountAmount.toFixed(2)}`;
-        } else {
-            discountRow.style.display = 'none';
-        }
-    }
+    if (totalEl) totalEl.textContent = `$${subtotal.toFixed(2)}`;
 }
 
 /**
@@ -390,19 +300,27 @@ function bindCartEvents() {
             const index = parseInt(btn.getAttribute('data-index'), 10);
             const items = getCartItems();
             if (items[index]) {
-                items[index].qty += 1;
-                saveCartItems(items);
-                renderCart();
+                if (items[index].qty < 9999) {
+                    items[index].qty += 1;
+                    saveCartItems(items);
+                    renderCart();
+                }
             }
         });
     });
 
-    // Input directo de cantidad
+    // Input directo de cantidad (1 - 9999)
     wrapper.querySelectorAll('.qty-input').forEach(input => {
+        input.addEventListener('input', () => {
+            if (input.value.length > 4) {
+                input.value = input.value.slice(0, 4);
+            }
+        });
         input.addEventListener('change', () => {
             const index = parseInt(input.getAttribute('data-index'), 10);
             let val = parseInt(input.value, 10);
             if (isNaN(val) || val < 1) val = 1;
+            if (val > 9999) val = 9999;
             const items = getCartItems();
             if (items[index]) {
                 items[index].qty = val;
@@ -429,104 +347,21 @@ function bindCartEvents() {
         btnEmpty.addEventListener('click', () => {
             showEmptyCartConfirmModal(() => {
                 saveCartItems([]);
-                appliedDiscountPercent = 0;
-                appliedCouponCode = '';
                 renderCart();
             });
         });
     }
 
-    // Aplicar cupón de descuento
-    const btnPromo = document.getElementById('btn-apply-promo');
-    const inputPromo = document.getElementById('promo-code-input');
-    const msgPromo = document.getElementById('promo-message');
-
-    if (btnPromo && inputPromo && msgPromo) {
-        btnPromo.addEventListener('click', () => {
-            const code = inputPromo.value.trim().toUpperCase();
-            if (!code) {
-                msgPromo.textContent = 'Ingresa un código válido.';
-                msgPromo.className = 'promo-message error';
+    // Botón Realizar Compra -> Redirige a Checkout
+    const btnRealizar = document.getElementById('btn-realizar-compra');
+    if (btnRealizar) {
+        btnRealizar.addEventListener('click', () => {
+            const items = getCartItems();
+            if (items.length === 0) {
+                alert('Tu carrito está vacío. Añade productos antes de realizar tu compra.');
                 return;
             }
-
-            if (VALID_COUPONS[code]) {
-                appliedDiscountPercent = VALID_COUPONS[code];
-                appliedCouponCode = code;
-                msgPromo.textContent = `¡Cupón ${code} aplicado (${appliedDiscountPercent * 100}% desc.)!`;
-                msgPromo.className = 'promo-message success';
-                renderCart();
-            } else {
-                msgPromo.textContent = 'Código de descuento no válido o expirado.';
-                msgPromo.className = 'promo-message error';
-            }
-        });
-    }
-
-    // Manejo del selector de Estado de Envío (a la izquierda de Vaciar Carrito)
-    const selectState = document.getElementById('shipping-state-select');
-    if (selectState) {
-        const savedState = localStorage.getItem('tuestante_selected_state') || 'Táchira';
-        for (let i = 0; i < selectState.options.length; i++) {
-            if (selectState.options[i].value.toLowerCase() === savedState.toLowerCase()) {
-                selectState.selectedIndex = i;
-                break;
-            }
-        }
-
-        selectState.addEventListener('change', () => {
-            const selectedVal = selectState.value;
-            localStorage.setItem('tuestante_selected_state', selectedVal);
-            updateSummary();
-        });
-    }
-
-    // Botón Cotizar por WhatsApp
-    const btnWhatsapp = document.getElementById('btn-checkout-whatsapp');
-    if (btnWhatsapp) {
-        btnWhatsapp.addEventListener('click', () => {
-            const items = getCartItems();
-            if (items.length === 0) return;
-
-            const selectedState = localStorage.getItem('tuestante_selected_state') || 'Táchira';
-            const shippingInfo = getShippingInfo(selectedState);
-
-            let text = 'Hola! Deseo cotizar los siguientes productos de mi carrito en TuEstante:\n\n';
-            let subtotal = 0;
-
-            items.forEach((item, i) => {
-                const itemSub = item.price * item.qty;
-                subtotal += itemSub;
-                text += `${i + 1}. *${item.name}* (x${item.qty}) - Color: ${item.color} - $${itemSub.toFixed(2)}\n`;
-            });
-
-            const discount = subtotal * appliedDiscountPercent;
-            const total = subtotal - discount + shippingInfo.price;
-
-            text += `\n📍 *Estado de Envío*: ${selectedState}`;
-            text += `\n🚚 *Costo de Envío (Origen Táchira)*: ${shippingInfo.isFree ? 'Gratis (Sede Táchira)' : `$${shippingInfo.price.toFixed(2)}`}`;
-
-            if (appliedDiscountPercent > 0) {
-                text += `\n*Descuento (${appliedCouponCode})*: -$${discount.toFixed(2)}`;
-            }
-
-            text += `\n*Total Estimado con Envío*: $${total.toFixed(2)}\n\n¿Me podrías brindar información sobre opciones de envío y disponibilidad para ${selectedState}? ¡Gracias!`;
-
-            const encoded = encodeURIComponent(text);
-            window.open(`https://wa.me/584120000000?text=${encoded}`, '_blank');
-        });
-    }
-
-    // Botón Finalizar Compra Directa
-    const btnDirect = document.getElementById('btn-checkout-direct');
-    if (btnDirect) {
-        btnDirect.addEventListener('click', () => {
-            const selectedState = localStorage.getItem('tuestante_selected_state') || 'Táchira';
-            alert(`¡Gracias por tu interés! Tu pedido con envío a ${selectedState} ha sido registrado con éxito. Un representante de ventas se pondrá en contacto contigo pronto.`);
-            saveCartItems([]);
-            appliedDiscountPercent = 0;
-            appliedCouponCode = '';
-            renderCart();
+            window.location.href = '../order/checkout.html';
         });
     }
 }

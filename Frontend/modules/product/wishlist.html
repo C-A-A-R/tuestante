@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productos Deseados — TuEstante</title>
+    <meta name="description"
+        content="Consulta tu lista de deseos de productos de TuEstante: Lockers, Estantes Industriales, Armarios y Mobiliario Metálico favoritos.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Estilos Globales y de Componentes -->
+    <link rel="stylesheet" href="../../css/base.css">
+    <link rel="stylesheet" href="../../components/navbar/navbar.css">
+    <link rel="stylesheet" href="../../components/footer/footer.css">
+    <link rel="stylesheet" href="../../components/toast/toast.css">
+    <link rel="stylesheet" href="products.css">
+    <link rel="stylesheet" href="wishlist.css">
+</head>
+
+<body>
+    <!-- Navbar Placeholder -->
+    <div id="navbar-placeholder"></div>
+
+    <main class="main-content">
+        <!-- 1. Hero / Encabezado de Productos Deseados -->
+        <section class="wishlist-hero-section">
+            <div class="wishlist-hero-container">
+                <nav class="wishlist-breadcrumbs" aria-label="Navegación de migas de pan">
+                    <a href="../../index.html">Inicio</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <a href="products.html">Catálogo</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-current">Productos Deseados</span>
+                </nav>
+
+                <div class="wishlist-hero-content">
+                    <div class="wishlist-title-box">
+                        <h1 class="wishlist-hero-title">
+                            <span class="wishlist-heart-badge">❤️</span> Mis Productos Deseados
+                        </h1>
+                        <p class="wishlist-hero-subtitle">
+                            Explora y administra tus muebles y estantes favoritos guardados para tus próximas compras.
+                        </p>
+                    </div>
+
+                    <div class="wishlist-count-badge">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="#f43f5e" stroke="#e11d48" stroke-width="1.5">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                        <span><strong id="wishlist-count-number">0</strong> Favoritos</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Barra de Filtros del Catálogo -->
+        <section class="products-toolbar-section">
+            <div class="filter-card-container">
+                <!-- 1. Buscador por Nombre -->
+                <div class="filter-group filter-search-group">
+                    <label for="search-input" class="filter-field-label">Buscador por Nombre</label>
+                    <div class="filter-input-wrapper">
+                        <svg class="filter-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="search-input" class="filter-text-input"
+                            placeholder="Escribe el nombre del producto..." aria-label="Buscar en mis productos deseados">
+                    </div>
+                </div>
+
+                <!-- 2. Tipo de Producto -->
+                <div class="filter-group">
+                    <label for="filter-type" class="filter-field-label">Tipo de Producto</label>
+                    <div class="filter-select-wrapper">
+                        <select id="filter-type" class="filter-select" aria-label="Filtrar por tipo de producto">
+                            <option value="all">Todos los Tipos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 3. Categoría -->
+                <div class="filter-group">
+                    <label for="filter-category" class="filter-field-label">Categoría</label>
+                    <div class="filter-select-wrapper">
+                        <select id="filter-category" class="filter-select" aria-label="Filtrar por categoría">
+                            <option value="all">Todas las Categorías</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 4. Botón Limpiar Filtros -->
+                <div class="filter-action-group">
+                    <button type="button" id="clear-filters-btn" class="btn-clear-filters" title="Limpiar todos los filtros">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l6.73-6.19"></path>
+                        </svg>
+                        <span>Limpiar Filtros</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Grid de Productos Deseados -->
+        <section class="products-catalog-section">
+            <div class="unified-products-grid" id="wishlist-catalog-container">
+                <!-- Tarjetas inyectadas dinámicamente -->
+            </div>
+
+            <!-- Estado Vacío -->
+            <div id="wishlist-empty-box" class="wishlist-empty-box" style="display: none;">
+                <div class="wishlist-empty-icon">🤍</div>
+                <h3 class="wishlist-empty-title">Tu lista de deseos está vacía</h3>
+                <p class="wishlist-empty-desc">
+                    Aún no has guardado ningún producto en tus favoritos. Explora nuestro catálogo y presiona el ícono de corazón para guardar los muebles de tu interés.
+                </p>
+                <a href="products.html" class="btn-explore-catalog">
+                    Explorar Catálogo de Productos
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Script Principal -->
+    <script type="module" src="wishlist.js"></script>
+</body>
+
+</html>

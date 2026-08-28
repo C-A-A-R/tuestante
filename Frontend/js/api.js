@@ -157,7 +157,7 @@ async function refreshAccessTokenIfNeeded() {
 
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
-      const response = await fetch(buildUrl("/usuarios/renovar-token/"), {
+      const response = await fetch(buildUrl("/user/token/refresh/"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -193,4 +193,39 @@ async function refreshAccessTokenIfNeeded() {
   }
 
   return refreshInFlight;
+}
+
+export { backendOrigin, API_BASE_URL } from "./config.js";
+
+/**
+ * Extrae un arreglo uniforme de resultados de la API (maneja listas simples y respuestas paginadas con results/data).
+ * @param {*} apiResult 
+ * @returns {Array}
+ */
+export function extractList(apiResult) {
+  if (!apiResult) return [];
+  if (Array.isArray(apiResult)) return apiResult;
+  if (Array.isArray(apiResult.results)) return apiResult.results;
+  if (Array.isArray(apiResult.data)) return apiResult.data;
+  return [];
+}
+
+/**
+ * Resuelve la URL completa de una imagen proveniente del backend o de assets locales.
+ * @param {string} path Ruta de la imagen o URL completa
+ * @param {string} fallback Imagen por defecto en caso de no existir ruta
+ * @returns {string}
+ */
+export function resolveImageUrl(path, fallback = '') {
+  if (!path) return fallback;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  
+  import('./config.js').then();
+  let baseOrigin = (typeof window !== 'undefined' && window.__API_BASE_ORIGIN__) ? window.__API_BASE_ORIGIN__ : 'http://localhost:8000';
+  let origin = baseOrigin.endsWith('/') ? baseOrigin.slice(0, -1) : baseOrigin;
+  if (!origin.startsWith('http://') && !origin.startsWith('https://') && !origin.startsWith('/')) {
+    origin = `http://${origin}`;
+  }
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${origin}${cleanPath}`;
 }

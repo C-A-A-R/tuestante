@@ -5,6 +5,7 @@ from apps.product.api.views import (
     ProductTypeViewSet,
     ProductViewSet,
     FeaturedProductsAPIView,
+    FeaturedProductsLeastFavoritesAPIView,
     UserFavoritesAPIView,
     ToggleFavoriteAPIView,
     FavoriteProductAPIView
@@ -19,6 +20,9 @@ router.register(r'products', ProductViewSet, basename='products')
 urlpatterns = [
     # Productos destacados
     path('featured-products/', FeaturedProductsAPIView.as_view(), name='featured-products'),
+    path('featured-products/least-favorites/', FeaturedProductsLeastFavoritesAPIView.as_view(), name='featured-products-least-favorites'),
+    path('featured-products-least-favorites/', FeaturedProductsLeastFavoritesAPIView.as_view(), name='featured-products-least-favorites-alias'),
+    path('featured-products/ascending-favorites/', FeaturedProductsLeastFavoritesAPIView.as_view(), name='featured-products-ascending-favorites'),
 
     # Favoritos / Wishlist del usuario autenticado
     path('favorites/', UserFavoritesAPIView.as_view(), name='user-favorites'),

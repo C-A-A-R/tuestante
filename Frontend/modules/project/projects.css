@@ -220,9 +220,6 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
 
 .project-card-footer {
     display: flex;

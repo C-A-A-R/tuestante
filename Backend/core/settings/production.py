@@ -3,6 +3,7 @@ import pymysql
 
 pymysql.install_as_MySQLdb()
 
+print("---------------- Production settings loaded ----------------")
 # Channel Layers — Redis para producción (escala con múltiples workers)
 CHANNEL_LAYERS = {
     "default": {
@@ -13,10 +14,10 @@ CHANNEL_LAYERS = {
     }
 }
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS_DEPLOY', default=[])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS_DEPLOY', default=['backend.tuestante.com', 'tuestante.com', 'localhost', '127.0.0.1'])
 
 
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS',default=[])
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
 CORS_ALLOW_CREDENTIALS = True
 
@@ -27,59 +28,35 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': env('MYSQL_DATABASE', default='nombre_base'),
         'USER': env('MYSQL_USER', default='usuario'),
-        'PASSWORD': env('MYSQL_PASSWORD', default='contraseña'),
+        'PASSWORD': env('MYSQL_PASSWORD', default='contrasena'),
         'HOST': env('MYSQL_HOST', default='localhost'),
         'PORT': env('MYSQL_PORT', default='3306'),
     }
 }           
 
-# --- Configuración de almacenamiento Multimedia vía FTP ---
 # =========================================================
-# FTPS
+# RUTAS DE ARCHIVOS ESTÁTICOS Y MULTIMEDIA (cPanel)
 # =========================================================
-
-FTP_USER = env("FTP_USER").strip()
-FTP_PASSWORD = env("FTP_PASSWORD")
-FTP_HOST = env("FTP_HOST").strip()
-FTP_PORT = env("FTP_PORT", default="21").strip()
-
-
-FTP_LOCATION = (
-    f"ftps://"
-    f"{FTP_USER}:"
-    f"{FTP_PASSWORD}@"
-    f"{FTP_HOST}:"
-    f"{FTP_PORT}/"
+STATIC_ROOT = env(
+    'STATIC_ROOT',
+    default='/home/bectronix/backend.tuestante.com/public/static'
 )
+STATIC_URL = env('STATIC_URL', default='/static/')
 
-
-# =========================================================
-# MEDIA
-# =========================================================
-
-MEDIA_URL = env(
-    "MEDIA_BASE_URL",
-    default="https://imagenes-tu-estante.tuestante.com/"
+MEDIA_ROOT = env(
+    'MEDIA_ROOT',
+    default='/home/bectronix/backend.tuestante.com/public/media'
 )
-
+MEDIA_URL = env('MEDIA_URL', default=env('MEDIA_BASE_URL', default='/media/'))
 
 # =========================================================
-# STORAGE
+# STORAGE (Almacenamiento Local en el mismo servidor)
 # =========================================================
-
 STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.ftp.FTPStorage",
-        "OPTIONS": {
-            "location": FTP_LOCATION,
-            "base_url": MEDIA_URL,
-        },
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
-
     "staticfiles": {
-        "BACKEND": (
-            "django.contrib.staticfiles.storage."
-            "StaticFilesStorage"
-        ),
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }

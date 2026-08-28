@@ -68,7 +68,8 @@ function resolveImageUrl(path, fallback = '../../assets/images/categoria/estante
  */
 async function loadComponent(placeholderId, filePath) {
     try {
-        const response = await fetch(filePath);
+        const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
+        const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const html = await response.text();
         const container = document.getElementById(placeholderId);

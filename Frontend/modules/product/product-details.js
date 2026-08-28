@@ -1,7 +1,9 @@
 import { initNavbar } from '../../components/navbar/navbar.js';
-import { obtenerProductoPorId, obtenerProductos } from './product.api.js';
+import { obtenerProductoPorId, obtenerProductos, alternarFavoritoProducto } from './product.api.js';
 import { backendOrigin } from '../../js/config.js';
+import { getAccessToken } from '../../js/storage.js';
 import { showCartModal } from '../../components/cart-modal/cart-modal.js';
+import { showSuccessToast, showInfoToast, showErrorToast } from '../../components/toast/toast.js';
 
 function resolveImageUrl(imagePath, fallback = '../../assets/images/productos/estante-blanco.jpeg') {
     if (!imagePath) return fallback;
@@ -175,6 +177,8 @@ function mapProduct(p) {
         widthCm: p.width_cm !== undefined ? parseFloat(p.width_cm) : (p.widthCm || 0),
         security: p.security || '',
         badge: p.is_feature_product ? 'Destacado' : (p.badge || ''),
+        is_favorite: Boolean(p.is_favorite),
+        favorites_count: p.favorites_count || 0,
         colors: colors,
         angles: angles
     };
@@ -413,15 +417,14 @@ function populateProductDetails(product) {
     const widthEl = document.getElementById('detail-spec-width');
     if (widthEl) widthEl.textContent = `${product.widthCm || 45} cm`;
 
-    // Manejo de la Seguridad: Si no aplica o no hay seguridad, ocultar la casilla
+    // Manejo de la Seguridad: Mostrar siempre el tipo de seguridad disponible
     const secContainer = document.getElementById('detail-spec-security-container');
     const secEl = document.getElementById('detail-spec-security');
-    if (product.security && product.security.trim() !== '') {
-        if (secContainer) secContainer.style.display = 'flex';
-        if (secEl) secEl.textContent = product.security;
-    } else {
-        if (secContainer) secContainer.style.display = 'none';
-    }
+    const securityVal = (product.security && product.security.trim() !== '')
+        ? product.security
+        : 'Porta candado / Llave individual';
+    if (secContainer) secContainer.style.display = 'flex';
+    if (secEl) secEl.textContent = securityVal;
 
     // Actualizar título de la página
     document.title = `${product.name} - TuEstante`;
@@ -477,10 +480,90 @@ function populateProductDetails(product) {
         };
     }
 
-    // Configuración de los botones de cantidad +/-
+    // Conectar botón Lista de Deseos
+    const btnWishlist = document.getElementById('btn-detail-wishlist');
+    if (btnWishlist) {
+        btnWishlist.classList.toggle('active', Boolean(product.is_favorite));
+        btnWishlist.setAttribute('title', product.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos');
+
+        btnWishlist.onclick = async (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            const token = getAccessToken();
+            if (!token) {
+                showInfoToast('Inicia Sesión', 'Debes iniciar sesión para guardar productos en tu lista de deseos.');
+                return;
+            }
+
+            btnWishlist.disabled = true;
+            try {
+                const res = await alternarFavoritoProducto(product.id);
+                if (res && typeof res.is_favorite === 'boolean') {
+                    product.is_favorite = res.is_favorite;
+                    btnWishlist.classList.toggle('active', res.is_favorite);
+                    btnWishlist.setAttribute('title', res.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos');
+
+                    if (res.is_favorite) {
+                        showSuccessToast('Lista de Deseos', res.message || 'Producto agregado a tus favoritos.');
+                    } else {
+                        showInfoToast('Lista de Deseos', res.message || 'Producto eliminado de tus favoritos.');
+                    }
+                }
+            } catch (err) {
+                console.error('Error al alternar favorito en detalle:', err);
+                showErrorToast('Error', 'No se pudo actualizar la lista de deseos.');
+            } finally {
+                btnWishlist.disabled = false;
+            }
+        };
+    }
+
+    // Configuración del campo e incrementadores de cantidad (Máximo 4 dígitos = 9999)
     const qtyMinus = document.getElementById('qty-minus');
     const qtyPlus = document.getElementById('qty-plus');
     const qtyInput = document.getElementById('detail-qty-input');
+
+    if (qtyInput) {
+        // Bloquear caracteres no numéricos como 'e', '+', '-', '.'
+        qtyInput.addEventListener('keydown', (e) => {
+            if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        // Limitar en tiempo real a máximo 4 dígitos
+        qtyInput.addEventListener('input', () => {
+            if (qtyInput.value.length > 4) {
+                qtyInput.value = qtyInput.value.slice(0, 4);
+            }
+        });
+
+        // Validar y normalizar al perder foco o cambiar (rango: 1 - 9999)
+        qtyInput.addEventListener('blur', () => {
+            let val = parseInt(qtyInput.value, 10);
+            if (isNaN(val) || val < 1) {
+                qtyInput.value = 1;
+            } else if (val > 9999) {
+                qtyInput.value = 9999;
+            } else {
+                qtyInput.value = val;
+            }
+        });
+
+        qtyInput.addEventListener('change', () => {
+            let val = parseInt(qtyInput.value, 10);
+            if (isNaN(val) || val < 1) {
+                qtyInput.value = 1;
+            } else if (val > 9999) {
+                qtyInput.value = 9999;
+            } else {
+                qtyInput.value = val;
+            }
+        });
+    }
 
     if (qtyMinus && qtyInput) {
         qtyMinus.onclick = (e) => {
@@ -501,7 +584,9 @@ function populateProductDetails(product) {
                 e.stopPropagation();
             }
             let val = parseInt(qtyInput.value, 10) || 1;
-            qtyInput.value = val + 1;
+            if (val < 9999) {
+                qtyInput.value = val + 1;
+            }
         };
     }
 }
@@ -1029,7 +1114,7 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
                     
                     ${starBadgeHTML}
                     
-                    <button class="unified-wishlist-btn" title="Añadir a lista de deseos" aria-label="Añadir a favoritos">
+                    <button class="unified-wishlist-btn ${p.is_favorite ? 'active' : ''}" data-id="${p.id}" title="${p.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos'}" aria-label="Añadir a favoritos">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                         </svg>
@@ -1203,10 +1288,37 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
     startAutoSlide();
 
     // Eventos para botones de tarjetas relacionadas (+ Carrito y Lista de Deseos)
-    track.addEventListener('click', (e) => {
+    track.addEventListener('click', async (e) => {
         const wishlistBtn = e.target.closest('.unified-wishlist-btn');
         if (wishlistBtn) {
-            wishlistBtn.classList.toggle('active');
+            const id = wishlistBtn.getAttribute('data-id') || wishlistBtn.closest('.unified-product-card')?.querySelector('.btn-card-add-cart')?.getAttribute('data-id');
+            if (!id) return;
+
+            const token = getAccessToken();
+            if (!token) {
+                showInfoToast('Inicia Sesión', 'Debes iniciar sesión para guardar productos en tu lista de deseos.');
+                return;
+            }
+
+            wishlistBtn.disabled = true;
+            try {
+                const res = await alternarFavoritoProducto(id);
+                if (res && typeof res.is_favorite === 'boolean') {
+                    wishlistBtn.classList.toggle('active', res.is_favorite);
+                    wishlistBtn.setAttribute('title', res.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos');
+
+                    if (res.is_favorite) {
+                        showSuccessToast('Lista de Deseos', res.message || 'Producto agregado a tus favoritos.');
+                    } else {
+                        showInfoToast('Lista de Deseos', res.message || 'Producto eliminado de tus favoritos.');
+                    }
+                }
+            } catch (err) {
+                console.error('Error al alternar favorito en productos relacionados:', err);
+                showErrorToast('Error', 'No se pudo actualizar la lista de deseos.');
+            } finally {
+                wishlistBtn.disabled = false;
+            }
             return;
         }
 

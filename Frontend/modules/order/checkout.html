@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realizar Compra | TuEstante</title>
+    <meta name="description" content="Finaliza tu orden de compra en TuEstante de forma rápida y segura con entrega directa o envío nacional.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Hojas de Estilos Base y Componentes -->
+    <link rel="stylesheet" href="../../index.css">
+    <link rel="stylesheet" href="../../components/navbar/navbar.css">
+    <link rel="stylesheet" href="../../components/footer/footer.css">
+    <link rel="stylesheet" href="checkout.css">
+</head>
+
+<body>
+    <!-- Placeholder para Inyección Dinámica del Navbar -->
+    <div id="navbar-placeholder"></div>
+
+    <main class="checkout-main">
+        <!-- Barra de Progreso / Breadcrumbs -->
+        <div class="checkout-breadcrumbs-container">
+            <div class="checkout-breadcrumbs">
+                <a href="../../index.html">Inicio</a>
+                <span class="crumb-separator">/</span>
+                <a href="../cart/cart.html">Carrito</a>
+                <span class="crumb-separator">/</span>
+                <span class="crumb-current">Realizar Compra</span>
+            </div>
+        </div>
+
+        <section class="checkout-section">
+            <div class="checkout-container">
+                <div class="checkout-header-title">
+                    <h1 class="checkout-title">Realizar Compra</h1>
+                    <p class="checkout-subtitle">Ingresa tus datos de ubicación y proveedor de envío para procesar tu orden.</p>
+                </div>
+
+                <div class="checkout-grid" id="checkout-grid">
+                    <!-- Columna 1: Formulario de Ubicación y Envío -->
+                    <div class="checkout-form-column">
+                        <form id="checkout-form" class="checkout-form" novalidate>
+                            
+                            <!-- Sección Ubicación de Entrega -->
+                            <div class="checkout-card">
+                                <div class="checkout-card-header">
+                                    <div class="step-badge">1</div>
+                                    <h2 class="checkout-card-title">Ubicación de Entrega</h2>
+                                </div>
+                                <div class="checkout-card-body">
+                                    <div class="form-row form-row-3">
+                                        <div class="form-group">
+                                            <label for="checkout-state" class="form-label">Estado <span class="required">*</span></label>
+                                            <select id="checkout-state" class="form-select" required>
+                                                <option value="" disabled selected>Selecciona un estado</option>
+                                            </select>
+                                            <span class="field-error-message" id="checkout-state-error"></span>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="checkout-municipality" class="form-label">Municipio <span class="required">*</span></label>
+                                            <select id="checkout-municipality" class="form-select" required disabled>
+                                                <option value="" disabled selected>Selecciona un municipio</option>
+                                            </select>
+                                            <span class="field-error-message" id="checkout-municipality-error"></span>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="checkout-city" class="form-label">Ciudad / Localidad <span class="required">*</span></label>
+                                            <select id="checkout-city" class="form-select" required disabled>
+                                                <option value="" disabled selected>Selecciona una ciudad</option>
+                                            </select>
+                                            <span class="field-error-message" id="checkout-city-error"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="checkout-sector" class="form-label">Sector / Dirección Exacta <span class="required">*</span></label>
+                                        <input type="text" id="checkout-sector" class="form-input" 
+                                               placeholder="Ej: Barrio Obrero, Carrera 19 con Calle 10, Edif. Central, Piso 2, Apto 4B" 
+                                               required autocomplete="street-address">
+                                        <span class="form-hint">Indica la calle, avenida, urbanización, edificio o punto de referencia.</span>
+                                        <span class="field-error-message" id="checkout-sector-error"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sección Proveedor de Transporte -->
+                            <div class="checkout-card">
+                                <div class="checkout-card-header">
+                                    <div class="step-badge">2</div>
+                                    <h2 class="checkout-card-title">Proveedor de Envío</h2>
+                                </div>
+                                <div class="checkout-card-body">
+                                    <div class="form-group">
+                                        <label for="checkout-provider" class="form-label">Empresa / Método de Transporte <span class="required">*</span></label>
+                                        <select id="checkout-provider" class="form-select" required>
+                                            <option value="" disabled selected>Cargando proveedores disponibles...</option>
+                                        </select>
+                                        <span class="field-error-message" id="checkout-provider-error"></span>
+                                    </div>
+
+                                    
+                                    <div class="form-group">
+                                        <label for="checkout-notes" class="form-label">Notas u Observaciones del Pedido (Opcional)</label>
+                                        <textarea id="checkout-notes" class="form-textarea" rows="2" 
+                                                placeholder="Instrucciones especiales para la entrega o especificaciones adicionales..."></textarea>
+                                        <span class="field-error-message" id="checkout-notes-error"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Aviso de Envío Gratis -->
+                            <div class="shipping-free-notice">
+                                <div class="shipping-free-icon">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="1" y="3" width="15" height="13"></rect>
+                                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                                    </svg>
+                                </div>
+                                <div class="shipping-free-content">
+                                    <h4 class="shipping-free-title">¡Envío 100% Gratis a Nivel Nacional!</h4>
+                                    <p class="shipping-free-desc">El costo de transporte corre por cuenta de TuEstante. No pagarás ningún recargo adicional por el envío a tu destino.</p>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Columna 2: Resumen de Productos y Subfactura -->
+                    <div class="checkout-summary-column">
+                        <div class="checkout-summary-card">
+                            <h2 class="summary-card-title">Resumen de Compra</h2>
+                            
+                            <div class="checkout-products-section">
+                                <h3 class="products-list-header">Productos a Comprar</h3>
+                                <div id="checkout-products-list" class="checkout-products-list">
+                                    <!-- Inyectado dinámicamente: nombre(color) x n y precio -->
+                                </div>
+                            </div>
+
+                            <div class="summary-divider"></div>
+
+                            <div class="summary-breakdown">
+                                <div class="summary-line">
+                                    <span>Subtotal</span>
+                                    <span id="checkout-subtotal" class="summary-price">$0.00</span>
+                                </div>
+                                <div class="summary-line">
+                                    <span>Envío</span>
+                                    <span class="summary-badge-free">Envío Gratis</span>
+                                </div>
+                            </div>
+
+                            <div class="summary-divider"></div>
+
+                            <div class="summary-total-line">
+                                <span class="total-label">Total a Pagar</span>
+                                <span id="checkout-total" class="total-price">$0.00</span>
+                            </div>
+
+                            <div class="summary-actions">
+                                <button type="button" id="btn-confirmar-compra" class="btn btn-primary btn-confirm-order">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    Confirmar Compra
+                                </button>
+                            </div>
+
+                            <div class="summary-security-note">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                </svg>
+                                <span>Tu orden será registrada de forma directa en nuestro sistema.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Placeholder para Inyección Dinámica del Pie de Página -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="checkout.js"></script>
+</body>
+
+</html>

@@ -50,6 +50,16 @@ class FeaturedProductsAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.AllowAny]
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if self.request and self.request.user and self.request.user.is_authenticated:
+            fav_ids = set(FavoriteProduct.objects.filter(
+                user=self.request.user,
+                is_deleted=False
+            ).values_list('product_id', flat=True))
+            context['favorite_product_ids'] = fav_ids
+        return context
+
     def get_queryset(self):
         queryset = Product.objects.filter(
             is_deleted=False,
@@ -87,6 +97,39 @@ class FeaturedProductsAPIView(generics.ListAPIView):
             return queryset.order_by('-favorites_count', '-created_at', '-id')
 
         return queryset.order_by('-created_at', '-id')
+
+
+class FeaturedProductsLeastFavoritesAPIView(generics.ListAPIView):
+    """
+    APIView dedicada para retornar todos los productos destacados ordenados
+    desde el que MENOS favoritos tenga al que MÁS tiene (orden ascendente por favorites_count).
+    Endpoint: GET /api/products/featured-products/least-favorites/
+    """
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if self.request and self.request.user and self.request.user.is_authenticated:
+            fav_ids = set(FavoriteProduct.objects.filter(
+                user=self.request.user,
+                is_deleted=False
+            ).values_list('product_id', flat=True))
+            context['favorite_product_ids'] = fav_ids
+        return context
+
+    def get_queryset(self):
+        return Product.objects.filter(
+            is_deleted=False,
+            is_feature_product=True
+        ).prefetch_related(
+            'categories',
+            'color_images',
+            'angle_images'
+        ).select_related('product_type').annotate(
+            favorites_count=Count('favorites', filter=Q(favorites__is_deleted=False), distinct=True)
+        ).order_by('favorites_count', '-created_at', '-id')
+
 
 
 class ProductViewSet(BaseViewSet):
