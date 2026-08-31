@@ -233,9 +233,9 @@ function initFilters(types, categories, products) {
         });
     }
 
-    // Leer parámetros de URL (?search=..., ?cat=..., ?type=..., ?featured=...)
+    // Leer parámetros de URL (?search=..., ?buscar=..., ?cat=..., ?type=..., ?featured=...)
     const urlParams = new URLSearchParams(window.location.search);
-    const paramSearch = urlParams.get('search') || urlParams.get('q') || '';
+    const paramSearch = urlParams.get('search') || urlParams.get('buscar') || urlParams.get('q') || '';
     const paramCat = urlParams.get('cat') || urlParams.get('category') || urlParams.get('categoryId');
     const paramType = urlParams.get('type') || urlParams.get('typeId');
     const paramFeatured = urlParams.get('featured') || urlParams.get('destacados') || urlParams.get('most_favorited');

@@ -74,32 +74,6 @@ function initStatCounters() {
   }
 }
 
-/**
- * Ajusta los enlaces de navegación del navbar para navegar correctamente a la página de inicio si se encuentra en un módulo.
- */
-function adjustNavbarLinks() {
-  const navbar = document.querySelector('.app-navbar');
-  if (!navbar) return;
-
-  const navLinks = navbar.querySelectorAll('.navbar-link');
-  const logoLink = navbar.querySelector('.navbar-logo');
-
-  if (logoLink) {
-    logoLink.setAttribute('href', '../../index.html');
-  }
-
-  navLinks.forEach(link => {
-    const dataLink = link.getAttribute('data-link');
-    if (dataLink === 'nosotros') {
-      link.classList.add('active');
-      link.setAttribute('href', 'us.html');
-    } else if (dataLink) {
-      link.classList.remove('active');
-      link.setAttribute('href', `../../index.html#${dataLink}`);
-    }
-  });
-}
-
 // Inicialización global al cargar la página
 document.addEventListener('DOMContentLoaded', async () => {
   // Cargar Navbar y Footer desde sus rutas relativas
@@ -111,7 +85,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Inicializar funciones interactivas
   initNavbar();
   initFooter();
-  adjustNavbarLinks();
   initStatCounters();
 
   // Clase predeterminada para ajuste de drawer

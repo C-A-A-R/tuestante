@@ -33,15 +33,21 @@
     color: var(--body-text);
     font-family: 'Inter', sans-serif;
     margin: 0;
-    padding: 0;
+    padding-top: var(--total-header-height-desktop, 130px) !important;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
+@media (max-width: 991px) {
+    .my-orders-body {
+        padding-top: var(--total-header-height-mobile, 70px) !important;
+    }
+}
+
 .my-orders-main {
     flex: 1;
-    padding: 24px 16px 60px;
+    padding: 32px 16px 60px;
 }
 
 .orders-page-container {

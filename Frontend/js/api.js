@@ -218,9 +218,14 @@ export function extractList(apiResult) {
  */
 export function resolveImageUrl(path, fallback = '') {
   if (!path) return fallback;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
+    return path;
+  }
+  // Si es una ruta local de frontend (assets/ o rutas relativas ../), retornarla directamente
+  if (path.startsWith('assets/') || path.startsWith('../') || path.startsWith('./')) {
+    return path;
+  }
   
-  import('./config.js').then();
   let baseOrigin = (typeof window !== 'undefined' && window.__API_BASE_ORIGIN__) ? window.__API_BASE_ORIGIN__ : 'http://localhost:8000';
   let origin = baseOrigin.endsWith('/') ? baseOrigin.slice(0, -1) : baseOrigin;
   if (!origin.startsWith('http://') && !origin.startsWith('https://') && !origin.startsWith('/')) {

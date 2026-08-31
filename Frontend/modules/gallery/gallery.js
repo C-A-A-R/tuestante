@@ -2,6 +2,7 @@
  * ==========================================================================
  * MÓDULO DE GALERÍA DE INSPIRACIÓN "ESPACIOS REALES" - TUESTANTE
  * Manejo de la carga de imágenes desde el backend Django y respaldos provisionales,
+ * filtros dinámicos basados en Categorías y Tipos de Productos de la Base de Datos,
  * ordenamiento según el patrón de 4 columnas iguales (Bloque 1 -> Bloque 2 Inverso -> Bloque 3 Fila de 4),
  * tarjeta CTA "Añadir nueva imagen", paginación "Mostrar más" y visor modal (Lightbox).
  * ==========================================================================
@@ -10,7 +11,7 @@
 import { initNavbar } from '../../components/navbar/navbar.js';
 import { initFooter } from '../../components/footer/footer.js';
 import { obtenerProyectos } from '../project/project.api.js';
-import { obtenerProductos } from '../product/product.api.js';
+import { obtenerProductos, obtenerCategorias, obtenerTiposProducto } from '../product/product.api.js';
 import { backendOrigin } from '../../js/config.js';
 
 /**
@@ -18,22 +19,22 @@ import { backendOrigin } from '../../js/config.js';
  * Garantiza visualización inmediata de la grilla en el patrón de 4 columnas.
  */
 const PROVISIONAL_GALLERY_ITEMS = [
-    { id: 1, title: 'Estudio Creativo & Mueble Archivador', description: 'Organización moderna con gabinete rosado pastel.', author: '@tuestante.ve', category: 'hogar', mediaType: 'image', image: '../../assets/images/gallery/real_space_1.jpg' },
-    { id: 2, title: 'Mueble Consola en Sala de Estar', description: 'Gabinete amarillo mostaza como consola de audio.', author: '@bisley_fan', category: 'hogar', mediaType: 'image', image: '../../assets/images/gallery/real_space_2.jpg' },
-    { id: 3, title: 'Locker Armario en Habitación Infantil', description: 'Armario locker metálico azul cielo.', author: '@espacio_infantil', category: 'lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_3.jpg' },
-    { id: 4, title: 'Taller & Loft Industrial', description: 'Estantería metálica industrial de alta resistencia.', author: '@loft_design', category: 'estantes', mediaType: 'image', image: '../../assets/images/gallery/real_space_4.jpg' },
-    { id: 5, title: 'Oficina Ejecutiva Corporativa', description: 'Batería de lockers metálicos ejecutivos.', author: '@oficinas_ve', category: 'oficina', mediaType: 'image', image: '../../assets/images/gallery/real_space_5.jpg' },
-    { id: 6, title: 'Divisor de Ambientes con Plantas', description: 'Estantería metálica azul noche.', author: '@green_spaces', category: 'estantes', mediaType: 'image', image: '../../assets/images/gallery/real_space_6.jpg' },
-    { id: 7, title: 'Locker Ejecutivo Gris 4 Casillas', description: 'Locker metálico de alta durabilidad.', author: '@tuestante.ve', category: 'lockers', mediaType: 'image', image: '../../assets/images/carrusel-index/LocekrL4Gris.jpg' },
-    { id: 8, title: 'Lockers Para Gimnasios', description: 'Estilo contemporáneo para ambientes de trabajo.', author: '', category: 'lockers', mediaType: 'video', videoUrl: '../../assets/videos/gym_mujer.mp4' },
-    { id: 9, title: 'Lockers de Puertas Amarillas y Cuerpo Negro', description: 'Estante metálico refinado con accesorios.', author: '@C4_BOXX', category: 'lockers', mediaType: 'video', videoUrl: '../../assets/videos/c4_boxx.mp4' },
-    { id: 10, title: 'Estantería de Gran Capacidad', description: 'Diseño robusto para optimizar depósitos.', author: '@logistica_ve', category: 'oficina', mediaType: 'image', image: '../../assets/images/carrusel-index/Carrousel.png' },
-    { id: 11, title: 'Conjunto de Lockers Ejecutivos', description: 'Almacenamiento metálico de seguridad.', author: '', category: 'oficina', mediaType: 'video', videoUrl: '../../assets/videos/elt.mp4' },
-    { id: 12, title: 'Locker Amarillo Mostaza en Sala de Estar', description: 'Mueble metálico modular de 6 casillas en tono cálido con plantas tropicales.', author: '@tuestante.ve', category: 'lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_7.jpg' },
-    { id: 13, title: 'Estantería Industrial de Alta Carga', description: 'Estructura metálica gris oscuro organizando estudio de arquitectura.', author: '@tuestante.ve', category: 'estantes', mediaType: 'image', image: '../../assets/images/gallery/real_space_8.jpg' },
-    { id: 14, title: 'Archivador Metálico Turquesa', description: 'Gabinete organizador de 4 gavetas para oficina iluminada.', author: '@tuestante.ve', category: 'oficina', mediaType: 'image', image: '../../assets/images/gallery/real_space_9.jpg' },
-    { id: 15, title: 'Lockers Combinados Naranja & Azul', description: 'Mobiliario metálico de alta resistencia para áreas corporativas.', author: '@tuestante.ve', category: 'oficina', mediaType: 'image', image: '../../assets/images/gallery/real_space_10.jpg' },
-    { id: 16, title: 'Estante & Armario Verde Menta', description: 'Línea de almacenamiento metálico para cocinas y comedores modernos.', author: '@tuestante.ve', category: 'hogar', mediaType: 'image', image: '../../assets/images/gallery/real_space_11.jpg' },
+    { id: 1, title: 'Estudio Creativo & Mueble Archivador', description: 'Organización moderna con gabinete rosado pastel.', author: '@tuestante.ve', category: 'hogar', categoryId: 2, categoryName: 'Muebles para Hogar', typeName: 'Gabinetes', mediaType: 'image', image: '../../assets/images/gallery/real_space_1.jpg' },
+    { id: 2, title: 'Mueble Consola en Sala de Estar', description: 'Gabinete amarillo mostaza como consola de audio.', author: '@bisley_fan', category: 'hogar', categoryId: 2, categoryName: 'Muebles para Hogar', typeName: 'Armarios', mediaType: 'image', image: '../../assets/images/gallery/real_space_2.jpg' },
+    { id: 3, title: 'Locker Armario en Habitación Infantil', description: 'Armario locker metálico azul cielo.', author: '@espacio_infantil', category: 'lockers', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_3.jpg' },
+    { id: 4, title: 'Taller & Loft Industrial', description: 'Estantería metálica industrial de alta resistencia.', author: '@loft_design', category: 'estantes', categoryId: 3, categoryName: 'Racks de Almacenamiento', typeName: 'Racks', mediaType: 'image', image: '../../assets/images/gallery/real_space_4.jpg' },
+    { id: 5, title: 'Oficina Ejecutiva Corporativa', description: 'Batería de lockers metálicos ejecutivos.', author: '@oficinas_ve', category: 'oficina', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_5.jpg' },
+    { id: 6, title: 'Divisor de Ambientes con Plantas', description: 'Estantería metálica azul noche.', author: '@green_spaces', category: 'estantes', categoryId: 2, categoryName: 'Muebles para Hogar', typeName: 'Estanterías', mediaType: 'image', image: '../../assets/images/gallery/real_space_6.jpg' },
+    { id: 7, title: 'Locker Ejecutivo Gris 4 Casillas', description: 'Locker metálico de alta durabilidad.', author: '@tuestante.ve', category: 'lockers', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/carrusel-index/LocekrL4Gris.jpg' },
+    { id: 8, title: 'Lockers Para Gimnasios', description: 'Estilo contemporáneo para ambientes de trabajo.', author: '', category: 'lockers', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'video', videoUrl: '../../assets/videos/gym_mujer.mp4' },
+    { id: 9, title: 'Lockers de Puertas Amarillas y Cuerpo Negro', description: 'Estante metálico refinado con accesorios.', author: '@C4_BOXX', category: 'lockers', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'video', videoUrl: '../../assets/videos/c4_boxx.mp4' },
+    { id: 10, title: 'Estantería de Gran Capacidad', description: 'Diseño robusto para optimizar depósitos.', author: '@logistica_ve', category: 'oficina', categoryId: 3, categoryName: 'Racks de Almacenamiento', typeName: 'Racks', mediaType: 'image', image: '../../assets/images/carrusel-index/Carrousel.png' },
+    { id: 11, title: 'Conjunto de Lockers Ejecutivos', description: 'Almacenamiento metálico de seguridad.', author: '', category: 'oficina', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'video', videoUrl: '../../assets/videos/elt.mp4' },
+    { id: 12, title: 'Locker Amarillo Mostaza en Sala de Estar', description: 'Mueble metálico modular de 6 casillas en tono cálido con plantas tropicales.', author: '@tuestante.ve', category: 'lockers', categoryId: 2, categoryName: 'Muebles para Hogar', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_7.jpg' },
+    { id: 13, title: 'Estantería Industrial de Alta Carga', description: 'Estructura metálica gris oscuro organizando estudio de arquitectura.', author: '@tuestante.ve', category: 'estantes', categoryId: 3, categoryName: 'Racks de Almacenamiento', typeName: 'Estanterías Industriales', mediaType: 'image', image: '../../assets/images/gallery/real_space_8.jpg' },
+    { id: 14, title: 'Archivador Metálico Turquesa', description: 'Gabinete organizador de 4 gavetas para oficina iluminada.', author: '@tuestante.ve', category: 'oficina', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Archivadores', mediaType: 'image', image: '../../assets/images/gallery/real_space_9.jpg' },
+    { id: 15, title: 'Lockers Combinados Naranja & Azul', description: 'Mobiliario metálico de alta resistencia para áreas corporativas.', author: '@tuestante.ve', category: 'oficina', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_10.jpg' },
+    { id: 16, title: 'Estante & Armario Verde Menta', description: 'Línea de almacenamiento metálico para cocinas y comedores modernos.', author: '@tuestante.ve', category: 'hogar', categoryId: 2, categoryName: 'Muebles para Hogar', typeName: 'Armarios', mediaType: 'image', image: '../../assets/images/gallery/real_space_11.jpg' },
 ];
 
 // Estado global de la galería
@@ -64,7 +65,7 @@ function resolveImageUrl(path, fallback = '../../assets/images/categoria/estante
 }
 
 /**
- * Carga componentes estáticos HTML (Navbar / Footer) dinámicamente.
+ * Carga componentes estáticos HTML (Navbar / Footer) dinámicamente con bypass de caché.
  */
 async function loadComponent(placeholderId, filePath) {
     try {
@@ -82,58 +83,132 @@ async function loadComponent(placeholderId, filePath) {
 }
 
 /**
+ * Consulta las categorías y tipos de productos del backend Django para generar
+ * dinámicamente los botones de filtrado de la galería.
+ */
+async function loadDynamicFilters() {
+    const filterBar = document.getElementById('gallery-filter-bar');
+    if (!filterBar) return;
+
+    try {
+        const [catResp, typeResp] = await Promise.allSettled([
+            obtenerCategorias(),
+            obtenerTiposProducto()
+        ]);
+
+        const categories = catResp.status === 'fulfilled' ? extractList(catResp.value) : [];
+        const productTypes = typeResp.status === 'fulfilled' ? extractList(typeResp.value) : [];
+
+        let filterButtonsHtml = `<button class="gallery-filter-btn active" data-filter="all">Todos</button>`;
+
+        // Categorías reales de la BD
+        if (Array.isArray(categories) && categories.length > 0) {
+            categories.forEach((cat) => {
+                const catName = cat.category_name || cat.name || 'Categoría';
+                filterButtonsHtml += `
+                    <button class="gallery-filter-btn" data-filter="cat_${cat.id}" data-category-id="${cat.id}" data-category-name="${catName}">
+                        ${catName}
+                    </button>
+                `;
+            });
+        }
+
+        // Tipos de Producto reales de la BD
+        if (Array.isArray(productTypes) && productTypes.length > 0) {
+            productTypes.forEach((type) => {
+                const typeName = type.type_name || type.name || 'Tipo';
+                filterButtonsHtml += `
+                    <button class="gallery-filter-btn" data-filter="type_${type.id}" data-type-id="${type.id}" data-type-name="${typeName}">
+                        ${typeName}
+                    </button>
+                `;
+            });
+        }
+
+        filterBar.innerHTML = filterButtonsHtml;
+        initFilterBar();
+    } catch (e) {
+        console.warn('Aviso cargando filtros dinámicos de la galería:', e);
+    }
+}
+
+/**
  * Consulta la API del backend Django para obtener proyectos y productos real-time.
  * Si retorna imágenes, las combina con el catálogo provisional.
  */
 async function fetchGalleryFromBackend() {
-    let rawItems = [];
+    let rawProjects = [];
+    let rawProducts = [];
 
     try {
         const projResp = await obtenerProyectos();
-        const projList = extractList(projResp);
-        rawItems = [...projList];
+        rawProjects = extractList(projResp);
     } catch (e) {
-        console.warn('Backend API de proyectos no disponible, usando imágenes provisionales:', e);
+        console.warn('Backend API de proyectos no disponible:', e);
     }
 
     try {
         const prodResp = await obtenerProductos();
-        const prodList = extractList(prodResp);
-        rawItems = [...rawItems, ...prodList];
+        rawProducts = extractList(prodResp);
     } catch (e) {
-        console.warn('Backend API de productos no disponible, usando imágenes provisionales:', e);
+        console.warn('Backend API de productos no disponible:', e);
     }
 
-    if (rawItems.length === 0) return;
+    const backendItems = [];
 
-    // Mapear elementos traídos del backend Django
-    const backendItems = rawItems.map((item, idx) => {
-        const title = item.project_name || item.product_name || item.name || `Espacio Real Backend ${idx + 1}`;
-        const description = item.description || 'Mobiliario metálico TuEstante diseñado para dar estilo y orden.';
-        const author = item.author || '@tuestante.ve';
-        const category = (item.category_detail?.category_name || item.categoryName || (idx % 2 === 0 ? 'lockers' : 'estantes')).toLowerCase();
-        const imgPath = item.project_images || item.product_image || item.image || item.category_image;
-        const image = resolveImageUrl(imgPath, PROVISIONAL_GALLERY_ITEMS[idx % PROVISIONAL_GALLERY_ITEMS.length].image);
-
-        return {
-            id: `api_${item.id || idx}`,
-            title,
-            description,
-            author,
-            category,
-            image
-        };
+    // 1. Mapear Proyectos
+    rawProjects.forEach((item, idx) => {
+        const title = item.project_name || item.title || `Proyecto Real ${idx + 1}`;
+        const description = item.description || 'Proyecto realizado con mobiliario metálico TuEstante.';
+        const author = item.client_name || '@tuestante.ve';
+        const imgPath = item.project_images || item.image || item.featured_image;
+        if (imgPath) {
+            backendItems.push({
+                id: `proj_${item.id || idx}`,
+                title,
+                description,
+                author,
+                category: 'Proyectos',
+                categoryId: item.category_id || item.category?.id || null,
+                categoryName: item.category_detail?.category_name || item.category?.name || 'Proyectos',
+                image: resolveImageUrl(imgPath)
+            });
+        }
     });
 
-    // Combinar elementos del backend al inicio de la lista
-    allGalleryItems = [...backendItems, ...PROVISIONAL_GALLERY_ITEMS];
-    if (currentFilter === 'all') {
-        filteredGalleryItems = [...allGalleryItems];
-    } else {
-        filteredGalleryItems = allGalleryItems.filter(item => item.category.includes(currentFilter));
-    }
+    // 2. Mapear Productos reales
+    rawProducts.forEach((item, idx) => {
+        const title = item.product_name || item.name || `Producto TuEstante ${idx + 1}`;
+        const description = item.description || 'Mobiliario metálico resistente de alta calidad.';
+        const author = '@tuestante.ve';
+        const imgPath = item.product_image || item.image || (Array.isArray(item.images) && item.images[0]?.image);
+        const categoryId = item.category?.id || item.category_id || item.categoryId || (typeof item.category === 'number' ? item.category : null);
+        const categoryName = item.category_detail?.category_name || item.category?.category_name || item.categoryName || (typeof item.category === 'string' ? item.category : '');
+        const typeId = item.product_type?.id || item.product_type_id || item.typeId || (typeof item.product_type === 'number' ? item.product_type : null);
+        const typeName = item.product_type_detail?.type_name || item.product_type?.type_name || item.typeName || '';
 
-    renderGalleryPattern();
+        if (imgPath) {
+            backendItems.push({
+                id: `prod_${item.id || idx}`,
+                title,
+                description,
+                author,
+                category: categoryName || 'Productos',
+                categoryId,
+                categoryName,
+                typeId,
+                typeName,
+                image: resolveImageUrl(imgPath)
+            });
+        }
+    });
+
+    if (backendItems.length > 0) {
+        // Combinar elementos reales del backend con los provisionales
+        allGalleryItems = [...backendItems, ...PROVISIONAL_GALLERY_ITEMS];
+        filteredGalleryItems = [...allGalleryItems];
+        renderGalleryPattern();
+    }
 }
 
 /**
@@ -171,7 +246,7 @@ function createCardHtml(item, sizeClass) {
             </div>
         `;
     } else {
-        mediaHtml = `<img src="${item.image}" alt="${item.title}" class="gallery-card-img" loading="lazy">`;
+        mediaHtml = `<img src="${item.image}" alt="${item.title}" class="gallery-card-img" loading="lazy" onerror="this.src='../../assets/images/categoria/estante.png'">`;
     }
 
     return `
@@ -293,7 +368,7 @@ function attachLightboxEvents() {
         });
     });
 
-    // Enforzar silenciamiento estricto a los videos de la grilla (sin permitir que se les active el sonido)
+    // Enforzar silenciamiento estricto a los videos de la grilla
     const cardVideos = document.querySelectorAll('.gallery-card-video');
     cardVideos.forEach(v => {
         v.muted = true;
@@ -333,7 +408,6 @@ function openLightbox(item) {
         if (lbVideo) {
             lbVideo.muted = true;
             lbVideo.volume = 0;
-            // Garantizar que NO se le pueda activar el sonido jamás
             lbVideo.addEventListener('volumechange', () => {
                 lbVideo.muted = true;
                 lbVideo.volume = 0;
@@ -377,28 +451,69 @@ function closeLightbox() {
 }
 
 /**
- * Inicializa los eventos de la barra de filtrado de categorías.
+ * Inicializa los eventos de la barra de filtrado de categorías y tipos de productos.
  */
 function initFilterBar() {
     const filterBtns = document.querySelectorAll('.gallery-filter-btn');
     filterBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.onclick = () => {
             filterBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
-            currentFilter = btn.getAttribute('data-filter');
+            const filterKey = btn.getAttribute('data-filter') || 'all';
+            const catId = btn.getAttribute('data-category-id');
+            const catName = (btn.getAttribute('data-category-name') || '').toLowerCase().trim();
+            const typeId = btn.getAttribute('data-type-id');
+            const typeName = (btn.getAttribute('data-type-name') || '').toLowerCase().trim();
+
+            currentFilter = filterKey;
             visibleCount = 13;
 
-            if (currentFilter === 'all') {
+            if (filterKey === 'all') {
                 filteredGalleryItems = [...allGalleryItems];
+            } else if (catId || catName) {
+                // Filtrar por categoría
+                filteredGalleryItems = allGalleryItems.filter(item => {
+                    const itemCatId = String(item.categoryId || item.category_id || item.category || '');
+                    const itemCatName = String(item.categoryName || item.category || '').toLowerCase();
+                    const itemTitle = String(item.title || '').toLowerCase();
+                    const itemDesc = String(item.description || '').toLowerCase();
+
+                    return (catId && itemCatId === String(catId)) ||
+                           (catName && (itemCatName.includes(catName) || itemTitle.includes(catName) || itemDesc.includes(catName)));
+                });
+            } else if (typeId || typeName) {
+                // Filtrar por tipo de producto
+                filteredGalleryItems = allGalleryItems.filter(item => {
+                    const itemTypeId = String(item.typeId || item.product_type || item.productType || '');
+                    const itemTypeName = String(item.typeName || '').toLowerCase();
+                    const itemTitle = String(item.title || '').toLowerCase();
+                    const itemDesc = String(item.description || '').toLowerCase();
+
+                    return (typeId && itemTypeId === String(typeId)) ||
+                           (typeName && (itemTypeName.includes(typeName) || itemTitle.includes(typeName) || itemDesc.includes(typeName)));
+                });
             } else {
                 filteredGalleryItems = allGalleryItems.filter(item =>
-                    item.category.includes(currentFilter) || currentFilter.includes(item.category)
+                    String(item.category || '').toLowerCase().includes(filterKey.toLowerCase())
                 );
             }
 
+            // Fallback para evitar dejar la grilla vacía si no hay coincidencias exactas
+            if (filteredGalleryItems.length === 0 && allGalleryItems.length > 0) {
+                const term = (catName || typeName || filterKey).toLowerCase();
+                filteredGalleryItems = allGalleryItems.filter(item => {
+                    return String(item.title).toLowerCase().includes(term) ||
+                           String(item.description).toLowerCase().includes(term) ||
+                           String(item.category).toLowerCase().includes(term);
+                });
+                if (filteredGalleryItems.length === 0) {
+                    filteredGalleryItems = [...allGalleryItems];
+                }
+            }
+
             renderGalleryPattern();
-        });
+        };
     });
 }
 
@@ -442,12 +557,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     initNavbar();
     initFooter();
 
-    // 3. Inicializar eventos y renderizar inmediatamente las imágenes provisionales
+    // 3. Inicializar eventos base y renderizar inmediatamente las imágenes iniciales
     initFilterBar();
     initLoadMore();
     initLightboxEvents();
     renderGalleryPattern();
 
-    // 4. Consultar en segundo plano al backend Django para actualizar si hay nuevos datos
+    // 4. Cargar filtros dinámicos de Categorías y Tipos de Productos desde la BD
+    loadDynamicFilters();
+
+    // 5. Consultar en segundo plano al backend Django para enriquecer la galería con proyectos/productos
     fetchGalleryFromBackend();
 });

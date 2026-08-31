@@ -13,6 +13,8 @@ import { getAccessToken, getRefreshToken } from '../../js/storage.js';
 import { showToast, showSuccessToast, showErrorToast, showInfoToast } from '../../components/toast/toast.js';
 import { initNavbar } from '../../components/navbar/navbar.js';
 import { initFooter } from '../../components/footer/footer.js';
+import { obtenerMisPedidos } from '../order/order.api.js';
+import { resolveImageUrl, extractList } from '../../js/api.js';
 
 // Estado Global de Edición
 let isEditingMode = false;
@@ -21,7 +23,8 @@ let currentUser = null;
 // Cargar Componentes Dinámicos
 async function loadComponent(elementId, filePath) {
     try {
-        const response = await fetch(filePath);
+        const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
+        const response = await fetch(url, { cache: 'no-store' });
         if (response.ok) {
             const html = await response.text();
             const el = document.getElementById(elementId);
@@ -58,6 +61,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupProfileForm();
     setupPasswordResetModal();
     setupLogoutAction();
+
+    // 5. Cargar miniatura de la última compra en 'Mis Compras'
+    loadRecentOrderThumbnail();
 });
 
 /**
@@ -84,17 +90,10 @@ function renderUserProfile(user) {
     // 2. Hero Info
     const nameEl = document.getElementById('hero-user-name');
     const emailEl = document.getElementById('hero-user-email');
-    const roleEl = document.getElementById('hero-user-role');
-    const usernameEl = document.getElementById('hero-username');
     const memberSinceEl = document.getElementById('hero-member-since');
 
     if (nameEl) nameEl.textContent = fullName;
     if (emailEl) emailEl.textContent = email;
-    if (roleEl) {
-        roleEl.textContent = isStaff ? 'Administrador' : 'Cliente';
-        roleEl.className = isStaff ? 'profile-role-badge staff' : 'profile-role-badge';
-    }
-    if (usernameEl) usernameEl.textContent = username;
 
     if (memberSinceEl && user.date_joined) {
         try {
@@ -362,4 +361,46 @@ function setupLogoutAction() {
             }, 500);
         }
     });
+}
+
+/**
+ * Consulta la orden más reciente del usuario y reemplaza el icono de "Mis Compras"
+ * por la imagen real del primer producto comprado.
+ */
+async function loadRecentOrderThumbnail() {
+    const ordersDescEl = document.getElementById('quick-orders-desc');
+
+    try {
+        const resp = await obtenerMisPedidos({ page_size: 5 });
+        const orders = extractList(resp);
+
+        if (Array.isArray(orders) && orders.length > 0) {
+            const latestOrder = orders[0];
+            const details = Array.isArray(latestOrder.details) ? latestOrder.details : [];
+            let foundImage = '';
+            let productName = '';
+
+            for (const detail of details) {
+                const prod = detail.order_products?.[0]?.product || detail.product || detail;
+                const img = prod?.image || prod?.product_image || prod?.product?.image || detail.product_image || detail.image;
+                if (img) {
+                    foundImage = img;
+                    productName = prod?.product_name || prod?.name || 'Mueble TuEstante';
+                    break;
+                }
+                if (prod?.product_name || prod?.name) {
+                    productName = prod.product_name || prod.name;
+                }
+            }
+
+            if (!foundImage && latestOrder.image) {
+                foundImage = latestOrder.image;
+            }
+            if (ordersDescEl && productName) {
+                ordersDescEl.textContent = `Último pedido: ${productName}. Consulta su avance y fabricación.`;
+            }
+        }
+    } catch (err) {
+        console.warn('Aviso cargando miniatura de la última compra en el perfil:', err);
+    }
 }

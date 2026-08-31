@@ -28,7 +28,8 @@ import { initFooter } from '../../components/footer/footer.js';
 // Cargar componentes Navbar / Footer
 async function loadComponent(elementId, filePath) {
     try {
-        const response = await fetch(filePath);
+        const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
+        const response = await fetch(url, { cache: 'no-store' });
         if (response.ok) {
             const html = await response.text();
             const el = document.getElementById(elementId);

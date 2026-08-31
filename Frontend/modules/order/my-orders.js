@@ -39,7 +39,8 @@ let currentSearchTerm = '';
 // Cargar Navbar y Footer
 async function loadComponent(elementId, filePath) {
     try {
-        const response = await fetch(filePath);
+        const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
+        const response = await fetch(url, { cache: 'no-store' });
         if (response.ok) {
             const html = await response.text();
             const el = document.getElementById(elementId);
@@ -269,11 +270,28 @@ function buildSimplifiedOrderCardHtml(order) {
 
     const details = Array.isArray(order.details) ? order.details : [];
 
-    // Obtener la imagen del primer producto
-    const firstDetail = details[0];
-    const firstProd = firstDetail?.order_products?.[0]?.product;
-    const firstImgSrc = firstProd?.image ? resolveImageUrl(firstProd.image) : '';
-    const firstProdName = firstProd?.product_name || firstProd?.name || 'Producto TuEstante';
+    // Obtener la imagen del primer producto buscando en todos los campos posibles
+    let firstImg = '';
+    let firstProdName = 'Producto TuEstante';
+
+    for (const d of details) {
+        const prod = d.order_products?.[0]?.product || d.product || d;
+        const img = prod?.image || prod?.product_image || prod?.product?.image || d.product_image || d.image;
+        if (img) {
+            firstImg = img;
+            firstProdName = prod?.product_name || prod?.name || firstProdName;
+            break;
+        }
+        if (prod?.product_name || prod?.name) {
+            firstProdName = prod.product_name || prod.name;
+        }
+    }
+
+    if (!firstImg && order.image) {
+        firstImg = order.image;
+    }
+
+    const firstImgSrc = firstImg ? resolveImageUrl(firstImg, '../../assets/images/categoria/estante.png') : '';
 
     // Lista de productos en una sola fila separados por comas
     const productsListText = details.length > 0

@@ -33,15 +33,21 @@
     color: var(--body-text);
     font-family: 'Inter', sans-serif;
     margin: 0;
-    padding: 0;
+    padding-top: var(--total-header-height-desktop, 130px) !important;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
+@media (max-width: 991px) {
+    .profile-body {
+        padding-top: var(--total-header-height-mobile, 70px) !important;
+    }
+}
+
 .profile-main {
     flex: 1;
-    padding: 24px 16px 60px;
+    padding: 32px 16px 60px;
 }
 
 .profile-page-container {
@@ -546,16 +552,74 @@
 }
 
 .quick-icon {
-    font-size: 1.8rem;
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-sm);
-    background-color: #ffffff;
+    font-size: 1.6rem;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    background-color: #f8fafc;
     border: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+    color: var(--primary);
+    transition: all 0.25s ease;
+}
+
+.quick-icon img {
+    width: 28px;
+    height: 28px;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+    transition: transform 0.25s ease;
+}
+
+.quick-icon svg {
+    color: var(--primary);
+    transition: transform 0.25s ease;
+}
+
+.quick-icon.has-order-image {
+    padding: 0;
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.quick-icon.has-order-image img,
+.quick-order-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+}
+
+.quick-card:hover .quick-icon {
+    border-color: var(--primary);
+    background-color: var(--primary-light);
+    box-shadow: 0 4px 12px rgba(0, 81, 135, 0.12);
+}
+
+.quick-card:hover .quick-icon img:not(.quick-order-img),
+.quick-card:hover .quick-icon svg {
+    transform: scale(1.15);
+}
+
+.quick-card:hover .quick-order-img {
+    transform: scale(1.08);
+}
+
+.quick-card.highlight-wishlist .quick-icon {
+    color: #e11d48;
+}
+
+.quick-card.highlight-wishlist:hover .quick-icon {
+    border-color: #f43f5e;
+    background-color: #fff1f2;
+    box-shadow: 0 4px 12px rgba(244, 63, 94, 0.15);
 }
 
 .quick-info {

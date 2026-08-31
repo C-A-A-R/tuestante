@@ -41,15 +41,9 @@
                 <div class="profile-hero-info">
                     <div class="profile-hero-name-row">
                         <h1 class="profile-user-name" id="hero-user-name">Cargando usuario...</h1>
-                        <span class="profile-role-badge" id="hero-user-role">Cliente</span>
                     </div>
                     <p class="profile-user-email" id="hero-user-email">--</p>
                     <div class="profile-hero-meta">
-                        <span class="profile-meta-item">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                            <span id="hero-username">@usuario</span>
-                        </span>
-                        <span class="profile-meta-separator">•</span>
                         <span class="profile-meta-item">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                             <span id="hero-member-since">Miembro desde 2026</span>
@@ -179,18 +173,18 @@
 
                         <div class="quick-access-grid">
                             <!-- 1. Mis Compras -->
-                            <a href="../order/my-orders.html" class="quick-card">
-                                <div class="quick-icon">📦</div>
+                            <a href="../order/my-orders.html" class="quick-card" id="quick-orders-card">
+                                <div class="quick-icon" id="quick-orders-icon"><img src="../../assets/images/icons/bolsa-de-compra.png" alt="mis compras"></div>
                                 <div class="quick-info">
                                     <h3>Mis Compras</h3>
-                                    <p>Consulta el historial y seguimiento de fabricación de tus pedidos.</p>
+                                    <p id="quick-orders-desc">Consulta el historial y seguimiento de fabricación de tus pedidos.</p>
                                 </div>
                                 <span class="quick-arrow">&rarr;</span>
                             </a>
 
                             <!-- 2. Productos Deseados -->
                             <a href="../product/wishlist.html" class="quick-card highlight-wishlist">
-                                <div class="quick-icon">❤️</div>
+                                <div class="quick-icon"><img src="../../assets/images/icons/corazon.png" alt="productos deseados"></div>
                                 <div class="quick-info">
                                     <h3>Productos Deseados</h3>
                                     <p>Tus muebles favoritos guardados en tu lista de deseos.</p>
@@ -200,7 +194,13 @@
 
                             <!-- 3. Mi Carrito -->
                             <a href="../cart/cart.html" class="quick-card">
-                                <div class="quick-icon">🛒</div>
+                                <div class="quick-icon">
+                                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="9" cy="21" r="1"></circle>
+                                        <circle cx="20" cy="21" r="1"></circle>
+                                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                                    </svg>
+                                </div>
                                 <div class="quick-info">
                                     <h3>Mi Carrito</h3>
                                     <p>Revisa los artículos listos para procesar compra.</p>
@@ -210,7 +210,7 @@
 
                             <!-- 4. Catálogo -->
                             <a href="../product/products.html" class="quick-card">
-                                <div class="quick-icon">🪵</div>
+                                <div class="quick-icon"><img src="../../assets/images/icons/caja-de-entrega.png" alt="catalogo de productos"></div>
                                 <div class="quick-info">
                                     <h3>Catálogo de Productos</h3>
                                     <p>Explora todos los modelos y categorías en TuEstante.</p>

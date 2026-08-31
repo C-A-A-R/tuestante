@@ -8,8 +8,7 @@ import { getAccessToken } from '../../js/storage.js';
  * @returns {Promise<Object>} Respuesta con el listado de productos.
  */
 export async function obtenerProductos(params = {}) {
-  const hasToken = Boolean(getAccessToken());
-  return getRequest('/products/products/', params, { auth: hasToken });
+  return getRequest('/products/products/', params, { auth: false });
 }
 
 /**
@@ -19,8 +18,7 @@ export async function obtenerProductos(params = {}) {
  * @returns {Promise<Object>} Detalle del producto.
  */
 export async function obtenerProductoPorId(id, params = {}) {
-  const hasToken = Boolean(getAccessToken());
-  return getRequest(`/products/products/${id}/`, params, { auth: hasToken });
+  return getRequest(`/products/products/${id}/`, params, { auth: false });
 }
 
 /**
@@ -47,8 +45,7 @@ export async function obtenerTiposProducto(params = {}) {
  * @returns {Promise<Object>} Lista de productos destacados.
  */
 export async function obtenerProductosDestacados(params = {}) {
-  const hasToken = Boolean(getAccessToken());
-  return getRequest('/products/featured-products/', params, { auth: hasToken });
+  return getRequest('/products/featured-products/', params, { auth: false });
 }
 
 /**
