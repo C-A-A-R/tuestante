@@ -1,82 +1,74 @@
-from django.core.management.base import BaseCommand, CommandError
+import getpass
+from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.utils import timezone
-from datetime import date
-from uuid import uuid4
-import getpass
-
-from apps.habitantes.models import Vivienda, Habitante
 
 User = get_user_model()
 
+
 class Command(BaseCommand):
-    help = "Crear un superusuario de desarrollo que no aparece en endpoints (pertenece al grupo Admin)."
+    help = "Crear un superusuario interactivo con is_active=True y asignado al grupo Admin."
 
     def handle(self, *args, **options):
-        self.stdout.write("Creando superusuario de desarrollo. Responda los datos solicitados.")
+        self.stdout.write("Creando superusuario de administración. Responda los datos solicitados.")
 
         # username
         while True:
             username = input("Nombre de usuario: ").strip()
-            if username:
-                if User.objects.filter(username=username).exists():
-                    self.stderr.write("Ya existe un usuario con ese nombre. Intente con otro.")
-                    continue
-                break
-
-        # password
-        while True:
-            password = getpass.getpass("Contrasena: ")
-            password2 = getpass.getpass("Confirmar contrasena: ")
-            if password != password2:
-                self.stderr.write("Las contrasenas no coinciden. Intente de nuevo.")
+            if not username:
+                self.stderr.write("El nombre de usuario no puede estar vacío.")
                 continue
-            if not password:
-                self.stderr.write("La contrasena no puede estar vacia.")
+            if User.objects.filter(username=username).exists():
+                self.stderr.write("Ya existe un usuario con ese nombre. Intente con otro.")
                 continue
             break
 
-        primer_nombre = input("Primer nombre: ").strip()
+        # email
+        while True:
+            correo = input("Correo electrónico: ").strip()
+            if not correo:
+                self.stderr.write("El correo electrónico es requerido.")
+                continue
+            if User.objects.filter(email=correo).exists():
+                self.stderr.write("Ya existe un usuario con ese correo. Intente con otro.")
+                continue
+            break
+
+        # password
+        while True:
+            password = getpass.getpass("Contraseña: ")
+            password2 = getpass.getpass("Confirmar contraseña: ")
+            if not password:
+                self.stderr.write("La contraseña no puede estar vacía.")
+                continue
+            if password != password2:
+                self.stderr.write("Las contraseñas no coinciden. Intente de nuevo.")
+                continue
+            break
+
+        primer_nombre = input("Primer nombre (opcional): ").strip()
         segundo_nombre = input("Segundo nombre (opcional): ").strip()
-        primer_apellido = input("Primer apellido: ").strip()
+        primer_apellido = input("Primer apellido (opcional): ").strip()
         segundo_apellido = input("Segundo apellido (opcional): ").strip()
-        correo = input("Correo electronico (opcional): ").strip() or None
-        cedula = input("Cedula (opcional): ").strip() or None
+        cedula = input("Documento de identidad (opcional): ").strip() or None
+        telefono = input("Teléfono (opcional): ").strip()
 
-        # Crear vivienda y habitante placeholder para asociar al usuario
-        vivienda = Vivienda.objects.create(calle="Sin definir")
-
-        # fecha_nacimiento por defecto y fecha_residencia hoy
-        fecha_nacimiento = date(2000, 1, 1)
-        fecha_residencia = timezone.now().date()
-
-        habitante = Habitante.objects.create(
-            jefe_familia=None,
-            primer_nombre=primer_nombre or "",
-            segundo_nombre=segundo_nombre or "",
-            primer_apellido=primer_apellido or "",
-            segundo_apellido=segundo_apellido or "",
-            cedula=cedula or f"DEV-{uuid4().hex[:8]}",
-            fecha_nacimiento=fecha_nacimiento,
-            telefono=None,
-            correo=correo,
-            fecha_residencia=fecha_residencia,
-            vivienda=vivienda,
-            es_jefe_familia=True,
+        # Crear usuario superuser activo
+        user = User.objects.create_superuser(
+            username=username,
+            email=correo,
+            password=password,
+            first_name=primer_nombre,
+            second_name=segundo_nombre,
+            first_last_name=primer_apellido,
+            second_last_name=segundo_apellido,
+            identity_document=cedula,
+            phone=telefono,
+            is_active=True,
         )
-        habitante.jefe_familia = habitante
-        habitante.save(update_fields=["jefe_familia"]) 
 
-        # Crear usuario superuser y asociarlo al habitante
-        user = User.objects.create_superuser(username, correo, password,
-                             first_name=primer_nombre or "",
-                             last_name=primer_apellido or "",
-                             habitante=habitante)
-
-        # Asignar grupo Admin por defecto
+        # Asignar grupo Admin
         grupo, _ = Group.objects.get_or_create(name="Admin")
         user.groups.add(grupo)
 
-        self.stdout.write(self.style.SUCCESS(f"Superusuario '{username}' creado y asignado al grupo 'Admin'."))
-*** End Patch
+        self.stdout.write(self.style.SUCCESS(f"Superusuario '{username}' creado exitosamente como activo y asignado al grupo 'Admin'."))

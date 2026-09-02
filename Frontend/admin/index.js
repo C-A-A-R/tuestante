@@ -1,602 +1,420 @@
-import { initNavbar } from './components/navbar/navbar.js';
+/**
+ * ==========================================================================
+ * TUESTANTE ADMIN - CONTROLADOR PRINCIPAL DEL DASHBOARD (INDEX.JS)
+ * ==========================================================================
+ * Inicializa el Navbar y Drawer, renderiza las 6 tarjetas KPI, el gráfico Donut
+ * interactivo de pedidos por estado y la tabla adaptada de pedidos recientes.
+ */
+
+import { initNavbar, setNavbarTitle } from './components/navbar/navbar.js';
 import { initFooter } from './components/footer/footer.js';
-import { obtenerCategorias, obtenerTiposProducto, obtenerProductosDestacados, obtenerProductos, alternarFavoritoProducto } from './modules/product/product.api.js';
-import { obtenerProyectos } from './modules/project/project.api.js';
-import { extractList, resolveImageUrl } from './js/api.js';
-import { getAccessToken } from './js/storage.js';
-import { showCartModal } from './components/cart-modal/cart-modal.js';
-import { showSuccessToast, showInfoToast, showErrorToast } from './components/toast/toast.js';
+import { 
+  getIndexKpiMetrics, 
+  getOrderStatusDistribution, 
+  getRecentOrders 
+} from './js/service/index.service.js';
 
 /**
- * Genera el HTML para un mensaje de error amigable cuando la API no responde.
+ * Genera el SVG correspondiente al icono solicitado
+ * @param {string} iconType Tipo de icono ('cart', 'clock', 'factory', 'credit-card', 'dollar', 'truck')
+ * @returns {string} String HTML del SVG
  */
-function createApiErrorFeedback(message = 'No se pudo conectar con el servidor', hint = 'Por favor, verifica tu conexión o intenta recargar la página.') {
-  return `
-    <div class="api-feedback-card error-feedback" style="grid-column: 1 / -1; width: 100%; text-align: center; padding: 2.5rem 1.5rem; background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; margin: 12px 0;">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px; display: inline-block;">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
-      <p style="color: #334155; font-family: 'Outfit', 'Inter', sans-serif; font-weight: 700; font-size: 1rem; margin: 0 0 4px 0;">${message}</p>
-      <p style="color: #64748b; font-family: 'Inter', sans-serif; font-size: 0.88rem; margin: 0;">${hint}</p>
-    </div>
-  `;
-}
-
-/**
- * Genera el HTML para un mensaje amigable cuando la API responde con 0 registros.
- */
-function createApiEmptyFeedback(message = 'No hay registros disponibles', hint = 'Pronto agregaremos nuevo contenido en esta sección.') {
-  return `
-    <div class="api-feedback-card empty-feedback" style="grid-column: 1 / -1; width: 100%; text-align: center; padding: 2.5rem 1.5rem; background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 16px; margin: 12px 0;">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#005187" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px; display: inline-block;">
-        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-      </svg>
-      <p style="color: #334155; font-family: 'Outfit', 'Inter', sans-serif; font-weight: 700; font-size: 1rem; margin: 0 0 4px 0;">${message}</p>
-      <p style="color: #64748b; font-family: 'Inter', sans-serif; font-size: 0.88rem; margin: 0;">${hint}</p>
-    </div>
-  `;
-}
-
-/**
- * Carga un componente HTML dinámicamente y lo inserta en un contenedor placeholder.
- * @param {string} placeholderId ID del elemento contenedor en el DOM
- * @param {string} filePath Ruta del archivo HTML a cargar
- */
-async function loadComponent(placeholderId, filePath) {
-  try {
-    const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) {
-      throw new Error(`Error al cargar el componente: ${response.statusText}`);
-    }
-    const html = await response.text();
-    const container = document.getElementById(placeholderId);
-    if (container) {
-      container.innerHTML = html;
-    }
-  } catch (error) {
-    console.error(`Error cargando el componente desde ${filePath}:`, error);
+function getIconSvg(iconType) {
+  switch (iconType) {
+    case 'cart':
+      return `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+      `;
+    case 'clock':
+      return `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+      `;
+    case 'factory':
+      return `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 20h20"></path>
+          <path d="M5 20V8l5 4V4l6 5v11"></path>
+          <path d="M18 14v6"></path>
+          <circle cx="18" cy="11" r="1"></circle>
+        </svg>
+      `;
+    case 'credit-card':
+      return `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+          <line x1="2" y1="10" x2="22" y2="10"></line>
+          <line x1="6" y1="15" x2="10" y2="15"></line>
+        </svg>
+      `;
+    case 'dollar':
+      return `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+          <line x1="12" y1="6" x2="12" y2="18"></line>
+        </svg>
+      `;
+    case 'truck':
+      return `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="3" width="15" height="13"></rect>
+          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+          <circle cx="5.5" cy="18.5" r="2.5"></circle>
+          <circle cx="18.5" cy="18.5" r="2.5"></circle>
+        </svg>
+      `;
+    default:
+      return '';
   }
 }
 
 /**
- * Carga dinámicamente las Categorías desde la API de Django.
+ * 1. Renderiza las 6 Tarjetas de Métricas KPI en la cuadrícula superior
+ * @param {Object} metrics Datos de métricas obtenidos de index.service.js
  */
-async function loadHomeCategories() {
-  const container = document.getElementById('home-categories-container');
+function renderKpiMetrics(metrics) {
+  const container = document.getElementById('kpi-metrics-container');
   if (!container) return;
 
-  try {
-    const response = await obtenerCategorias();
-    const categories = extractList(response);
-    if (!categories || categories.length === 0) {
-      container.innerHTML = createApiEmptyFeedback('No hay categorías registradas por el momento.', 'Explora nuestro catálogo para conocer todos los productos disponibles.');
-      return;
-    }
+  const cardOrder = [
+    metrics.todayOrders,
+    metrics.pendingPayment,
+    metrics.inManufacturing,
+    metrics.reviewPayment,
+    metrics.waitingFinalPayment,
+    metrics.shippedOrders
+  ];
 
-    container.innerHTML = categories.map(cat => {
-      const name = cat.category_name || cat.name || 'Categoría';
-      const desc = cat.description || 'Mobiliario metálico seguro y resistente para tus espacios.';
-      const img = resolveImageUrl(cat.category_image || cat.image, 'assets/images/categoria/estante.png');
-      return `
-        <a href="modules/product/products.html?cat=${cat.id}" class="category-card">
-          <div class="category-bg" style="background-image: url('${img}');"></div>
-          <div class="category-overlay"></div>
-          <div class="category-content">
-            <h3 class="category-title">${name}</h3>
-            <p class="category-desc">${desc}</p>
-            <span class="category-btn">Ver Catálogo</span>
-          </div>
-        </a>
-      `;
-    }).join('');
-  } catch (error) {
-    console.error('Error al cargar categorías en el home:', error);
-    container.innerHTML = createApiErrorFeedback('No se pudieron cargar las categorías.', 'Verifica la conexión con el servidor backend o recarga la página.');
-  }
-}
+  container.innerHTML = cardOrder.map(card => {
+    const iconSvg = getIconSvg(card.iconType);
+    const bottomAction = card.trend
+      ? `<span class="kpi-trend">${card.trend}</span>`
+      : `<a href="${card.actionUrl}" class="kpi-action-link" title="Ver lista filtrada">${card.actionText || 'Ver detalles'}</a>`;
 
-/**
- * Carga dinámicamente los Tipos de Producto desde la API de Django.
- */
-async function loadHomeProductTypes() {
-  const container = document.getElementById('home-product-types-container');
-  if (!container) return;
-
-  try {
-    const response = await obtenerTiposProducto();
-    const types = extractList(response);
-
-    if (!types || types.length === 0) {
-      container.innerHTML = createApiEmptyFeedback('No hay tipos de productos registrados actualmente.', 'Visita nuestra tienda para descubrir todos los modelos.');
-      return;
-    }
-
-    container.innerHTML = types.map(type => {
-      let name = type.product_type_name || type.name || 'Tipo de Producto';
-      if (name.trim().toLowerCase() === 'estante') name = 'Estantes';
-      const desc = type.description || 'Soluciones profesionales diseñadas para optimizar tus espacios.';
-      const img = resolveImageUrl(type.product_type_image || type.image, 'assets/images/categoria/estante.png');
-
-      return `
-        <a href="modules/product/products.html?type=${type.id}" class="product-type-card">
-          <div class="product-type-bg" style="background-image: url('${img}');"></div>
-          <div class="product-type-overlay"></div>
-          <div class="product-type-content">
-            <h3 class="product-type-title">${name}</h3>
-            <p class="product-type-desc">${desc}</p>
-            <span class="product-type-btn">Ver Catálogo</span>
-          </div>
-        </a>
-      `;
-    }).join('');
-  } catch (error) {
-    console.error('Error al cargar tipos de producto en el home:', error);
-    container.innerHTML = createApiErrorFeedback('No se pudieron cargar los tipos de producto.', 'Verifica la conexión con el servidor backend.');
-  }
-}
-
-/**
- * Carga dinámicamente el Carrusel de Productos Destacados desde la API de Django con Scroll Táctil.
- */
-async function loadHomeFeaturedProducts() {
-  const track = document.getElementById('home-featured-products-container');
-  const viewport = document.getElementById('home-featured-carousel-viewport');
-
-  if (!track || !viewport) return;
-
-  try {
-    let response;
-    try {
-      response = await obtenerProductosDestacados();
-    } catch {
-      response = await obtenerProductos();
-    }
-    const products = extractList(response);
-    if (!products || products.length === 0) {
-      track.innerHTML = createApiEmptyFeedback('No hay productos destacados registrados en este momento.', 'Consulta nuestro catálogo completo para ver todas las opciones.');
-      return;
-    }
-
-    track.innerHTML = products.map((prod, idx) => {
-      const id = prod.id;
-      const name = prod.product_name || prod.name || 'Producto Destacado';
-      const desc = prod.description || 'Estructura metálica de alta durabilidad y resistencia para optimizar tus espacios.';
-      const price = typeof prod.price === 'number' ? prod.price : parseFloat(prod.price) || 0;
-      const img = resolveImageUrl(prod.product_image || prod.image, 'assets/images/productos/estante-blanco.jpeg');
-      const isFeatured = !!(prod.rating === 5.0 || prod.badge === 'Destacado' || prod.is_feature_product !== false);
-      const link = `modules/product/product-details.html?id=${id}`;
-
-      const starBadgeHTML = isFeatured ? `
-        <div class="badge-destacado-star" title="Producto Destacado">
-          <svg class="star-icon" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="1.5">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-          </svg>
-          <span class="star-label">Producto Destacado</span>
+    return `
+      <div class="kpi-card" id="kpi-card-${card.id}">
+        <div class="kpi-icon-wrapper kpi-icon-${card.colorScheme}">
+          ${iconSvg}
         </div>
-      ` : '';
-
-      return `
-        <div class="unified-product-card" data-index="${idx}">
-          <div class="unified-card-media">
-            <a href="${link}" class="unified-card-img-link">
-              <img src="${img}" alt="${name}" class="unified-card-img" loading="lazy">
-            </a>
-            
-            ${starBadgeHTML}
-            
-            <button class="unified-wishlist-btn ${prod.is_favorite ? 'active' : ''}" data-id="${id}" title="${prod.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos'}" aria-label="Añadir a favoritos">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-              </svg>
-            </button>
-          </div>
-
-          <div class="unified-card-body">
-            <div>
-              <div class="unified-card-header">
-                <h3 class="unified-card-title">
-                  <a href="${link}">${name}</a>
-                </h3>
-                <span class="unified-card-price">$${price.toFixed(2)}</span>
-              </div>
-
-              <p class="unified-card-desc">${desc}</p>
-
-              <div class="unified-card-swatches">
-                <span class="swatch-dot" style="background-color: #ea580c;" title="Naranja"></span>
-                <span class="swatch-dot" style="background-color: #0f172a;" title="Gris Oscuro"></span>
-                <span class="swatch-dot" style="background-color: #15803d;" title="Verde Sabana"></span>
-                <span class="swatch-dot" style="background-color: #005187;" title="Azul"></span>
-                <span class="swatch-more">+4</span>
-              </div>
-            </div>
-
-            <div class="unified-card-actions">
-              <a href="${link}" class="unified-btn btn-details">Ver Detalle</a>
-              <button class="unified-btn btn-card-add-cart" data-id="${id}" data-name="${name}" data-price="${price}" data-image="${img}">
-                + Carrito
-              </button>
-            </div>
-          </div>
+        <div class="kpi-info">
+          <span class="kpi-title" title="${card.title}">${card.title}</span>
+          <span class="kpi-value">${card.value}</span>
+          ${bottomAction}
         </div>
-      `;
-    }).join('');
-
-    // Soporte para arrastrar con el ratón en escritorio (Mouse Drag Scroll)
-    let isMouseDown = false;
-    let startX = 0;
-    let scrollLeft = 0;
-    let isDragging = false;
-
-    viewport.addEventListener('mousedown', (e) => {
-      isMouseDown = true;
-      isDragging = false;
-      startX = e.pageX - viewport.offsetLeft;
-      scrollLeft = viewport.scrollLeft;
-      viewport.classList.add('is-dragging');
-    });
-
-    viewport.addEventListener('mouseleave', () => {
-      isMouseDown = false;
-      viewport.classList.remove('is-dragging');
-    });
-
-    viewport.addEventListener('mouseup', () => {
-      isMouseDown = false;
-      setTimeout(() => {
-        isDragging = false;
-        viewport.classList.remove('is-dragging');
-      }, 50);
-    });
-
-    viewport.addEventListener('mousemove', (e) => {
-      if (!isMouseDown) return;
-      e.preventDefault();
-      const x = e.pageX - viewport.offsetLeft;
-      const walk = (x - startX) * 1.5;
-      if (Math.abs(walk) > 5) {
-        isDragging = true;
-      }
-      viewport.scrollLeft = scrollLeft - walk;
-    });
-
-    // Prevenir clic accidental si el usuario estaba arrastrando
-    viewport.addEventListener('click', (e) => {
-      if (isDragging) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    }, true);
-
-  } catch (error) {
-    console.error('Error al cargar carrusel de productos destacados en el home:', error);
-    track.innerHTML = createApiErrorFeedback('No se pudieron cargar los productos destacados.', 'Por favor, intenta de nuevo más tarde.');
-  }
-}
-
-/**
- * Inicializa el carrusel de imágenes interactivo.
- */
-function initCarousel() {
-  const container = document.querySelector('.carousel-container');
-  if (!container) return;
-
-  const slides = container.querySelectorAll('.carousel-slide');
-  const dotsContainer = container.querySelector('#carousel-dots');
-  const prevBtn = container.querySelector('#carousel-prev');
-  const nextBtn = container.querySelector('#carousel-next');
-
-  if (slides.length <= 1) return;
-
-  // Generar dinámicamente los puntos según la cantidad real de imágenes/slides
-  if (dotsContainer) {
-    dotsContainer.innerHTML = Array.from(slides).map((_, i) =>
-      `<span class="carousel-dot ${i === 0 ? 'active' : ''}" data-index="${i}"></span>`
-    ).join('');
-  }
-
-  const dots = container.querySelectorAll('.carousel-dot');
-
-  let currentSlide = 0;
-  let timer = null;
-  const slideDuration = 5000; // Cambio automático cada 5 segundos
-
-  function showSlide(index) {
-    let targetIndex = index;
-    if (index >= slides.length) targetIndex = 0;
-    if (index < 0) targetIndex = slides.length - 1;
-
-    slides[currentSlide].classList.remove('active');
-    if (dots[currentSlide]) dots[currentSlide].classList.remove('active');
-
-    slides[targetIndex].classList.add('active');
-    if (dots[targetIndex]) dots[targetIndex].classList.add('active');
-
-    currentSlide = targetIndex;
-  }
-
-  function nextSlide() {
-    showSlide(currentSlide + 1);
-  }
-
-  function prevSlide() {
-    showSlide(currentSlide - 1);
-  }
-
-  function startAutoplay() {
-    stopAutoplay();
-    timer = setInterval(nextSlide, slideDuration);
-  }
-
-  function stopAutoplay() {
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
-    }
-  }
-
-  if (prevBtn) {
-    prevBtn.addEventListener('click', () => {
-      prevSlide();
-      startAutoplay();
-    });
-  }
-
-  if (nextBtn) {
-    nextBtn.addEventListener('click', () => {
-      nextSlide();
-      startAutoplay();
-    });
-  }
-
-  dots.forEach(dot => {
-    dot.addEventListener('click', (e) => {
-      const index = parseInt(e.target.getAttribute('data-index'), 10);
-      if (!isNaN(index) && index !== currentSlide) {
-        showSlide(index);
-        startAutoplay();
-      }
-    });
-  });
-
-  startAutoplay();
-}
-
-/**
- * Carga dinámicamente 8 imágenes desde la API del backend Django para el carrusel de Espacios Reales en la portada.
- */
-async function loadHomeRealSpacesGallery() {
-  const track = document.getElementById('real-spaces-track');
-  if (!track) return;
-
-  try {
-    let rawItems = [];
-    // 1. Intentar obtener la lista de proyectos desde el backend
-    try {
-      const projResp = await obtenerProyectos();
-      rawItems = extractList(projResp);
-    } catch (e) {
-      console.warn('Advertencia al consultar proyectos backend para el carrusel:', e);
-    }
-
-    // 2. Si hay menos de 8 elementos, complementar con productos del backend
-    if (rawItems.length < 8) {
-      try {
-        const prodResp = await obtenerProductos();
-        const prodItems = extractList(prodResp);
-        rawItems = [...rawItems, ...prodItems];
-      } catch (e) {
-        console.warn('Advertencia al consultar productos backend para el carrusel:', e);
-      }
-    }
-
-    // 3. Mapear los datos traídos del backend resolviendo las URLs completas de las imágenes
-    let galleryItems = rawItems.map((item, idx) => {
-      const title = item.project_name || item.product_name || item.name || `Espacio Real ${idx + 1}`;
-      const imgPath = item.project_images || item.product_image || item.image || item.category_image;
-      const imgUrl = resolveImageUrl(imgPath, `assets/images/gallery/real_space_${(idx % 6) + 1}.jpg`);
-      return { title, imgUrl };
-    });
-
-    // 4. Respaldos visuales del sistema en caso de que la base de datos backend no tenga suficientes fotos cargadas
-    const fallbackImages = [
-      'assets/images/gallery/real_space_1.jpg',
-      'assets/images/gallery/real_space_2.jpg',
-      'assets/images/gallery/real_space_3.jpg',
-      'assets/images/gallery/real_space_4.jpg',
-      'assets/images/gallery/real_space_5.jpg',
-      'assets/images/gallery/real_space_6.jpg',
-      'assets/images/gallery/real_space_7.jpg',
-      'assets/images/gallery/real_space_8.jpg',
-      'assets/images/gallery/real_space_9.jpg',
-      'assets/images/gallery/real_space_10.jpg',
-      'assets/images/gallery/real_space_11.jpg',
-      'assets/images/carrusel-index/LocekrL4Gris.jpg'
-    ];
-
-    let fallbackIdx = 0;
-    while (galleryItems.length < 8) {
-      galleryItems.push({
-        title: `Espacio Real TuEstante ${galleryItems.length + 1}`,
-        imgUrl: fallbackImages[fallbackIdx % fallbackImages.length]
-      });
-      fallbackIdx++;
-    }
-
-    // Asegurar exactamente 8 imágenes mostrándose 3 a la vez
-    galleryItems = galleryItems.slice(0, 8);
-
-    // Inyectar las 8 tarjetas en el DOM de la pista del carrusel
-    track.innerHTML = galleryItems.map(item => `
-      <div class="real-spaces-card">
-        <img src="${item.imgUrl}" alt="${item.title}" class="real-spaces-img" loading="lazy">
       </div>
-    `).join('');
-
-    // Re-inicializar controles de navegación del carrusel de 8 imágenes
-    initRealSpacesSlider();
-  } catch (error) {
-    console.error('Error al cargar la galería de 8 imágenes en portada:', error);
-  }
+    `;
+  }).join('');
 }
 
 /**
- * Inicializa los controles de navegación del carrusel horizontal de Espacios Reales en la portada.
+ * 2. Renderiza el Gráfico Donut SVG de Pedidos por Estado y su Leyenda
+ * @param {{total: number, items: Array<Object>}} data Datos de distribución
  */
-function initRealSpacesSlider() {
-  const track = document.getElementById('real-spaces-track');
-  const prevBtn = document.getElementById('real-spaces-prev');
-  const nextBtn = document.getElementById('real-spaces-next');
+function renderDonutChart(data) {
+  const svgEl = document.getElementById('donut-svg-element');
+  const legendEl = document.getElementById('donut-legend-container');
+  const centerCountEl = document.getElementById('donut-center-count');
 
-  if (!track || !prevBtn || !nextBtn) return;
+  if (!svgEl || !legendEl) return;
 
-  let currentIndex = 0;
-
-  function getVisibleCards() {
-    const width = window.innerWidth;
-    if (width <= 480) return 1;
-    if (width <= 768) return 2;
-    return 3;
+  const total = data.total || 45;
+  if (centerCountEl) {
+    centerCountEl.textContent = total;
   }
 
-  function updateSliderPosition() {
-    const cards = track.querySelectorAll('.real-spaces-card');
-    if (cards.length === 0) return;
+  // Dimensiones del círculo SVG (radio 75px -> circunferencia ~471.24px)
+  const radius = 75;
+  const circumference = 2 * Math.PI * radius; // 471.23889803846896
+  let cumulativeOffset = 0;
 
-    const visibleCards = getVisibleCards();
-    const maxIndex = Math.max(0, cards.length - visibleCards);
+  // Generar segmentos del Donut SVG
+  const segmentsHtml = data.items.map((item, index) => {
+    const fraction = item.count / total;
+    const strokeDasharray = `${fraction * circumference} ${circumference}`;
+    const strokeDashoffset = -cumulativeOffset;
+    cumulativeOffset += fraction * circumference;
 
-    if (currentIndex > maxIndex) currentIndex = maxIndex;
-    if (currentIndex < 0) currentIndex = 0;
+    return `
+      <circle
+        class="donut-segment"
+        id="donut-segment-${item.id}"
+        data-index="${index}"
+        data-status-id="${item.id}"
+        data-label="${item.label}"
+        data-count="${item.count}"
+        data-percentage="${item.percentage || ((item.count / total) * 100).toFixed(1)}"
+        cx="95"
+        cy="95"
+        r="${radius}"
+        stroke="${item.color}"
+        stroke-dasharray="${strokeDasharray}"
+        stroke-dashoffset="${strokeDashoffset}"
+      >
+        <title>${item.label}: ${item.count} pedidos (${((item.count / total) * 100).toFixed(1)}%)</title>
+      </circle>
+    `;
+  }).join('');
 
-    const cardWidth = cards[0].getBoundingClientRect().width;
-    const gap = 20;
-    const moveAmount = (cardWidth + gap) * currentIndex;
+  svgEl.innerHTML = segmentsHtml;
 
-    track.style.transform = `translateX(-${moveAmount}px)`;
-  }
+  // Generar la Leyenda Interactiva con los 8 estados
+  const legendHtml = data.items.map((item, index) => `
+    <li class="legend-item" id="legend-item-${item.id}" data-status-id="${item.id}" data-index="${index}">
+      <div class="legend-item-left">
+        <span class="legend-dot" style="background-color: ${item.color};"></span>
+        <span class="legend-label" title="${item.label}">${item.label}</span>
+      </div>
+      <span class="legend-count">${item.count}</span>
+    </li>
+  `).join('');
 
-  // Evitar duplicar listeners de navegación
-  if (!prevBtn.dataset.bound) {
-    prevBtn.dataset.bound = 'true';
-    prevBtn.addEventListener('click', () => {
-      const cards = track.querySelectorAll('.real-spaces-card');
-      const visibleCards = getVisibleCards();
-      const maxIndex = Math.max(0, cards.length - visibleCards);
-      if (currentIndex > 0) {
-        currentIndex--;
-      } else {
-        currentIndex = maxIndex;
-      }
-      updateSliderPosition();
-    });
-  }
+  legendEl.innerHTML = legendHtml;
 
-  if (!nextBtn.dataset.bound) {
-    nextBtn.dataset.bound = 'true';
-    nextBtn.addEventListener('click', () => {
-      const cards = track.querySelectorAll('.real-spaces-card');
-      const visibleCards = getVisibleCards();
-      const maxIndex = Math.max(0, cards.length - visibleCards);
-      if (currentIndex < maxIndex) {
-        currentIndex++;
-      } else {
-        currentIndex = 0;
-      }
-      updateSliderPosition();
-    });
-  }
-
-  window.addEventListener('resize', updateSliderPosition);
-  updateSliderPosition();
+  // Conectar interactividad cruzada Hover entre Leyenda y Donut
+  setupDonutInteractivity(data.items);
 }
 
-// Inicialización global al cargar la página
-document.addEventListener('DOMContentLoaded', async () => {
-  // Cargar Navbar y Footer en paralelo
-  await Promise.all([
-    loadComponent('navbar-placeholder', 'components/navbar/navbar.html'),
-    loadComponent('footer-placeholder', 'components/footer/footer.html')
-  ]);
+/**
+ * Conecta eventos hover sincronizados entre el gráfico Donut y la leyenda
+ * @param {Array<Object>} items 
+ */
+function setupDonutInteractivity(items) {
+  items.forEach(item => {
+    const segment = document.getElementById(`donut-segment-${item.id}`);
+    const legendItem = document.getElementById(`legend-item-${item.id}`);
 
-  // Inicializar componentes interactivos
-  initNavbar();
-  initFooter();
-  initCarousel();
-  loadHomeRealSpacesGallery();
+    if (segment && legendItem) {
+      // Hover en sector Donut -> Resalta Leyenda
+      segment.addEventListener('mouseenter', () => {
+        segment.classList.add('is-hovered');
+        legendItem.classList.add('is-highlighted');
+      });
+      segment.addEventListener('mouseleave', () => {
+        segment.classList.remove('is-hovered');
+        legendItem.classList.remove('is-highlighted');
+      });
 
-  // Cargar datos dinámicos desde el backend Django
-  loadHomeFeaturedProducts();
-  loadHomeCategories();
-  loadHomeProductTypes();
+      // Hover en Leyenda -> Resalta sector Donut
+      legendItem.addEventListener('mouseenter', () => {
+        legendItem.classList.add('is-highlighted');
+        segment.classList.add('is-hovered');
+      });
+      legendItem.addEventListener('mouseleave', () => {
+        legendItem.classList.remove('is-highlighted');
+        segment.classList.remove('is-hovered');
+      });
 
-  // Añadir por defecto la clase de drawer cerrado para ajustar el layout del footer
-  document.body.classList.add('drawer-collapsed');
-
-  // Delegación de eventos para botones de productos destacados (+ Carrito y Lista de Deseos)
-  document.addEventListener('click', async (e) => {
-    const wishlistBtn = e.target.closest('.unified-wishlist-btn');
-    if (wishlistBtn) {
-      const id = wishlistBtn.getAttribute('data-id') || wishlistBtn.closest('.unified-product-card')?.querySelector('.btn-card-add-cart')?.getAttribute('data-id');
-      if (!id) return;
-
-      const token = getAccessToken();
-      if (!token) {
-        showInfoToast('Inicia Sesión', 'Debes iniciar sesión para guardar productos en tu lista de deseos.');
-        return;
-      }
-
-      wishlistBtn.disabled = true;
-      try {
-        const res = await alternarFavoritoProducto(id);
-        if (res && typeof res.is_favorite === 'boolean') {
-          wishlistBtn.classList.toggle('active', res.is_favorite);
-          wishlistBtn.setAttribute('title', res.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos');
-          if (res.is_favorite) {
-            showSuccessToast('Lista de Deseos', res.message || 'Producto agregado a tus favoritos.');
-          } else {
-            showInfoToast('Lista de Deseos', res.message || 'Producto eliminado de tus favoritos.');
-          }
-        }
-      } catch (err) {
-        console.error('Error al alternar favorito en home:', err);
-        showErrorToast('Error', 'No se pudo actualizar la lista de deseos.');
-      } finally {
-        wishlistBtn.disabled = false;
-      }
-      return;
-    }
-
-    const btn = e.target.closest('.btn-card-add-cart');
-    if (btn) {
-      const id = parseInt(btn.getAttribute('data-id'), 10);
-      const name = btn.getAttribute('data-name');
-      const price = parseFloat(btn.getAttribute('data-price')) || 0;
-      const image = btn.getAttribute('data-image');
-
-      const CART_STORAGE_KEY = 'tuestante_cart';
-      let items = [];
-      try {
-        const raw = localStorage.getItem(CART_STORAGE_KEY);
-        if (raw) items = JSON.parse(raw);
-      } catch (err) {
-        items = [];
-      }
-
-      const existingIndex = items.findIndex(i => String(i.id) === String(id));
-      if (existingIndex > -1) {
-        items[existingIndex].qty += 1;
-      } else {
-        items.push({ id, name, price, image, color: 'Estándar', qty: 1 });
-      }
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-      window.dispatchEvent(new Event('cart-updated'));
-      showCartModal({ id, name, price, image });
+      // Clic en la leyenda para filtrar pedidos (preparado para backend)
+      legendItem.addEventListener('click', () => {
+        window.location.href = `modules/order/orders.html?status=${item.id}`;
+      });
     }
   });
-});
+}
 
+/**
+ * 3. Renderiza la Tabla de Pedidos Recientes
+ * @param {Array<Object>} orders Lista de pedidos estructurados
+ */
+function renderRecentOrdersTable(orders) {
+  const tbody = document.getElementById('recent-orders-tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = orders.map(order => `
+    <tr id="order-row-${order.id}">
+      <td>
+        <span class="order-code-text">${order.orderCode}</span>
+      </td>
+      <td>
+        <span class="client-name-text">${order.clientName}</span>
+      </td>
+      <td>
+        <span class="order-total-text">${order.formattedTotal}</span>
+      </td>
+      <td>
+        <span class="status-badge ${order.badgeVariant}">
+          ${order.statusLabel}
+        </span>
+      </td>
+      <td>
+        <span class="order-date-text">${order.date}</span>
+      </td>
+      <td class="order-actions-col">
+        <button 
+          type="button" 
+          class="action-menu-btn" 
+          aria-label="Acciones para pedido ${order.orderCode}"
+          title="Opciones"
+          data-order-id="${order.id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="1"></circle>
+            <circle cx="12" cy="5" r="1"></circle>
+            <circle cx="12" cy="19" r="1"></circle>
+          </svg>
+        </button>
+
+        <!-- Menú Popover Flotante de Acciones -->
+        <div class="action-popover" id="action-popover-${order.id}">
+          <button type="button" class="action-popover-item btn-view-order" data-order-id="${order.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>Ver Detalle</span>
+          </button>
+          <a href="modules/order/orders.html?id=${order.id}" class="action-popover-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <span>Gestionar Pedido</span>
+          </a>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  setupTableActions(orders);
+}
+
+/**
+ * Configura los botones de 3 puntos y el modal de detalle rápido
+ * @param {Array<Object>} orders 
+ */
+function setupTableActions(orders) {
+  // Manejar apertura/cierre de popovers de acción
+  const actionButtons = document.querySelectorAll('.action-menu-btn');
+  actionButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const orderId = btn.getAttribute('data-order-id');
+      const targetPopover = document.getElementById(`action-popover-${orderId}`);
+
+      // Cerrar otros popovers abiertos
+      document.querySelectorAll('.action-popover.is-active').forEach(pop => {
+        if (pop !== targetPopover) pop.classList.remove('is-active');
+      });
+
+      if (targetPopover) {
+        targetPopover.classList.toggle('is-active');
+      }
+    });
+  });
+
+  // Cerrar popovers al hacer clic afuera
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.action-popover.is-active').forEach(pop => {
+      pop.classList.remove('is-active');
+    });
+  });
+
+  // Conectar botones "Ver Detalle" con el Modal
+  const viewButtons = document.querySelectorAll('.btn-view-order');
+  viewButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const orderId = parseInt(btn.getAttribute('data-order-id'), 10);
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        openQuickViewModal(order);
+      }
+    });
+  });
+}
+
+/**
+ * Abre el modal de vista rápida de pedido
+ * @param {Object} order 
+ */
+function openQuickViewModal(order) {
+  const modalBackdrop = document.getElementById('quick-view-modal-backdrop');
+  if (!modalBackdrop) return;
+
+  document.getElementById('modal-order-title').textContent = `Detalle del Pedido ${order.orderCode}`;
+  document.getElementById('modal-order-code').textContent = order.orderCode;
+  document.getElementById('modal-client-name').textContent = order.clientName;
+  document.getElementById('modal-client-email').textContent = order.clientEmail || 'N/A';
+  document.getElementById('modal-order-total').textContent = order.formattedTotal;
+  document.getElementById('modal-order-status').textContent = order.statusLabel;
+  document.getElementById('modal-order-date').textContent = order.date;
+
+  const manageLink = document.getElementById('modal-manage-order-link');
+  if (manageLink) {
+    manageLink.href = `modules/order/orders.html?id=${order.id}`;
+  }
+
+  modalBackdrop.classList.add('is-open');
+}
+
+/**
+ * Configura el cierre del modal de vista rápida
+ */
+function setupModalClose() {
+  const modalBackdrop = document.getElementById('quick-view-modal-backdrop');
+  const closeBtn = document.getElementById('modal-close-btn');
+  const cancelBtn = document.getElementById('modal-cancel-btn');
+
+  if (!modalBackdrop) return;
+
+  const closeModal = () => modalBackdrop.classList.remove('is-open');
+
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+  modalBackdrop.addEventListener('click', (e) => {
+    if (e.target === modalBackdrop) closeModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalBackdrop.classList.contains('is-open')) {
+      closeModal();
+    }
+  });
+}
+
+/**
+ * ==========================================================================
+ * INICIALIZACIÓN GENERAL DEL DASHBOARD
+ * ==========================================================================
+ */
+async function initDashboard() {
+  try {
+    // 1. Inicializar la barra de navegación superior (Navbar + Drawer + Favicon + Título)
+    const navbar = initNavbar({ title: 'Dashboard' });
+    window.TuEstanteNavbar = navbar;
+
+    // 2. Cargar datos en paralelo desde el servicio centralizado
+    const [metrics, distribution, recentOrders] = await Promise.all([
+      getIndexKpiMetrics(),
+      getOrderStatusDistribution(),
+      getRecentOrders(5)
+    ]);
+
+    // 3. Renderizar componentes visuales
+    renderKpiMetrics(metrics);
+    renderDonutChart(distribution);
+    renderRecentOrdersTable(recentOrders);
+
+    // 4. Configurar eventos de modal e inicializar Footer simple
+    setupModalClose();
+    initFooter();
+
+    console.log('%c[TuEstante Admin] Dashboard principal cargado con éxito y paleta corporativa aplicada.', 'background: #005187; color: #fcffff; font-weight: bold; padding: 4px 8px; border-radius: 4px;');
+  } catch (error) {
+    console.error('[TuEstante Admin] Error al inicializar el Dashboard:', error);
+  }
+}
+
+// Ejecución al cargar el DOM
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDashboard);
+} else {
+  initDashboard();
+}

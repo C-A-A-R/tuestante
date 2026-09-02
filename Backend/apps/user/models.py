@@ -1,8 +1,31 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, PermissionsMixin
+from django.contrib.auth.models import AbstractUser, PermissionsMixin, UserManager
 from django.utils import timezone
 
 from apps.base.models import BaseModel
+
+
+class CustomUserManager(UserManager):
+    """Gestor personalizado para el modelo User que asegura que los superusuarios sean creados como activos."""
+
+    def create_user(self, username=None, email=None, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
+        return self._create_user(username, email, password, **extra_fields)
+
+    def create_superuser(self, username=None, email=None, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('El superusuario debe tener is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('El superusuario debe tener is_superuser=True.')
+        if extra_fields.get('is_active') is not True:
+            raise ValueError('El superusuario debe tener is_active=True.')
+
+        return self._create_user(username, email, password, **extra_fields)
 
 
 class User(AbstractUser, PermissionsMixin, BaseModel):
@@ -99,13 +122,14 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         help_text='Número de teléfono del usuario'
     )
 
+    objects = CustomUserManager()
 
     class Meta:
         verbose_name = 'Usuario'
         verbose_name_plural = 'Usuarios'
 
     USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['email', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ['email', 'first_name', 'first_last_name']
 
     def __str__(self):
         """String representation of User."""
@@ -116,7 +140,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         name_parts = [
             self.first_name,
             self.second_name,
-            self.last_name,
+            self.first_last_name or self.last_name,
             self.second_last_name,
         ]
         full_name = " ".join(part for part in name_parts if part)
@@ -136,6 +160,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         """Desactiva el usuario al realizar el borrado lógico."""
         self.is_active = False
         super().delete(using=using, keep_parents=keep_parents)
+
 
 
 

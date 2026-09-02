@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle de Pedido | TuEstante Admin</title>
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+  
+  <!-- Estilos del Módulo de Detalle de Pedido -->
+  <link rel="stylesheet" href="order-detail.css">
+</head>
+<body>
+
+  <!-- ========================================================================
+       ESTRUCTURA PRINCIPAL DEL PANEL (APP-LAYOUT)
+       ======================================================================== -->
+  <div class="app-layout" id="app-layout">
+    
+    <!-- ======================================================================
+         BARRA DE NAVEGACIÓN SUPERIOR (NAVBAR REUTILIZABLE)
+         ====================================================================== -->
+    <header id="admin-navbar" class="admin-navbar" role="banner">
+      <div class="navbar-left">
+        <button 
+          type="button" 
+          id="navbar-hamburger-btn" 
+          class="navbar-hamburger-btn" 
+          data-drawer-toggle="true" 
+          aria-label="Mostrar u ocultar menú lateral"
+          title="Mostrar menú lateral">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+
+        <div class="navbar-title-container">
+          <nav class="navbar-breadcrumb" aria-label="Navegación">
+            <a href="orders.html" class="breadcrumb-link">Pedidos</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current" id="navbar-breadcrumb-code">#00125</span>
+          </nav>
+          <span class="navbar-breadcrumb-dot" aria-hidden="true">•</span>
+          <h1 class="navbar-screen-title" id="navbar-screen-title">Detalle de Pedido</h1>
+        </div>
+      </div>
+
+      <div class="navbar-right">
+        <!-- Notificaciones -->
+        <div class="navbar-notif-wrapper">
+          <a href="../notifications/notifications.html" class="navbar-icon-btn navbar-notif-btn" id="navbar-notif-btn" aria-label="Ver notificaciones" title="Notificaciones">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="navbar-badge" id="navbar-notif-badge" aria-label="5 notificaciones pendientes">5</span>
+          </a>
+        </div>
+
+        <div class="navbar-divider" aria-hidden="true"></div>
+
+        <!-- Perfil Dropdown -->
+        <div class="navbar-user-dropdown" id="navbar-user-dropdown">
+          <button 
+            type="button" 
+            class="navbar-user-btn" 
+            id="navbar-user-btn" 
+            aria-expanded="false" 
+            aria-haspopup="true" 
+            aria-label="Opciones de perfil de usuario">
+            <div class="navbar-avatar" id="navbar-user-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div class="navbar-user-meta">
+              <span class="navbar-user-name" id="navbar-user-name">Administrador</span>
+              <span class="navbar-user-email" id="navbar-user-email">admin@tienda.com</span>
+            </div>
+            <svg class="navbar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ======================================================================
+         CONTENIDO PRINCIPAL DEL DETALLE DE PEDIDO
+         ====================================================================== -->
+    <main class="app-main-content">
+      <div class="order-detail-container">
+        
+        <!-- 1. ENCABEZADO DE LA ORDEN CON ACCIONES -->
+        <section class="order-header-section" aria-label="Encabezado del pedido">
+          <div class="order-header-info">
+            <div class="order-title-row">
+              <h2 class="order-main-title" id="order-title-code">Pedido #00125</h2>
+              
+              <!-- Botón Copiar Código -->
+              <button type="button" class="btn-copy-code" id="btn-copy-order-code" title="Copiar código de pedido" aria-label="Copiar código de pedido">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+
+              <!-- Badge de Estado Principal -->
+              <span class="order-status-badge-header badge-manufacturing" id="order-header-status-badge">
+                <span class="status-dot"></span>
+                <span id="order-header-status-text">En fabricación</span>
+              </span>
+            </div>
+
+            <!-- Fecha y Hora de Registro -->
+            <div class="order-timestamp">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span id="order-timestamp-text">Registrado el 31 de agosto de 2026 • 10:32 AM</span>
+            </div>
+          </div>
+
+          <!-- Botones de Acción Superiores -->
+          <div class="order-header-actions">
+            <!-- Botón Editar Pedido -->
+            <button type="button" class="btn btn-primary" id="btn-edit-order">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <span>Editar pedido</span>
+            </button>
+
+            <!-- Botón Ver Notificaciones -->
+            <a href="../notifications/notifications.html?order=125" class="btn btn-outline" id="btn-view-order-notifs">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Ver notificaciones</span>
+            </a>
+
+            <!-- Menú Más Opciones (3 Puntos) -->
+            <div class="options-dropdown-wrapper">
+              <button type="button" class="btn btn-outline btn-icon-only" id="btn-order-more-options" aria-label="Más opciones" aria-expanded="false" aria-haspopup="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="5" r="1"></circle>
+                  <circle cx="12" cy="12" r="1"></circle>
+                  <circle cx="12" cy="19" r="1"></circle>
+                </svg>
+              </button>
+
+              <div class="options-popover-menu" id="order-more-options-menu" role="menu">
+                <button type="button" class="options-menu-item" id="btn-menu-issue-mo" role="menuitem">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 20h20"></path>
+                    <path d="M5 20V8l5 4V4l6 5v11"></path>
+                  </svg>
+                  <span>Emitir Orden de Fab.</span>
+                </button>
+                <button type="button" class="options-menu-item" id="btn-menu-print-order" role="menuitem">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                  </svg>
+                  <span>Imprimir comprobante</span>
+                </button>
+                <button type="button" class="options-menu-item item-danger" id="btn-menu-cancel-order" role="menuitem">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                  </svg>
+                  <span>Cancelar pedido</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. FILA DE 4 TARJETAS KPI / METADATOS (DÓLARES Y BOLÍVARES) -->
+        <section class="order-meta-kpis-grid" aria-label="Información del cliente y pedido">
+          <!-- Tarjeta 1: Cliente -->
+          <div class="meta-kpi-card">
+            <div class="meta-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div class="meta-kpi-content">
+              <span class="meta-kpi-label">Cliente</span>
+              <strong class="meta-kpi-title" id="meta-client-name">Juan Pérez</strong>
+              <span class="meta-kpi-sub" id="meta-client-email">juan@email.com</span>
+              <span class="meta-kpi-sub" id="meta-client-phone">+58 412 123 4567</span>
+            </div>
+          </div>
+
+          <!-- Tarjeta 2: Dirección de Envío -->
+          <div class="meta-kpi-card">
+            <div class="meta-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+            </div>
+            <div class="meta-kpi-content">
+              <span class="meta-kpi-label">Dirección de envío</span>
+              <strong class="meta-kpi-title" id="meta-shipping-line1">Av. Principal, Casa #123</strong>
+              <span class="meta-kpi-sub" id="meta-shipping-city">San Cristóbal, Táchira</span>
+              <span class="meta-kpi-sub" id="meta-shipping-country">Venezuela</span>
+            </div>
+          </div>
+
+          <!-- Tarjeta 3: Método de Pago -->
+          <div class="meta-kpi-card">
+            <div class="meta-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+            </div>
+            <div class="meta-kpi-content">
+              <span class="meta-kpi-label">Método de pago</span>
+              <strong class="meta-kpi-title" id="meta-payment-method">Transferencia / Pago móvil</strong>
+            </div>
+          </div>
+
+          <!-- Tarjeta 4: Total del Pedido (Dólares y Bolívares) -->
+          <div class="meta-kpi-card">
+            <div class="meta-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <div class="meta-kpi-content">
+              <span class="meta-kpi-label">Total del pedido</span>
+              <div class="dual-currency-display">
+                <strong class="meta-kpi-value text-primary" id="meta-order-total-usd">$350.00</strong>
+                <span class="currency-bs-badge" id="meta-order-total-bs">Bs. 276.962,00</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. CUERPO PRINCIPAL (GRID 2 COLUMNAS: DETALLES Y ESTADO) -->
+        <div class="order-main-grid">
+          
+          <!-- COLUMNA IZQUIERDA: PRODUCTOS, PAGOS E INFORMACIÓN ADICIONAL -->
+          <div class="order-left-column">
+            
+            <!-- TARJETA: PRODUCTOS DEL PEDIDO -->
+            <section class="order-card" aria-label="Productos del pedido">
+              <div class="card-header-with-icon">
+                <div class="card-title-group">
+                  <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                  </svg>
+                  <h3 class="card-heading">Productos del pedido</h3>
+                </div>
+              </div>
+
+              <!-- Tabla de Productos -->
+              <div class="table-responsive">
+                <table class="detail-products-table">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="th-product">Producto</th>
+                      <th scope="col" class="th-qty text-center">Cantidad</th>
+                      <th scope="col" class="th-price text-right">Precio unitario</th>
+                      <th scope="col" class="th-subtotal text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody id="order-items-tbody">
+                    <!-- Se inyecta dinámicamente -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Total de Productos -->
+              <div class="products-total-footer">
+                <span class="products-total-label">Total de productos:</span>
+                <div class="products-total-amounts">
+                  <span class="products-total-amount" id="products-total-amount">$350.00</span>
+                  <span class="products-total-bs" id="products-total-bs">Bs. 276.962,00</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- TARJETA: PAGOS (CON MONTOS EN USD Y BS + EDICIÓN Y COMPROBANTES) -->
+            <section class="order-card" aria-label="Información de pagos">
+              <div class="card-header-with-icon">
+                <div class="card-title-group">
+                  <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                  </svg>
+                  <h3 class="card-heading">Pagos</h3>
+                </div>
+                <a href="../payment/payment.html" class="card-header-link" id="link-view-all-payments">Ver historial completo</a>
+              </div>
+
+              <!-- Grid de 2 Pagos (Inicial y Final) -->
+              <div class="payments-cards-grid" id="payments-cards-container">
+                <!-- Se inyecta dinámicamente -->
+              </div>
+            </section>
+
+            <!-- TARJETA: INFORMACIÓN ADICIONAL -->
+            <section class="order-card" aria-label="Información adicional">
+              <div class="card-header-with-icon">
+                <div class="card-title-group">
+                  <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                  <h3 class="card-heading">Información adicional</h3>
+                </div>
+              </div>
+
+              <div class="additional-info-blocks">
+                <div class="info-block">
+                  <span class="info-block-title">Notas del cliente</span>
+                  <p class="info-block-text" id="info-client-notes">Por favor, entregar en la tarde. Gracias!</p>
+                </div>
+
+                <div class="info-block">
+                  <span class="info-block-title">Notas internas</span>
+                  <p class="info-block-text" id="info-internal-notes">Revisar stock de accesorios antes de fabricar.</p>
+                </div>
+              </div>
+            </section>
+
+          </div>
+
+          <!-- COLUMNA DERECHA: ESTADO DEL PEDIDO Y SEGUIMIENTO -->
+          <div class="order-right-column">
+            
+            <!-- TARJETA: ESTADO DEL PEDIDO (CON VALIDACIONES, AVANCE Y FECHAS) -->
+            <section class="order-card" aria-label="Línea de tiempo del estado del pedido">
+              <div class="card-header-with-icon">
+                <div class="card-title-group">
+                  <div class="status-card-icon-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                  <h3 class="card-heading">Estado del pedido</h3>
+                </div>
+
+                <!-- Dropdown Cambiar Estado -->
+                <div class="status-dropdown-wrapper">
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-change-status" aria-expanded="false" aria-haspopup="true">
+                    <span>Cambiar estado</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+
+                  <div class="status-change-popover" id="status-change-menu" role="menu">
+                    <button type="button" class="status-menu-item" data-status="pending_payment">1. Pendiente de pago</button>
+                    <button type="button" class="status-menu-item" data-status="initial_review">2. Pago inicial en revisión</button>
+                    <button type="button" class="status-menu-item" data-status="initial_approved">3. Pago inicial aprobado</button>
+                    <button type="button" class="status-menu-item" data-status="manufacturing">4. En fabricación</button>
+                    <button type="button" class="status-menu-item" data-status="waiting_final_payment">5. Esperando pago final</button>
+                    <button type="button" class="status-menu-item" data-status="final_review">6. Pago final en revisión</button>
+                    <button type="button" class="status-menu-item" data-status="shipped">7. Enviado</button>
+                    <button type="button" class="status-menu-item" data-status="completed">8. Finalizado</button>
+                    <button type="button" class="status-menu-item item-danger" data-status="refunded">9. Devuelto</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botón Prominente: Avanzar al Siguiente Estado -->
+              <div class="advance-status-box">
+                <button type="button" class="btn btn-primary btn-advance-status" id="btn-advance-next-status">
+                  <span id="btn-advance-status-text">Avanzar al siguiente estado</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Stepper Vertical con Fechas Debajo de Cada Etapa -->
+              <div class="order-timeline-stepper" id="order-timeline-container">
+                <!-- Se inyecta dinámicamente con fechas debajo de cada etapa -->
+              </div>
+            </section>
+
+            <!-- TARJETA: SEGUIMIENTO Y COMUNICACIÓN -->
+            <section class="order-card communication-card" aria-label="Seguimiento y comunicación con el cliente">
+              <div class="card-header-with-icon">
+                <div class="card-title-group">
+                  <svg class="card-icon text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  <h3 class="card-heading">Seguimiento y comunicación</h3>
+                </div>
+              </div>
+
+              <p class="communication-desc">
+                Para ver el historial completo de notificaciones y enviar mensajes al cliente, dirígete a la sección de notificaciones de este pedido.
+              </p>
+
+              <div class="communication-action">
+                <a href="../notifications/notifications.html?order=125" class="btn btn-outline btn-comm-link" id="btn-goto-notifications">
+                  <span>Ir a notificaciones</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                  <svg class="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </a>
+              </div>
+            </section>
+
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+
+    <!-- ======================================================================
+         FOOTER SIMPLE REUTILIZABLE
+         ====================================================================== -->
+    <footer id="admin-footer" class="admin-footer" role="contentinfo">
+      <div class="footer-container">
+        <div class="footer-left">
+          <span class="footer-copyright">
+            © <span id="footer-current-year">2026</span> <strong>TuEstante</strong>. Todos los derechos reservados.
+          </span>
+        </div>
+        <div class="footer-right">
+          <span class="footer-system-badge">
+            <span class="status-indicator-dot"></span>
+            Sistema Administrativo TuEstante OMS
+          </span>
+          <span class="footer-divider" aria-hidden="true">•</span>
+          <span class="footer-version">v1.0.0</span>
+          <span class="footer-divider" aria-hidden="true">•</span>
+          <a href="https://wa.me/584266272286" target="_blank" rel="noopener noreferrer" class="footer-link">Soporte Técnico</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ========================================================================
+       MODAL: VER COMPROBANTE DE PAGO (CON MONTOS USD/BS Y ZOOM FLOTANTE)
+       ======================================================================== -->
+  <div id="receipt-modal-backdrop" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="receipt-modal-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="receipt-modal-title">Comprobante de Pago</h2>
+          <span class="modal-subtitle" id="receipt-modal-subtitle">Pago inicial</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-receipt-modal" aria-label="Cerrar ventana">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Aviso si el pago fue editado -->
+        <div class="edited-payment-alert" id="receipt-edited-alert" style="display: none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span id="receipt-edited-text">Este registro de pago fue editado manualmente.</span>
+        </div>
+
+        <!-- Contenedor con clic para zoom flotante -->
+        <div class="receipt-preview-container" id="receipt-img-clickable-wrapper" title="Haga clic para ampliar la imagen del comprobante">
+          <img src="../../assets/images/logo.jpeg" alt="Comprobante de Pago Bancario" id="receipt-preview-img" class="receipt-img">
+          <div class="receipt-zoom-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="11" y1="8" x2="11" y2="14"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+            <span>Clic para ampliar</span>
+          </div>
+        </div>
+        
+        <!-- Bloque de Montos en USD y Bs -->
+        <div class="receipt-amounts-summary">
+          <div class="amount-col">
+            <span class="amount-label">Monto en Dólares:</span>
+            <strong class="amount-val-usd" id="receipt-amount-usd">$175.00</strong>
+          </div>
+          <div class="amount-col">
+            <span class="amount-label">Monto en Bolívares:</span>
+            <strong class="amount-val-bs" id="receipt-amount-bs">Bs. 138.481,00</strong>
+          </div>
+        </div>
+
+        <div class="receipt-meta-box">
+          <div class="receipt-meta-row">
+            <span class="meta-label">Referencia Bancaria:</span>
+            <strong class="meta-val" id="receipt-meta-ref">REF-849204</strong>
+          </div>
+          <div class="receipt-meta-row">
+            <span class="meta-label">Método / Banco:</span>
+            <span class="meta-val" id="receipt-meta-bank">Pago Móvil Banesco</span>
+          </div>
+          <div class="receipt-meta-row">
+            <span class="meta-label">Fecha del Comprobante:</span>
+            <span class="meta-val" id="receipt-meta-date">31/08/2026 - 11:20 AM</span>
+          </div>
+          <div class="receipt-meta-row">
+            <span class="meta-label">Tasa de Cambio Registrada:</span>
+            <span class="meta-val" id="receipt-meta-rate">791,32 Bs/$</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-close-receipt-footer">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="btn-download-receipt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Descargar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: EDICIÓN DE PAGO (CON ADVERTENCIA Y CONFIRMACIÓN)
+       ======================================================================== -->
+  <div id="edit-payment-modal-backdrop" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="edit-payment-modal-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="edit-payment-modal-title">Editar Registro de Pago</h2>
+          <span class="modal-subtitle">Modifique los importes o referencias del comprobante</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-edit-payment-modal" aria-label="Cerrar ventana">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="edit-payment-form">
+        <input type="hidden" id="edit-payment-id">
+        <div class="modal-body">
+          <div class="info-alert-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>Al guardar cambios, este pago se marcará con una etiqueta indicando que <strong>fue editado</strong> y se registrará la fecha de modificación.</span>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="edit-payment-amount-usd" class="form-label">Monto en Dólares ($) *</label>
+              <input type="number" step="0.01" id="edit-payment-amount-usd" class="form-input font-bold" required>
+            </div>
+            <div class="form-group col-half">
+              <label for="edit-payment-amount-bs" class="form-label">Monto en Bolívares (Bs.) *</label>
+              <input type="number" step="0.01" id="edit-payment-amount-bs" class="form-input font-bold text-primary" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="edit-payment-ref" class="form-label">Nro. Referencia *</label>
+              <input type="text" id="edit-payment-ref" class="form-input" required>
+            </div>
+            <div class="form-group col-half">
+              <label for="edit-payment-method" class="form-label">Método / Banco *</label>
+              <input type="text" id="edit-payment-method" class="form-input" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-payment-status" class="form-label">Estado del Pago *</label>
+            <select id="edit-payment-status" class="form-select" required>
+              <option value="approved">Aprobado</option>
+              <option value="pending">Pendiente</option>
+              <option value="review">En revisión</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-edit-payment">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <span>Guardar Cambios del Pago</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: SUBIR / REGISTRAR COMPROBANTE DE PAGO
+       ======================================================================== -->
+  <div id="upload-payment-modal-backdrop" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="upload-modal-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="upload-modal-title">Registrar Comprobante de Pago</h2>
+          <span class="modal-subtitle" id="upload-modal-subtitle">Pago final - $175.00</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-upload-modal" aria-label="Cerrar ventana">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="upload-payment-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="payment-stage-select" class="form-label">Etapa de Pago *</label>
+            <select id="payment-stage-select" class="form-select" required>
+              <option value="final">Pago final - $175.00</option>
+              <option value="initial">Pago inicial - $175.00</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="payment-method-select" class="form-label">Método de Pago *</label>
+              <select id="payment-method-select" class="form-select" required>
+                <option value="mobile_payment">Pago Móvil</option>
+                <option value="transfer">Transferencia Bancaria</option>
+                <option value="cash">Efectivo / Divisas</option>
+                <option value="other">Otro</option>
+              </select>
+            </div>
+            <div class="form-group col-half">
+              <label for="payment-ref-input" class="form-label">Nro. Referencia *</label>
+              <input type="text" id="payment-ref-input" class="form-input" placeholder="Ej: 994821" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="payment-receipt-file" class="form-label">Archivo / Captura de Comprobante *</label>
+            <input type="file" id="payment-receipt-file" class="form-input" accept="image/*,.pdf" required>
+          </div>
+
+          <div class="form-group">
+            <label for="payment-notes-input" class="form-label">Notas Adicionales</label>
+            <textarea id="payment-notes-input" class="form-textarea" rows="2" placeholder="Detalles de confirmación bancaria..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-upload-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <span>Guardar Comprobante</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: EDITAR PEDIDO
+       ======================================================================== -->
+  <div id="edit-order-modal-backdrop" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="edit-order-modal-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="edit-order-modal-title">Editar Pedido #00125</h2>
+          <span class="modal-subtitle">Modificar datos de entrega y observaciones</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-edit-modal" aria-label="Cerrar ventana">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="edit-order-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-shipping-address" class="form-label">Dirección de Entrega</label>
+            <input type="text" id="edit-shipping-address" class="form-input" value="Av. Principal, Casa #123, San Cristóbal, Táchira">
+          </div>
+
+          <div class="form-group">
+            <label for="edit-client-notes" class="form-label">Notas del Cliente</label>
+            <textarea id="edit-client-notes" class="form-textarea" rows="2">Por favor, entregar en la tarde. Gracias!</textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-internal-notes" class="form-label">Notas Internas de Fabricación</label>
+            <textarea id="edit-internal-notes" class="form-textarea" rows="2">Revisar stock de accesorios antes de fabricar.</textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-edit-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <span>Guardar Cambios</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL DE CONFIRMACIÓN REUTILIZABLE (CONFIRMATION DIALOG)
+       ======================================================================== -->
+  <div id="confirmation-modal-backdrop" class="modal-backdrop modal-backdrop-confirm" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
+    <div class="modal-dialog modal-confirm-dialog">
+      <div class="confirm-dialog-body">
+        <div class="confirm-icon-wrapper" id="confirm-dialog-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div class="confirm-text-group">
+          <h3 class="confirm-dialog-title" id="confirm-dialog-title">¿Confirmar acción?</h3>
+          <p class="confirm-dialog-desc" id="confirm-dialog-desc">Esta acción modificará los datos del pedido.</p>
+        </div>
+      </div>
+      <div class="confirm-dialog-footer">
+        <button type="button" class="btn btn-outline" id="btn-confirm-cancel">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-accept">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       LIGHTBOX FLOTANTE DE IMAGEN DE COMPROBANTE (ZOOM FLOTANTE)
+       ======================================================================== -->
+  <div id="image-lightbox-backdrop" class="lightbox-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Visualizador flotante de comprobante">
+    <div class="lightbox-container">
+      <button type="button" class="lightbox-close-btn" id="btn-close-lightbox" aria-label="Cerrar vista flotante">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <img src="" alt="Comprobante de Pago Ampliado" id="lightbox-full-img" class="lightbox-img">
+      <div class="lightbox-caption" id="lightbox-caption-text">Comprobante de Pago</div>
+    </div>
+  </div>
+
+  <!-- Scripts: Controlador de Detalle de Pedido -->
+  <script type="module" src="order-detail.js"></script>
+</body>
+</html>

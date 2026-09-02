@@ -1,85 +1,73 @@
 /**
- * Ajusta dinámicamente las rutas de enlaces en el footer
- * dependiendo de si la página actual está en el directorio raíz o dentro de un módulo.
- * @param {HTMLElement} footer Elemento principal del footer
+ * ==========================================================================
+ * TUESTANTE ADMIN - CONTROLADOR MODULAR DEL COMPONENTE FOOTER (FOOTER.JS)
+ * ==========================================================================
+ * Maneja la inyección automática de estilos, año dinámico y soporte de rutas.
  */
-function fixFooterPaths(footer) {
-  const isModulePath = window.location.pathname.includes('/modules/');
-  const prefix = isModulePath ? '../../' : '';
 
-  // 1. Enlace Inicio
-  const inicioLink = footer.querySelector('[data-link="inicio"]') || footer.querySelector('a[href*="inicio"]');
-  if (inicioLink) {
-    const target = `${prefix}index.html#inicio`;
-    inicioLink.setAttribute('href', target);
-    inicioLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.location.href = target;
-    });
+import { getBasePathPrefix } from '../drawer/drawer.js';
+
+/**
+ * Inyecta dinámicamente la hoja de estilo del Footer si no está presente en el <head>
+ */
+function ensureFooterStylesExist() {
+  const prefix = getBasePathPrefix();
+  if (!document.querySelector('link[href*="footer.css"]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `${prefix}components/footer/footer.css`;
+    document.head.appendChild(link);
   }
-
-  // 2. Enlace Productos
-  const productosLink = footer.querySelector('[data-link="productos"]') || footer.querySelector('a[href*="product"]');
-  if (productosLink) {
-    const target = `${prefix}modules/product/products.html`;
-    productosLink.setAttribute('href', target);
-    productosLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.location.href = target;
-    });
-  }
-
-  // 3. Enlace Galería
-  const galeriaLink = footer.querySelector('[data-link="galeria"]') || footer.querySelector('a[href*="gallery"]');
-  if (galeriaLink) {
-    const target = `${prefix}modules/gallery/gallery.html`;
-    galeriaLink.setAttribute('href', target);
-    galeriaLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.location.href = target;
-    });
-  }
-
-  // 4. Enlace Nosotros
-  const nosotrosLink = footer.querySelector('[data-link="nosotros"]') || footer.querySelector('a[href*="us"]');
-  if (nosotrosLink) {
-    const target = `${prefix}modules/us/us.html`;
-    nosotrosLink.setAttribute('href', target);
-    nosotrosLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.location.href = target;
-    });
-  }
-
-  // 4. Enlace Contacto
-  const contactoLinks = footer.querySelectorAll('[data-link="contacto"], a[href*="contacto"]');
-  contactoLinks.forEach(link => {
-    const target = `${prefix}index.html#contacto`;
-    link.setAttribute('href', target);
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const isIndexPage = !window.location.pathname.includes('/modules/') && 
-                          (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/') || window.location.pathname === '');
-      if (isIndexPage) {
-        const contactSection = document.getElementById('contacto') || document.getElementById('contactos');
-        if (contactSection) {
-          contactSection.scrollIntoView({ behavior: 'smooth' });
-          if (history.pushState) {
-            history.pushState(null, null, '#contacto');
-          }
-          return;
-        }
-      }
-      window.location.href = target;
-    });
-  });
 }
 
 /**
- * Inicializa el comportamiento del footer.
+ * Inicializa e inyecta el Footer simple en el documento
  */
 export function initFooter() {
-  const footer = document.querySelector('.app-footer');
-  if (!footer) return;
-  fixFooterPaths(footer);
+  ensureFooterStylesExist();
+
+  const currentYear = new Date().getFullYear();
+
+  // 1. Si el elemento ya existe en el DOM, actualizar el año
+  const existingYear = document.getElementById('footer-current-year');
+  if (existingYear) {
+    existingYear.textContent = currentYear;
+  }
+
+  // 2. Si no existe el footer en el DOM, insertarlo automáticamente al final de .app-layout o body
+  if (!document.getElementById('admin-footer')) {
+    const footerMarkup = `
+      <footer id="admin-footer" class="admin-footer" role="contentinfo">
+        <div class="footer-container">
+          <div class="footer-left">
+            <span class="footer-copyright">
+              © <span id="footer-current-year">${currentYear}</span> <strong>TuEstante</strong>. Todos los derechos reservados.
+            </span>
+          </div>
+          <div class="footer-right">
+            <span class="footer-system-badge">
+              <span class="status-indicator-dot"></span>
+              Sistema Operativo TuEstante OMS
+            </span>
+            <span class="footer-divider" aria-hidden="true">•</span>
+            <span class="footer-version">v1.0.0</span>
+            <span class="footer-divider" aria-hidden="true">•</span>
+            <a href="https://wa.me/584266272286" target="_blank" rel="noopener noreferrer" class="footer-link">Soporte Técnico</a>
+          </div>
+        </div>
+      </footer>
+    `;
+
+    const appLayout = document.getElementById('app-layout') || document.querySelector('.app-layout');
+    if (appLayout) {
+      appLayout.insertAdjacentHTML('beforeend', footerMarkup);
+    } else {
+      document.body.insertAdjacentHTML('beforeend', footerMarkup);
+    }
+  }
+}
+
+// Auto-inicialización global si se importa directamente
+if (typeof window !== 'undefined') {
+  window.initFooter = initFooter;
 }

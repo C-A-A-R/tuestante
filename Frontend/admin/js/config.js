@@ -1,6 +1,6 @@
 export const DEFAULT_BACKEND_ORIGIN = "http://localhost:8000";
 
-export const backendOrigin = window.__API_BASE_ORIGIN__ || DEFAULT_BACKEND_ORIGIN;
+export const backendOrigin = (typeof window !== "undefined" && window.__API_BASE_ORIGIN__) ? window.__API_BASE_ORIGIN__ : DEFAULT_BACKEND_ORIGIN;
 
 export const API_BASE_URL = `${backendOrigin}/api`;
 export const ADMIN_BASE_URL = `${backendOrigin}/admin/`;

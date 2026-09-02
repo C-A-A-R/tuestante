@@ -1,513 +1,535 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TuEstante | Estantes, Lockers y Mobiliario Metálico de Alta Calidad</title>
-    <meta name="description"
-        content="Fabricación y venta de estantes metálicos, lockers, archivadores y gabinetes de alta resistencia en Venezuela. Optimiza tus espacios con TuEstante. Cotiza hoy.">
-    <meta name="keywords"
-        content="estantes metálicos, lockers, archivadores, gabinetes metálicos, mobiliario metálico, estantería industrial, TuEstante">
-    <meta name="author" content="TuEstante">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://tuestante.com/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | TuEstante Admin</title>
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- ===== IA / GEO (Generative Engine Optimization) ===== -->
-    <link rel="llms" href="https://tuestante.com/llms.txt" type="text/plain">
-    <meta name="ai-content-declaration" content="https://tuestante.com/llms.txt">
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-
-    <!-- ===== FAVICON ===== -->
-    <link rel="icon" type="image/jpeg" href="assets/images/logo.jpeg">
-    <link rel="apple-touch-icon" href="assets/images/logo.jpeg">
-
-    <!-- ===== OPEN GRAPH (Facebook, WhatsApp, LinkedIn, Google) ===== -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://tuestante.com/">
-    <meta property="og:site_name" content="TuEstante">
-    <meta property="og:title" content="TuEstante | Estantes, Lockers y Mobiliario Metálico">
-    <meta property="og:description"
-        content="Estantes, lockers, archivadores y gabinetes metálicos de alta calidad para hogares y empresas. Pide tu cotización hoy.">
-    <meta property="og:image" content="https://tuestante.com/assets/images/logo.jpeg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:locale" content="es_VE">
-
-    <!-- ===== TWITTER CARD ===== -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="TuEstante | Estantes, Lockers y Mobiliario Metálico">
-    <meta name="twitter:description"
-        content="Estantes, lockers, archivadores y gabinetes metálicos de alta calidad. Pide tu cotización hoy.">
-    <meta name="twitter:image" content="https://tuestante.com/assets/images/logo.jpeg">
-
-    <!-- ===== SCHEMA.ORG (Datos Estructurados para Google y IAs) ===== -->
-    <!-- Organización / Empresa -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": ["Organization", "Store"],
-      "@id": "https://tuestante.com/#organization",
-      "name": "TuEstante",
-      "alternateName": "Tu Estante",
-      "url": "https://tuestante.com",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://tuestante.com/assets/images/logo.jpeg",
-        "width": 200,
-        "height": 200
-      },
-      "image": "https://tuestante.com/assets/images/logo.jpeg",
-      "description": "TuEstante es una empresa venezolana especializada en la fabricación y venta de mobiliario metálico de alta calidad: estantes, lockers, archivadores y gabinetes metálicos para hogares, oficinas, comercios e industrias.",
-      "knowsAbout": [
-        "Estantes metálicos",
-        "Lockers metálicos",
-        "Archivadores metálicos",
-        "Gabinetes metálicos",
-        "Mobiliario industrial",
-        "Almacenamiento organizacional"
-      ],
-      "areaServed": {
-        "@type": "Country",
-        "name": "Venezuela"
-      },
-      "inLanguage": "es",
-      "sameAs": []
-    }
-    </script>
-
-    <!-- Sitio Web con búsqueda -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "@id": "https://tuestante.com/#website",
-      "url": "https://tuestante.com",
-      "name": "TuEstante",
-      "description": "Catálogo de estantes, lockers, archivadores y gabinetes metálicos de alta calidad.",
-      "publisher": {
-        "@id": "https://tuestante.com/#organization"
-      },
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "https://tuestante.com/modules/product/products.html?search={search_term_string}"
-        },
-        "query-input": "required name=search_term_string"
-      },
-      "inLanguage": "es"
-    }
-    </script>
-
-    <!-- Página de inicio -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebPage",
-      "@id": "https://tuestante.com/#webpage",
-      "url": "https://tuestante.com/",
-      "name": "TuEstante | Estantes, Lockers y Mobiliario Metálico de Alta Calidad",
-      "description": "TuEstante ofrece estantes, lockers, archivadores y gabinetes metálicos de alta calidad para hogares y empresas en Venezuela.",
-      "isPartOf": { "@id": "https://tuestante.com/#website" },
-      "about": { "@id": "https://tuestante.com/#organization" },
-      "inLanguage": "es"
-    }
-    </script>
-
-    <!-- Categorías de productos -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "ItemList",
-      "name": "Categorías de productos TuEstante",
-      "description": "Tipos de mobiliario metálico disponibles en TuEstante",
-      "url": "https://tuestante.com/modules/product/products.html",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "Estantes Metálicos",
-          "description": "Estanterías metálicas industriales y domésticas de alta resistencia para almacenamiento.",
-          "url": "https://tuestante.com/modules/product/products.html?type=estantes"
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": "Lockers Metálicos",
-          "description": "Lockers metálicos de 1 a 12 puertas para uso personal, deportivo, escolar e industrial.",
-          "url": "https://tuestante.com/modules/product/products.html?type=lockers"
-        },
-        {
-          "@type": "ListItem",
-          "position": 3,
-          "name": "Archivadores Metálicos",
-          "description": "Archivadores metálicos de 2 y 4 gavetas para organizaciones y oficinas.",
-          "url": "https://tuestante.com/modules/product/products.html?type=archivadores"
-        },
-        {
-          "@type": "ListItem",
-          "position": 4,
-          "name": "Gabinetes Metálicos",
-          "description": "Gabinetes metálicos de almacenamiento para talleres, industrias y oficinas.",
-          "url": "https://tuestante.com/modules/product/products.html?type=gabinetes"
-        }
-      ]
-    }
-    </script>
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=security" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800&display=swap"
-        rel="stylesheet">
-
-    <!-- Global Stylesheet -->
-    <link rel="stylesheet" href="index.css?v=3.2">
-
-    <!-- Component Styles -->
-    <link rel="stylesheet" href="components/navbar/navbar.css?v=3.2">
-    <link rel="stylesheet" href="components/footer/footer.css?v=3.2">
+  <!-- Estilos de Componentes (Drawer, Navbar y Footer) -->
+  <link rel="stylesheet" href="components/drawer/drawer.css">
+  <link rel="stylesheet" href="components/navbar/navbar.css">
+  <link rel="stylesheet" href="components/footer/footer.css">
+  
+  <!-- Estilos Globales del Dashboard -->
+  <link rel="stylesheet" href="index.css">
 </head>
-
 <body>
 
-    <!-- Navbar Placeholder -->
-    <div id="navbar-placeholder"></div>
+  <!-- ========================================================================
+       COMPONENTE DRAWER / SIDEBAR (Se orquesta y conecta con el Navbar)
+       ======================================================================== -->
+  <aside id="admin-drawer" class="admin-drawer" aria-label="Menú lateral de administración">
+    <!-- Encabezado del Drawer -->
+    <div class="drawer-header">
+      <a href="index.html" class="drawer-brand" data-nav-link="inicio" title="TuEstante Admin">
+        <div class="drawer-brand-icon">
+          <img src="assets/images/logo.jpeg" alt="TuEstante Logo" class="brand-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <span class="brand-fallback-icon" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+          </span>
+        </div>
+        <div class="drawer-brand-info">
+          <span class="drawer-brand-title">TuEstante</span>
+          <span class="drawer-brand-badge">ADMIN</span>
+        </div>
+      </a>
 
-    <!-- Contenido Principal -->
-    <main class="main-content">
+      <!-- Botón para colapsar en desktop o cerrar en móvil -->
+      <button type="button" class="drawer-action-btn" id="drawer-toggle-btn" aria-label="Colapsar o expandir barra lateral" title="Colapsar / Expandir">
+        <svg class="icon-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
 
-        <!-- Inicio / Carousel Section -->
-        <section id="inicio" class="carousel-section">
-            <div class="carousel-container">
-                <!-- Slides -->
-                <div class="carousel-slide active">
-                    <img src="assets/images/carrusel-index/Carrousel.png" alt="Diseños premium de organización"
-                        class="slide-img">
-                </div>
+    <!-- Navegación con Scroll Independiente -->
+    <nav class="drawer-nav-container" aria-label="Navegación principal">
+      <ul class="drawer-menu" role="menu">
+        
+        <!-- 1. Inicio -->
+        <li class="drawer-item" role="none">
+          <a href="index.html" class="drawer-link active" data-nav-id="inicio" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Inicio</span>
+          </a>
+        </li>
 
-                <div class="carousel-slide">
-                    <img src="assets/images/carrusel-index/LocekrL4Gris.jpg"
-                        alt="Organización inteligente en el trabajo" class="slide-img">
-                </div>
+        <!-- 2. Pedidos -->
+        <li class="drawer-item" role="none">
+          <a href="modules/order/orders.html" class="drawer-link" data-nav-id="pedidos" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Pedidos</span>
+          </a>
+        </li>
 
-                <!-- Controls -->
-                <button class="carousel-control prev" id="carousel-prev" aria-label="Anterior slide">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                </button>
-                <button class="carousel-control next" id="carousel-next" aria-label="Siguiente slide">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                </button>
+        <!-- 3. Fabricación -->
+        <li class="drawer-item" role="none">
+          <a href="modules/manufacturing/manufacturing.html" class="drawer-link" data-nav-id="fabricacion" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 20h20"></path>
+                <path d="M5 20V8l5 4V4l6 5v11"></path>
+                <path d="M18 14v6"></path>
+                <circle cx="18" cy="11" r="1"></circle>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Fabricación</span>
+          </a>
+        </li>
 
-                <!-- Dots -->
-                <div class="carousel-dots" id="carousel-dots">
-                    <span class="carousel-dot active" data-index="0"></span>
-                    <span class="carousel-dot" data-index="1"></span>
-                    <span class="carousel-dot" data-index="2"></span>
-                    <span class="carousel-dot" data-index="3"></span>
-                </div>
+        <!-- 4. Pagos -->
+        <li class="drawer-item" role="none">
+          <a href="modules/payment/payments.html" class="drawer-link" data-nav-id="pagos" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+                <line x1="6" y1="15" x2="10" y2="15"></line>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Pagos</span>
+          </a>
+        </li>
+
+        <!-- 5. Envíos -->
+        <li class="drawer-item" role="none">
+          <a href="modules/shipping/shipping.html" class="drawer-link" data-nav-id="envios" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="3" width="15" height="13"></rect>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
+                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Envíos</span>
+          </a>
+        </li>
+
+        <!-- 6. Productos (Opción Desplegable) -->
+        <li class="drawer-item drawer-item-has-submenu" role="none">
+          <button type="button" class="drawer-link drawer-submenu-toggle" aria-expanded="false" aria-controls="submenu-productos" data-nav-id="productos-parent" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Productos</span>
+            <span class="drawer-arrow-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+          </button>
+
+          <!-- Submenú de Productos -->
+          <ul id="submenu-productos" class="drawer-submenu" role="menu" aria-label="Submenú de Productos">
+            <li class="drawer-submenu-item" role="none">
+              <a href="modules/product/products.html" class="drawer-submenu-link" data-nav-id="productos" role="menuitem">
+                <span class="drawer-submenu-dot"></span>
+                <span class="drawer-submenu-text">Productos</span>
+              </a>
+            </li>
+            <li class="drawer-submenu-item" role="none">
+              <a href="modules/product/categories.html" class="drawer-submenu-link" data-nav-id="categorias" role="menuitem">
+                <span class="drawer-submenu-dot"></span>
+                <span class="drawer-submenu-text">Categorías</span>
+              </a>
+            </li>
+            <li class="drawer-submenu-item" role="none">
+              <a href="modules/product/types.html" class="drawer-submenu-link" data-nav-id="tipos-productos" role="menuitem">
+                <span class="drawer-submenu-dot"></span>
+                <span class="drawer-submenu-text">Tipos de productos</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- 7. Clientes -->
+        <li class="drawer-item" role="none">
+          <a href="modules/user/clients.html" class="drawer-link" data-nav-id="clientes" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Clientes</span>
+          </a>
+        </li>
+
+        <!-- 8. Notificaciones (con Badge) -->
+        <li class="drawer-item" role="none">
+          <a href="modules/notifications/notifications.html" class="drawer-link" data-nav-id="notificaciones" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Notificaciones</span>
+            <span class="drawer-badge" id="drawer-notif-badge" aria-label="5 notificaciones pendientes">5</span>
+          </a>
+        </li>
+
+        <!-- 9. Configuración -->
+        <li class="drawer-item" role="none">
+          <a href="modules/settings/settings.html" class="drawer-link" data-nav-id="configuracion" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Configuración</span>
+          </a>
+        </li>
+
+      </ul>
+    </nav>
+
+    <!-- Pie Fijo del Drawer con Cerrar Sesión -->
+    <div class="drawer-footer">
+      <button type="button" class="drawer-link drawer-logout-btn" id="drawer-logout-btn" role="button" aria-label="Cerrar sesión">
+        <span class="drawer-link-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </span>
+        <span class="drawer-link-text">Cerrar sesión</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Backdrop / Overlay para Móvil y Tablet -->
+  <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+
+  <!-- ========================================================================
+       ESTRUCTURA PRINCIPAL DEL DASHBOARD (MAIN LAYOUT)
+       ======================================================================== -->
+  <div class="app-layout" id="app-layout">
+    
+    <!-- ======================================================================
+         BARRA DE NAVEGACIÓN SUPERIOR (NAVBAR REUTILIZABLE)
+         ====================================================================== -->
+    <header id="admin-navbar" class="admin-navbar" role="banner">
+      <!-- Sección Izquierda: Botón Hamburguesa (3 rayas) + Título Dinámico -->
+      <div class="navbar-left">
+        <!-- Botón Hamburguesa: aparece cuando el drawer está colapsado/oculto o en móvil -->
+        <button 
+          type="button" 
+          id="navbar-hamburger-btn" 
+          class="navbar-hamburger-btn" 
+          data-drawer-toggle="true" 
+          aria-label="Mostrar u ocultar menú lateral"
+          title="Mostrar menú lateral">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+
+        <!-- Título Dinámico de la Pantalla Actual -->
+        <div class="navbar-title-container">
+          <h1 class="navbar-screen-title" id="navbar-screen-title">Dashboard</h1>
+        </div>
+      </div>
+
+      <!-- Sección Derecha: Buscador, Notificaciones, Separador y Perfil -->
+      <div class="navbar-right">
+        
+        <!-- Buscador / Icono de búsqueda -->
+        <div class="navbar-search-wrapper" id="navbar-search-wrapper">
+          <button type="button" class="navbar-icon-btn navbar-search-btn" id="navbar-search-toggle" aria-label="Abrir buscador" title="Buscar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+          
+          <!-- Campo expandible de búsqueda -->
+          <div class="navbar-search-expand" id="navbar-search-expand">
+            <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+              type="search" 
+              id="navbar-search-input" 
+              class="navbar-search-input" 
+              placeholder="Buscar pedidos, productos, clientes..." 
+              aria-label="Buscar en el sistema">
+            <button type="button" class="search-field-close" id="navbar-search-close" aria-label="Cerrar buscador">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Botón de Notificaciones con Badge Contador (5 en rojo/acento) -->
+        <div class="navbar-notif-wrapper">
+          <a href="modules/notifications/notifications.html" class="navbar-icon-btn navbar-notif-btn" id="navbar-notif-btn" aria-label="Ver notificaciones" title="Notificaciones">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="navbar-badge" id="navbar-notif-badge" aria-label="5 notificaciones pendientes">5</span>
+          </a>
+        </div>
+
+        <!-- Separador Vertical Sutil -->
+        <div class="navbar-divider" aria-hidden="true"></div>
+
+        <!-- Perfil de Usuario con Menú Desplegable -->
+        <div class="navbar-user-dropdown" id="navbar-user-dropdown">
+          <button 
+            type="button" 
+            class="navbar-user-btn" 
+            id="navbar-user-btn" 
+            aria-expanded="false" 
+            aria-haspopup="true" 
+            aria-label="Opciones de perfil de usuario">
+            
+            <!-- Avatar Circular -->
+            <div class="navbar-avatar" id="navbar-user-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
             </div>
+
+            <!-- Meta de Usuario (Nombre + Email) -->
+            <div class="navbar-user-meta">
+              <span class="navbar-user-name" id="navbar-user-name">Administrador</span>
+              <span class="navbar-user-email" id="navbar-user-email">admin@tienda.com</span>
+            </div>
+
+            <!-- Flecha Chevron de Despliegue -->
+            <svg class="navbar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <!-- Menú Desplegable Flotante -->
+          <div class="navbar-dropdown-card" id="navbar-dropdown-menu" role="menu" aria-label="Opciones de cuenta">
+            <div class="dropdown-card-header">
+              <span class="dropdown-tag">Sesión Activa</span>
+              <strong class="dropdown-name" id="dropdown-user-name">Administrador</strong>
+              <span class="dropdown-email" id="dropdown-user-email">admin@tienda.com</span>
+            </div>
+            
+            <div class="dropdown-card-links">
+              <a href="modules/settings/profile.html" class="dropdown-card-item" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Mi Perfil</span>
+              </a>
+              <a href="modules/settings/settings.html" class="dropdown-card-item" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>Configuración</span>
+              </a>
+            </div>
+
+            <div class="dropdown-card-footer">
+              <button type="button" class="dropdown-card-item logout-link" id="navbar-logout-btn" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- ======================================================================
+         CONTENIDO PRINCIPAL DINÁMICO DEL DASHBOARD
+         ====================================================================== -->
+    <main class="app-main-content">
+      <div class="dashboard-container">
+        
+        <!-- 1. FILA SUPERIOR: 6 TARJETAS DE MÉTRICAS KPI -->
+        <section class="kpi-metrics-grid" id="kpi-metrics-container" aria-label="Métricas clave de pedidos y estados">
+          <!-- Renderizado dinámico desde index.js -->
         </section>
 
-        <!-- Características Section (3 Cartas) -->
-        <section id="caracteristicas" class="section-header-card bg-light">
-            <div class="features-cards-grid">
-
-                <div class="feature-info-card">
-                    <div class="feature-icon-wrapper">
-                        <img src="assets/icons/escudo.svg" class="feature-icon">
-                    </div>
-                    <div class="feature-card-content">
-                        <h3 class="feature-card-title">Hecho para la vida</h3>
-                        <p class="feature-card-text">Cada uno de nuestros estantes y muebles está diseñado para resistir
-                            el paso del tiempo, brindándote durabilidad y orden a lo largo de las estaciones de tu vida.
-                        </p>
-                    </div>
+        <!-- 2. SECCIÓN INFERIOR ADAPTADA: GRÁFICO DONUT Y TABLA DE PEDIDOS -->
+        <div class="dashboard-bottom-grid">
+          
+          <!-- Tarjeta Izquierda: Pedidos por Estado (Donut Chart) -->
+          <section class="donut-card" aria-label="Distribución de pedidos por estado">
+            <h2 class="card-title">Pedidos por estado</h2>
+            
+            <div class="donut-chart-section">
+              <div class="donut-svg-container">
+                <svg class="donut-svg" id="donut-svg-element" viewBox="0 0 190 190" aria-label="Gráfico circular de pedidos por estado"></svg>
+                <div class="donut-center-info">
+                  <span class="donut-center-count" id="donut-center-count">45</span>
+                  <span class="donut-center-label">Total</span>
                 </div>
-
-                <div class="feature-info-card">
-                    <div class="feature-icon-wrapper">
-                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
-                        </svg>
-                    </div>
-                    <div class="feature-card-content">
-                        <h3 class="feature-card-title">Fabricado en Venezuela</h3>
-                        <p class="feature-card-text">Elaborado con orgullo aquí mismo en Venezuela, utilizando
-                            materiales seleccionados de alta calidad para ofrecerte un producto local confiable y de
-                            acabado superior.</p>
-                    </div>
-                </div>
-
-                <div class="feature-info-card">
-                    <div class="feature-icon-wrapper">
-                        <img src="assets/icons/trayectoria.svg" class="feature-icon">
-                    </div>
-                    <div class="feature-card-content">
-                        <h3 class="feature-card-title">15 años de experiencia</h3>
-                        <p class="feature-card-text">Desde hace 15 años, nuestra experiencia y confiabilidad nos
-                            respaldan para fabricar estantes robustos, versátiles y adaptados a las necesidades reales
-                            de tu espacio.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Productos Destacados Section (Carrusel) -->
-        <section id="productos" class="section-container bg-light">
-            <div class="section-header section-header-products">
-                <span class="section-tagline">Destacados</span>
-                <h2 class="section-title">Productos Destacados</h2>
-                <div class="section-divider"></div>
+              </div>
             </div>
 
-            <div class="home-featured-carousel-viewport" id="home-featured-carousel-viewport">
-                <div class="home-featured-track" id="home-featured-products-container">
-                    <!-- Productos Destacados inyectados dinámicamente desde el backend -->
-                </div>
+            <ul class="donut-legend-list" id="donut-legend-container" role="list">
+              <!-- Renderizado dinámico desde index.js -->
+            </ul>
+          </section>
+
+          <!-- Tarjeta Derecha Adaptada: Pedidos Recientes (Tabla Completa) -->
+          <section class="recent-orders-card" aria-label="Listado de pedidos recientes">
+            <div>
+              <div class="card-header-flex">
+                <h2 class="card-title">Pedidos recientes</h2>
+                <a href="modules/order/orders.html" class="card-header-link" title="Ver lista completa de pedidos">Ver todos</a>
+              </div>
+
+              <div class="table-responsive">
+                <table class="orders-table" aria-label="Tabla de pedidos recientes">
+                  <thead>
+                    <tr>
+                      <th scope="col">Pedido</th>
+                      <th scope="col">Cliente</th>
+                      <th scope="col">Total</th>
+                      <th scope="col">Estado</th>
+                      <th scope="col">Fecha</th>
+                      <th scope="col" class="order-actions-col"><span class="sr-only"></span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-orders-tbody">
+                    <!-- Renderizado dinámico desde index.js -->
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <div class="products-action-wrapper">
-                <a href="modules/product/products.html" class="btn btn-primary">Ver todos los productos</a>
+            <div class="card-footer-action">
+              <a href="modules/order/orders.html" class="footer-all-orders-link" title="Ver todos los pedidos">
+                <span>Ver todos los pedidos</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </a>
             </div>
-        </section>
+          </section>
 
-        <!-- Categorías Section -->
-        <section id="categorias" class="section-container">
-            <div class="categories-section-container">
-                <div class="section-header">
-                    <span class="section-tagline">Explora</span>
-                    <h2 class="section-title">Categorías</h2>
-                    <div class="section-divider"></div>
-                    <p class="section-description">Descubre el mobiliario ideal según las necesidades específicas de tu
-                        sector.</p>
-                </div>
-
-                <div class="categories-grid" id="home-categories-container">
-                    <!-- Categorías inyectadas dinámicamente desde el backend -->
-                </div>
-            </div>
-        </section>
-
-        <!-- Tipos de Productos Section -->
-        <section id="tipos-productos" class="section-container bg-light">
-            <div class="categories-section-container">
-                <div class="section-header">
-                    <span class="section-tagline">Variedad</span>
-                    <h2 class="section-title">Tipos de Productos</h2>
-                    <div class="section-divider"></div>
-                    <p class="section-description">Soluciones profesionales diseñadas para optimizar y dar estilo a tus
-                        espacios.</p>
-                </div>
-
-                <div class="product-types-grid" id="home-product-types-container">
-                    <!-- Tipos de Productos inyectados dinámicamente desde el backend -->
-                </div>
-            </div>
-        </section>
-
-        <!-- Nosotros Section -->
-        <section id="nosotros" class="section-container">
-            <div class="about-grid">
-                <div class="about-image-side">
-                    <div style="background-image: url('assets/images/imagennosotros.jpg');"
-                        class="about-img-placeholder">
-                        <!-- <span class="about-image"><img src="assets/images/imagennosotros.jpg"
-                                class="imagennosotros"></span> -->
-                        <div class="story-experience-badge">
-                            <span class="badge-number">15</span>
-                            <span class="badge-text">Años de<br>Experiencia</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="about-text-side">
-                    <span class="section-tagline">Nosotros</span>
-                    <h2 class="section-title">Mejorando, innovando y modernizando tus espacios</h2>
-                    <div class="section-divider align-left"></div>
-                    <p class="about-text">En TuEstante nos dedicamos a diseñar y fabricar soluciones inteligentes
-                        de almacenamiento y organización para hogares, oficinas, centros educativos, industrias y más.
-                        Nacimos con la misión clara de transformar el orden y optimizar el aprovechamiento de cada
-                        metro cuadrado mediante estructuras metálicas sólidas, funcionales y estéticas.</p>
-                    <p class="about-text">Combinamos tecnología, ingeniería de precisión y materiales
-                        de gran durabilidad para entregar productos de calidad que responden a las exigencias
-                        reales de nuestros clientes. Desde el diseño hasta la entrega final, garantizamos
-                        una experiencia ágil, confiable y sin complicaciones.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Sección Espacios Reales / Galería Preview (Inspirado en la Imagen 1 de Referencia) -->
-        <section id="espacios-reales" class="section-container real-spaces-section">
-            <div class="real-spaces-container">
-
-                <!-- Lado Izquierdo: Carrusel Horizontal de Fotografías de Espacios Reales -->
-                <div class="real-spaces-gallery-wrapper">
-                    <!-- Botón Navegación Anterior -->
-                    <button class="real-spaces-nav-btn prev" id="real-spaces-prev" aria-label="Fotografía anterior">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                    </button>
-
-                    <!-- Pista deslizable con las 8 fotos de espacios reales -->
-                    <div class="real-spaces-track-container">
-                        <div class="real-spaces-track" id="real-spaces-track">
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_1.jpg" alt="Espacio Real 1"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_2.jpg" alt="Espacio Real 2"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_3.jpg" alt="Espacio Real 3"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_4.jpg" alt="Espacio Real 4"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_5.jpg" alt="Espacio Real 5"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_6.jpg" alt="Espacio Real 6"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/carrusel-index/LocekrL4Gris.jpg" alt="Espacio Real 7"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/carrusel-index/Carrousel.png" alt="Espacio Real 8"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Botón Navegación Siguiente -->
-                    <button class="real-spaces-nav-btn next" id="real-spaces-next" aria-label="Siguiente fotografía">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Lado Derecho: Bloque Informativo y Enlace a la Galería Completa -->
-                <div class="real-spaces-info-side">
-                    <h2 class="real-spaces-title">Espacios Reales</h2>
-                    <p class="real-spaces-description">
-                        Inspírate con TuEstante en espacios reales. Etiquétanos en <a
-                            href="https://www.instagram.com/tuestante.ve/" target="_blank" rel="noopener"
-                            class="real-spaces-link">Instagram</a> o <a href="https://www.tiktok.com/@tuestante.ve"
-                            target="_blank" rel="noopener" class="real-spaces-link">TikTok</a>
-                        <strong>@tuestante.ve</strong> o sube tu foto a nuestra galería para compartir tu estilo. ¡Nos
-                        encantaría ver tu espacio!
-                    </p>
-                    <a href="modules/gallery/gallery.html" class="btn btn-real-spaces-gallery">VER GALERÍA</a>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- Contactos Section -->
-        <section id="contacto" class="section-container bg-light">
-            <div class="section-header text-center-wrapper">
-                <span class="section-tagline">Contacto</span>
-                <h2 class="section-title">Ponte en contacto con nosotros</h2>
-                <p class="section-description">Convierte tus ideas en realidad hoy mismo. Escríbenos ahora por nuestros
-                    canales oficiales y recibe una asesoría personalizada junto con un presupuesto a tu medida sin
-                    compromiso:</p>
-            </div>
-
-            <div class="contact-socials-container">
-                <!-- WhatsApp -->
-                <a href="https://wa.link/lpe0md" target="_blank" rel="noopener" class="social-card whatsapp-card">
-                    <div class="social-icon-box">
-                        <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
-                            <path
-                                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.456h.004c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                        </svg>
-                    </div>
-                    <h3 class="social-name">WhatsApp</h3>
-                    <p class="social-desc">Conversa directamente con nuestro equipo de ventas.</p>
-                    <span class="social-link-btn">Chatear Ahora</span>
-                </a>
-
-                <!-- Instagram -->
-                <a href="https://www.instagram.com/tuestante.ve/" target="_blank" rel="noopener"
-                    class="social-card instagram-card">
-                    <div class="social-icon-box">
-                        <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
-                            <path
-                                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-                        </svg>
-                    </div>
-                    <h3 class="social-name">Instagram</h3>
-                    <p class="social-desc">Sigue nuestras novedades, catálogos y proyectos recientes.</p>
-                    <span class="social-link-btn">@tuestante.ve</span>
-                </a>
-
-                <!-- TikTok -->
-                <a href="https://www.tiktok.com/@tuestante.ve" target="_blank" rel="noopener"
-                    class="social-card tiktok-card">
-                    <div class="social-icon-box">
-                        <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
-                            <path
-                                d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 003 15.68 6.34 6.34 0 009.67 22c3.5 0 6.33-2.83 6.33-6.33V9a8.16 8.16 0 004.59 1.43V7a4.85 4.85 0 01-1-.31z" />
-                        </svg>
-                    </div>
-                    <h3 class="social-name">TikTok</h3>
-                    <p class="social-desc">Descubre nuestros videos, procesos y contenido en tendencia.</p>
-                    <span class="social-link-btn">@tuestante.ve</span>
-                </a>
-
-                <!-- Gmail -->
-                <a href="mailto:ventas@tuestante.com" class="social-card gmail-card">
-                    <div class="social-icon-box">
-                        <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
-                            <defs>
-                                <linearGradient id="gmail-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#ea4335" />
-                                    <stop offset="35%" stop-color="#fbbc05" />
-                                    <stop offset="65%" stop-color="#34a853" />
-                                    <stop offset="100%" stop-color="#4285f4" />
-                                </linearGradient>
-                            </defs>
-                            <path
-                                d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-                        </svg>
-                    </div>
-                    <h3 class="social-name">Correo Ventas</h3>
-                    <p class="social-desc">Solicita cotizaciones formales enviando un email.</p>
-                    <span class="social-link-btn">ventas@tuestante.com</span>
-                </a>
-            </div>
-        </section>
-
+        </div>
+      </div>
     </main>
 
-    <!-- Footer Placeholder -->
-    <div id="footer-placeholder"></div>
+    <!-- ======================================================================
+         PIE DE PÁGINA SIMPLE (FOOTER REUTILIZABLE)
+         ====================================================================== -->
+    <footer id="admin-footer" class="admin-footer" role="contentinfo">
+      <div class="footer-container">
+        <div class="footer-left">
+          <span class="footer-copyright">
+            © <span id="footer-current-year">2026</span> <strong>TuEstante</strong>. Todos los derechos reservados.
+          </span>
+        </div>
+        <div class="footer-right">
+          <span class="footer-system-badge">
+            <span class="status-indicator-dot"></span>
+            Sistema Operativo TuEstante OMS
+          </span>
+          <span class="footer-divider" aria-hidden="true">•</span>
+          <span class="footer-version">v1.0.0</span>
+          <span class="footer-divider" aria-hidden="true">•</span>
+          <a href="https://wa.me/584266272286" target="_blank" rel="noopener noreferrer" class="footer-link">Soporte Técnico</a>
+        </div>
+      </div>
+    </footer>
 
-    <!-- Global Application Logic -->
-    <script type="module" src="index.js?v=3.2"></script>
+  </div>
+
+  <!-- ========================================================================
+       MODAL DE VISTA RÁPIDA DE PEDIDO
+       ======================================================================== -->
+  <div id="quick-view-modal-backdrop" class="quick-view-modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal-order-title">
+    <div class="quick-view-modal" role="document">
+      <div class="modal-header">
+        <h3 id="modal-order-title">Detalle del Pedido</h3>
+        <button type="button" class="modal-close-btn" id="modal-close-btn" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-row">
+          <span class="modal-row-label">Código:</span>
+          <span class="modal-row-value" id="modal-order-code"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-row-label">Cliente:</span>
+          <span class="modal-row-value" id="modal-client-name"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-row-label">Email:</span>
+          <span class="modal-row-value" id="modal-client-email"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-row-label">Monto Total:</span>
+          <span class="modal-row-value" id="modal-order-total"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-row-label">Estado Actual:</span>
+          <span class="modal-row-value" id="modal-order-status"></span>
+        </div>
+        <div class="modal-row">
+          <span class="modal-row-label">Fecha y Hora:</span>
+          <span class="modal-row-value" id="modal-order-date"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="modal-cancel-btn" style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); cursor: pointer; font-family: inherit; font-weight: 600;">Cerrar</button>
+        <a href="modules/order/orders.html" class="btn btn-primary" id="modal-manage-order-link" style="padding: 8px 16px; border-radius: 8px; background: var(--primary); color: #fff; text-decoration: none; font-weight: 600;">Gestionar Pedido</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts: Inicialización Unificada del Dashboard -->
+  <script type="module" src="index.js"></script>
 </body>
-
 </html>

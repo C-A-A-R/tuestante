@@ -1,0 +1,654 @@
+/* ==========================================================================
+   TUESTANTE ADMIN - COMPONENTE REUTILIZABLE DRAWER / SIDEBAR
+   ========================================================================== */
+
+:root {
+  /* --- PALETA CORPORATIVA OFICIAL --- */
+  --primary: #005187;          /* Azul oscuro profundo / Corporativo */
+  --primary-hover: #4d82bc;    /* Azul medio acero */
+  --secondary: #4d82bc;        /* Azul medio acero */
+  --secondary-hover: #005187;  /* Azul oscuro profundo */
+  --accent: #84b6f4;           /* Azul claro vibrante */
+  --bg-light: #c4dafa;         /* Azul pálido suave */
+  --bg-primary: #fcffff;       /* Blanco con matiz cian ultra-suave */
+  --bg-secondary: #f3f8fe;     /* Azul ultra-pálido */
+  --text-main: #0f172a;        /* Slate oscuro / Slate-900 */
+  --text-muted: #475569;       /* Slate medio / Slate-600 */
+  --border-color: #cbd5e1;     /* Gris suave / Slate-300 */
+
+  /* --- VARIABLES INTERNAS DEL DRAWER --- */
+  --drawer-width: 260px;
+  --drawer-collapsed-width: 76px;
+  --drawer-bg-dark: #091a2b;
+  --drawer-bg-surface: #0e243b;
+  --drawer-bg-hover: rgba(77, 130, 188, 0.15);
+  --drawer-bg-active: #005187;
+  --drawer-text-color: #cbd5e1;
+  --drawer-text-hover: #ffffff;
+  --drawer-text-active: #ffffff;
+  --drawer-border: rgba(203, 213, 225, 0.12);
+  --drawer-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --drawer-z-index: 1050;
+  --drawer-header-height: 72px;
+  --drawer-footer-height: 68px;
+
+  /* Ancho dinámico exportado para que el main content se adapte automáticamente */
+  --drawer-current-width: var(--drawer-width);
+}
+
+/* ==========================================================================
+   CONTENEDOR PRINCIPAL DEL DRAWER
+   ========================================================================== */
+.admin-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--drawer-width);
+  height: 100vh;
+  height: 100dvh;
+  background: linear-gradient(180deg, #091a2b 0%, #061422 100%);
+  color: var(--drawer-text-color);
+  border-right: 1px solid var(--drawer-border);
+  box-shadow: 4px 0 24px rgba(0, 30, 60, 0.25);
+  z-index: var(--drawer-z-index);
+  display: flex;
+  flex-direction: column;
+  transition: var(--drawer-transition);
+  user-select: none;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   ENCABEZADO / HEADER
+   ========================================================================== */
+.drawer-header {
+  height: var(--drawer-header-height);
+  min-height: var(--drawer-header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--drawer-border);
+  background: rgba(9, 26, 43, 0.65);
+  backdrop-filter: blur(8px);
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.drawer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: #ffffff;
+  overflow: hidden;
+  white-space: nowrap;
+  flex: 1;
+  transition: opacity 0.2s ease;
+}
+
+.drawer-brand:hover {
+  opacity: 0.92;
+}
+
+.drawer-brand-icon {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(132, 182, 244, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 81, 135, 0.3);
+}
+
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.brand-fallback-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--accent);
+}
+
+.drawer-brand-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.drawer-brand-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.drawer-brand-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(132, 182, 244, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
+  width: fit-content;
+  margin-top: 2px;
+  border: 1px solid rgba(132, 182, 244, 0.2);
+}
+
+.drawer-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--drawer-text-color);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.drawer-action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.drawer-action-btn svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.3s ease;
+}
+
+.drawer-action-btn .icon-close {
+  display: none;
+}
+
+/* ==========================================================================
+   ÁREA DE NAVEGACIÓN Y SCROLL INDEPENDIENTE
+   ========================================================================== */
+.drawer-nav-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 12px;
+  scrollbar-gutter: stable;
+}
+
+/* Scrollbar Personalizado */
+.drawer-nav-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+.drawer-nav-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.drawer-nav-container::-webkit-scrollbar-thumb {
+  background: rgba(132, 182, 244, 0.2);
+  border-radius: 10px;
+}
+
+.drawer-nav-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Soporte Firefox */
+.drawer-nav-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(132, 182, 244, 0.2) transparent;
+}
+
+.drawer-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   ITEMS Y ENLACES DEL MENÚ
+   ========================================================================== */
+.drawer-item {
+  position: relative;
+  list-style: none;
+}
+
+.drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: var(--drawer-text-color);
+  text-decoration: none;
+  font-size: 0.935rem;
+  font-weight: 500;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
+  font-family: inherit;
+  outline: none;
+}
+
+.drawer-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.drawer-link-icon {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.drawer-link-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.drawer-link-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.2s ease;
+}
+
+/* Hover State */
+.drawer-link:hover:not(.active) {
+  background: var(--drawer-bg-hover);
+  color: var(--drawer-text-hover);
+  transform: translateX(2px);
+}
+
+.drawer-link:hover:not(.active) .drawer-link-icon svg {
+  color: var(--accent);
+  transform: scale(1.08);
+}
+
+/* Active State */
+.drawer-link.active {
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 81, 135, 0.45);
+}
+
+.drawer-link.active .drawer-link-icon svg {
+  color: #ffffff;
+}
+
+/* Badge de Notificaciones */
+.drawer-badge {
+  background: var(--primary-hover);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0, 81, 135, 0.35);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.drawer-link:hover .drawer-badge {
+  background: var(--accent);
+  color: var(--text-main);
+  transform: scale(1.08);
+}
+
+/* Flecha desplegable para submenús */
+.drawer-arrow-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--drawer-text-color);
+}
+
+.drawer-arrow-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.drawer-submenu-toggle[aria-expanded="true"] .drawer-arrow-icon {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+/* ==========================================================================
+   SUBMENÚ DESPLEGABLE (PRODUCTOS)
+   ========================================================================== */
+.drawer-submenu {
+  list-style: none;
+  padding: 4px 0 4px 26px;
+  margin: 2px 0 4px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.25s ease,
+              transform 0.25s ease,
+              padding 0.25s ease;
+  position: relative;
+}
+
+/* Línea guía del árbol de submenús */
+.drawer-submenu::before {
+  content: '';
+  position: absolute;
+  left: 24px;
+  top: 6px;
+  bottom: 6px;
+  width: 1.5px;
+  background: rgba(132, 182, 244, 0.2);
+  border-radius: 1px;
+}
+
+.drawer-submenu.is-open {
+  max-height: 300px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.drawer-submenu-item {
+  list-style: none;
+}
+
+.drawer-submenu-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.drawer-submenu-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(132, 182, 244, 0.4);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.drawer-submenu-link:hover {
+  color: #ffffff;
+  background: rgba(77, 130, 188, 0.12);
+  transform: translateX(3px);
+}
+
+.drawer-submenu-link:hover .drawer-submenu-dot {
+  background: var(--accent);
+  transform: scale(1.4);
+}
+
+.drawer-submenu-link.active {
+  color: #ffffff;
+  background: rgba(0, 81, 135, 0.5);
+  font-weight: 600;
+}
+
+.drawer-submenu-link.active .drawer-submenu-dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* ==========================================================================
+   PIE FIJO DEL DRAWER (CERRAR SESIÓN)
+   ========================================================================== */
+.drawer-footer {
+  height: var(--drawer-footer-height);
+  min-height: var(--drawer-footer-height);
+  border-top: 1px solid var(--drawer-border);
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  background: rgba(9, 26, 43, 0.7);
+  backdrop-filter: blur(8px);
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.drawer-logout-btn {
+  color: #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.drawer-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  transform: translateX(2px);
+}
+
+.drawer-logout-btn:hover .drawer-link-icon svg {
+  color: #ef4444;
+  transform: translateX(2px);
+}
+
+/* ==========================================================================
+   ESTADO COLAPSADO (DESKTOP MINI MODE - 76PX)
+   ========================================================================== */
+body.drawer-collapsed {
+  --drawer-current-width: var(--drawer-collapsed-width);
+}
+
+body.drawer-collapsed .admin-drawer {
+  width: var(--drawer-collapsed-width);
+}
+
+body.drawer-collapsed .drawer-brand-info,
+body.drawer-collapsed .drawer-link-text,
+body.drawer-collapsed .drawer-arrow-icon,
+body.drawer-collapsed .drawer-badge,
+body.drawer-collapsed .drawer-submenu {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  display: none !important;
+}
+
+body.drawer-collapsed .drawer-header {
+  padding: 0 12px;
+  justify-content: center;
+}
+
+body.drawer-collapsed .drawer-action-btn {
+  display: none;
+}
+
+body.drawer-collapsed .drawer-nav-container {
+  padding: 16px 8px;
+  scrollbar-width: none;
+}
+
+body.drawer-collapsed .drawer-nav-container::-webkit-scrollbar {
+  display: none;
+}
+
+body.drawer-collapsed .drawer-link {
+  padding: 12px;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+body.drawer-collapsed .drawer-link-icon {
+  margin: 0;
+}
+
+/* Tooltips flotantes en modo colapsado */
+body.drawer-collapsed .drawer-item {
+  position: relative;
+}
+
+body.drawer-collapsed .drawer-link::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) scale(0.95);
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.825rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(203, 213, 225, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 1100;
+}
+
+body.drawer-collapsed .drawer-link:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+/* ==========================================================================
+   ESTADO OCULTO / ESCONDIDO TOTAL (DESKTOP)
+   ========================================================================== */
+body.drawer-hidden {
+  --drawer-current-width: 0px;
+}
+
+body.drawer-hidden .admin-drawer {
+  transform: translateX(-100%);
+}
+
+/* ==========================================================================
+   OVERLAY / BACKDROP PARA MÓVIL Y TABLET
+   ========================================================================== */
+.drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: calc(var(--drawer-z-index) - 1);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+body.drawer-mobile-open .drawer-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+/* ==========================================================================
+   RESPONSIVE & MOBILE (< 1024PX)
+   ========================================================================== */
+@media (max-width: 1023.98px) {
+  :root {
+    --drawer-current-width: 0px !important;
+  }
+
+  .admin-drawer {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+
+  body.drawer-mobile-open .admin-drawer {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Mostrar botón de cerrar en móvil */
+  .drawer-action-btn .icon-collapse {
+    display: none;
+  }
+
+  .drawer-action-btn .icon-close {
+    display: block;
+  }
+
+  /* Desactivar modo colapsado en mobile */
+  body.drawer-collapsed .admin-drawer {
+    width: var(--drawer-width) !important;
+  }
+
+  body.drawer-collapsed .drawer-brand-info,
+  body.drawer-collapsed .drawer-link-text,
+  body.drawer-collapsed .drawer-arrow-icon,
+  body.drawer-collapsed .drawer-badge {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  body.drawer-collapsed .drawer-action-btn {
+    display: flex !important;
+  }
+
+  body.drawer-collapsed .drawer-link {
+    justify-content: flex-start !important;
+    padding: 10px 14px !important;
+  }
+}
+
+/* ==========================================================================
+   SOPORTE PARA REDUCED MOTION
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .admin-drawer,
+  .drawer-submenu,
+  .drawer-link,
+  .drawer-arrow-icon,
+  .drawer-backdrop {
+    transition: none !important;
+  }
+}

@@ -1,148 +1,134 @@
 /* ==========================================================================
-   Componente: Footer General (Sutil y Elegante)
+   TUESTANTE ADMIN - COMPONENTE REUTILIZABLE FOOTER (FOOTER.CSS)
    ========================================================================== */
-.app-footer {
-    background-color: #ffffff;
-    color: #94a3b8;
-    font-family: 'Inter', sans-serif;
-    padding: 30px 0 0 0;
-    width: 100%;
-    position: relative;
-    z-index: 10;
-    box-sizing: border-box;
-    margin-left: var(--drawer-width, 0);
+
+:root {
+  /* --- PALETA CORPORATIVA OFICIAL --- */
+  --primary: #005187;          /* Azul oscuro profundo / Corporativo */
+  --primary-hover: #4d82bc;    /* Azul medio acero */
+  --secondary: #4d82bc;        /* Azul medio acero */
+  --secondary-hover: #005187;  /* Azul oscuro profundo */
+  --accent: #84b6f4;           /* Azul claro vibrante */
+  --bg-light: #c4dafa;         /* Azul pálido suave */
+  --bg-primary: #fcffff;       /* Blanco con matiz cian ultra-suave */
+  --bg-secondary: #f3f8fe;     /* Azul ultra-pálido */
+  --text-main: #0f172a;        /* Slate oscuro / Slate-900 */
+  --text-muted: #475569;       /* Slate medio / Slate-600 */
+  --border-color: #cbd5e1;     /* Gris suave / Slate-300 */
 }
 
-.drawer-collapsed .app-footer {
-    margin-left: 0;
-    width: 100%;
+/* ==========================================================================
+   ESTRUCTURA DEL FOOTER
+   ========================================================================== */
+.admin-footer {
+  width: 100%;
+  max-width: 100%;
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+  padding: 14px 28px;
+  font-size: 0.815rem;
+  color: var(--text-muted);
+  box-sizing: border-box;
+  margin-top: auto;
+  user-select: none;
+  overflow-x: hidden;
 }
 
 .footer-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 32px 24px 32px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 30px;
-    box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  box-sizing: border-box;
 }
 
-/* Parte Izquierda: Iconos de Redes (pequeños) + Enlaces de Navegación */
+/* Lado Izquierdo: Copyright y Marca */
 .footer-left {
-    display: flex;
-    align-items: center;
-    gap: 28px;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.footer-social-icons {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
+.footer-copyright {
+  line-height: 1.4;
 }
 
-.social-icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.06);
-    color: #94a3b8;
-    text-decoration: none;
-    transition: all 0.2s ease;
+.footer-copyright strong {
+  color: var(--primary);
+  font-weight: 700;
 }
 
-.social-icon-btn svg {
-    width: 25px;
-    height: 25px;
-}
-
-.social-icon-btn:hover {
-    color: #ffffff;
-    background-color: #005187;
-    transform: translateY(-2px);
-}
-
-.footer-nav-links {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    flex-wrap: wrap;
-}
-
-.footer-nav-link {
-    color: #223a5c;
-    text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: color 0.2s ease;
-}
-
-.footer-nav-link:hover {
-    color: #0088ff;
-}
-
-/* Parte Derecha: Descripción de la empresa con fuente pequeña */
+/* Lado Derecho: Estado del Sistema, Versión y Enlace de Soporte */
 .footer-right {
-    max-width: 380px;
-    text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.footer-desc {
-    font-size: 0.78rem;
-    line-height: 1.45;
-    color: #64748b;
-    margin: 0;
+.footer-system-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
-/* Pie de página inferior: Copyright */
-.footer-bottom {
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 14px 32px;
-    text-align: center;
-    font-size: 0.78rem;
-    color: #64748b;
+.status-indicator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
 }
 
-/* Adaptación Responsiva Móvil */
+.footer-divider {
+  color: var(--border-color);
+}
+
+.footer-version {
+  font-size: 0.775rem;
+  font-weight: 600;
+  background: var(--bg-secondary);
+  color: var(--primary);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.footer-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.footer-link:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   RESPONSIVE (MÓVILES)
+   ========================================================================== */
 @media (max-width: 768px) {
-    .footer-container {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 20px;
-        padding: 0 20px 20px 20px;
-    }
+  .admin-footer {
+    padding: 14px 16px;
+  }
 
-    .footer-left {
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        gap: 16px;
-    }
+  .footer-container {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+  }
 
-    .footer-social-icons {
-        justify-content: center;
-        width: 100%;
-    }
-
-    .footer-nav-links {
-        justify-content: center;
-        width: 100%;
-    }
-
-    .footer-right {
-        max-width: 100%;
-        text-align: center;
-    }
+  .footer-left,
+  .footer-right {
+    justify-content: center;
+  }
 }

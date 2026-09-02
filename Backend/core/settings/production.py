@@ -41,13 +41,14 @@ STATIC_ROOT = env(
     'STATIC_ROOT',
     default='/home/bectronix/backend.tuestante.com/public/static'
 )
-STATIC_URL = env('STATIC_URL', default='/static/')
+STATIC_URL = env('STATIC_URL', default='/public/static/')
 
 MEDIA_ROOT = env(
     'MEDIA_ROOT',
     default='/home/bectronix/backend.tuestante.com/public/media'
 )
-MEDIA_URL = env('MEDIA_URL', default=env('MEDIA_BASE_URL', default='/media/'))
+MEDIA_URL = env('MEDIA_URL', default=env('MEDIA_BASE_URL', default='/public/media/'))
+
 
 # =========================================================
 # STORAGE (Almacenamiento Local en el mismo servidor)

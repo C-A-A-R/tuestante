@@ -1,190 +1,23 @@
 /**
  * ==========================================================================
- * TUESTANTE - COMPONENTE REUTILIZABLE NAVBAR, MINI-CATÁLOGO & DRAWER
+ * TUESTANTE ADMIN - CONTROLADOR MODULAR DEL COMPONENTE NAVBAR (BARRA SUPERIOR)
  * ==========================================================================
- * Controlador integral y modular conectado al backend de Django.
+ * Incluye auto-importación y orquestación del Drawer, inyección automática
+ * de Favicon con el logo, título dinámico de pantalla, buscador y menú de usuario.
  */
 
-import { getRequest, resolveImageUrl, extractList } from '../../js/api.js';
-import { getAccessToken, getRefreshToken, getCurrentUser, clearTokens, clearCurrentUser } from '../../js/storage.js';
-
-// Prefijo y estilos para logs de depuración en consola
-const LOG_TAG = '%c[TuEstante Navbar]';
-const LOG_STYLE = 'background: #005187; color: #fff; font-weight: bold; padding: 2px 6px; border-radius: 4px;';
-const WARN_STYLE = 'background: #f59e0b; color: #000; font-weight: bold; padding: 2px 6px; border-radius: 4px;';
-const ERR_STYLE = 'background: #ef4444; color: #fff; font-weight: bold; padding: 2px 6px; border-radius: 4px;';
+import { initDrawer, getBasePathPrefix } from '../drawer/drawer.js';
+import { getCurrentUser, clearTokens, clearCurrentUser } from '../../js/storage.js';
 
 /**
- * Determina el prefijo de ruta relativa hacia la raíz del proyecto.
- * @returns {string} '' si está en la raíz, '../../' si está dentro de /modules/
- */
-export function getBasePathPrefix() {
-  const path = window.location.pathname || '';
-  if (path.includes('/modules/')) {
-    return '../../';
-  }
-  return '';
-}
-
-/**
- * Inyecta dinámicamente en el DOM los elementos faltantes del Navbar si el fragmento HTML
- * fue cargado incompleto o desde una versión antigua en caché.
- */
-function ensureNavbarElementsExist() {
-  const prefix = getBasePathPrefix();
-  const header = document.querySelector('.site-header');
-
-  // 1. Asegurar contenedor de sub-barra de categorías dentro de .site-header
-  if (header && !document.getElementById('nav-categories-container')) {
-    let catNav = header.querySelector('.navbar-categories');
-    if (!catNav) {
-      catNav = document.createElement('nav');
-      catNav.className = 'navbar-categories';
-      catNav.setAttribute('aria-label', 'Categorías de productos');
-      catNav.innerHTML = `
-        <div class="header-container">
-          <ul class="categories-container" id="nav-categories-container"></ul>
-        </div>
-      `;
-      header.appendChild(catNav);
-    }
-  }
-
-  // 2. Asegurar overlay / backdrop del drawer en document.body (sin duplicados)
-  if (!document.getElementById('drawer-backdrop')) {
-    const backdrop = document.createElement('div');
-    backdrop.id = 'drawer-backdrop';
-    backdrop.className = 'drawer-backdrop';
-    backdrop.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(backdrop);
-  }
-
-  // 3. Asegurar aside #mobile-drawer en document.body (sin duplicados)
-  if (!document.getElementById('mobile-drawer')) {
-    const drawer = document.createElement('aside');
-    drawer.id = 'mobile-drawer';
-    drawer.className = 'mobile-drawer';
-    drawer.setAttribute('aria-label', 'Menú lateral móvil');
-    drawer.setAttribute('aria-hidden', 'true');
-    drawer.setAttribute('tabindex', '-1');
-    drawer.innerHTML = `
-      <div class="drawer-top-bar" aria-hidden="true"></div>
-      <div class="drawer-header">
-        <a href="${prefix}index.html" class="brand-logo" data-nav-link="home">
-          <img src="${prefix}assets/images/logo.jpeg" alt="TuEstante Logo" class="brand-logo-img">
-          <span class="brand-name">TuEstante</span>
-        </a>
-        <button type="button" id="drawer-close-btn" class="drawer-close-btn" aria-label="Cerrar menú">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-      <div class="drawer-user-card" id="drawer-user-card">
-        <div class="drawer-user-avatar" id="drawer-user-avatar">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </div>
-        <div class="drawer-user-info" id="drawer-user-info">
-          <div class="drawer-user-greeting" id="drawer-user-greeting">¡Bienvenido!</div>
-          <a href="${prefix}modules/auth/login.html" class="drawer-user-name" id="drawer-user-name" data-nav-link="login">Iniciar Sesión / Mi Cuenta</a>
-        </div>
-      </div>
-      <div class="drawer-quick-actions">
-        <a href="${prefix}modules/order/my-orders.html" class="drawer-quick-btn" data-nav-link="notifications">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-          <span>Avisos</span>
-          <span class="badge-count nav-notifications-count" style="display: none;">0</span>
-        </a>
-        <a href="${prefix}modules/cart/cart.html" class="drawer-quick-btn" data-nav-link="cart">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="21" r="1"></circle>
-            <circle cx="20" cy="21" r="1"></circle>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-          </svg>
-          <span>Carrito</span>
-          <span class="badge-count nav-cart-count">0</span>
-        </a>
-        <a href="https://wa.me/584266272286?text=Hola%20TuEstante%2C%20deseo%20m%C3%A1s%20informaci%C3%B3n" target="_blank" rel="noopener noreferrer" class="drawer-quick-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-          </svg>
-          <span>Contacto</span>
-        </a>
-      </div>
-      <div class="drawer-body">
-        <div class="drawer-section-title">Menú Principal</div>
-        <ul class="drawer-nav-list">
-          <li class="drawer-nav-item">
-            <a href="${prefix}index.html" class="drawer-nav-link" data-nav-link="home">
-              <span class="drawer-link-left">
-                <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                Inicio
-              </span>
-            </a>
-          </li>
-          <li class="drawer-nav-item">
-            <a href="${prefix}modules/product/products.html" class="drawer-nav-link" data-nav-link="products">
-              <span class="drawer-link-left">
-                <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-                Productos
-              </span>
-            </a>
-          </li>
-          <li class="drawer-nav-item">
-            <button type="button" class="drawer-nav-link drawer-accordion-btn" aria-expanded="false">
-              <span class="drawer-link-left">
-                <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                Conócenos
-              </span>
-              <svg class="drawer-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <ul class="drawer-submenu">
-              <li><a href="${prefix}modules/us/us.html" class="drawer-sub-link" data-nav-link="us-about">Sobre Nosotros</a></li>
-              <li><a href="${prefix}modules/gallery/gallery.html" class="drawer-sub-link" data-nav-link="gallery">Galería de Trabajos</a></li>
-              <li><a href="${prefix}modules/project/projects.html" class="drawer-sub-link" data-nav-link="projects">Proyectos Realizados</a></li>
-              <li><a href="${prefix}modules/us/us.html#faq" class="drawer-sub-link" data-nav-link="faq">Preguntas Frecuentes</a></li>
-              <li><a href="${prefix}modules/us/us.html#terminos" class="drawer-sub-link" data-nav-link="terms">Términos y Condiciones</a></li>
-            </ul>
-          </li>
-          <li class="drawer-nav-item">
-            <a href="${prefix}index.html#contacto" class="drawer-nav-link" data-nav-link="contact">
-              <span class="drawer-link-left">
-                <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                Ayuda y Contacto
-              </span>
-            </a>
-          </li>
-        </ul>
-        <div class="drawer-section-title">Mi Cuenta</div>
-        <ul class="drawer-nav-list" id="drawer-user-links-list"></ul>
-      </div>
-      <div class="drawer-footer">
-        <a href="https://wa.me/584266272286?text=Hola%20TuEstante%2C%20deseo%20asesor%C3%ADa%20personalizada" target="_blank" rel="noopener noreferrer" class="drawer-help-btn">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-          Línea de Atención WhatsApp
-        </a>
-      </div>
-    `;
-    document.body.appendChild(drawer);
-  }
-}
-
-/**
- * Inyecta o actualiza automáticamente el logotipo como icono de pestaña (favicon)
- * en el <head> del documento.
+ * Inyecta automáticamente el logotipo como icono de pestaña (Favicon) en el <head>
  */
 export function setAutoFavicon() {
   const prefix = getBasePathPrefix();
   const logoUrl = `${prefix}assets/images/logo.jpeg`;
 
   try {
+    // 1. Favicon principal
     let linkIcon = document.querySelector("link[rel='icon']");
     if (!linkIcon) {
       linkIcon = document.createElement('link');
@@ -194,6 +27,7 @@ export function setAutoFavicon() {
     linkIcon.type = 'image/jpeg';
     linkIcon.href = logoUrl;
 
+    // 2. Apple Touch Icon
     let linkApple = document.querySelector("link[rel='apple-touch-icon']");
     if (!linkApple) {
       linkApple = document.createElement('link');
@@ -202,6 +36,7 @@ export function setAutoFavicon() {
     }
     linkApple.href = logoUrl;
 
+    // 3. Shortcut Icon
     let linkShortcut = document.querySelector("link[rel='shortcut icon']");
     if (!linkShortcut) {
       linkShortcut = document.createElement('link');
@@ -210,988 +45,546 @@ export function setAutoFavicon() {
     }
     linkShortcut.href = logoUrl;
   } catch (err) {
-    console.warn(LOG_TAG, 'Error al inyectar favicon:', err);
+    console.warn('[TuEstante Navbar] Error al inyectar favicon:', err);
   }
 }
 
 /**
- * Actualiza el contador de artículos del carrito en todos los badges del navbar.
- * @param {number} [explicitCount] Cantidad opcional especificada directamente.
+ * Inyecta dinámicamente las hojas de estilo del Navbar y Drawer si no están en el DOM
  */
-export function updateCartBadge(explicitCount) {
-  let totalCount = 0;
-  if (typeof explicitCount === 'number') {
-    totalCount = explicitCount;
-  } else {
-    try {
-      const raw = localStorage.getItem('tuestante_cart');
-      if (raw) {
-        const items = JSON.parse(raw);
-        if (Array.isArray(items)) {
-          totalCount = items.reduce((sum, it) => sum + (parseInt(it.qty, 10) || parseInt(it.cantidad, 10) || 1), 0);
-        }
-      }
-    } catch (e) {
-      console.warn(LOG_TAG, 'Error leyendo el carrito de localStorage:', e);
-    }
+function ensureStylesheetsExist() {
+  const prefix = getBasePathPrefix();
+
+  // 1. Estilos del Drawer
+  if (!document.querySelector('link[href*="drawer.css"]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `${prefix}components/drawer/drawer.css`;
+    document.head.appendChild(link);
   }
 
-  const badgeElements = document.querySelectorAll('.nav-cart-count');
-  badgeElements.forEach((badge) => {
-    badge.textContent = totalCount > 99 ? '99+' : String(totalCount);
-    badge.setAttribute('aria-label', `${totalCount} artículos en el carrito`);
-    badge.style.display = 'flex';
-  });
+  // 2. Estilos del Navbar
+  if (!document.querySelector('link[href*="navbar.css"]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `${prefix}components/navbar/navbar.css`;
+    document.head.appendChild(link);
+  }
 }
 
 /**
- * Consulta y actualiza el badge de notificaciones para usuarios autenticados.
- * @param {number} [explicitCount] Cantidad opcional de notificaciones no leídas.
+ * Inyecta el marcado HTML del Drawer en el documento si no se encuentra en el DOM
  */
-export async function updateNotificationsBadge(explicitCount) {
-  const badgeElements = document.querySelectorAll('.nav-notifications-count');
-  if (!badgeElements.length) return;
-
-  if (typeof explicitCount === 'number') {
-    badgeElements.forEach((b) => {
-      b.textContent = explicitCount > 99 ? '99+' : String(explicitCount);
-      b.style.display = explicitCount > 0 ? 'flex' : 'none';
-    });
+function ensureDrawerExists() {
+  if (document.getElementById('admin-drawer')) {
     return;
   }
 
-  const token = getAccessToken();
-  if (!token) {
-    badgeElements.forEach((b) => (b.style.display = 'none'));
-    return;
-  }
-
-  try {
-    const data = await getRequest('/notifications/', {}, { auth: true });
-    const list = extractList(data);
-    const unread = list.filter((item) => item.is_read === false).length;
-
-    badgeElements.forEach((b) => {
-      b.textContent = unread > 99 ? '99+' : String(unread);
-      b.style.display = unread > 0 ? 'flex' : 'none';
-    });
-  } catch (error) {
-    if (error?.status === 401) {
-      clearTokens();
-      clearCurrentUser();
-      syncUserAuthState();
-    }
-    badgeElements.forEach((b) => (b.style.display = 'none'));
-  }
-}
-
-/**
- * Normaliza y enlaza todas las rutas relativas en la barra de navegación.
- */
-function normalizeNavbarRoutes() {
   const prefix = getBasePathPrefix();
-
-  document.querySelectorAll('.brand-logo').forEach((el) => {
-    el.setAttribute('href', `${prefix}index.html`);
-  });
-
-  document.querySelectorAll('.brand-logo-img').forEach((img) => {
-    img.setAttribute('src', `${prefix}assets/images/logo.jpeg`);
-  });
-
-  const routeMap = {
-    'home': `${prefix}index.html`,
-    'products': `${prefix}modules/product/products.html`,
-    'us': `${prefix}modules/us/us.html`,
-    'us-about': `${prefix}modules/us/us.html`,
-    'gallery': `${prefix}modules/gallery/gallery.html`,
-    'projects': `${prefix}modules/project/projects.html`,
-    'faq': `${prefix}modules/us/us.html#faq`,
-    'terms': `${prefix}modules/us/us.html#terminos`,
-    'contact': `${prefix}index.html#contacto`,
-    'cart': `${prefix}modules/cart/cart.html`,
-    'profile': `${prefix}modules/profile/profile.html`,
-    'orders': `${prefix}modules/order/my-orders.html`,
-    'wishlist': `${prefix}modules/product/wishlist.html`,
-    'login': `${prefix}modules/auth/login.html`,
-    'register': `${prefix}modules/auth/login.html#registro`
-  };
-
-  document.querySelectorAll('[data-nav-link]').forEach((link) => {
-    const key = link.getAttribute('data-nav-link');
-    if (routeMap[key]) {
-      link.setAttribute('href', routeMap[key]);
-    }
-  });
-
-  const contactLinks = document.querySelectorAll('[data-nav-link="contact"], a[href*="#contacto"]');
-  contactLinks.forEach((link) => {
-    link.addEventListener('click', (e) => {
-      const isIndex = !window.location.pathname.includes('/modules/') &&
-        (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/') || window.location.pathname === '');
-
-      if (isIndex) {
-        const contactSection = document.getElementById('contacto') || document.getElementById('contactos');
-        if (contactSection) {
-          e.preventDefault();
-          contactSection.scrollIntoView({ behavior: 'smooth' });
-          if (history.pushState) {
-            history.pushState(null, null, '#contacto');
-          }
-        }
-      }
-    });
-  });
-}
-
-/**
- * Detecta y resalta visualmente la ruta activa en los menús.
- */
-function updateActiveRouteState() {
-  const currentPath = window.location.pathname || '';
-  const currentHash = window.location.hash || '';
-
-  document.querySelectorAll('.desktop-nav-links .nav-link, .drawer-nav-link').forEach((l) => l.classList.remove('active'));
-
-  const isHome = !currentPath.includes('/modules/') && (currentPath.endsWith('index.html') || currentPath.endsWith('/') || currentPath === '');
-  const isProducts = currentPath.includes('/product/') || currentPath.includes('products.html') || currentPath.includes('product-details.html') || currentPath.includes('wishlist.html');
-  const isUs = currentPath.includes('/us/') || currentPath.includes('/gallery/') || currentPath.includes('/project/');
-  const isContact = currentHash === '#contacto' || currentHash === '#contactos';
-
-  if (isContact) {
-    document.querySelectorAll('[data-nav-link="contact"]').forEach((l) => l.classList.add('active'));
-  } else if (isHome) {
-    document.querySelectorAll('[data-nav-link="home"]').forEach((l) => l.classList.add('active'));
-  } else if (isProducts) {
-    document.querySelectorAll('[data-nav-link="products"]').forEach((l) => l.classList.add('active'));
-  } else if (isUs) {
-    document.querySelectorAll('[data-nav-link="us"]').forEach((l) => l.classList.add('active'));
-    if (currentPath.includes('/gallery/')) {
-      document.querySelectorAll('[data-nav-link="gallery"]').forEach((l) => l.classList.add('active'));
-    } else if (currentPath.includes('/project/')) {
-      document.querySelectorAll('[data-nav-link="projects"]').forEach((l) => l.classList.add('active'));
-    } else {
-      document.querySelectorAll('[data-nav-link="us-about"]').forEach((l) => l.classList.add('active'));
-    }
-  }
-}
-
-/**
- * Configura las opciones del menú de usuario y del drawer según el estado de autenticación.
- */
-function syncUserAuthState() {
-  const prefix = getBasePathPrefix();
-  const token = getAccessToken();
-  const user = getCurrentUser();
-  const isAuth = Boolean(token && token !== 'null' && token !== 'undefined' && String(token).trim() !== '');
-
-  const desktopActions = document.querySelector('.desktop-actions');
-  if (desktopActions) {
-    // 1. Asegurar nav-auth-buttons si no existe en el DOM
-    if (!document.getElementById('nav-auth-buttons')) {
-      const authDiv = document.createElement('div');
-      authDiv.className = 'nav-auth-buttons';
-      authDiv.id = 'nav-auth-buttons';
-      authDiv.innerHTML = `
-        <a href="${prefix}modules/auth/login.html" class="nav-btn-login" data-nav-link="login">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-            <polyline points="10 17 15 12 10 7"></polyline>
-            <line x1="15" y1="12" x2="3" y2="12"></line>
-          </svg>
-          <span>Iniciar Sesión</span>
-        </a>
-        <a href="${prefix}modules/auth/login.html#registro" class="nav-btn-register" data-nav-link="register">
-          <span>Registrarse</span>
-        </a>
-      `;
-      desktopActions.appendChild(authDiv);
-    }
-
-    // 2. Asegurar nav-user-dropdown-wrapper si no existe en el DOM
-    if (!document.getElementById('nav-user-dropdown-wrapper')) {
-      const userDrop = document.createElement('div');
-      userDrop.className = 'action-dropdown-wrapper';
-      userDrop.id = 'nav-user-dropdown-wrapper';
-      userDrop.innerHTML = `
-        <button type="button" class="action-btn nav-profile-btn" id="nav-profile-btn" aria-label="Perfil de usuario" aria-haspopup="true" aria-expanded="false" title="Mi Cuenta">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </button>
-        <div class="action-dropdown-menu profile-dropdown-menu" id="nav-profile-menu" role="menu" aria-label="Opciones de usuario">
-          <div class="profile-menu-header" id="nav-profile-header">
-            <div class="profile-menu-avatar" id="nav-profile-avatar">US</div>
-            <div class="profile-menu-user-meta">
-              <strong id="nav-profile-name">Mi Cuenta</strong>
-              <span id="nav-profile-email">Bienvenido a TuEstante</span>
-            </div>
-          </div>
-          <div class="profile-menu-items" id="nav-profile-links"></div>
-        </div>
-      `;
-      desktopActions.appendChild(userDrop);
-    }
-  }
-
-  const navAuthButtons = document.getElementById('nav-auth-buttons');
-  const navUserDropdownWrapper = document.getElementById('nav-user-dropdown-wrapper');
-
-  if (navAuthButtons) {
-    navAuthButtons.style.display = isAuth ? 'none' : 'inline-flex';
-  }
-  if (navUserDropdownWrapper) {
-    navUserDropdownWrapper.style.display = isAuth ? 'inline-flex' : 'none';
-  }
-
-  const profileAvatarEl = document.getElementById('nav-profile-avatar');
-  const profileNameEl = document.getElementById('nav-profile-name');
-  const profileEmailEl = document.getElementById('nav-profile-email');
-  const profileLinksContainer = document.getElementById('nav-profile-links');
-
-  const drawerGreetingEl = document.getElementById('drawer-user-greeting');
-  const drawerNameEl = document.getElementById('drawer-user-name');
-  const drawerAvatarEl = document.getElementById('drawer-user-avatar');
-  const drawerUserLinksList = document.getElementById('drawer-user-links-list');
-
-  let initials = 'US';
-  let displayName = 'Mi Cuenta';
-  let emailText = 'Inicia sesión para ver tus compras';
-
-  if (isAuth) {
-    const firstName = user?.first_name || '';
-    const lastName = user?.last_name || '';
-    const username = user?.username || 'Usuario';
-    const email = user?.email || '';
-
-    displayName = firstName ? `${firstName} ${lastName}`.trim() : username;
-    emailText = email || username;
-
-    if (firstName) {
-      initials = (firstName[0] + (lastName ? lastName[0] : '')).toUpperCase();
-    } else if (username) {
-      initials = username.slice(0, 2).toUpperCase();
-    }
-  }
-
-  if (profileAvatarEl) profileAvatarEl.textContent = isAuth ? initials : '--';
-  if (profileNameEl) profileNameEl.textContent = displayName;
-  if (profileEmailEl) profileEmailEl.textContent = emailText;
-
-  if (drawerGreetingEl) drawerGreetingEl.textContent = isAuth ? `¡Hola, ${displayName.split(' ')[0]}!` : '¡Bienvenido!';
-  if (drawerNameEl) {
-    drawerNameEl.textContent = isAuth ? displayName : 'Iniciar Sesión / Mi Cuenta';
-    drawerNameEl.setAttribute('href', isAuth ? `${prefix}modules/profile/profile.html` : `${prefix}modules/auth/login.html`);
-  }
-  if (drawerAvatarEl && isAuth) {
-    drawerAvatarEl.innerHTML = `<span style="font-weight:700;font-size:0.95rem;color:var(--color-brand-blue);">${initials}</span>`;
-  }
-
-  if (profileLinksContainer) {
-    if (isAuth) {
-      profileLinksContainer.innerHTML = `
-        <a href="${prefix}modules/profile/profile.html" class="action-menu-item" role="menuitem">
-          <span class="action-item-icon">
-            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </span>
-          <span class="action-item-text">Mi Perfil</span>
-        </a>
-
-        <a href="${prefix}modules/order/my-orders.html" class="action-menu-item" role="menuitem">
-          <span class="action-item-icon">
-            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  const drawerMarkup = `
+  <aside id="admin-drawer" class="admin-drawer" aria-label="Menú lateral de administración">
+    <div class="drawer-header">
+      <a href="${prefix}index.html" class="drawer-brand" data-nav-link="inicio" title="TuEstante Admin">
+        <div class="drawer-brand-icon">
+          <img src="${prefix}assets/images/logo.jpeg" alt="TuEstante Logo" class="brand-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <span class="brand-fallback-icon" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
               <line x1="3" y1="6" x2="21" y2="6"></line>
               <path d="M16 10a4 4 0 0 1-8 0"></path>
             </svg>
           </span>
-          <span class="action-item-text">Mis compras / Pedidos</span>
-        </a>
-
-        <a href="${prefix}modules/product/wishlist.html" class="action-menu-item" role="menuitem">
-          <span class="action-item-icon">
-            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-            </svg>
-          </span>
-          <span class="action-item-text">Productos deseados</span>
-        </a>
-
-        <button type="button" id="btn-navbar-logout" class="action-menu-item logout-item" role="menuitem" style="width: 100%; text-align: left; background: none; border: none; font-family: inherit;">
-          <span class="action-item-icon">
-            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-          </span>
-          <span class="action-item-text">Cerrar sesión</span>
-        </button>
-      `;
-    } else {
-      profileLinksContainer.innerHTML = `
-        <a href="${prefix}modules/auth/login.html" class="action-menu-item" role="menuitem">
-          <span class="action-item-icon">
-            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-              <polyline points="10 17 15 12 10 7"></polyline>
-              <line x1="15" y1="12" x2="3" y2="12"></line>
-            </svg>
-          </span>
-          <span class="action-item-text">Iniciar Sesión</span>
-        </a>
-
-        <a href="${prefix}modules/auth/login.html#registro" class="action-menu-item" role="menuitem">
-          <span class="action-item-icon">
-            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-              <line x1="20" y1="8" x2="20" y2="14"></line>
-              <line x1="23" y1="11" x2="17" y2="11"></line>
-            </svg>
-          </span>
-          <span class="action-item-text">Crear Cuenta</span>
-        </a>
-      `;
-    }
-  }
-
-  if (drawerUserLinksList) {
-    if (isAuth) {
-      drawerUserLinksList.innerHTML = `
-        <li class="drawer-nav-item">
-          <a href="${prefix}modules/profile/profile.html" class="drawer-nav-link">
-            <span class="drawer-link-left">
-              <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        </div>
+        <div class="drawer-brand-info">
+          <span class="drawer-brand-title">TuEstante</span>
+          <span class="drawer-brand-badge">ADMIN</span>
+        </div>
+      </a>
+      <button type="button" class="drawer-action-btn" id="drawer-toggle-btn" aria-label="Colapsar o expandir barra lateral" title="Colapsar / Expandir">
+        <svg class="icon-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <nav class="drawer-nav-container" aria-label="Navegación principal">
+      <ul class="drawer-menu" role="menu">
+        <li class="drawer-item" role="none">
+          <a href="${prefix}index.html" class="drawer-link active" data-nav-id="inicio" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Inicio</span>
+          </a>
+        </li>
+        <li class="drawer-item" role="none">
+          <a href="${prefix}modules/order/orders.html" class="drawer-link" data-nav-id="pedidos" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Pedidos</span>
+          </a>
+        </li>
+        <li class="drawer-item" role="none">
+          <a href="${prefix}modules/manufacturing/manufacturing.html" class="drawer-link" data-nav-id="fabricacion" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 20h20"></path>
+                <path d="M5 20V8l5 4V4l6 5v11"></path>
+                <path d="M18 14v6"></path>
+                <circle cx="18" cy="11" r="1"></circle>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Fabricación</span>
+          </a>
+        </li>
+        <li class="drawer-item" role="none">
+          <a href="${prefix}modules/payment/payments.html" class="drawer-link" data-nav-id="pagos" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+                <line x1="6" y1="15" x2="10" y2="15"></line>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Pagos</span>
+          </a>
+        </li>
+        <li class="drawer-item" role="none">
+          <a href="${prefix}modules/shipping/shipping.html" class="drawer-link" data-nav-id="envios" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="3" width="15" height="13"></rect>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Envíos</span>
+          </a>
+        </li>
+        <li class="drawer-item drawer-item-has-submenu" role="none">
+          <button type="button" class="drawer-link drawer-submenu-toggle" aria-expanded="false" aria-controls="submenu-productos" data-nav-id="productos-parent" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </span>
+            <span class="drawer-link-text">Productos</span>
+            <span class="drawer-arrow-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+          </button>
+          <ul id="submenu-productos" class="drawer-submenu" role="menu" aria-label="Submenú de Productos">
+            <li class="drawer-submenu-item" role="none">
+              <a href="${prefix}modules/product/products.html" class="drawer-submenu-link" data-nav-id="productos" role="menuitem">
+                <span class="drawer-submenu-dot"></span>
+                <span class="drawer-submenu-text">Productos</span>
+              </a>
+            </li>
+            <li class="drawer-submenu-item" role="none">
+              <a href="${prefix}modules/product/categories.html" class="drawer-submenu-link" data-nav-id="categorias" role="menuitem">
+                <span class="drawer-submenu-dot"></span>
+                <span class="drawer-submenu-text">Categorías</span>
+              </a>
+            </li>
+            <li class="drawer-submenu-item" role="none">
+              <a href="${prefix}modules/product/types.html" class="drawer-submenu-link" data-nav-id="tipos-productos" role="menuitem">
+                <span class="drawer-submenu-dot"></span>
+                <span class="drawer-submenu-text">Tipos de productos</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li class="drawer-item" role="none">
+          <a href="${prefix}modules/user/clients.html" class="drawer-link" data-nav-id="clientes" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
-              Mi Perfil
             </span>
+            <span class="drawer-link-text">Clientes</span>
           </a>
         </li>
-        <li class="drawer-nav-item">
-          <a href="${prefix}modules/order/my-orders.html" class="drawer-nav-link">
-            <span class="drawer-link-left">
-              <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
+        <li class="drawer-item" role="none">
+          <a href="${prefix}modules/notifications/notifications.html" class="drawer-link" data-nav-id="notificaciones" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
               </svg>
-              Mis Compras y Pedidos
             </span>
+            <span class="drawer-link-text">Notificaciones</span>
+            <span class="drawer-badge" id="drawer-notif-badge" aria-label="5 notificaciones pendientes">5</span>
           </a>
         </li>
-        <li class="drawer-nav-item">
-          <a href="${prefix}modules/product/wishlist.html" class="drawer-nav-link">
-            <span class="drawer-link-left">
-              <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+        <li class="drawer-item" role="none">
+          <a href="${prefix}modules/settings/settings.html" class="drawer-link" data-nav-id="configuracion" role="menuitem">
+            <span class="drawer-link-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
               </svg>
-              Productos Deseados
             </span>
+            <span class="drawer-link-text">Configuración</span>
           </a>
         </li>
-        <li class="drawer-nav-item">
-          <button type="button" id="btn-drawer-logout" class="drawer-nav-link" style="width:100%;text-align:left;background:none;border:none;cursor:pointer;color:#ef4444;">
-            <span class="drawer-link-left" style="color:#ef4444;">
-              <svg class="drawer-icon" style="color:#ef4444;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
-              Cerrar Sesión
-            </span>
-          </button>
-        </li>
-      `;
-    } else {
-      drawerUserLinksList.innerHTML = `
-        <li class="drawer-nav-item">
-          <a href="${prefix}modules/auth/login.html" class="drawer-nav-link">
-            <span class="drawer-link-left">
-              <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                <polyline points="10 17 15 12 10 7"></polyline>
-                <line x1="15" y1="12" x2="3" y2="12"></line>
-              </svg>
-              Iniciar Sesión
-            </span>
-          </a>
-        </li>
-        <li class="drawer-nav-item">
-          <a href="${prefix}modules/auth/login.html#registro" class="drawer-nav-link">
-            <span class="drawer-link-left">
-              <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-                <line x1="20" y1="8" x2="20" y2="14"></line>
-                <line x1="23" y1="11" x2="17" y2="11"></line>
-              </svg>
-              Registrarse
-            </span>
-          </a>
-        </li>
-      `;
-    }
-  }
+      </ul>
+    </nav>
+    <div class="drawer-footer">
+      <button type="button" class="drawer-link drawer-logout-btn" id="drawer-logout-btn" role="button" aria-label="Cerrar sesión">
+        <span class="drawer-link-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </span>
+        <span class="drawer-link-text">Cerrar sesión</span>
+      </button>
+    </div>
+  </aside>
+  <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+  `;
 
-  const handleLogout = async () => {
-    if (!confirm('¿Estás seguro de que deseas cerrar sesión en TuEstante?')) return;
-    try {
-      const refreshToken = getRefreshToken();
-      if (refreshToken) {
-        await fetch(`${prefix.replace('../../', '') || ''}api/user/logout/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh_token: refreshToken })
-        }).catch(() => {});
-      }
-    } finally {
-      clearTokens();
-      clearCurrentUser();
-      syncUserAuthState();
-      updateNotificationsBadge(0);
-      window.location.reload();
-    }
-  };
-
-  const btnNavLogout = document.getElementById('btn-navbar-logout');
-  if (btnNavLogout) btnNavLogout.onclick = handleLogout;
-
-  const btnDrawerLogout = document.getElementById('btn-drawer-logout');
-  if (btnDrawerLogout) btnDrawerLogout.onclick = handleLogout;
+  document.body.insertAdjacentHTML('afterbegin', drawerMarkup);
 }
 
 /**
- * Evalúa si un producto pertenece a una categoría dada considerando
- * todas las variantes de serialización de Django.
+ * Determina automáticamente el título de la pantalla según la ruta o elemento DOM
+ * @returns {string} Nombre/Título de la pantalla actual
  */
-function isProductInCategory(prod, cat) {
-  if (!prod || !cat) return false;
-  const catId = String(cat.id ?? '');
-  const catName = String(cat.category_name || cat.name || '').toLowerCase().trim();
+export function getAutoPageTitle() {
+  // 1. Revisar si hay un elemento explícito con data-page-title
+  const explicitEl = document.querySelector('[data-page-title]');
+  if (explicitEl) {
+    const title = explicitEl.getAttribute('data-page-title') || explicitEl.textContent;
+    if (title.trim()) return title.trim();
+  }
 
-  // 1. Coincidencia directa por category (ID, objeto o string)
-  if (prod.category !== undefined && prod.category !== null) {
-    if (typeof prod.category === 'object') {
-      if (String(prod.category.id ?? '') === catId) return true;
-      if (String(prod.category.name || prod.category.category_name || '').toLowerCase().trim() === catName) return true;
-    } else if (String(prod.category) === catId) {
-      return true;
+  // 2. Mapeo inteligente por URL
+  const path = (window.location.pathname || '').toLowerCase();
+  
+  if (path.endsWith('index.html') || path.endsWith('/') || path === '') {
+    return 'Dashboard';
+  }
+  if (path.includes('/order/') || path.includes('orders.html')) {
+    return 'Pedidos';
+  }
+  if (path.includes('/manufacturing/') || path.includes('manufacturing.html')) {
+    return 'Fabricación';
+  }
+  if (path.includes('/payment/') || path.includes('payments.html')) {
+    return 'Pagos';
+  }
+  if (path.includes('/shipping/') || path.includes('shipping.html')) {
+    return 'Envíos';
+  }
+  if (path.includes('categories.html')) {
+    return 'Categorías';
+  }
+  if (path.includes('types.html')) {
+    return 'Tipos de productos';
+  }
+  if (path.includes('/product/') || path.includes('products.html')) {
+    return 'Productos';
+  }
+  if (path.includes('/user/') || path.includes('clients.html') || path.includes('users.html')) {
+    return 'Clientes';
+  }
+  if (path.includes('/notification') || path.includes('notifications.html')) {
+    return 'Notificaciones';
+  }
+  if (path.includes('/settings/') || path.includes('settings.html')) {
+    return 'Configuración';
+  }
+  if (path.includes('profile.html')) {
+    return 'Mi Perfil';
+  }
+
+  // 3. Fallback al título del documento
+  if (document.title) {
+    const cleanTitle = document.title.split('|')[0].split('-')[0].trim();
+    if (cleanTitle && !cleanTitle.toLowerCase().includes('tuestante')) {
+      return cleanTitle;
     }
   }
 
-  // 2. Coincidencia por category_id o categoryId
-  if (prod.category_id !== undefined && prod.category_id !== null && String(prod.category_id) === catId) return true;
-  if (prod.categoryId !== undefined && prod.categoryId !== null && String(prod.categoryId) === catId) return true;
-
-  // 3. Coincidencia en array de categories / categories_detail
-  if (Array.isArray(prod.categories)) {
-    for (const c of prod.categories) {
-      if (typeof c === 'object' && c !== null) {
-        if (String(c.id ?? '') === catId || String(c.category_name || c.name || '').toLowerCase().trim() === catName) return true;
-      } else if (String(c) === catId) {
-        return true;
-      }
-    }
-  }
-
-  if (Array.isArray(prod.categories_detail)) {
-    for (const c of prod.categories_detail) {
-      if (String(c.id ?? '') === catId || String(c.category_name || c.name || '').toLowerCase().trim() === catName) return true;
-    }
-  }
-
-  // 4. Coincidencia por category_detail
-  if (prod.category_detail && typeof prod.category_detail === 'object') {
-    if (String(prod.category_detail.id ?? '') === catId) return true;
-    if (String(prod.category_detail.category_name || prod.category_detail.name || '').toLowerCase().trim() === catName) return true;
-  }
-
-  // 5. Coincidencia por nombre de categoría
-  if (prod.category_name && String(prod.category_name).toLowerCase().trim() === catName) return true;
-  if (prod.categoryName && String(prod.categoryName).toLowerCase().trim() === catName) return true;
-
-  return false;
+  return 'Dashboard';
 }
 
 /**
- * Renderiza la barra secundaria de categorías y los mega-menús de mini catálogo
- * con los datos reales traídos del backend.
- * @param {Array} categoriesData Lista de categorías del backend
+ * Actualiza el título que se muestra en la barra de navegación
+ * @param {string} title Título a mostrar
  */
-function renderCategoriesNavbar(categoriesData) {
-  ensureNavbarElementsExist();
-
-  const prefix = getBasePathPrefix();
-  const desktopContainer = document.getElementById('nav-categories-container');
-
-  console.log(LOG_TAG, '🏷️ Renderizando sub-barra de categorías conectada al backend...', {
-    containerFound: Boolean(desktopContainer),
-    categoriesCount: categoriesData?.length || 0,
-    windowWidth: window.innerWidth
-  });
-
-  if (!desktopContainer || !Array.isArray(categoriesData) || !categoriesData.length) {
-    return;
-  }
-
-  // Renderizado Desktop: Categorías con Mega-Menús desplegables al hover
-  desktopContainer.innerHTML = categoriesData.map((cat) => {
-    const catId = cat.id;
-    const catName = cat.name || cat.category_name || 'Categoría';
-    const catLink = `${prefix}modules/product/products.html?cat=${catId}`;
-    const items = Array.isArray(cat.items) ? cat.items : [];
-
-    let productsContentHtml = '';
-
-    if (items.length > 0) {
-      const productsCards = items.map((prod) => {
-        const prodId = prod.id;
-        const prodName = prod.name || prod.product_name || 'Producto TuEstante';
-        const rawImg = prod.image || prod.product_image || `${prefix}assets/images/categoria/estante.png`;
-        const prodImg = (rawImg.startsWith('http') || rawImg.startsWith('/') || rawImg.startsWith('.')) ? rawImg : `${prefix}${rawImg}`;
-        const prodLink = `${prefix}modules/product/product-details.html?id=${prodId}`;
-        const isFeatured = Boolean(prod.is_featured || prod.is_feature_product || prod.is_featured_product || prod.badge === 'Destacado');
-
-        return `
-          <a href="${prodLink}" class="catalog-card ${isFeatured ? 'is-featured' : ''}">
-            <div class="catalog-img-wrapper">
-              ${isFeatured ? '<span class="catalog-badge-featured">Destacado</span>' : ''}
-              <img src="${prodImg}" alt="${prodName}" class="catalog-img" loading="lazy" onerror="this.src='${prefix}assets/images/categoria/estante.png'">
-            </div>
-            <span class="catalog-title">${prodName}</span>
-          </a>
-        `;
-      }).join('');
-
-      productsContentHtml = `
-        <div class="catalog-grid">
-          ${productsCards}
-        </div>
-        <div class="catalog-bottom-row">
-          <a href="${catLink}" class="catalog-shop-all-btn">VER TODO EN ${catName.toUpperCase()}</a>
-        </div>
-      `;
-    } else {
-      productsContentHtml = `
-        <div class="catalog-empty-category" style="text-align: left; padding: 1.5rem 0;">
-          <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1rem;">Explora todos los modelos y opciones disponibles en esta categoría.</p>
-          <a href="${catLink}" class="catalog-shop-all-btn" style="display: inline-block;">VER CATÁLOGO DE ${catName.toUpperCase()}</a>
-        </div>
-      `;
-    }
-
-    return `
-      <li class="category-item">
-        <a href="${catLink}" class="category-link">${catName}</a>
-        
-        <div class="category-catalog-menu" role="region" aria-label="Catálogo ${catName}">
-          <div class="catalog-inner">
-            ${productsContentHtml}
-          </div>
-        </div>
-      </li>
-    `;
-  }).join('');
-
-  console.log(LOG_TAG, `✅ Sub-barra de categorías conectada y renderizada con éxito (${categoriesData.length} categorías de la BD).`);
-}
-
-/**
- * Carga las categorías y productos reales desde la base de datos del Backend Django
- * y actualiza los mega-menús de navegación en tiempo real.
- */
-async function loadDynamicCategoriesFromApi() {
-  const prefix = getBasePathPrefix();
-  try {
-    console.log(LOG_TAG, '📡 Consultando categorías y productos del backend con { auth: false }...');
-    
-    // Consulta pública sin token para evitar 401 Unauthorized
-    const [catResponse, prodResponse] = await Promise.allSettled([
-      getRequest('/products/categories/', {}, { auth: false }),
-      getRequest('/products/products/', {}, { auth: false })
-    ]);
-
-    let categories = [];
-    if (catResponse.status === 'fulfilled' && catResponse.value) {
-      categories = extractList(catResponse.value);
-    }
-
-    let products = [];
-    if (prodResponse.status === 'fulfilled' && prodResponse.value) {
-      products = extractList(prodResponse.value);
-    }
-
-    console.log(LOG_TAG, `📦 Datos recibidos del backend:`, {
-      categoriesCount: categories.length,
-      productsCount: products.length
-    });
-
-    if (categories && categories.length > 0) {
-      // Mapear cada categoría real de la BD con sus productos correspondientes
-      const realCategoriesWithProducts = categories.map((cat) => {
-        const catId = cat.id;
-        const catName = cat.category_name || cat.name || 'Categoría';
-
-        // Filtrar productos reales asociados a esta categoría
-        let matchingProducts = products.filter((p) => isProductInCategory(p, cat));
-
-        // Si la categoría específica aún no tiene productos asignados, pero hay productos en la tienda:
-        if (matchingProducts.length === 0 && products.length > 0) {
-          matchingProducts = products;
-        }
-
-        const items = matchingProducts.slice(0, 5).map((prod) => {
-          const rawImg = prod.product_image || prod.image || (Array.isArray(prod.images) && prod.images[0]?.image) || '';
-          return {
-            id: prod.id,
-            name: prod.product_name || prod.name || 'Producto',
-            image: resolveImageUrl(rawImg, `${prefix}assets/images/categoria/estante.png`),
-            is_featured: Boolean(prod.is_featured || prod.is_feature_product || prod.is_featured_product || prod.badge === 'Destacado'),
-            price: prod.price || prod.base_price
-          };
-        });
-
-        return {
-          id: catId,
-          name: catName,
-          slug: cat.slug || 'categoria',
-          items: items
-        };
-      });
-
-      renderCategoriesNavbar(realCategoriesWithProducts);
-    }
-  } catch (err) {
-    console.warn(LOG_TAG, 'Aviso al sincronizar catálogo con backend:', err);
+export function setNavbarTitle(title) {
+  const titleEl = document.getElementById('navbar-screen-title');
+  if (titleEl && title) {
+    titleEl.textContent = title;
   }
 }
 
 /**
- * Configura los eventos del buscador (desktop y móvil) para redirigir al catálogo con el término buscado.
+ * Clase controladora del Navbar
  */
-function setupSearchHandler() {
-  const prefix = getBasePathPrefix();
-  const searchForm = document.getElementById('nav-search-form');
-  const searchInput = document.getElementById('nav-search-input');
-
-  if (searchForm && searchInput) {
-    // Si ya hay un parámetro de búsqueda en la URL, reflejarlo en el input
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const initialQuery = urlParams.get('search') || urlParams.get('buscar') || urlParams.get('q') || '';
-      if (initialQuery && !searchInput.value) {
-        searchInput.value = initialQuery;
-      }
-    } catch (_) {}
-
-    searchForm.onsubmit = (e) => {
-      e.preventDefault();
-      const term = searchInput.value.trim();
-      console.log(LOG_TAG, `🔍 Búsqueda ejecutada: "${term}"`);
-
-      const isProductsPage = window.location.pathname.includes('/product/products.html') || window.location.pathname.endsWith('products.html');
-
-      if (isProductsPage) {
-        const pageSearchInput = document.getElementById('search-input');
-        if (pageSearchInput) {
-          pageSearchInput.value = term;
-          pageSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
-          const newUrl = new URL(window.location);
-          if (term) {
-            newUrl.searchParams.set('search', term);
-          } else {
-            newUrl.searchParams.delete('search');
-          }
-          history.pushState(null, '', newUrl);
-          return;
-        }
-      }
-
-      if (term) {
-        window.location.href = `${prefix}modules/product/products.html?search=${encodeURIComponent(term)}`;
-      } else {
-        window.location.href = `${prefix}modules/product/products.html`;
-      }
+export class AdminNavbar {
+  constructor(options = {}) {
+    this.options = {
+      navbarSelector: '#admin-navbar',
+      title: null,
+      autoFavicon: true,
+      autoDrawer: true,
+      ...options
     };
+
+    this.navbar = null;
+    this.drawer = null;
+    this.init();
   }
-}
 
-/**
- * Configura las interacciones del cajón lateral móvil (Mobile Drawer).
- */
-function setupMobileDrawer() {
-  ensureNavbarElementsExist();
-
-  function getDrawerElements() {
-    let hamburgerBtn = document.getElementById('hamburger-btn');
-    let drawerCloseBtn = document.getElementById('drawer-close-btn');
-    let mobileDrawer = document.getElementById('mobile-drawer');
-    let drawerBackdrop = document.getElementById('drawer-backdrop');
-
-    if (!mobileDrawer || !drawerBackdrop) {
-      ensureNavbarElementsExist();
-      hamburgerBtn = document.getElementById('hamburger-btn');
-      drawerCloseBtn = document.getElementById('drawer-close-btn');
-      mobileDrawer = document.getElementById('mobile-drawer');
-      drawerBackdrop = document.getElementById('drawer-backdrop');
+  /**
+   * Inicializa el Navbar y sus dependencias
+   */
+  init() {
+    // 1. Inyectar favicon automáticamente
+    if (this.options.autoFavicon) {
+      setAutoFavicon();
     }
 
-    return { hamburgerBtn, drawerCloseBtn, mobileDrawer, drawerBackdrop };
-  }
+    // 2. Inyectar hojas de estilo
+    ensureStylesheetsExist();
 
-  function openDrawer() {
-    const { hamburgerBtn, drawerCloseBtn, mobileDrawer, drawerBackdrop } = getDrawerElements();
-    if (!mobileDrawer || !drawerBackdrop) return;
-
-    mobileDrawer.classList.add('is-open');
-    drawerBackdrop.classList.add('is-active');
-
-    mobileDrawer.style.transform = 'translateX(0)';
-    mobileDrawer.style.visibility = 'visible';
-    mobileDrawer.style.display = 'flex';
-    drawerBackdrop.style.visibility = 'visible';
-    drawerBackdrop.style.opacity = '1';
-    drawerBackdrop.style.pointerEvents = 'auto';
-
-    if (hamburgerBtn) hamburgerBtn.setAttribute('aria-expanded', 'true');
-    mobileDrawer.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-
-    if (drawerCloseBtn) setTimeout(() => drawerCloseBtn.focus(), 150);
-  }
-
-  function closeDrawer() {
-    const { hamburgerBtn, mobileDrawer, drawerBackdrop } = getDrawerElements();
-    if (!mobileDrawer || !drawerBackdrop) return;
-
-    mobileDrawer.classList.remove('is-open');
-    drawerBackdrop.classList.remove('is-active');
-
-    mobileDrawer.style.transform = 'translateX(-100%)';
-    mobileDrawer.style.visibility = 'hidden';
-    drawerBackdrop.style.visibility = 'hidden';
-    drawerBackdrop.style.opacity = '0';
-    drawerBackdrop.style.pointerEvents = 'none';
-
-    if (hamburgerBtn) hamburgerBtn.setAttribute('aria-expanded', 'false');
-    mobileDrawer.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-
-    if (hamburgerBtn) hamburgerBtn.focus();
-  }
-
-  // Delegación de eventos global para apertura y cierre inmediato
-  document.addEventListener('click', (e) => {
-    const target = e.target;
-    if (!target) return;
-
-    // 1. Apertura y cierre del drawer
-    if (target.closest('#hamburger-btn') || target.closest('.hamburger-btn')) {
-      e.preventDefault();
-      e.stopPropagation();
-      openDrawer();
-      return;
+    // 3. Auto-importar e inicializar el Drawer
+    if (this.options.autoDrawer) {
+      ensureDrawerExists();
+      this.drawer = initDrawer();
     }
-    
-    if (target.closest('#drawer-close-btn') || target.closest('.drawer-close-btn') || target.closest('#drawer-backdrop')) {
-      e.preventDefault();
-      e.stopPropagation();
-      closeDrawer();
+
+    // 4. Conectar elementos del Navbar
+    this.navbar = document.querySelector(this.options.navbarSelector);
+    if (!this.navbar) {
+      console.warn('[TuEstante Navbar] Elemento navbar no encontrado en el DOM:', this.options.navbarSelector);
       return;
     }
 
-    // 2. Acordeones en el drawer (ej. "Conócenos")
-    const accordionBtn = target.closest('.drawer-accordion-btn');
-    if (accordionBtn) {
-      e.preventDefault();
-      e.stopPropagation();
+    // 5. Configurar título dinámico
+    const pageTitle = this.options.title || getAutoPageTitle();
+    setNavbarTitle(pageTitle);
 
-      const isExpanded = accordionBtn.getAttribute('aria-expanded') === 'true';
-      const submenu = accordionBtn.parentElement ? accordionBtn.parentElement.querySelector('.drawer-submenu') : accordionBtn.nextElementSibling;
-      const chevron = accordionBtn.querySelector('.drawer-chevron');
-
-      accordionBtn.setAttribute('aria-expanded', String(!isExpanded));
-      if (submenu) {
-        if (!isExpanded) {
-          submenu.classList.add('is-open');
-          submenu.style.display = 'block';
-          if (chevron) chevron.style.transform = 'rotate(180deg)';
-        } else {
-          submenu.classList.remove('is-open');
-          submenu.style.display = 'none';
-          if (chevron) chevron.style.transform = 'rotate(0deg)';
-        }
-      }
-      return;
-    }
-
-    // 3. Cerrar drawer al hacer clic en enlaces normales del drawer
-    const normalLink = target.closest('.drawer-nav-link:not(.drawer-accordion-btn), .drawer-sub-link');
-    if (normalLink && !normalLink.classList.contains('drawer-accordion-btn')) {
-      setTimeout(closeDrawer, 180);
-    }
-  });
-
-  // Cerrar al presionar Escape
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      const { mobileDrawer } = getDrawerElements();
-      if (mobileDrawer && (mobileDrawer.classList.contains('is-open') || mobileDrawer.style.visibility === 'visible')) {
-        closeDrawer();
-      }
-    }
-  });
-}
-
-/**
- * Configura los menús desplegables de Contacto y Perfil en escritorio.
- */
-function setupActionDropdowns() {
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.action-dropdown-wrapper .action-btn');
-    if (btn) {
-      e.preventDefault();
-      e.stopPropagation();
-      const wrapper = btn.closest('.action-dropdown-wrapper');
-      const menu = wrapper ? wrapper.querySelector('.action-dropdown-menu') : null;
-      if (!menu) return;
-
-      const isOpen = menu.classList.contains('is-open');
-
-      // Cerrar otros menús abiertos
-      document.querySelectorAll('.action-dropdown-menu').forEach((m) => {
-        if (m !== menu) {
-          m.classList.remove('is-open');
-          m.parentElement?.querySelector('.action-btn')?.setAttribute('aria-expanded', 'false');
-        }
-      });
-
-      if (!isOpen) {
-        menu.classList.add('is-open');
-        btn.setAttribute('aria-expanded', 'true');
-      } else {
-        menu.classList.remove('is-open');
-        btn.setAttribute('aria-expanded', 'false');
-      }
-      return;
-    }
-
-    // Cerrar menús al hacer clic fuera
-    if (!e.target.closest('.action-dropdown-wrapper')) {
-      document.querySelectorAll('.action-dropdown-menu').forEach((m) => {
-        m.classList.remove('is-open');
-        m.parentElement?.querySelector('.action-btn')?.setAttribute('aria-expanded', 'false');
-      });
-    }
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      document.querySelectorAll('.action-dropdown-menu').forEach((m) => {
-        m.classList.remove('is-open');
-        m.parentElement?.querySelector('.action-btn')?.setAttribute('aria-expanded', 'false');
-      });
-    }
-  });
-}
-
-/**
- * Agrega sombra dinámica al header al hacer scroll.
- */
-function setupHeaderScrollShadow() {
-  const header = document.querySelector('.site-header');
-  if (!header) return;
-
-  function onScroll() {
-    if (window.scrollY > 10) {
-      header.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.09)';
-    } else {
-      header.style.boxShadow = 'var(--shadow-sm)';
-    }
+    // 6. Configurar datos de usuario y eventos
+    this.setupUserData();
+    this.setupSearch();
+    this.setupUserDropdown();
+    this.setupRelativeLinks();
   }
 
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
-}
+  /**
+   * Ajusta las rutas relativas de enlaces en el navbar
+   */
+  setupRelativeLinks() {
+    const prefix = getBasePathPrefix();
+    if (!prefix) return;
 
-/**
- * Escucha cambios en el carrito y almacenamiento para sincronizar en tiempo real.
- */
-function setupGlobalSyncListeners() {
-  window.addEventListener('cart-updated', () => updateCartBadge());
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'tuestante_cart') updateCartBadge();
-    if (e.key === 'cc_access_token' || e.key === 'cc_current_user') {
-      syncUserAuthState();
-      updateNotificationsBadge();
-    }
-  });
-}
-
-/**
- * Inicialización integral y modular de la barra de navegación de TuEstante.
- * Con reintentos automáticos y auto-inyección si el DOM aún no está listo.
- */
-export function initNavbar() {
-  const header = document.querySelector('.site-header');
-  if (!header) {
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if (document.querySelector('.site-header')) {
-        clearInterval(interval);
-        initNavbar();
-      } else if (attempts >= 15) {
-        clearInterval(interval);
+    const links = this.navbar.querySelectorAll('a[href]');
+    links.forEach(link => {
+      const href = link.getAttribute('href');
+      if (href && !href.startsWith('http') && !href.startsWith('#') && !href.startsWith('../')) {
+        link.setAttribute('href', prefix + href);
       }
-    }, 80);
-    return;
-  }
-
-  // 0. Auto-inyección garantizada de contenedores faltantes
-  ensureNavbarElementsExist();
-
-  // 1. Inyección automática del logo como icono de pestaña (favicon)
-  setAutoFavicon();
-
-  // 2. Normalización de rutas relativas según la jerarquía de directorios
-  normalizeNavbarRoutes();
-
-  // 3. Sincronización de estado de usuario / auth
-  syncUserAuthState();
-
-  // 4. Sincronización en tiempo real de contadores de Carrito y Notificaciones
-  updateCartBadge();
-  updateNotificationsBadge();
-
-  // 5. Configuración de interactividad (Buscador, Menú móvil, Dropdowns, Scroll)
-  setupSearchHandler();
-  setupMobileDrawer();
-  setupActionDropdowns();
-  setupHeaderScrollShadow();
-  setupGlobalSyncListeners();
-
-  // 6. Resaltado de la ruta activa actual
-  updateActiveRouteState();
-
-  // 7. Carga de datos reales desde la API del backend de Django
-  loadDynamicCategoriesFromApi();
-}
-
-// Auto-inicialización resiliente si el componente ya se encuentra incrustado en el DOM
-if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      initNavbar();
     });
-  } else {
-    initNavbar();
   }
+
+  /**
+   * Carga los datos del usuario logueado en la barra superior
+   */
+  setupUserData() {
+    const user = getCurrentUser();
+    const nameEl = document.getElementById('navbar-user-name');
+    const emailEl = document.getElementById('navbar-user-email');
+    const dropNameEl = document.getElementById('dropdown-user-name');
+    const dropEmailEl = document.getElementById('dropdown-user-email');
+    const avatarEl = document.getElementById('navbar-user-avatar');
+
+    if (user) {
+      const fullName = (user.first_name ? `${user.first_name} ${user.last_name || ''}` : user.username || 'Administrador').trim();
+      const email = user.email || 'admin@tienda.com';
+
+      if (nameEl) nameEl.textContent = fullName;
+      if (emailEl) emailEl.textContent = email;
+      if (dropNameEl) dropNameEl.textContent = fullName;
+      if (dropEmailEl) dropEmailEl.textContent = email;
+
+      if (avatarEl && fullName) {
+        const initials = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        if (initials) {
+          avatarEl.textContent = initials;
+        }
+      }
+    }
+  }
+
+  /**
+   * Configura la barra de búsqueda expandible
+   */
+  setupSearch() {
+    const toggleBtn = document.getElementById('navbar-search-toggle');
+    const searchExpand = document.getElementById('navbar-search-expand');
+    const closeBtn = document.getElementById('navbar-search-close');
+    const searchInput = document.getElementById('navbar-search-input');
+
+    if (!toggleBtn || !searchExpand) return;
+
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      searchExpand.classList.toggle('is-open');
+      if (searchExpand.classList.contains('is-open') && searchInput) {
+        setTimeout(() => searchInput.focus(), 100);
+      }
+    });
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        searchExpand.classList.remove('is-open');
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          searchExpand.classList.remove('is-open');
+        } else if (e.key === 'Enter') {
+          const query = searchInput.value.trim();
+          if (query) {
+            const prefix = getBasePathPrefix();
+            window.location.href = `${prefix}modules/product/products.html?search=${encodeURIComponent(query)}`;
+          }
+        }
+      });
+    }
+
+    // Cerrar al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#navbar-search-wrapper')) {
+        searchExpand.classList.remove('is-open');
+      }
+    });
+  }
+
+  /**
+   * Configura el menú desplegable del perfil de usuario
+   */
+  setupUserDropdown() {
+    const userBtn = document.getElementById('navbar-user-btn');
+    const dropdownMenu = document.getElementById('navbar-dropdown-menu');
+    const logoutBtn = document.getElementById('navbar-logout-btn');
+
+    if (userBtn && dropdownMenu) {
+      userBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = dropdownMenu.classList.contains('is-open');
+        if (isOpen) {
+          dropdownMenu.classList.remove('is-open');
+          userBtn.setAttribute('aria-expanded', 'false');
+        } else {
+          dropdownMenu.classList.add('is-open');
+          userBtn.setAttribute('aria-expanded', 'true');
+        }
+      });
+
+      // Cerrar al hacer clic afuera
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#navbar-user-dropdown')) {
+          dropdownMenu.classList.remove('is-open');
+          userBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      // Cerrar con Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && dropdownMenu.classList.contains('is-open')) {
+          dropdownMenu.classList.remove('is-open');
+          userBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
+    // Botón de Cerrar Sesión
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const confirmLogout = window.confirm('¿Estás seguro de que deseas cerrar sesión?');
+        if (!confirmLogout) return;
+
+        try {
+          clearTokens();
+          clearCurrentUser();
+        } catch (err) {
+          console.warn('[TuEstante Navbar] Error al limpiar sesión:', err);
+        }
+
+        const prefix = getBasePathPrefix();
+        window.location.href = `${prefix}index.html`;
+      });
+    }
+  }
+
+  /**
+   * Actualiza el badge contador de notificaciones del Navbar
+   * @param {number|string} count Cantidad de notificaciones
+   */
+  setNotificationCount(count) {
+    const badge = document.getElementById('navbar-notif-badge');
+    if (!badge) return;
+
+    const num = parseInt(count, 10);
+    if (isNaN(num) || num <= 0) {
+      badge.style.display = 'none';
+      badge.textContent = '0';
+    } else {
+      badge.style.display = 'flex';
+      badge.textContent = num > 99 ? '99+' : num.toString();
+      badge.setAttribute('aria-label', `${num} notificaciones`);
+    }
+
+    // Sincronizar también con el Drawer si está presente
+    if (this.drawer && typeof this.drawer.setNotificationCount === 'function') {
+      this.drawer.setNotificationCount(count);
+    }
+  }
+}
+
+/**
+ * Inicializador global del componente Navbar
+ * @param {Object} options Opciones de configuración
+ * @returns {AdminNavbar} Instancia creada
+ */
+export function initNavbar(options = {}) {
+  const instance = new AdminNavbar(options);
+  window.TuEstanteNavbar = instance;
+  return instance;
+}
+
+// Ejecución automática al cargar si el elemento está presente
+if (typeof window !== 'undefined') {
+  window.initNavbar = initNavbar;
+  window.setNavbarTitle = setNavbarTitle;
+  window.setAutoFavicon = setAutoFavicon;
 }

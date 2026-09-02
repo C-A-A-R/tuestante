@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crear Nuevo Pedido | TuEstante Admin</title>
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+  
+  <!-- Estilos de Creación de Pedido -->
+  <link rel="stylesheet" href="order-create.css">
+</head>
+<body>
+
+  <!-- ========================================================================
+       ESTRUCTURA PRINCIPAL DEL PANEL (APP-LAYOUT)
+       ======================================================================== -->
+  <div class="app-layout" id="app-layout">
+    
+    <!-- ======================================================================
+         BARRA DE NAVEGACIÓN SUPERIOR (NAVBAR REUTILIZABLE)
+         ====================================================================== -->
+    <header id="admin-navbar" class="admin-navbar" role="banner">
+      <div class="navbar-left">
+        <button 
+          type="button" 
+          id="navbar-hamburger-btn" 
+          class="navbar-hamburger-btn" 
+          data-drawer-toggle="true" 
+          aria-label="Mostrar u ocultar menú lateral"
+          title="Mostrar menú lateral">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+
+        <div class="navbar-title-container">
+          <nav class="navbar-breadcrumb" aria-label="Navegación">
+            <a href="orders.html" class="breadcrumb-link">Pedidos</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Crear nuevo pedido</span>
+          </nav>
+          <span class="navbar-breadcrumb-dot" aria-hidden="true">•</span>
+          <h1 class="navbar-screen-title" id="navbar-screen-title">Nuevo Pedido</h1>
+        </div>
+      </div>
+
+      <div class="navbar-right">
+        <!-- Notificaciones -->
+        <div class="navbar-notif-wrapper">
+          <a href="../notifications/notifications.html" class="navbar-icon-btn navbar-notif-btn" id="navbar-notif-btn" aria-label="Ver notificaciones" title="Notificaciones">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="navbar-badge" id="navbar-notif-badge" aria-label="5 notificaciones pendientes">5</span>
+          </a>
+        </div>
+
+        <div class="navbar-divider" aria-hidden="true"></div>
+
+        <!-- Perfil Usuario -->
+        <div class="navbar-user-dropdown" id="navbar-user-dropdown">
+          <button 
+            type="button" 
+            class="navbar-user-btn" 
+            id="navbar-user-btn" 
+            aria-expanded="false" 
+            aria-haspopup="true" 
+            aria-label="Opciones de perfil de usuario">
+            <div class="navbar-avatar" id="navbar-user-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div class="navbar-user-meta">
+              <span class="navbar-user-name" id="navbar-user-name">Administrador</span>
+              <span class="navbar-user-email" id="navbar-user-email">admin@tienda.com</span>
+            </div>
+            <svg class="navbar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ======================================================================
+         CONTENIDO PRINCIPAL: FORMULARIO DE CREACIÓN DE PEDIDO
+         ====================================================================== -->
+    <main class="app-main-content">
+      <div class="order-create-container">
+        
+        <!-- Encabezado de la Pantalla -->
+        <section class="screen-header-card">
+          <div class="screen-header-text">
+            <h2 class="screen-main-title">Registrar Nuevo Pedido</h2>
+            <p class="screen-main-desc">
+              Seleccione el cliente, agregue los productos del pedido y configure las especificaciones de fabricación.
+            </p>
+          </div>
+          <div class="screen-header-actions">
+            <a href="orders.html" class="btn btn-outline" id="btn-cancel-top">Cancelar</a>
+            <button type="button" class="btn btn-primary" id="btn-submit-order-top">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span>Guardar y Crear Pedido</span>
+            </button>
+          </div>
+        </section>
+
+        <form id="create-order-form" novalidate>
+          <div class="create-order-grid">
+            
+            <!-- ================================================================
+                 COLUMNA PRINCIPAL (IZQUIERDA: CLIENTE, PRODUCTOS, NOTAS)
+                 ================================================================ -->
+            <div class="create-order-left-column">
+              
+              <!-- 1. TARJETA: SELECCIÓN DE CLIENTE (Order.user) -->
+              <section class="form-section-card" aria-labelledby="heading-client-selection">
+                <div class="form-section-header">
+                  <div class="section-title-wrapper">
+                    <div class="section-icon-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="form-section-title" id="heading-client-selection">1. Cliente del Pedido *</h3>
+                      <p class="form-section-subtitle">Seleccione el cliente registrado o cree uno nuevo rápidamente</p>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-quick-create-client">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>+ Nuevo cliente rápido</span>
+                  </button>
+                </div>
+
+                <!-- Buscador / Selector Autocomplete de Cliente -->
+                <div class="client-search-wrapper">
+                  <div class="search-input-group">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input 
+                      type="text" 
+                      id="client-search-input" 
+                      class="form-input search-input" 
+                      placeholder="Buscar por nombre, usuario, correo o teléfono..." 
+                      autocomplete="off">
+                    <button type="button" class="clear-search-btn" id="btn-clear-client-search" title="Limpiar búsqueda" style="display: none;">
+                      ✕
+                    </button>
+                  </div>
+
+                  <!-- Dropdown de Resultados de Búsqueda -->
+                  <div class="client-results-dropdown" id="client-results-dropdown" role="listbox">
+                    <!-- Inyectado dinámicamente -->
+                  </div>
+                </div>
+
+                <!-- Ficha Informativa del Cliente Seleccionado -->
+                <div class="selected-client-card" id="selected-client-card" style="display: none;">
+                  <div class="client-card-avatar" id="client-card-avatar">JP</div>
+                  <div class="client-card-info">
+                    <div class="client-card-name-row">
+                      <strong class="client-card-name" id="client-card-name">Juan Pérez</strong>
+                      <span class="client-card-tag" id="client-card-username">@juanp</span>
+                    </div>
+                    <div class="client-card-details-grid">
+                      <span><strong class="meta-label">Email:</strong> <span id="client-card-email">juan@email.com</span></span>
+                      <span><strong class="meta-label">Teléfono:</strong> <span id="client-card-phone">+58 412 123 4567</span></span>
+                    </div>
+                  </div>
+                  <button type="button" class="btn-remove-client" id="btn-remove-selected-client" title="Cambiar cliente">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span>Cambiar</span>
+                  </button>
+                </div>
+                <input type="hidden" id="selected-client-id" name="user_id" required>
+              </section>
+
+              <!-- 2. TARJETA: DIRECCIÓN DE ENTREGA / ENVÍO (Shipment Address Model) -->
+              <section class="form-section-card" aria-labelledby="heading-shipping-address">
+                <div class="form-section-header">
+                  <div class="section-title-wrapper">
+                    <div class="section-icon-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="form-section-title" id="heading-shipping-address">2. Dirección de Entrega / Envío *</h3>
+                      <p class="form-section-subtitle">Indique la ubicación y punto de entrega donde se despachará el pedido</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="shipping-address-grid">
+                  <div class="form-row">
+                    <!-- Estado (state) -->
+                    <div class="form-group col-third">
+                      <label for="shipping-state" class="form-label">Estado *</label>
+                      <select id="shipping-state" class="form-select font-bold" required>
+                        <option value="" disabled>Seleccionar estado...</option>
+                      </select>
+                    </div>
+
+                    <!-- Municipio (municipality) -->
+                    <div class="form-group col-third">
+                      <label for="shipping-municipality" class="form-label">Municipio *</label>
+                      <select id="shipping-municipality" class="form-select font-bold" required>
+                        <option value="" disabled selected>Seleccione un estado primero...</option>
+                      </select>
+                    </div>
+
+                    <!-- Ciudad / Localidad (city) -->
+                    <div class="form-group col-third">
+                      <label for="shipping-city" class="form-label">Ciudad / Localidad *</label>
+                      <select id="shipping-city" class="form-select font-bold" required>
+                        <option value="" disabled selected>Seleccione un municipio primero...</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Sector / Dirección Exacta (address) -->
+                  <div class="form-group">
+                    <label for="shipping-address" class="form-label">Sector / Dirección Exacta (address) *</label>
+                    <textarea 
+                      id="shipping-address" 
+                      class="form-textarea" 
+                      rows="2" 
+                      placeholder="Indica la calle, avenida, urbanización, edificio o punto de referencia..." 
+                      required></textarea>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 3. TARJETA: PRODUCTOS DEL PEDIDO (OrderDetail & OrderProduct) -->
+              <section class="form-section-card" aria-labelledby="heading-order-items">
+                <div class="form-section-header">
+                  <div class="section-title-wrapper">
+                    <div class="section-icon-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <path d="M16 10a4 4 0 0 1-8 0"></path>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="form-section-title" id="heading-order-items">3. Productos y Especificaciones *</h3>
+                      <p class="form-section-subtitle">Agregue los ítems requeridos, ajuste cantidades y defina especificaciones personalizadas</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Contenedor dinámico de filas de productos -->
+                <div class="order-items-list-container" id="order-items-list-container">
+                  <!-- Se inyectan las filas dinámicamente -->
+                </div>
+
+                <!-- Botón Agregar Línea de Producto -->
+                <div class="add-item-footer">
+                  <button type="button" class="btn btn-outline btn-add-product" id="btn-add-product-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>+ Agregar otro producto al pedido</span>
+                  </button>
+                </div>
+              </section>
+
+              <!-- 3. TARJETA: OBSERVACIONES Y NOTAS (Order.notes) -->
+              <section class="form-section-card" aria-labelledby="heading-order-notes">
+                <div class="form-section-header">
+                  <div class="section-title-wrapper">
+                    <div class="section-icon-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="form-section-title" id="heading-order-notes">4. Observaciones del Pedido</h3>
+                      <p class="form-section-subtitle">Instrucciones de entrega para el cliente y notas internas de fabricación</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-half">
+                    <label for="order-client-notes" class="form-label">Notas del Cliente / Entrega (Order.notes)</label>
+                    <textarea 
+                      id="order-client-notes" 
+                      class="form-textarea" 
+                      rows="3" 
+                      placeholder="Ej: Entregar en horario de oficina, contactar previamente por WhatsApp..."></textarea>
+                  </div>
+                  <div class="form-group col-half">
+                    <label for="order-internal-notes" class="form-label">Notas Internas para Taller / Fabricación</label>
+                    <textarea 
+                      id="order-internal-notes" 
+                      class="form-textarea" 
+                      rows="3" 
+                      placeholder="Ej: Revisar inventario de láminas calibre 16 antes de corte, prioridad alta..."></textarea>
+                  </div>
+                </div>
+              </section>
+
+            </div>
+
+            <!-- ================================================================
+                 COLUMNA LATERAL (DERECHA: RESUMEN FINANCIERO Y ESTADO INICIAL)
+                 ================================================================ -->
+            <div class="create-order-right-column">
+              
+              <!-- TARJETA: RESUMEN FINANCIERO EN VIVO (USD Y BS) -->
+              <section class="summary-sticky-card" aria-label="Resumen financiero del pedido">
+                <div class="summary-card-header">
+                  <h3 class="summary-title">Resumen Financiero</h3>
+                  <span class="currency-exchange-tag" id="live-exchange-rate-badge">
+                    BCV: 791,32 Bs/$
+                  </span>
+                </div>
+
+                <div class="summary-breakdown-list">
+                  <div class="summary-line">
+                    <span class="summary-label">Total Ítems:</span>
+                    <strong class="summary-val" id="summary-total-items-count">0 productos</strong>
+                  </div>
+
+                  <div class="summary-line">
+                    <span class="summary-label">Subtotal Pedido (USD):</span>
+                    <strong class="summary-val" id="summary-subtotal-usd">$0.00</strong>
+                  </div>
+
+                  <div class="summary-line-highlight">
+                    <span class="summary-label-large">Total a Pagar:</span>
+                    <div class="summary-price-group">
+                      <strong class="summary-total-usd text-primary" id="summary-total-price-usd">$0.00</strong>
+                      <span class="summary-total-bs" id="summary-total-price-bs">Bs. 0,00</span>
+                    </div>
+                  </div>
+
+                  <div class="payment-schedule-box">
+                    <div class="schedule-row">
+                      <div class="schedule-item">
+                        <span class="schedule-label">Abono Inicial (50%):</span>
+                        <strong class="schedule-amount-usd" id="summary-initial-usd">$0.00</strong>
+                        <span class="schedule-amount-bs" id="summary-initial-bs">Bs. 0,00</span>
+                      </div>
+                      <div class="schedule-divider"></div>
+                      <div class="schedule-item">
+                        <span class="schedule-label">Pago Final (50%):</span>
+                        <strong class="schedule-amount-usd" id="summary-final-usd">$0.00</strong>
+                        <span class="schedule-amount-bs" id="summary-final-bs">Bs. 0,00</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- TARJETA: ESTADO INICIAL DEL PEDIDO -->
+                <div class="order-status-selector-box">
+                  <label for="order-initial-status" class="form-label">Fase / Estado Inicial *</label>
+                  <select id="order-initial-status" class="form-select font-bold">
+                    <option value="pending_initial_payment" selected>1. Pendiente de pago inicial</option>
+                    <option value="initial_payment_review">2. Pago inicial en revisión</option>
+                    <option value="manufacturing">3. En fabricación</option>
+                    <option value="waiting_final_payment">4. Esperando pago final</option>
+                    <option value="final_payment_review">5. Pago final en revisión</option>
+                    <option value="shipped">6. Enviado</option>
+                    <option value="finalized">7. Finalizado</option>
+                  </select>
+                </div>
+
+                <!-- Botones Principales -->
+                <div class="summary-actions-group">
+                  <button type="submit" class="btn btn-primary btn-submit-full" id="btn-submit-order">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                      <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    <span>Guardar y Crear Pedido</span>
+                  </button>
+
+                  <a href="orders.html" class="btn btn-outline btn-cancel-full">
+                    <span>Cancelar</span>
+                  </a>
+                </div>
+              </section>
+
+            </div>
+
+          </div>
+        </form>
+
+      </div>
+    </main>
+
+    <!-- ======================================================================
+         FOOTER REUTILIZABLE
+         ====================================================================== -->
+    <footer id="admin-footer" class="admin-footer" role="contentinfo">
+      <div class="footer-container">
+        <div class="footer-left">
+          <span class="footer-copyright">
+            © <span id="footer-current-year">2026</span> <strong>TuEstante</strong>. Todos los derechos reservados.
+          </span>
+        </div>
+        <div class="footer-right">
+          <span class="footer-system-badge">
+            <span class="status-indicator-dot"></span>
+            Sistema Administrativo TuEstante OMS
+          </span>
+          <span class="footer-divider" aria-hidden="true">•</span>
+          <span class="footer-version">v1.0.0</span>
+          <span class="footer-divider" aria-hidden="true">•</span>
+          <a href="https://wa.me/584266272286" target="_blank" rel="noopener noreferrer" class="footer-link">Soporte Técnico</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ========================================================================
+       MODAL: REGISTRO RÁPIDO DE CLIENTE (QUICK CLIENT MODAL)
+       ======================================================================== -->
+  <div id="quick-client-modal-backdrop" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="quick-client-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="quick-client-title">Registrar Nuevo Cliente</h2>
+          <span class="modal-subtitle">Ingrese los datos de usuario para asociarlo al pedido</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-quick-client-modal" aria-label="Cerrar ventana">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="quick-client-form">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="quick-client-name" class="form-label">Nombre y Apellido *</label>
+              <input type="text" id="quick-client-name" class="form-input" placeholder="Ej: Roberto Blanco" required>
+            </div>
+            <div class="form-group col-half">
+              <label for="quick-client-username" class="form-label">Usuario / RIF *</label>
+              <input type="text" id="quick-client-username" class="form-input" placeholder="Ej: rblanco / V-18920111" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="quick-client-email" class="form-label">Correo Electrónico *</label>
+              <input type="email" id="quick-client-email" class="form-input" placeholder="cliente@correo.com" required>
+            </div>
+            <div class="form-group col-half">
+              <label for="quick-client-phone" class="form-label">Teléfono / WhatsApp *</label>
+              <input type="tel" id="quick-client-phone" class="form-input" placeholder="+58 412 123 4567" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-quick-client">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <span>Guardar y Seleccionar Cliente</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL DE CONFIRMACIÓN REUTILIZABLE (CONFIRMATION DIALOG)
+       ======================================================================== -->
+  <div id="confirmation-modal-backdrop" class="modal-backdrop modal-backdrop-confirm" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
+    <div class="modal-dialog modal-confirm-dialog">
+      <div class="confirm-dialog-body">
+        <div class="confirm-icon-wrapper" id="confirm-dialog-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+        </div>
+        <div class="confirm-text-group">
+          <h3 class="confirm-dialog-title" id="confirm-dialog-title">¿Confirmar y Crear Pedido?</h3>
+          <p class="confirm-dialog-desc" id="confirm-dialog-desc">Se generará la orden con los productos y especificaciones indicadas.</p>
+        </div>
+      </div>
+      <div class="confirm-dialog-footer">
+        <button type="button" class="btn btn-outline" id="btn-confirm-cancel">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-accept">Confirmar y Crear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts: Controlador de Creación de Pedido -->
+  <script type="module" src="order-create.js"></script>
+</body>
+</html>

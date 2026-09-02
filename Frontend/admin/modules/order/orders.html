@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedidos | TuEstante Admin</title>
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+  
+  <!-- Estilos del Módulo de Pedidos -->
+  <link rel="stylesheet" href="order.css">
+</head>
+<body>
+
+  <!-- ========================================================================
+       ESTRUCTURA PRINCIPAL DEL PANEL (APP-LAYOUT)
+       ======================================================================== -->
+  <div class="app-layout" id="app-layout">
+    
+    <!-- ======================================================================
+         BARRA DE NAVEGACIÓN SUPERIOR (NAVBAR REUTILIZABLE)
+         ====================================================================== -->
+    <header id="admin-navbar" class="admin-navbar" role="banner">
+      <!-- Sección Izquierda: Botón Hamburguesa + Título de Pantalla -->
+      <div class="navbar-left">
+        <button 
+          type="button" 
+          id="navbar-hamburger-btn" 
+          class="navbar-hamburger-btn" 
+          data-drawer-toggle="true" 
+          aria-label="Mostrar u ocultar menú lateral"
+          title="Mostrar menú lateral">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+
+        <div class="navbar-title-container">
+          <h1 class="navbar-screen-title" id="navbar-screen-title">Pedidos</h1>
+        </div>
+      </div>
+
+      <!-- Sección Derecha: Buscador, Notificaciones, Separador y Perfil -->
+      <div class="navbar-right">
+        <!-- Buscador / Icono -->
+        <div class="navbar-search-wrapper" id="navbar-search-wrapper">
+          <button type="button" class="navbar-icon-btn navbar-search-btn" id="navbar-search-toggle" aria-label="Abrir buscador" title="Buscar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+          
+          <div class="navbar-search-expand" id="navbar-search-expand">
+            <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+              type="search" 
+              id="navbar-search-input" 
+              class="navbar-search-input" 
+              placeholder="Buscar en el sistema..." 
+              aria-label="Buscar en el sistema">
+            <button type="button" class="search-field-close" id="navbar-search-close" aria-label="Cerrar buscador">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Notificaciones -->
+        <div class="navbar-notif-wrapper">
+          <a href="../notifications/notifications.html" class="navbar-icon-btn navbar-notif-btn" id="navbar-notif-btn" aria-label="Ver notificaciones" title="Notificaciones">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="navbar-badge" id="navbar-notif-badge" aria-label="5 notificaciones pendientes">5</span>
+          </a>
+        </div>
+
+        <div class="navbar-divider" aria-hidden="true"></div>
+
+        <!-- Perfil Dropdown -->
+        <div class="navbar-user-dropdown" id="navbar-user-dropdown">
+          <button 
+            type="button" 
+            class="navbar-user-btn" 
+            id="navbar-user-btn" 
+            aria-expanded="false" 
+            aria-haspopup="true" 
+            aria-label="Opciones de perfil de usuario">
+            <div class="navbar-avatar" id="navbar-user-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div class="navbar-user-meta">
+              <span class="navbar-user-name" id="navbar-user-name">Administrador</span>
+              <span class="navbar-user-email" id="navbar-user-email">admin@tienda.com</span>
+            </div>
+            <svg class="navbar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <div class="navbar-dropdown-card" id="navbar-dropdown-menu" role="menu" aria-label="Opciones de cuenta">
+            <div class="dropdown-card-header">
+              <span class="dropdown-tag">Sesión Activa</span>
+              <strong class="dropdown-name" id="dropdown-user-name">Administrador</strong>
+              <span class="dropdown-email" id="dropdown-user-email">admin@tienda.com</span>
+            </div>
+            <div class="dropdown-card-links">
+              <a href="../settings/profile.html" class="dropdown-card-item" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Mi Perfil</span>
+              </a>
+              <a href="../settings/settings.html" class="dropdown-card-item" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>Configuración</span>
+              </a>
+            </div>
+            <div class="dropdown-card-footer">
+              <button type="button" class="dropdown-card-item logout-link" id="navbar-logout-btn" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ======================================================================
+         CONTENIDO PRINCIPAL DEL MÓDULO DE PEDIDOS
+         ====================================================================== -->
+    <main class="app-main-content">
+      <div class="orders-module-container">
+        
+        <!-- 1. BARRA SUPERIOR DE FILTROS Y ACCIONES -->
+        <section class="orders-toolbar" aria-label="Filtros de pedidos">
+          <div class="toolbar-filters-group">
+            
+            <!-- Campo de Búsqueda -->
+            <div class="filter-search-box">
+              <input 
+                type="text" 
+                id="order-search-input" 
+                class="filter-input search-box-input" 
+                placeholder="Buscar pedido, cliente, email, teléfono..." 
+                aria-label="Buscar pedido por código, cliente, email o teléfono">
+              <svg class="search-box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+
+            <!-- Filtro de Estado -->
+            <div class="filter-select-wrapper">
+              <label for="order-status-select" class="filter-floating-label">Estado</label>
+              <select id="order-status-select" class="filter-select" aria-label="Filtrar por estado del pedido">
+                <option value="all">Todos</option>
+                <option value="manufacturing">En fabricación</option>
+                <option value="payment_review">Pago en revisión</option>
+                <option value="waiting_final_payment">Esperando pago final</option>
+                <option value="shipped">Enviado</option>
+                <option value="pending_payment">Pendiente de pago</option>
+                <option value="initial_review">Pago inicial en revisión</option>
+                <option value="completed">Finalizado</option>
+                <option value="refunded">Devuelto</option>
+              </select>
+              <svg class="select-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+
+            <!-- Filtro Fecha Desde -->
+            <div class="filter-date-wrapper">
+              <input 
+                type="date" 
+                id="order-date-from" 
+                class="filter-input date-input" 
+                aria-label="Fecha desde">
+              <span class="date-placeholder">Fecha desde</span>
+              <svg class="date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </div>
+
+            <!-- Filtro Fecha Hasta -->
+            <div class="filter-date-wrapper">
+              <input 
+                type="date" 
+                id="order-date-to" 
+                class="filter-input date-input" 
+                aria-label="Fecha hasta">
+              <span class="date-placeholder">Fecha hasta</span>
+              <svg class="date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </div>
+
+            <!-- Botón Limpiar Filtros -->
+            <button type="button" id="btn-clear-filters" class="btn btn-clear-filters" aria-label="Limpiar todos los filtros">
+              Limpiar filtros
+            </button>
+          </div>
+
+          <!-- Botón Crear Pedido (+ Crear pedido) -->
+          <div class="toolbar-actions-group">
+            <a href="order-create.html" id="btn-create-order" class="btn btn-create-order" aria-label="Crear nuevo pedido">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Crear pedido</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- 2. TABLA PRINCIPAL DE PEDIDOS -->
+        <section class="orders-table-card" aria-label="Listado de pedidos">
+          <div class="table-container">
+            <table class="orders-data-table" aria-label="Tabla completa de pedidos">
+              <thead>
+                <tr>
+                  <th scope="col" class="th-code">Pedido</th>
+                  <th scope="col" class="th-client">Cliente</th>
+                  <th scope="col" class="th-products">Productos</th>
+                  <th scope="col" class="th-total">Total</th>
+                  <th scope="col" class="th-payment">Pago</th>
+                  <th scope="col" class="th-status">Estado</th>
+                  <th scope="col" class="th-date">Fecha</th>
+                  <th scope="col" class="th-actions text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="orders-table-tbody">
+                <!-- Se renderiza dinámicamente desde order.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 3. PAGINADOR Y RESUMEN INFERIOR -->
+          <div class="orders-pagination-footer">
+            <div class="pagination-summary">
+              <span id="pagination-info-text">Mostrando 1 a 8 de 45 pedidos</span>
+            </div>
+
+            <nav class="pagination-controls" aria-label="Paginación de pedidos">
+              <button type="button" class="page-btn page-nav-btn" id="btn-page-prev" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Anterior</span>
+              </button>
+
+              <div class="page-numbers-container" id="pagination-numbers-container">
+                <!-- Se generan dinámicamente (1, 2, 3, 4, ..., 6) -->
+              </div>
+
+              <button type="button" class="page-btn page-nav-btn" id="btn-page-next">
+                <span>Siguiente</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </nav>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- ======================================================================
+         FOOTER SIMPLE REUTILIZABLE
+         ====================================================================== -->
+    <footer id="admin-footer" class="admin-footer" role="contentinfo">
+      <div class="footer-container">
+        <div class="footer-left">
+          <span class="footer-copyright">
+            © <span id="footer-current-year">2026</span> <strong>TuEstante</strong>. Todos los derechos reservados.
+          </span>
+        </div>
+        <div class="footer-right">
+          <span class="footer-system-badge">
+            <span class="status-indicator-dot"></span>
+            Sistema Administrativo TuEstante OMS
+          </span>
+          <span class="footer-divider" aria-hidden="true">•</span>
+          <span class="footer-version">v1.0.0</span>
+          <span class="footer-divider" aria-hidden="true">•</span>
+          <a href="https://wa.me/584266272286" target="_blank" rel="noopener noreferrer" class="footer-link">Soporte Técnico</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ========================================================================
+       MODAL: DETALLE Y PRODUCTOS DEL PEDIDO
+       ======================================================================== -->
+  <div id="order-details-modal-backdrop" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal-order-title">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <h2 class="modal-title" id="modal-order-title">Detalle del Pedido #00125</h2>
+          <span class="modal-subtitle" id="modal-order-date">Registrado el 31/08/2026 a las 10:30</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-details-modal" aria-label="Cerrar ventana">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Bloque de Información del Cliente y Estado -->
+        <div class="modal-meta-grid">
+          <div class="meta-box">
+            <span class="meta-box-label">Cliente</span>
+            <strong class="meta-box-val" id="modal-client-name">Juan Pérez</strong>
+            <span class="meta-box-sub" id="modal-client-email">juan@email.com</span>
+            <span class="meta-box-sub" id="modal-client-phone">+58 412 1234567</span>
+          </div>
+          <div class="meta-box">
+            <span class="meta-box-label">Estado de Fabricación</span>
+            <div id="modal-status-badge-container">
+              <span class="status-badge badge-manufacturing">En fabricación</span>
+            </div>
+          </div>
+          <div class="meta-box">
+            <span class="meta-box-label">Resumen de Pago</span>
+            <strong class="meta-box-val text-primary" id="modal-payment-summary">$175.00 / $350.00</strong>
+            <span class="meta-box-sub" id="modal-payment-stage">50% abonado y aprobado</span>
+          </div>
+        </div>
+
+        <!-- Tabla de Productos del Pedido -->
+        <div class="modal-products-section">
+          <h3 class="section-title">Productos incluidos en el pedido</h3>
+          <div class="modal-table-wrap">
+            <table class="modal-products-table">
+              <thead>
+                <tr>
+                  <th>Producto / Especificación</th>
+                  <th class="text-center">Cant.</th>
+                  <th class="text-right">Precio Unit.</th>
+                  <th class="text-right">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody id="modal-products-tbody">
+                <!-- Se inyecta dinámicamente -->
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" class="text-right font-bold">Total del Pedido:</td>
+                  <td class="text-right font-bold text-primary" id="modal-order-total-price">$350.00</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Notas del Pedido -->
+        <div class="modal-notes-section">
+          <span class="meta-box-label">Observaciones / Notas de Entrega:</span>
+          <p class="modal-notes-text" id="modal-order-notes">Entrega urgente requerida antes del viernes.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-modal-close-footer">Cerrar</button>
+        <a href="order-detail.html?id=${order.id}" class="btn btn-outline" id="btn-modal-full-detail">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          <span>Pantalla completa</span>
+        </a>
+        <button type="button" class="btn btn-primary" id="btn-modal-issue-mo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 20h20"></path>
+            <path d="M5 20V8l5 4V4l6 5v11"></path>
+          </svg>
+          <span>Emitir Orden de Fabricación</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: CREAR NUEVO PEDIDO (+ CREAR PEDIDO)
+       ======================================================================== -->
+  <div id="create-order-modal-backdrop" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal-create-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="modal-create-title">Registrar Nuevo Pedido</h2>
+          <span class="modal-subtitle">Ingrese los datos del cliente y los productos a fabricar</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-create-modal" aria-label="Cerrar ventana">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="create-order-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="create-client-select" class="form-label">Cliente *</label>
+            <select id="create-client-select" class="form-select" required>
+              <option value="">Seleccione un cliente...</option>
+              <option value="1">Juan Pérez (juan@email.com)</option>
+              <option value="2">María López (maria@email.com)</option>
+              <option value="3">Pedro Díaz (pedro@email.com)</option>
+              <option value="4">Ana Torres (ana@email.com)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="create-product-select" class="form-label">Producto *</label>
+            <select id="create-product-select" class="form-select" required>
+              <option value="">Seleccione un producto del catálogo...</option>
+              <option value="1" data-price="200.00">Estante Metálico Industrial 5 Niveles ($200.00)</option>
+              <option value="2" data-price="150.00">Casillero Locker 4 Puertas ($150.00)</option>
+              <option value="3" data-price="280.00">Gabinete Organizador de Herramientas ($280.00)</option>
+              <option value="4" data-price="450.00">Mesa de Trabajo de Acero ($450.00)</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="create-product-qty" class="form-label">Cantidad *</label>
+              <input type="number" id="create-product-qty" class="form-input" min="1" value="1" required>
+            </div>
+            <div class="form-group col-half">
+              <label for="create-order-total" class="form-label">Monto Estimado</label>
+              <input type="text" id="create-order-total" class="form-input text-primary font-bold" value="$200.00" readonly>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="create-order-notes" class="form-label">Notas / Instrucciones de Fabricación</label>
+            <textarea id="create-order-notes" class="form-textarea" rows="3" placeholder="Especificaciones de color, medidas especiales, cerraduras, etc."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-create-order">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <span>Guardar Pedido</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts: Controlador del Módulo de Pedidos -->
+  <script type="module" src="order.js"></script>
+</body>
+</html>
