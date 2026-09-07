@@ -2,7 +2,7 @@ from django.utils import timezone
 from rest_framework import viewsets
 
 from apps.user.api.permisos import IsAdmin
-from apps.user.api.serializers import UserSerializer
+from apps.user.api.serializers import UserSerializer, UserCreateSerializer
 from apps.user.models import User
 from apps.base.api import BaseViewSet
 
@@ -12,6 +12,11 @@ class UserViewSet(BaseViewSet):
 
     serializer_class = UserSerializer
     permission_classes = [IsAdmin]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserCreateSerializer
+        return UserSerializer
 
     def get_queryset(self):
         # Filtrar usuarios no eliminados lógicamente
@@ -26,6 +31,11 @@ class UserViewSet(BaseViewSet):
         if is_staff is not None:
             is_staff_normalized = is_staff.lower() in ["1", "true", "si", "yes"]
             queryset = queryset.filter(is_staff=is_staff_normalized)
+
+        is_registered = self.request.query_params.get("is_registered") or self.request.query_params.get("esta_registrado")
+        if is_registered is not None:
+            is_registered_normalized = is_registered.lower() in ["1", "true", "si", "yes"]
+            queryset = queryset.filter(is_registered=is_registered_normalized)
             
         return queryset
 

@@ -116,3 +116,282 @@ class SuperUserCreationTests(TestCase):
             User.objects.create_superuser(
                 username='fail3', email='f3@example.com', password='p', is_active=False
             )
+
+
+class UnregisteredUserTests(TestCase):
+    """Pruebas para usuarios no registrados y actualización automática en re-registro."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.admin_user = User.objects.create_superuser(
+            username='admin_unreg_test',
+            email='admin_unreg@example.com',
+            password='AdminPassword123!',
+            first_name='Admin',
+            first_last_name='Test'
+        )
+        self.client.force_authenticate(user=self.admin_user)
+
+    def test_create_unregistered_user_manager(self):
+        """Verifica la creación de un usuario no registrado mediante el CustomUserManager."""
+        user = User.objects.create_unregistered_user(
+            email='invitado@example.com',
+            first_name='Juan',
+            first_last_name='Pérez',
+            phone='+584121234567',
+            identity_document='V-10203040'
+        )
+
+        self.assertFalse(user.is_registered)
+        self.assertFalse(user.has_usable_password())
+        self.assertTrue(user.is_active)
+        self.assertEqual(user.username, 'invitado@example.com')
+        self.assertEqual(user.get_full_name(), 'Juan Pérez')
+
+    def test_create_unregistered_user_without_email(self):
+        """Verifica que se puede crear un usuario no registrado sin correo (usando documento de identidad)."""
+        user = User.objects.create_unregistered_user(
+            identity_document='V-99887766',
+            first_name='Carlos',
+            first_last_name='Gómez',
+            phone='+584149999999'
+        )
+
+        self.assertIsNone(user.email)
+        self.assertEqual(user.username, 'V-99887766')
+        self.assertFalse(user.is_registered)
+        self.assertFalse(user.has_usable_password())
+
+    def test_create_unregistered_user_without_email_or_document(self):
+        """Verifica que se genera un username único cuando no hay email ni documento."""
+        user = User.objects.create_unregistered_user(
+            first_name='Cliente',
+            first_last_name='Casual',
+            phone='+584241112233'
+        )
+
+        self.assertIsNone(user.email)
+        self.assertIsNone(user.identity_document)
+        self.assertTrue(user.username.startswith('user_'))
+        self.assertFalse(user.is_registered)
+
+    def test_api_create_unregistered_user(self):
+        """Verifica la creación de un usuario no registrado a través del endpoint API."""
+        response = self.client.post('/api/user/register/', {
+            'email': 'cliente_pos@example.com',
+            'first_name': 'Ana',
+            'first_last_name': 'Martínez',
+            'phone': '+584165555555',
+            'identity_document': 'V-33445566'
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn('user', response.data)
+        user_data = response.data['user']
+        self.assertEqual(user_data['email'], 'cliente_pos@example.com')
+        self.assertFalse(user_data['is_registered'])
+
+        created_user = User.objects.get(email='cliente_pos@example.com')
+        self.assertFalse(created_user.has_usable_password())
+        self.assertFalse(created_user.is_registered)
+
+    def test_api_reregister_unregistered_user_updates_data(self):
+        """
+        Verifica que al intentar registrar nuevamente un usuario no registrado existente
+        por email, en lugar de error se actualizan sus datos con los nuevos valores.
+        """
+        # Creación inicial
+        initial_user = User.objects.create_unregistered_user(
+            email='actualizar@example.com',
+            first_name='Pedro',
+            first_last_name='López',
+            phone='04140000000'
+        )
+
+        # Intento de segundo registro con datos actualizados
+        response = self.client.post('/api/user/register/', {
+            'email': 'actualizar@example.com',
+            'first_name': 'Pedro Antonio',
+            'second_name': 'José',
+            'first_last_name': 'López',
+            'second_last_name': 'Rivas',
+            'phone': '04149999999',
+            'identity_document': 'V-77889900'
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(User.objects.filter(email='actualizar@example.com').count(), 1)
+
+        updated_user = User.objects.get(email='actualizar@example.com')
+        self.assertEqual(updated_user.id, initial_user.id)
+        self.assertEqual(updated_user.first_name, 'Pedro Antonio')
+        self.assertEqual(updated_user.second_name, 'José')
+        self.assertEqual(updated_user.second_last_name, 'Rivas')
+        self.assertEqual(updated_user.phone, '04149999999')
+        self.assertEqual(updated_user.identity_document, 'V-77889900')
+
+    def test_api_reregister_by_identity_document_updates_data(self):
+        """Verifica que el re-registro identifica por documento de identidad y actualiza."""
+        user = User.objects.create_unregistered_user(
+            identity_document='V-55667788',
+            first_name='Laura',
+            phone='04121111111'
+        )
+
+        response = self.client.post('/api/user/register/', {
+            'identity_document': 'V-55667788',
+            'email': 'laura.nueva@example.com',
+            'first_name': 'Laura María',
+            'phone': '04122222222'
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(User.objects.filter(identity_document='V-55667788').count(), 1)
+
+        updated_user = User.objects.get(identity_document='V-55667788')
+        self.assertEqual(updated_user.id, user.id)
+        self.assertEqual(updated_user.email, 'laura.nueva@example.com')
+        self.assertEqual(updated_user.first_name, 'Laura María')
+        self.assertEqual(updated_user.phone, '04122222222')
+
+    def test_api_claim_unregistered_user_with_password(self):
+        """
+        Verifica que cuando un usuario no registrado se registra formalmente con contraseña,
+        se le asigna la contraseña, se actualizan sus datos y pasa a is_registered=True.
+        """
+        unreg_user = User.objects.create_unregistered_user(
+            email='migrar@example.com',
+            first_name='Marta',
+            first_last_name='Díaz'
+        )
+        self.assertFalse(unreg_user.is_registered)
+        self.assertFalse(unreg_user.has_usable_password())
+
+        response = self.client.post('/api/user/register/', {
+            'email': 'migrar@example.com',
+            'username': 'martadiaz',
+            'first_name': 'Marta Elena',
+            'password': 'PasswordSegura123!',
+            'confirm_password': 'PasswordSegura123!',
+            'phone': '04245554433'
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        claimed_user = User.objects.get(id=unreg_user.id)
+        self.assertTrue(claimed_user.is_registered)
+        self.assertTrue(claimed_user.has_usable_password())
+        self.assertTrue(claimed_user.check_password('PasswordSegura123!'))
+        self.assertEqual(claimed_user.first_name, 'Marta Elena')
+        self.assertEqual(claimed_user.username, 'martadiaz')
+
+    def test_api_reregister_soft_deleted_user_restores_and_updates(self):
+        """Verifica que un usuario borrado lógicamente es restaurado y actualizado al registrarse de nuevo."""
+        deleted_user = User.objects.create_unregistered_user(
+            email='borrado@example.com',
+            first_name='Borrado',
+            first_last_name='Inicial'
+        )
+        deleted_user.delete()
+        self.assertTrue(deleted_user.is_deleted)
+
+        response = self.client.post('/api/user/register/', {
+            'email': 'borrado@example.com',
+            'first_name': 'Restaurado',
+            'first_last_name': 'Nuevo'
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        restored = User.objects.get(email='borrado@example.com')
+        self.assertFalse(restored.is_deleted)
+        self.assertIsNone(restored.deleted_at)
+        self.assertEqual(restored.first_name, 'Restaurado')
+
+    def test_api_cross_user_conflict_validation(self):
+        """Verifica que si se envían identificadores que pertenecen a 2 usuarios distintos se lance error."""
+        User.objects.create_unregistered_user(
+            email='user1@example.com',
+            identity_document='V-11111111'
+        )
+        User.objects.create_unregistered_user(
+            email='user2@example.com',
+            identity_document='V-22222222'
+        )
+
+        response = self.client.post('/api/user/register/', {
+            'email': 'user1@example.com',
+            'identity_document': 'V-22222222',
+            'first_name': 'Conflicto'
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('identity_document', response.data)
+
+    def test_unregistered_user_cannot_login(self):
+        """Verifica que un usuario no registrado (sin contraseña utilizable) no puede iniciar sesión."""
+        User.objects.create_unregistered_user(
+            email='sinpassword@example.com',
+            first_name='Sin',
+            first_last_name='Password'
+        )
+
+        self.client.logout()
+        response = self.client.post('/api/user/login/', {
+            'email': 'sinpassword@example.com',
+            'password': 'AnyPassword123!'
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_viewset_create_and_reregister(self):
+        """Verifica que el UserViewSet (/api/user/) permite crear y re-registrar/actualizar usuarios no registrados."""
+        # 1. Crear usuario no registrado vía /api/user/
+        response1 = self.client.post('/api/user/', {
+            'email': 'viewset_unreg@example.com',
+            'first_name': 'Cliente',
+            'first_last_name': 'ViewSet',
+            'phone': '123456789'
+        }, format='json')
+
+        self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
+        self.assertFalse(response1.data['is_registered'])
+        user_id = response1.data['id']
+
+        # 2. Re-registrar vía /api/user/ con nuevos datos
+        response2 = self.client.post('/api/user/', {
+            'email': 'viewset_unreg@example.com',
+            'first_name': 'Cliente Modificado',
+            'phone': '987654321'
+        }, format='json')
+
+        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response2.data['id'], user_id)
+        self.assertEqual(response2.data['first_name'], 'Cliente Modificado')
+        self.assertEqual(response2.data['phone'], '987654321')
+
+    def test_user_viewset_filter_by_is_registered(self):
+        """Verifica el filtro de usuarios por is_registered en /api/user/."""
+        User.objects.create_unregistered_user(
+            email='unregistered_list@example.com',
+            first_name='Unreg'
+        )
+        User.objects.create_user(
+            username='registered_list',
+            email='registered_list@example.com',
+            password='Password123!'
+        )
+
+        # Filtrar no registrados
+        res_unreg = self.client.get('/api/user/?is_registered=false')
+        self.assertEqual(res_unreg.status_code, status.HTTP_200_OK)
+        results = res_unreg.data if isinstance(res_unreg.data, list) else res_unreg.data.get('results', [])
+        emails = [u['email'] for u in results]
+        self.assertIn('unregistered_list@example.com', emails)
+        self.assertNotIn('registered_list@example.com', emails)
+
+        # Filtrar registrados
+        res_reg = self.client.get('/api/user/?is_registered=true')
+        self.assertEqual(res_reg.status_code, status.HTTP_200_OK)
+        results_reg = res_reg.data if isinstance(res_reg.data, list) else res_reg.data.get('results', [])
+        emails_reg = [u['email'] for u in results_reg]
+        self.assertIn('registered_list@example.com', emails_reg)
+        self.assertNotIn('unregistered_list@example.com', emails_reg)

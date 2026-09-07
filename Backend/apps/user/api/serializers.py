@@ -27,6 +27,7 @@ class UserSerializer(serializers.ModelSerializer):
             "is_active",
             "is_staff",
             "is_superuser",
+            "is_registered",
             "date_joined",
             "is_deleted",
             "created_at",
@@ -35,14 +36,14 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_full_name(self, obj):
         """Obtiene el nombre completo del usuario."""
-        return obj.get_full_name() or obj.username
+        return obj.get_full_name() or obj.username or ''
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    """Serializador para crear usuarios (clientes o administradores)."""
+    """Serializador para crear o actualizar usuarios (registrados o no registrados)."""
 
     username = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    email = serializers.EmailField(allow_blank=True, required=False)
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
     first_name = serializers.CharField(allow_blank=True, required=False)
     second_name = serializers.CharField(allow_blank=True, required=False)
     first_last_name = serializers.CharField(allow_blank=True, required=False)
@@ -52,19 +53,23 @@ class UserCreateSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(allow_blank=True, required=False)
     password = serializers.CharField(
         write_only=True,
-        required=True,
-        validators=[validate_password],
+        required=False,
+        allow_blank=True,
+        allow_null=True,
         style={"input_type": "password"},
     )
     confirm_password = serializers.CharField(
-        write_only=True, required=True, style={"input_type": "password"}
+        write_only=True, required=False, allow_blank=True, allow_null=True, style={"input_type": "password"}
     )
     is_staff = serializers.BooleanField(required=False, default=False)
+    is_superuser = serializers.BooleanField(required=False, default=False)
     is_active = serializers.BooleanField(required=False, default=True)
+    is_registered = serializers.BooleanField(required=False)
 
     class Meta:
         model = User
         fields = [
+            "id",
             "username",
             "email",
             "first_name",
@@ -77,38 +82,126 @@ class UserCreateSerializer(serializers.ModelSerializer):
             "password",
             "confirm_password",
             "is_staff",
+            "is_superuser",
             "is_active",
+            "is_registered",
         ]
+        read_only_fields = ["id"]
+        extra_kwargs = {
+            "username": {"validators": []},
+            "email": {"validators": []},
+            "identity_document": {"validators": []},
+        }
 
     def validate(self, attrs):
-        if attrs.get("password") != attrs.get("confirm_password"):
-            raise serializers.ValidationError({"password": "Las contraseñas no coinciden."})
+        password = attrs.get("password")
+        confirm_password = attrs.get("confirm_password")
+        is_staff = attrs.get("is_staff", False)
+        is_superuser = attrs.get("is_superuser", False)
+
+        # Si se envía alguna contraseña, validar coincidencia y complejidad
+        if password or confirm_password:
+            if password != confirm_password:
+                raise serializers.ValidationError({"password": "Las contraseñas no coinciden."})
+            validate_password(password)
 
         username = attrs.get("username")
         email = attrs.get("email")
-        is_staff = attrs.get("is_staff", False)
+        identity_document = attrs.get("identity_document")
 
-        # Si no se recibe username y el usuario no es administrador, reemplazar username por email
-        if not username or not str(username).strip():
-            if not is_staff:
-                if not email or not str(email).strip():
-                    raise serializers.ValidationError(
-                        {"email": "El correo electrónico es requerido cuando no se proporciona nombre de usuario."}
-                    )
-                attrs["username"] = email
-            else:
+        if is_staff or is_superuser:
+            if not username or not str(username).strip():
                 raise serializers.ValidationError(
                     {"username": "El nombre de usuario es requerido para administradores."}
                 )
+            if not password:
+                raise serializers.ValidationError(
+                    {"password": "La contraseña es requerida para administradores."}
+                )
+
+        # Validar conflictos cruzados entre usuarios distintos
+        user_by_email = None
+        user_by_doc = None
+        user_by_username = None
+
+        if email and str(email).strip():
+            user_by_email = User.objects.filter(email__iexact=str(email).strip()).first()
+        if identity_document and str(identity_document).strip():
+            user_by_doc = User.objects.filter(identity_document__iexact=str(identity_document).strip()).first()
+        if username and str(username).strip():
+            user_by_username = User.objects.filter(username__iexact=str(username).strip()).first()
+
+        if user_by_email and user_by_doc and user_by_email.id != user_by_doc.id:
+            raise serializers.ValidationError(
+                {"identity_document": "El documento de identidad ya pertenece a otra cuenta distinta al correo proporcionado."}
+            )
+
+        if user_by_username and user_by_email and user_by_username.id != user_by_email.id:
+            raise serializers.ValidationError(
+                {"username": "El nombre de usuario ya pertenece a otra cuenta."}
+            )
+
+        if user_by_username and user_by_doc and user_by_username.id != user_by_doc.id:
+            raise serializers.ValidationError(
+                {"username": "El nombre de usuario ya pertenece a otra cuenta."}
+            )
 
         return attrs
-
 
     def create(self, validated_data):
         validated_data.pop("confirm_password", None)
         password = validated_data.pop("password", None)
-        user = User.objects.create_user(password=password, **validated_data)
-        return user
+
+        email = validated_data.get("email")
+        identity_document = validated_data.get("identity_document")
+        username = validated_data.get("username")
+
+        # Buscar si ya existe el usuario por email, documento de identidad o username
+        existing_user = None
+        if email and str(email).strip():
+            existing_user = User.objects.filter(email__iexact=str(email).strip()).first()
+        if not existing_user and identity_document and str(identity_document).strip():
+            existing_user = User.objects.filter(identity_document__iexact=str(identity_document).strip()).first()
+        if not existing_user and username and str(username).strip():
+            existing_user = User.objects.filter(username__iexact=str(username).strip()).first()
+
+        if existing_user:
+            # Restaurar si estaba borrado lógicamente
+            if existing_user.is_deleted:
+                existing_user.is_deleted = False
+                existing_user.deleted_at = None
+                existing_user.is_active = True
+
+            # Actualizar datos con los nuevos valores provistos
+            for key, val in validated_data.items():
+                if val is not None and val != '':
+                    setattr(existing_user, key, val)
+
+            if password:
+                existing_user.set_password(password)
+                existing_user.is_registered = True
+            elif 'is_registered' in validated_data:
+                existing_user.is_registered = validated_data['is_registered']
+            elif not existing_user.has_usable_password():
+                existing_user.is_registered = False
+
+            if 'is_active' in validated_data:
+                existing_user.is_active = validated_data['is_active']
+            elif not existing_user.is_active:
+                existing_user.is_active = True
+
+            existing_user.save()
+            return existing_user
+        else:
+            # Crear nuevo usuario
+            if password:
+                validated_data.setdefault('is_registered', True)
+            else:
+                validated_data.setdefault('is_registered', False)
+                validated_data.setdefault('is_active', True)
+
+            user = User.objects.create_user(password=password, **validated_data)
+            return user
 
 
 

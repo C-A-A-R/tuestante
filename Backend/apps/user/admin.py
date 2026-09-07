@@ -8,10 +8,10 @@ from apps.base.admin import BaseAdmin
 
 
 class UserCreationForm(forms.ModelForm):
-    """Formulario de creación para el admin (con confirmación de contraseña)."""
+    """Formulario de creación para el admin (con soporte para usuarios sin contraseña)."""
 
-    password1 = forms.CharField(label="Contraseña", widget=forms.PasswordInput)
-    password2 = forms.CharField(label="Confirmar contraseña", widget=forms.PasswordInput)
+    password1 = forms.CharField(label="Contraseña", widget=forms.PasswordInput, required=False)
+    password2 = forms.CharField(label="Confirmar contraseña", widget=forms.PasswordInput, required=False)
 
     class Meta:
         model = User
@@ -24,6 +24,10 @@ class UserCreationForm(forms.ModelForm):
             "second_last_name",
             "identity_document",
             "phone",
+            "is_registered",
+            "is_active",
+            "is_staff",
+            "is_superuser",
         )
 
     def clean_password2(self):
@@ -31,11 +35,20 @@ class UserCreationForm(forms.ModelForm):
         p2 = self.cleaned_data.get("password2")
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError("Las contraseñas no coinciden")
+        if (p1 and not p2) or (p2 and not p1):
+            raise forms.ValidationError("Debe ingresar y confirmar la contraseña")
         return p2
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password1"])
+        p1 = self.cleaned_data.get("password1")
+        if p1:
+            user.set_password(p1)
+            user.is_registered = True
+        else:
+            user.set_unusable_password()
+            if 'is_registered' not in self.cleaned_data:
+                user.is_registered = False
         if commit:
             user.save()
         return user
@@ -70,6 +83,7 @@ class UserAdmin(BaseAdmin, DjangoUserAdmin):
         "first_last_name",
         "identity_document",
         "phone",
+        "is_registered",
         "is_active",
         "is_staff",
         "is_superuser",
@@ -94,9 +108,10 @@ class UserAdmin(BaseAdmin, DjangoUserAdmin):
             },
         ),
         (
-            "Permisos",
+            "Permisos y Estado",
             {
                 "fields": (
+                    "is_registered",
                     "is_active",
                     "is_staff",
                     "is_superuser",
@@ -124,6 +139,7 @@ class UserAdmin(BaseAdmin, DjangoUserAdmin):
                     "phone",
                     "password1",
                     "password2",
+                    "is_registered",
                     "is_active",
                     "is_staff",
                     "is_superuser",
@@ -140,5 +156,5 @@ class UserAdmin(BaseAdmin, DjangoUserAdmin):
         "identity_document",
         "phone",
     ]
-    list_filter = ["is_active", "is_staff", "is_superuser", "is_deleted", "created_at"]
+    list_filter = ["is_registered", "is_active", "is_staff", "is_superuser", "is_deleted", "created_at"]
     ordering = ["-date_joined"]

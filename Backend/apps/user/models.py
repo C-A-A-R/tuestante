@@ -11,12 +11,53 @@ class CustomUserManager(UserManager):
     def create_user(self, username=None, email=None, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', False)
         extra_fields.setdefault('is_superuser', False)
-        return self._create_user(username, email, password, **extra_fields)
+        if 'is_registered' not in extra_fields:
+            extra_fields['is_registered'] = bool(password)
+        if not password and 'is_active' not in extra_fields:
+            extra_fields['is_active'] = True
+
+        if email:
+            email = self.normalize_email(email)
+
+        if not username:
+            if email:
+                username = email
+            elif extra_fields.get('identity_document'):
+                username = extra_fields.get('identity_document')
+            else:
+                import uuid
+                username = f"user_{uuid.uuid4().hex[:10]}"
+
+        user = self.model(username=username, email=email, **extra_fields)
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
+        user.save(using=self._db)
+        return user
+
+    def create_unregistered_user(self, email=None, first_name='', first_last_name='', identity_document=None, phone='', **extra_fields):
+        """Crea un usuario no registrado con información básica."""
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
+        extra_fields.setdefault('is_active', True)
+        extra_fields['is_registered'] = False
+        return self.create_user(
+            username=None,
+            email=email,
+            password=None,
+            first_name=first_name,
+            first_last_name=first_last_name,
+            identity_document=identity_document,
+            phone=phone,
+            **extra_fields
+        )
 
     def create_superuser(self, username=None, email=None, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('is_registered', True)
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('El superusuario debe tener is_staff=True.')
@@ -36,11 +77,15 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         'Nombre de usuario',
         max_length=150,
         unique=True,
-        help_text='Requerido. 150 caracteres o menos. Solo letras, dígitos y @/./+/-/_'
+        null=True,
+        blank=True,
+        help_text='150 caracteres o menos. Opcional para usuarios no registrados.'
     )
     email = models.EmailField(
         'Correo electrónico',
         unique=True,
+        null=True,
+        blank=True,
         help_text='Correo electrónico único del usuario'
     )
     
@@ -59,6 +104,11 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         'Está activo',
         default=False,
         help_text='Indica si el usuario debe ser tratado como activo'
+    )
+    is_registered = models.BooleanField(
+        'Está registrado',
+        default=True,
+        help_text='Indica si el usuario completó su registro formal con contraseña o es un usuario no registrado'
     )
     
     # Campos de fechas
@@ -133,7 +183,7 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
 
     def __str__(self):
         """String representation of User."""
-        return f"{self.username} - {self.get_full_name() or self.email}"
+        return f"{self.username or self.identity_document or self.id} - {self.get_full_name() or self.email or 'Sin nombre'}"
 
     def get_full_name(self):
         """Retorna el nombre completo del usuario concatenando nombres y apellidos."""
@@ -144,16 +194,31 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
             self.second_last_name,
         ]
         full_name = " ".join(part for part in name_parts if part)
-        return full_name or self.username
+        return full_name or self.username or ''
 
     def get_short_name(self):
         """Retorna el nombre corto del usuario."""
-        return self.first_name or self.username
+        return self.first_name or self.username or ''
 
     def save(self, *args, **kwargs):
-        """Si no se especifica username y el usuario no es staff/superuser, se asigna su email como username."""
-        if not self.username and not self.is_staff and not self.is_superuser and self.email:
-            self.username = self.email
+        """Normaliza datos y asigna username si no se especifica."""
+        import uuid
+
+        if self.email == '':
+            self.email = None
+        if self.identity_document == '':
+            self.identity_document = None
+        if self.username == '':
+            self.username = None
+
+        if not self.username and not self.is_staff and not self.is_superuser:
+            if self.email:
+                self.username = self.email
+            elif self.identity_document:
+                self.username = self.identity_document
+            else:
+                self.username = f"user_{uuid.uuid4().hex[:10]}"
+
         super().save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
