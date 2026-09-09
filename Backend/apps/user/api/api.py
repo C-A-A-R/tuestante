@@ -12,6 +12,17 @@ class UserViewSet(BaseViewSet):
 
     serializer_class = UserSerializer
     permission_classes = [IsAdmin]
+    search_fields = [
+        'username',
+        'email',
+        'first_name',
+        'first_last_name',
+        'second_name',
+        'second_last_name',
+        'identity_document',
+        'phone',
+    ]
+    ordering_fields = ['username', 'email', 'date_joined', 'created_at', 'id']
 
     def get_serializer_class(self):
         if self.action == 'create':

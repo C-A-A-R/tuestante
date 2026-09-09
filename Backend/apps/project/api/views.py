@@ -11,6 +11,8 @@ class ProjectViewSet(BaseViewSet):
     - Creación/Edición/Eliminación: restringido a usuarios administradores.
     """
     serializer_class = ProjectSerializer
+    search_fields = ['project_name', 'description']
+    ordering_fields = ['created_at', 'project_name', 'id']
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:

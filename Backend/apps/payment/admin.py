@@ -46,7 +46,11 @@ class PaymentAdmin(BaseAdmin):
 
             # Avanzar automáticamente el estado del pedido correspondiente
             order = payment.order
-            if payment.payment_stage == 'initial' and order.status in ['pending_initial_payment', 'initial_payment_review']:
+            if payment.payment_stage == 'total':
+                order.status = 'shipped'
+                order.save()
+                create_invoice_for_order(order)
+            elif payment.payment_stage == 'initial' and order.status in ['pending_initial_payment', 'initial_payment_review']:
                 order.status = 'manufacturing'
                 order.save()
             elif payment.payment_stage == 'final' and order.status in ['waiting_final_payment', 'final_payment_review']:

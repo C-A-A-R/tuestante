@@ -18,6 +18,16 @@ class PaymentViewSet(BaseViewSet):
     """
 
     serializer_class = PaymentSerializer
+    search_fields = [
+        'reference_number',
+        'order__order_number',
+        'order__user__username',
+        'order__user__first_name',
+        'order__user__last_name',
+        'order__user__email',
+        'notes'
+    ]
+    ordering_fields = ['created_at', 'amount', 'status', 'id']
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'create']:
@@ -28,11 +38,38 @@ class PaymentViewSet(BaseViewSet):
         """
         Retorna el queryset optimizado de pagos no eliminados.
         - Filtra por el usuario autenticado a menos que sea personal/admin.
+        - Soporta filtros por estado, etapa, método y pedido.
         """
-        queryset = Payment.objects.filter(is_deleted=False).select_related('order__user', 'reviewed_by')
+        queryset = Payment.objects.filter(
+            is_deleted=False,
+            order__is_deleted=False
+        ).select_related('order__user', 'reviewed_by')
 
         if not (self.request.user and self.request.user.is_staff):
             queryset = queryset.filter(order__user=self.request.user)
+        else:
+            user_param = self.request.query_params.get('user_id') or self.request.query_params.get('user')
+            if user_param:
+                if str(user_param).isdigit():
+                    queryset = queryset.filter(order__user_id=int(user_param))
+                else:
+                    queryset = queryset.filter(order__user__username=user_param)
+
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+
+        stage_param = self.request.query_params.get('payment_stage') or self.request.query_params.get('stage')
+        if stage_param:
+            queryset = queryset.filter(payment_stage=stage_param)
+
+        method_param = self.request.query_params.get('payment_method') or self.request.query_params.get('method')
+        if method_param:
+            queryset = queryset.filter(payment_method=method_param)
+
+        order_param = self.request.query_params.get('order_id') or self.request.query_params.get('order')
+        if order_param:
+            queryset = queryset.filter(order_id=order_param)
 
         return queryset
 
@@ -43,7 +80,7 @@ class PaymentViewSet(BaseViewSet):
             order = payment.order
             
             # Al subir el pago, pasamos el pedido al estado de revisión correspondiente
-            if payment.payment_stage == 'initial':
+            if payment.payment_stage in ['initial', 'total']:
                 order.status = 'initial_payment_review'
             else:
                 order.status = 'final_payment_review'
@@ -78,7 +115,10 @@ class PaymentViewSet(BaseViewSet):
 
         if review_status == 'approved':
             payment.rejection_reason = None
-            if payment.payment_stage == 'initial':
+            if payment.payment_stage == 'total':
+                order.status = 'shipped'
+                create_invoice_for_order(order)
+            elif payment.payment_stage == 'initial':
                 order.status = 'manufacturing'
             else:
                 order.status = 'shipped'
@@ -86,7 +126,7 @@ class PaymentViewSet(BaseViewSet):
         else:  # rejected
             payment.rejection_reason = rejection_reason or "Rechazado por administración"
             # Si el pago es rechazado, devolvemos el pedido a pendiente de pago
-            if payment.payment_stage == 'initial':
+            if payment.payment_stage in ['initial', 'total']:
                 order.status = 'pending_initial_payment'
             else:
                 order.status = 'waiting_final_payment'

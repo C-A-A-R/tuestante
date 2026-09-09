@@ -39,6 +39,7 @@ urlpatterns = [
     path('api/', include('apps.shipment.api.routers')),
     path('api/', include('apps.notification.api.routers')),
     path('api/', include('apps.invoice.api.routers')),
+    path('api/employee-store/', include('apps.employee_store.api.routers')),
 ]
 
 

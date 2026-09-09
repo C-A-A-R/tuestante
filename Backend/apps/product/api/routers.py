@@ -1,7 +1,6 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 from apps.product.api.views import (
-    CategoryViewSet,
     ProductTypeViewSet,
     ProductViewSet,
     FeaturedProductsAPIView,
@@ -13,7 +12,6 @@ from apps.product.api.views import (
 
 router = DefaultRouter()
 
-router.register(r'categories', CategoryViewSet, basename='categories')
 router.register(r'product-types', ProductTypeViewSet, basename='product-types')
 router.register(r'products', ProductViewSet, basename='products')
 

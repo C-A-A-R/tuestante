@@ -25,6 +25,20 @@ IMAGE_MAX_HEIGHT = 1920         # px – alto máximo permitido
 IMAGE_QUALITY = 82              # 0-95  (JPEG / WEBP quality)
 IMAGE_OUTPUT_FORMAT = 'WEBP'    # JPEG | WEBP  (recomendado WEBP: mejor ratio)
 IMAGE_OUTPUT_EXT = 'webp'       # extensión del archivo de salida
+IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif', '.tiff')
+
+
+def is_image_file(file_field):
+    """
+    Verifica si un FileField o ImageField contiene un archivo de tipo imagen
+    según su extensión.
+    """
+    if not file_field:
+        return False
+    name = getattr(file_field, 'name', '') or getattr(getattr(file_field, 'file', None), 'name', '')
+    if not name:
+        return False
+    return str(name).lower().endswith(IMAGE_EXTENSIONS)
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +77,7 @@ def rename_image_upload_to(instance, filename, folder_name=None):
 
 def compress_and_save_image(image_field, folder_name=None, max_width=IMAGE_MAX_WIDTH,
                              max_height=IMAGE_MAX_HEIGHT, quality=IMAGE_QUALITY,
-                             output_format=IMAGE_OUTPUT_FORMAT):
+                             output_format=IMAGE_OUTPUT_FORMAT, force=False):
     """
     Comprime y redimensiona la imagen almacenada en un ``ImageField`` (o
     cualquier ``FileField`` que contenga una imagen).
@@ -73,9 +87,9 @@ def compress_and_save_image(image_field, folder_name=None, max_width=IMAGE_MAX_W
     comprimida y descarte la original sin dejar archivos huérfanos ni dobles
     escrituras en disco.
 
-    Si se llama después de ``super().save()`` o sobre un archivo ya guardado
-    (cuando ``_committed`` es ``True``), sobrescribe en el almacenamiento la ruta
-    actual con la imagen comprimida.
+    Si el archivo ya fue guardado en almacenamiento (_committed == True) y no
+    ha cambiado, omite la compresión a menos que force=True, evitando cuellos
+    de botella en re-escrituras cíclicas.
 
     :param image_field:  Instancia de ``ImageFieldFile`` (ej. ``instance.category_image``).
     :param folder_name:  Nombre del directorio personalizado (opcional).
@@ -83,6 +97,7 @@ def compress_and_save_image(image_field, folder_name=None, max_width=IMAGE_MAX_W
     :param max_height:   Alto máximo en píxeles.
     :param quality:      Calidad de compresión (0-95).
     :param output_format: Formato Pillow de salida ('JPEG', 'WEBP', etc.).
+    :param force:        Forzar re-compresión aún si el archivo ya fue guardado.
     :returns:            ``True`` si se realizó la compresión, ``False`` en caso contrario.
     """
     if not image_field:
@@ -95,6 +110,10 @@ def compress_and_save_image(image_field, folder_name=None, max_width=IMAGE_MAX_W
         return False
 
     is_committed = getattr(image_field, '_committed', True)
+
+    # Si el archivo ya está en disco y no se fuerza re-compresión, evitar cuello de botella
+    if is_committed and not force:
+        return False
 
     try:
         image_field.open()

@@ -1,32 +1,23 @@
 from django.utils import timezone
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Prefetch
 from rest_framework import status, generics, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from apps.base.api import BaseViewSet
-from apps.product.models import Category, ProductType, Product, FavoriteProduct
+from apps.product.models import (
+    ProductType,
+    Product,
+    ProductColorImage,
+    ProductAngleImage,
+    FavoriteProduct
+)
 from apps.product.api.serializers import (
-    CategorySerializer,
     ProductTypeSerializer,
     ProductSerializer,
     FavoriteProductSerializer
 )
-
-
-class CategoryViewSet(BaseViewSet):
-    """
-    ViewSet para la gestión CRUD de Categorías.
-    - Lectura pública.
-    - Creación/Edición/Eliminación: restringido a usuarios administradores.
-    """
-    serializer_class = CategorySerializer
-
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [permissions.AllowAny()]
-        return [permissions.IsAdminUser()]
 
 
 class ProductTypeViewSet(BaseViewSet):
@@ -36,6 +27,8 @@ class ProductTypeViewSet(BaseViewSet):
     - Creación/Edición/Eliminación: restringido a usuarios administradores.
     """
     serializer_class = ProductTypeSerializer
+    search_fields = ['product_type_name', 'description']
+    ordering_fields = ['product_type_name', 'created_at', 'id']
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -45,7 +38,7 @@ class ProductTypeViewSet(BaseViewSet):
 
 class FeaturedProductsAPIView(generics.ListAPIView):
     """
-    APIView dedicada para obtener únicamente los productos destacados (is_feature_product=True).
+    APIView dedicada para obtener únicamente los productos destacados (is_feature_product=True y is_active=True).
     """
     serializer_class = ProductSerializer
     permission_classes = [permissions.AllowAny]
@@ -63,11 +56,12 @@ class FeaturedProductsAPIView(generics.ListAPIView):
     def get_queryset(self):
         queryset = Product.objects.filter(
             is_deleted=False,
+            is_active=True,
+            product_type__is_deleted=False,
             is_feature_product=True
         ).prefetch_related(
-            'categories',
-            'color_images',
-            'angle_images'
+            Prefetch('color_images', queryset=ProductColorImage.objects.filter(is_deleted=False)),
+            Prefetch('angle_images', queryset=ProductAngleImage.objects.filter(is_deleted=False))
         ).select_related('product_type').annotate(
             favorites_count=Count('favorites', filter=Q(favorites__is_deleted=False), distinct=True)
         )
@@ -121,9 +115,9 @@ class FeaturedProductsLeastFavoritesAPIView(generics.ListAPIView):
     def get_queryset(self):
         return Product.objects.filter(
             is_deleted=False,
+            is_active=True,
             is_feature_product=True
         ).prefetch_related(
-            'categories',
             'color_images',
             'angle_images'
         ).select_related('product_type').annotate(
@@ -131,14 +125,15 @@ class FeaturedProductsLeastFavoritesAPIView(generics.ListAPIView):
         ).order_by('favorites_count', '-created_at', '-id')
 
 
-
 class ProductViewSet(BaseViewSet):
     """
     ViewSet para la gestión CRUD de Productos.
-    - Lectura pública.
+    - Lectura pública (por defecto solo productos activos para usuarios comunes).
     - Creación/Edición/Eliminación: restringido a usuarios administradores.
     """
     serializer_class = ProductSerializer
+    search_fields = ['product_name', 'description', 'security', 'product_type__product_type_name']
+    ordering_fields = ['product_name', 'price', 'created_at', 'quantity', 'favorites_count', 'id']
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'featured']:
@@ -157,21 +152,38 @@ class ProductViewSet(BaseViewSet):
         return context
 
     def get_queryset(self):
-        queryset = Product.objects.filter(is_deleted=False).prefetch_related(
-            'categories',
-            'color_images',
-            'angle_images'
+        queryset = Product.objects.filter(
+            is_deleted=False,
+            product_type__is_deleted=False
+        ).prefetch_related(
+            Prefetch('color_images', queryset=ProductColorImage.objects.filter(is_deleted=False)),
+            Prefetch('angle_images', queryset=ProductAngleImage.objects.filter(is_deleted=False))
         ).select_related('product_type').annotate(
             favorites_count=Count('favorites', filter=Q(favorites__is_deleted=False), distinct=True)
         )
 
-        cat_param = self.request.query_params.get('category') or self.request.query_params.get('cat')
-        type_param = self.request.query_params.get('type') or self.request.query_params.get('product_type')
+        # Filtro de activación: Por defecto solo activos para clientes públicos
+        if not (self.request.user and self.request.user.is_staff):
+            queryset = queryset.filter(is_active=True)
+        else:
+            is_active_param = self.request.query_params.get('is_active')
+            if is_active_param is not None:
+                if is_active_param.lower() in ['true', '1', 'yes']:
+                    queryset = queryset.filter(is_active=True)
+                elif is_active_param.lower() in ['false', '0', 'no']:
+                    queryset = queryset.filter(is_active=False)
 
-        if cat_param and cat_param.lower() != 'all':
-            queryset = queryset.filter(categories__id=cat_param)
+        # Filtro por tipo de producto
+        type_param = self.request.query_params.get('type') or self.request.query_params.get('product_type')
         if type_param and type_param.lower() != 'all':
             queryset = queryset.filter(product_type__id=type_param)
+
+        # Filtro por Outlet
+        outlet_param = self.request.query_params.get('outlet') or self.request.query_params.get('is_outlet')
+        if outlet_param is not None and outlet_param.strip().lower() in ['true', '1', 'yes']:
+            queryset = queryset.filter(is_outlet=True)
+            if not (self.request.user and self.request.user.is_staff):
+                queryset = queryset.filter(quantity__gt=0)
 
         # Filtro opcional para obtener únicamente los favoritos del usuario autenticado
         fav_param = (
@@ -233,20 +245,15 @@ class ProductViewSet(BaseViewSet):
             request.query_params.get('include_info') or
             request.query_params.get('include_extra') or
             request.query_params.get('include_metadata') or
-            request.query_params.get('include_categories_and_types') or
             request.query_params.get('extra_info')
         )
 
         if include_param is not None and include_param.lower() in ['true', '1', 'yes', '']:
-            categories = Category.objects.filter(is_deleted=False)
-            categories_serializer = CategorySerializer(categories, many=True)
-
             product_types = ProductType.objects.filter(is_deleted=False)
             product_types_serializer = ProductTypeSerializer(product_types, many=True)
 
             custom_data = {
                 'products': response.data,
-                'categories': categories_serializer.data,
                 'product_types': product_types_serializer.data
             }
             return Response(custom_data, status=status.HTTP_200_OK)
@@ -260,20 +267,15 @@ class ProductViewSet(BaseViewSet):
             request.query_params.get('include_info') or
             request.query_params.get('include_extra') or
             request.query_params.get('include_metadata') or
-            request.query_params.get('include_categories_and_types') or
             request.query_params.get('extra_info')
         )
 
         if include_param is not None and include_param.lower() in ['true', '1', 'yes', '']:
-            categories = Category.objects.filter(is_deleted=False)
-            categories_serializer = CategorySerializer(categories, many=True)
-
             product_types = ProductType.objects.filter(is_deleted=False)
             product_types_serializer = ProductTypeSerializer(product_types, many=True)
 
             custom_data = {
                 'product': response.data,
-                'categories': categories_serializer.data,
                 'product_types': product_types_serializer.data
             }
             return Response(custom_data, status=status.HTTP_200_OK)
@@ -309,7 +311,6 @@ class UserFavoritesAPIView(generics.ListAPIView):
             favorites__is_deleted=False,
             is_deleted=False
         ).prefetch_related(
-            'categories',
             'color_images',
             'angle_images'
         ).select_related('product_type').annotate(

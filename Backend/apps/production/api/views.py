@@ -1,12 +1,12 @@
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Prefetch
 from rest_framework import permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.base.api import BaseViewSet
-from apps.orders.models import Order
+from apps.orders.models import Order, OrderDetail, OrderProduct
 from apps.production.models import ProductionOrder
 from apps.production.api.serializers import (
     ProductionOrderSerializer,
@@ -22,6 +22,15 @@ class ProductionOrderViewSet(BaseViewSet):
     """
 
     serializer_class = ProductionOrderSerializer
+    search_fields = [
+        'order__order_number',
+        'order__user__first_name',
+        'order__user__first_last_name',
+        'order__user__username',
+        'order__user__email',
+        'technical_notes',
+    ]
+    ordering_fields = ['created_at', 'status', 'iteration', 'id']
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'by_order', 'my_orders']:
@@ -29,10 +38,22 @@ class ProductionOrderViewSet(BaseViewSet):
         return [permissions.IsAdminUser()]
 
     def get_queryset(self):
-        queryset = ProductionOrder.objects.filter(is_deleted=False).select_related(
+        details_prefetch = Prefetch(
+            'order__details',
+            queryset=OrderDetail.objects.filter(is_deleted=False).prefetch_related(
+                Prefetch(
+                    'order_products',
+                    queryset=OrderProduct.objects.filter(is_deleted=False).select_related('product')
+                )
+            )
+        )
+        queryset = ProductionOrder.objects.filter(
+            is_deleted=False,
+            order__is_deleted=False
+        ).select_related(
             'order', 'order__user'
         ).prefetch_related(
-            'order__details__order_products__product'
+            details_prefetch
         )
 
         # Si es cliente normal, filtrar solo sus pedidos

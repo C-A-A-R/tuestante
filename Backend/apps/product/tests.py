@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
-from apps.product.models import Product, ProductType, Category, FavoriteProduct
+from apps.product.models import Product, ProductType, FavoriteProduct
 
 User = get_user_model()
 
@@ -29,7 +29,6 @@ class FavoriteProductAPITest(TestCase):
             email='otherclient@example.com',
             password='password123'
         )
-        self.category = Category.objects.create(category_name='Sala')
         self.product_type = ProductType.objects.create(product_type_name='Estantería')
 
         self.product1 = Product.objects.create(
@@ -37,21 +36,18 @@ class FavoriteProductAPITest(TestCase):
             product_type=self.product_type,
             price=120.00
         )
-        self.product1.categories.add(self.category)
 
         self.product2 = Product.objects.create(
             product_name='Estante Flotante',
             product_type=self.product_type,
             price=80.00
         )
-        self.product2.categories.add(self.category)
 
         self.product3 = Product.objects.create(
             product_name='Estante Modular',
             product_type=self.product_type,
             price=150.00
         )
-        self.product3.categories.add(self.category)
 
         self.client = APIClient()
 
@@ -275,3 +271,56 @@ class FavoriteProductAPITest(TestCase):
         """Verifica que un usuario anónimo no pueda marcar productos como favoritos."""
         response = self.client.post(f'/api/products/favorites/{self.product1.id}/toggle/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class OutletModelAndAPITest(TestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_superuser(
+            username='admin_outlet',
+            email='admin_outlet@example.com',
+            password='adminpassword123'
+        )
+        self.client_user = User.objects.create_user(
+            username='cliente_outlet',
+            email='cliente_outlet@example.com',
+            password='password123'
+        )
+        self.product_type = ProductType.objects.create(product_type_name='Mobiliario')
+        self.product = Product.objects.create(
+            product_name='Estante Oferta Outlet',
+            product_type=self.product_type,
+            price=99.00,
+            is_active=True,
+            is_outlet=True,
+            quantity=5
+        )
+        self.client = APIClient()
+
+    def test_outlet_product_auto_deactivation_on_zero_quantity(self):
+        """Verifica que al guardar un producto outlet con cantidad 0, se inactive automáticamente."""
+        self.assertTrue(self.product.is_active)
+        self.assertEqual(self.product.quantity, 5)
+
+        # Reducir cantidad a 0 y guardar
+        self.product.quantity = 0
+        self.product.save()
+
+        self.product.refresh_from_db()
+        self.assertFalse(self.product.is_active)
+        self.assertEqual(self.product.quantity, 0)
+
+    def test_outlet_filter_in_products_list(self):
+        """Verifica el filtro ?outlet=true en el listado de productos."""
+        regular_prod = Product.objects.create(
+            product_name='Producto Regular sin Outlet',
+            product_type=self.product_type,
+            price=150.00,
+            is_active=True,
+            is_outlet=False
+        )
+
+        response = self.client.get('/api/products/products/?outlet=true')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = [p['id'] for p in response.data]
+        self.assertIn(self.product.id, ids)
+        self.assertNotIn(regular_prod.id, ids)

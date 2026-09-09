@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 
 from apps.base.models import BaseModel
+from apps.base.utils import compress_and_save_image, is_image_file
 from apps.orders.models import Order
 
 User = get_user_model()
@@ -21,6 +22,7 @@ class Payment(BaseModel):
     STAGE_CHOICES = [
         ('initial', 'Pago inicial'),
         ('final', 'Pago final'),
+        ('total', 'Pago total / único'),
     ]
 
     METHOD_CHOICES = [
@@ -44,9 +46,9 @@ class Payment(BaseModel):
     )
     payment_stage = models.CharField(
         'Etapa del pago',
-        max_length=10,
+        max_length=15,
         choices=STAGE_CHOICES,
-        help_text='Indica si es el pago inicial o el pago final'
+        help_text='Indica si es el pago inicial, el pago final o el pago total / único'
     )
     amount = models.DecimalField(
         'Monto pagado',
@@ -111,6 +113,11 @@ class Payment(BaseModel):
         verbose_name = 'Pago'
         verbose_name_plural = 'Pagos'
         ordering = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        if self.receipt_file and is_image_file(self.receipt_file):
+            compress_and_save_image(self.receipt_file)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return (

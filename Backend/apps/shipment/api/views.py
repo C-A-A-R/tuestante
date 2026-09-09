@@ -17,6 +17,8 @@ class DistributorViewSet(BaseViewSet):
     """
 
     serializer_class = DistributorSerializer
+    search_fields = ['name', 'phone', 'email']
+    ordering_fields = ['name', 'created_at', 'id']
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -39,6 +41,15 @@ class ShipmentViewSet(BaseViewSet):
     """
 
     serializer_class = ShipmentSerializer
+    search_fields = [
+        'tracking_number',
+        'order__order_number',
+        'distributor__name',
+        'city',
+        'state',
+        'address'
+    ]
+    ordering_fields = ['created_at', 'status', 'id']
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -49,11 +60,27 @@ class ShipmentViewSet(BaseViewSet):
         """
         Retorna envíos no eliminados.
         - Filtra por el usuario autenticado a menos que sea personal/admin.
+        - Excluye órdenes eliminadas lógicamente.
         """
-        queryset = Shipment.objects.filter(is_deleted=False).select_related('order__user', 'distributor')
+        queryset = Shipment.objects.filter(
+            is_deleted=False,
+            order__is_deleted=False
+        ).select_related('order', 'order__user', 'distributor')
 
         if not (self.request.user and self.request.user.is_staff):
             queryset = queryset.filter(order__user=self.request.user)
+
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+
+        order_id = self.request.query_params.get('order_id')
+        if order_id:
+            queryset = queryset.filter(order_id=order_id)
+
+        distributor_id = self.request.query_params.get('distributor_id')
+        if distributor_id:
+            queryset = queryset.filter(distributor_id=distributor_id)
 
         return queryset
 

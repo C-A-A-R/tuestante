@@ -13,6 +13,8 @@ class GalleryViewSet(BaseViewSet):
     """
 
     serializer_class = GallerySerializer
+    search_fields = ['caption', 'social_network', 'social_media_handle']
+    ordering_fields = ['created_at', 'is_active', 'id']
 
     def get_permissions(self):
         """Asigna permisos según la acción solicitada."""
@@ -29,5 +31,9 @@ class GalleryViewSet(BaseViewSet):
         # Si no es administrador, mostrar únicamente las imágenes activas
         if not (self.request.user and self.request.user.is_staff):
             queryset = queryset.filter(is_active=True)
+
+        social_network = self.request.query_params.get('social_network')
+        if social_network:
+            queryset = queryset.filter(social_network=social_network)
 
         return queryset

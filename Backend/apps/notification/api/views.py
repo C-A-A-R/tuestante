@@ -2,6 +2,7 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import transaction
+from django.db.models import Prefetch, Q
 
 from apps.base.api import BaseViewSet
 from apps.notification.models import Notification, NotificationMedia
@@ -14,10 +15,12 @@ class NotificationViewSet(BaseViewSet):
     """
     ViewSet para la gestión de Notificaciones.
     - Lectura/Eliminación lógica: Restringido al usuario dueño de la notificación (o admin).
-    - Optimización: prefetch_related para evitar N+1 queries.
+    - Optimización: prefetch_related con filtro is_deleted=False para evitar N+1 queries.
     """
 
     serializer_class = NotificationSerializer
+    search_fields = ['title', 'message']
+    ordering_fields = ['created_at', 'is_read', 'id']
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'destroy', 'mark_as_read', 'mark_all_as_read']:
@@ -28,11 +31,37 @@ class NotificationViewSet(BaseViewSet):
         """
         Retorna notificaciones no eliminadas.
         - Filtra por el usuario autenticado a menos que sea personal/admin.
+        - Excluye media eliminada y órdenes eliminadas.
         """
-        queryset = Notification.objects.filter(is_deleted=False).prefetch_related('media_files').select_related('user', 'order')
+        media_prefetch = Prefetch(
+            'media_files',
+            queryset=NotificationMedia.objects.filter(is_deleted=False)
+        )
+        queryset = Notification.objects.filter(
+            is_deleted=False
+        ).filter(
+            Q(order__isnull=True) | Q(order__is_deleted=False)
+        ).prefetch_related(media_prefetch).select_related('user', 'order', 'internal_order')
 
         if not (self.request.user and self.request.user.is_staff):
             queryset = queryset.filter(user=self.request.user)
+
+        is_read_param = self.request.query_params.get('is_read')
+        if is_read_param is not None:
+            is_read_bool = is_read_param.lower() in ['true', '1', 'yes', 'si']
+            queryset = queryset.filter(is_read=is_read_bool)
+
+        notification_type = self.request.query_params.get('notification_type')
+        if notification_type:
+            queryset = queryset.filter(notification_type=notification_type)
+
+        order_id = self.request.query_params.get('order_id')
+        if order_id:
+            queryset = queryset.filter(order_id=order_id)
+
+        internal_order_id = self.request.query_params.get('internal_order_id')
+        if internal_order_id:
+            queryset = queryset.filter(internal_order_id=internal_order_id)
 
         return queryset
 

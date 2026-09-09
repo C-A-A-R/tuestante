@@ -15,6 +15,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     media_files = NotificationMediaSerializer(many=True, read_only=True)
     user = serializers.StringRelatedField(read_only=True)
+    internal_order_number = serializers.ReadOnlyField(source='internal_order.order_number')
 
     class Meta:
         model = Notification
@@ -26,8 +27,23 @@ class NotificationSerializer(serializers.ModelSerializer):
             'notification_type',
             'is_read',
             'order',
+            'internal_order',
+            'internal_order_number',
             'media_files',
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'user', 'title', 'message', 'notification_type', 'is_read', 'order', 'media_files', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id',
+            'user',
+            'title',
+            'message',
+            'notification_type',
+            'is_read',
+            'order',
+            'internal_order',
+            'internal_order_number',
+            'media_files',
+            'created_at',
+            'updated_at',
+        ]

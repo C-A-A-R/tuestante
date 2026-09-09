@@ -1,21 +1,11 @@
 from rest_framework import serializers
 from apps.product.models import (
-    Category,
     ProductType,
     Product,
     ProductColorImage,
     ProductAngleImage,
     FavoriteProduct
 )
-
-
-class CategorySerializer(serializers.ModelSerializer):
-    """Serializador para el modelo Category."""
-
-    class Meta:
-        model = Category
-        fields = ['id', 'category_name', 'description', 'category_image', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class ProductTypeSerializer(serializers.ModelSerializer):
@@ -48,8 +38,6 @@ class ProductAngleImageSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     """Serializador para el modelo Product."""
 
-    categories_detail = CategorySerializer(source='categories', many=True, read_only=True)
-    category_detail = CategorySerializer(source='category', read_only=True)
     product_type_detail = ProductTypeSerializer(source='product_type', read_only=True)
     color_images = ProductColorImageSerializer(many=True, read_only=True)
     angle_images = ProductAngleImageSerializer(many=True, read_only=True)
@@ -60,14 +48,14 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id',
-            'categories',
-            'categories_detail',
-            'category_detail',
             'product_type',
             'product_type_detail',
             'product_name',
             'description',
+            'is_active',
+            'is_outlet',
             'is_feature_product',
+            'quantity',
             'is_favorite',
             'favorites_count',
             'height_cm',

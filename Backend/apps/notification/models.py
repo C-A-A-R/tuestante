@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 
 from apps.base.models import BaseModel
+from apps.base.utils import compress_and_save_image, is_image_file
 
 User = get_user_model()
 
@@ -14,8 +15,12 @@ class Notification(BaseModel):
     """
 
     TYPE_CHOICES = [
-        # Notificación vinculada a una orden (cubre pagos, envíos, fabricación, etc.)
-        ('order', 'Pedido'),
+        # Notificación vinculada a una orden de cliente externo
+        ('order', 'Pedido Cliente'),
+        # Notificación vinculada a una orden de tienda de empleados
+        ('employee_order', 'Pedido Empleado'),
+        # Notificación vinculada a nómina o abono de cuenta
+        ('payroll', 'Nómina / Abono'),
         # Notificación general del sistema, sin orden asociada
         ('general', 'General'),
     ]
@@ -52,6 +57,16 @@ class Notification(BaseModel):
         related_name='notifications',
         verbose_name="Pedido relacionado",
         help_text='Pedido que originó la notificación. Nulo solo en notificaciones generales.'
+    )
+    # FK directa a InternalOrder (Tienda de empleados)
+    internal_order = models.ForeignKey(
+        'employee_store.InternalOrder',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notifications',
+        verbose_name="Pedido interno relacionado",
+        help_text='Pedido de tienda empleados que originó la notificación.'
     )
 
     class Meta:
@@ -98,6 +113,11 @@ class NotificationMedia(BaseModel):
     class Meta:
         verbose_name = 'Media de notificación'
         verbose_name_plural = 'Media de notificaciones'
+
+    def save(self, *args, **kwargs):
+        if self.file and (self.media_type == 'image' or is_image_file(self.file)):
+            compress_and_save_image(self.file)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.get_media_type_display()} — Notificación #{self.notification.id}"

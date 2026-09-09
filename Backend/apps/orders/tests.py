@@ -1,7 +1,8 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
-from apps.product.models import Product, ProductType, Category
+from rest_framework import status
+from apps.product.models import Product, ProductType
 from apps.orders.models import Order
 from apps.shipment.models import Shipment, Distributor
 
@@ -15,14 +16,12 @@ class OrderAPITest(TestCase):
             email='customer@example.com',
             password='password123'
         )
-        self.category = Category.objects.create(category_name='Muebles')
         self.product_type = ProductType.objects.create(product_type_name='Estantería')
         self.product = Product.objects.create(
             product_name='Estante Modular',
             product_type=self.product_type,
             price=150.00
         )
-        self.product.categories.add(self.category)
         self.distributor = Distributor.objects.create(
             name='MRW Express',
             rif='J-99887766-5'
@@ -264,5 +263,70 @@ class OrderAPITest(TestCase):
         # 3. /api/orders/user/<other_user.id>/ (denegado para órdenes de otros clientes)
         response_forbidden = self.client.get(f'/api/orders/user/{other_user.id}/')
         self.assertEqual(response_forbidden.status_code, 403)
+
+    def test_store_validations_cannot_purchase_more_than_outlet_quantity(self):
+        """Verifica que la tienda no permita comprar más de la cantidad disponible en el Outlet."""
+        outlet_prod = Product.objects.create(
+            product_name='Estante Oferta Limitada',
+            product_type=self.product_type,
+            price=100.00,
+            is_active=True,
+            is_outlet=True,
+            quantity=3
+        )
+
+        # 1. Intentar comprar 4 unidades cuando solo hay 3 disponibles -> Debe fallar con error 400
+        payload_exceed = {
+            "items": [
+                {
+                    "product_id": outlet_prod.id,
+                    "quantity": 4
+                }
+            ]
+        }
+        response_exceed = self.client.post('/api/orders/', payload_exceed, format='json')
+        self.assertEqual(response_exceed.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("No hay suficiente stock en Outlet", response_exceed.data['error'])
+
+        # 2. Comprar exactamente 3 unidades -> Debe descontar stock a 0 e inactivar el producto
+        payload_exact = {
+            "items": [
+                {
+                    "product_id": outlet_prod.id,
+                    "quantity": 3
+                }
+            ]
+        }
+        response_exact = self.client.post('/api/orders/', payload_exact, format='json')
+        self.assertEqual(response_exact.status_code, status.HTTP_201_CREATED)
+
+        outlet_prod.refresh_from_db()
+        self.assertEqual(outlet_prod.quantity, 0)
+        self.assertFalse(outlet_prod.is_active)
+
+        # 3. Intentar comprar nuevamente el producto ahora inactivo/agotado -> Debe ser rechazado
+        response_again = self.client.post('/api/orders/', payload_exact, format='json')
+        self.assertEqual(response_again.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_store_cannot_purchase_inactive_product(self):
+        """Verifica que un producto marcado manualmente como inactivo no pueda ser ordenado."""
+        inactive_prod = Product.objects.create(
+            product_name='Estante Inactivo',
+            product_type=self.product_type,
+            price=200.00,
+            is_active=False
+        )
+
+        payload = {
+            "items": [
+                {
+                    "product_id": inactive_prod.id,
+                    "quantity": 1
+                }
+            ]
+        }
+        response = self.client.post('/api/orders/', payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("no se encuentra disponible", response.data['error'])
 
 

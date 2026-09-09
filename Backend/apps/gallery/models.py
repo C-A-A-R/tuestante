@@ -1,5 +1,6 @@
 from django.db import models
 from apps.base.models import BaseModel
+from apps.base.utils import rename_image_upload_to, compress_and_save_image
 
 
 class Gallery(BaseModel):
@@ -7,7 +8,7 @@ class Gallery(BaseModel):
 
     image = models.ImageField(
         'Imagen',
-        upload_to='gallery/'
+        upload_to=rename_image_upload_to
     )
     caption = models.CharField(
         'Descripción',
@@ -41,6 +42,11 @@ class Gallery(BaseModel):
         verbose_name = "Galería"
         verbose_name_plural = "Galerías"
         ordering = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        if self.image:
+            compress_and_save_image(self.image)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.caption or f"Imagen #{self.id}"

@@ -11,7 +11,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 
-def send_notification(user, title, message, notification_type='general', order=None):
+def send_notification(user, title, message, notification_type='general', order=None, internal_order=None):
     """
     Crea una notificación en base de datos y la envía en tiempo real al usuario
     a través de WebSocket usando Django Channels.
@@ -20,8 +20,9 @@ def send_notification(user, title, message, notification_type='general', order=N
         user: Instancia de User destinatario.
         title (str): Título de la notificación.
         message (str): Cuerpo del mensaje.
-        notification_type (str): 'order' (vinculada a una orden) o 'general'.
-        order: Instancia de Order relacionada (requerida cuando notification_type='order').
+        notification_type (str): 'order', 'employee_order', 'payroll' o 'general'.
+        order: Instancia de Order relacionada (tienda cliente).
+        internal_order: Instancia de InternalOrder relacionada (tienda empleados).
 
     Returns:
         Notification: Instancia creada.
@@ -35,6 +36,7 @@ def send_notification(user, title, message, notification_type='general', order=N
         message=message,
         notification_type=notification_type,
         order=order,
+        internal_order=internal_order,
     )
 
     # 2. Enviar en tiempo real vía WebSocket al canal del usuario
@@ -59,6 +61,7 @@ def _push_to_websocket(notification):
             'message': notification.message,
             'notification_type': notification.notification_type,
             'order_id': notification.order_id,
+            'internal_order_id': notification.internal_order_id,
             'is_read': notification.is_read,
             'created_at': str(notification.created_at),
         }

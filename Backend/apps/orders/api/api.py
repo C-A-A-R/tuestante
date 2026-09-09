@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Case, When, Value, IntegerField
+from django.db.models import Case, When, Value, IntegerField, Prefetch
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
@@ -21,6 +21,8 @@ class OrderViewSet(BaseViewSet):
     """
 
     serializer_class = OrderSerializer
+    search_fields = ['order_number', 'user__first_name', 'user__last_name', 'user__username', 'user__email', 'notes']
+    ordering_fields = ['created_at', 'total_price', 'status', 'id']
 
     def get_permissions(self):
         """Define permisos dinámicos según la acción."""
@@ -38,9 +40,23 @@ class OrderViewSet(BaseViewSet):
           se da prioridad a las órdenes que no están finalizadas (status != 'finalized') colocándolas de primeras en el listado.
         """
         queryset = Order.objects.filter(is_deleted=False).select_related('user').prefetch_related(
-            'details__order_products__product',
-            'manufacturing_orders__issued_by',
-            'shipments__distributor'
+            Prefetch(
+                'details',
+                queryset=OrderDetail.objects.filter(is_deleted=False).prefetch_related(
+                    Prefetch(
+                        'order_products',
+                        queryset=OrderProduct.objects.filter(is_deleted=False).select_related('product')
+                    )
+                )
+            ),
+            Prefetch(
+                'manufacturing_orders',
+                queryset=ManufacturingOrder.objects.filter(is_deleted=False).select_related('issued_by')
+            ),
+            Prefetch(
+                'shipments',
+                queryset=Shipment.objects.filter(is_deleted=False).select_related('distributor')
+            )
         )
 
         if not (self.request.user and self.request.user.is_staff):
@@ -176,6 +192,26 @@ class OrderViewSet(BaseViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
 
+            # Validar que el producto esté activo
+            if not product.is_active:
+                return Response(
+                    {"error": f"El producto '{product.product_name}' no se encuentra disponible (inactivo o agotado)."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Validar stock en Outlet si el producto es Outlet
+            if product.is_outlet:
+                if product.quantity <= 0:
+                    return Response(
+                        {"error": f"El producto '{product.product_name}' está agotado en el Outlet."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                if quantity > product.quantity:
+                    return Response(
+                        {"error": f"No hay suficiente stock en Outlet para '{product.product_name}'. Cantidad solicitada: {quantity}, disponible: {product.quantity}."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
             validated_items.append({
                 'product': product,
                 'quantity': quantity,
@@ -212,7 +248,7 @@ class OrderViewSet(BaseViewSet):
 
         total_price = 0
 
-        # 4. Crear detalles y productos de la orden
+        # 4. Crear detalles y productos de la orden y actualizar stock de outlet
         for item_data in validated_items:
             product = item_data['product']
             quantity = item_data['quantity']
@@ -231,6 +267,11 @@ class OrderViewSet(BaseViewSet):
                 product=product,
                 price_at_order=product.price
             )
+
+            # Si es un producto de Outlet, descontar el inventario del producto
+            if product.is_outlet:
+                product.quantity = max(0, product.quantity - quantity)
+                product.save()
 
             total_price += detail.final_price
 
@@ -330,9 +371,18 @@ class ManufacturingOrderViewSet(BaseViewSet):
     """
     serializer_class = ManufacturingOrderSerializer
     permission_classes = [permissions.IsAdminUser]
+    search_fields = ['manufacturing_order_number', 'order__order_number', 'issued_by__username', 'notes']
+    ordering_fields = ['created_at', 'status', 'id']
 
     def get_queryset(self):
-        return ManufacturingOrder.objects.filter(is_deleted=False).select_related(
+        qs = ManufacturingOrder.objects.filter(is_deleted=False).select_related(
             'order__user',
             'issued_by'
         )
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param)
+        order_param = self.request.query_params.get('order_id') or self.request.query_params.get('order')
+        if order_param:
+            qs = qs.filter(order_id=order_param)
+        return qs

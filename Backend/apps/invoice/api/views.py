@@ -1,7 +1,8 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from django.http import FileResponse, Http404
 
+from apps.base.pagination import BasePagination
 from apps.invoice.models import Invoice
 from apps.invoice.api.serializers import InvoiceSerializer
 from apps.invoice.services import generate_invoice_pdf
@@ -13,21 +14,39 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
     - Soporta exclusivamente peticiones de lectura (GET, HEAD, OPTIONS).
     - Los usuarios autenticados pueden ver únicamente las facturas de sus propios pedidos.
     - Los administradores pueden ver todas las facturas.
+    - Soporta paginación, filtros de búsqueda y ordenamiento.
     """
 
     serializer_class = InvoiceSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = BasePagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = [
+        'invoice_number',
+        'order__order_number',
+        'client_name',
+        'client_identity_document',
+    ]
+    ordering_fields = ['created_at', 'invoice_number', 'total_amount', 'id']
     http_method_names = ['get', 'head', 'options']
 
     def get_queryset(self):
         """
         Retorna el queryset de facturas no eliminadas lógicamente.
         - Filtra por el usuario autenticado a menos que sea staff/administrador.
+        - Excluye facturas asociadas a órdenes eliminadas lógicamente.
         """
-        queryset = Invoice.objects.filter(is_deleted=False).select_related('order__user')
+        queryset = Invoice.objects.filter(
+            is_deleted=False,
+            order__is_deleted=False
+        ).select_related('order', 'order__user')
 
         if not (self.request.user and self.request.user.is_staff):
             queryset = queryset.filter(order__user=self.request.user)
+
+        order_id = self.request.query_params.get('order_id')
+        if order_id:
+            queryset = queryset.filter(order_id=order_id)
 
         return queryset
 

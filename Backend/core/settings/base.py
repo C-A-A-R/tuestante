@@ -40,6 +40,7 @@ LOCAL_APPS = [
     'apps.notification',
     'apps.gallery',
     'apps.invoice',
+    'apps.employee_store',
 ]
 
 

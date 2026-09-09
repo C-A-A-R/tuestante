@@ -5,7 +5,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 
 from apps.orders.models import Order, OrderDetail, OrderProduct
-from apps.product.models import Product, Category, ProductType
+from apps.product.models import Product, ProductType
 from apps.production.models import ProductionOrder
 
 User = get_user_model()
@@ -46,15 +46,13 @@ class ProductionOrderTests(TestCase):
             first_last_name='Taller'
         )
 
-        # Categoría, Tipo de Producto y Producto
-        self.category = Category.objects.create(category_name='Estantería')
+        # Tipo de Producto y Producto
         self.product_type = ProductType.objects.create(product_type_name='Estante Modular')
         self.product = Product.objects.create(
             product_name='Estante Roble',
             product_type=self.product_type,
             price=150.00
         )
-        self.product.categories.add(self.category)
 
         # Pedido 1 (del cliente)
         self.order = Order.objects.create(

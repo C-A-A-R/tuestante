@@ -7,27 +7,6 @@ from apps.base.utils.images import rename_image_upload_to, compress_and_save_ima
 from apps.base.utils.videos import rename_video_upload_to, compress_and_save_video
 
 
-class Category(BaseModel):
-    """Modelo para representar las Categorías de productos."""
-
-    category_name = models.CharField('Nombre de Categoría', max_length=150, unique=True)
-    description = models.TextField('Descripción', null=True, blank=True)
-    category_image = models.ImageField('Imagen de Categoría', upload_to=rename_image_upload_to, null=True, blank=True)
-
-    class Meta:
-        verbose_name = 'Categoría'
-        verbose_name_plural = 'Categorías'
-        ordering = ['category_name']
-
-    def __str__(self):
-        return self.category_name
-
-    def save(self, *args, **kwargs):
-        if self.category_image:
-            compress_and_save_image(self.category_image)
-        super().save(*args, **kwargs)
-
-
 class ProductType(BaseModel):
     """Modelo para representar los Tipos de Productos."""
 
@@ -52,12 +31,6 @@ class ProductType(BaseModel):
 class Product(BaseModel):
     """Modelo para representar los Productos."""
 
-    categories = models.ManyToManyField(
-        Category,
-        related_name='products',
-        verbose_name='Categorías',
-        blank=True
-    )
     product_type = models.ForeignKey(
         ProductType,
         on_delete=models.CASCADE,
@@ -66,7 +39,10 @@ class Product(BaseModel):
     )
     product_name = models.CharField('Nombre del Producto', max_length=200)
     description = models.TextField('Descripción', null=True, blank=True)
+    is_active = models.BooleanField('Activo', default=True)
+    is_outlet = models.BooleanField('Es Outlet', default=False)
     is_feature_product = models.BooleanField('Producto Destacado', default=False)
+    quantity = models.PositiveIntegerField('Cantidad disponible / Stock', default=0)
     height_cm = models.DecimalField('Alto (cm)', max_digits=10, decimal_places=2, default=0)
     depth_cm = models.DecimalField('Profundo (cm)', max_digits=10, decimal_places=2, default=0)
     width_cm = models.DecimalField('Ancho (cm)', max_digits=10, decimal_places=2, default=0)
@@ -80,12 +56,10 @@ class Product(BaseModel):
         verbose_name_plural = 'Productos'
         ordering = ['product_name']
 
-    @property
-    def category(self):
-        """Retorna la primera categoría asignada para mantener compatibilidad hacia atrás."""
-        return self.categories.first()
-
     def save(self, *args, **kwargs):
+        if self.is_outlet and self.quantity <= 0:
+            self.quantity = 0
+            self.is_active = False
         if self.product_image:
             compress_and_save_image(self.product_image)
         if self.product_video:

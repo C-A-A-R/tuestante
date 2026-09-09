@@ -1,15 +1,28 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
+
+from apps.base.pagination import BasePagination
 
 
 class BaseViewSet(viewsets.ModelViewSet):
     """
-    ViewSet base que implementa borrado lógico y restauración automática
-    en caso de registrar objetos previamente eliminados.
+    ViewSet base para la plataforma TuEstante.
+    - Implementa borrado lógico (is_deleted=False).
+    - Soporta paginación flexible y retrocompatible (BasePagination).
+    - Soporta búsqueda y ordenamiento estándar (SearchFilter, OrderingFilter).
+    - Restaura automáticamente registros duplicados borrados lógicamente.
     """
+    pagination_class = BasePagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+
     def get_queryset(self):
-        model = self.get_serializer().Meta.model
-        return model.objects.filter(is_deleted=False)
+        if hasattr(self, 'queryset') and self.queryset is not None:
+            return self.queryset.filter(is_deleted=False)
+        serializer_class = self.get_serializer_class()
+        model = getattr(serializer_class, 'Meta', None)
+        if model and hasattr(model, 'model'):
+            return model.model.objects.filter(is_deleted=False)
+        return super().get_queryset().filter(is_deleted=False)
 
     def create(self, request, *args, **kwargs):
         """
@@ -20,20 +33,35 @@ class BaseViewSet(viewsets.ModelViewSet):
         if not serializer.is_valid():
             model = getattr(serializer.Meta, 'model', None) if hasattr(serializer, 'Meta') else None
             if model and hasattr(model, 'is_deleted'):
-                valid_fields = {f.name for f in model._meta.fields}
-                temp_kwargs = {k: v for k, v in request.data.items() if k in valid_fields}
-                temp_obj = model(**temp_kwargs)
-                soft_deleted = temp_obj._find_soft_deleted_duplicate()
-                if soft_deleted:
-                    for key, val in request.data.items():
-                        if key in valid_fields and key not in ('id', 'created_at', 'is_deleted', 'deleted_at'):
-                            setattr(soft_deleted, key, val)
-                    soft_deleted.is_deleted = False
-                    soft_deleted.deleted_at = None
-                    soft_deleted.save()
+                try:
+                    valid_fields = {f.name for f in model._meta.fields}
+                    temp_kwargs = {}
+                    for k, v in request.data.items():
+                        if k in valid_fields:
+                            field_obj = model._meta.get_field(k)
+                            if field_obj.is_relation and not isinstance(v, field_obj.related_model):
+                                temp_kwargs[f"{k}_id"] = v
+                            else:
+                                temp_kwargs[k] = v
 
-                    out_serializer = self.get_serializer(soft_deleted)
-                    return Response(out_serializer.data, status=status.HTTP_201_CREATED)
+                    temp_obj = model(**temp_kwargs)
+                    soft_deleted = temp_obj._find_soft_deleted_duplicate()
+                    if soft_deleted:
+                        for key, val in request.data.items():
+                            if key in valid_fields and key not in ('id', 'created_at', 'is_deleted', 'deleted_at'):
+                                field_obj = model._meta.get_field(key)
+                                if field_obj.is_relation and not isinstance(val, field_obj.related_model):
+                                    setattr(soft_deleted, f"{key}_id", val)
+                                else:
+                                    setattr(soft_deleted, key, val)
+                        soft_deleted.is_deleted = False
+                        soft_deleted.deleted_at = None
+                        soft_deleted.save()
+
+                        out_serializer = self.get_serializer(soft_deleted)
+                        return Response(out_serializer.data, status=status.HTTP_201_CREATED)
+                except Exception:
+                    pass
 
             serializer.is_valid(raise_exception=True)
 

@@ -1,6 +1,12 @@
 from django.contrib import admin
 from apps.base.admin import BaseAdmin
-from apps.product.models import Category, ProductType, Product, ProductColorImage, ProductAngleImage, FavoriteProduct
+from apps.product.models import (
+    ProductType,
+    Product,
+    ProductColorImage,
+    ProductAngleImage,
+    FavoriteProduct
+)
 
 
 class ProductColorImageInline(admin.TabularInline):
@@ -13,22 +19,6 @@ class ProductAngleImageInline(admin.TabularInline):
     model = ProductAngleImage
     extra = 1
     fields = ('image', 'angle')
-
-
-@admin.register(Category)
-class CategoryAdmin(BaseAdmin):
-    """Configuración del panel de administración para el modelo Category."""
-
-    list_display = (
-        'category_name',
-        'description',
-        'category_image',
-        'created_at',
-        'updated_at'
-    )
-    search_fields = ('category_name', 'description')
-    list_filter = ('created_at',)
-    ordering = ('id',)
 
 
 @admin.register(ProductType)
@@ -54,10 +44,12 @@ class ProductAdmin(BaseAdmin):
     inlines = [ProductColorImageInline, ProductAngleImageInline]
     list_display = (
         'product_name',
-        'get_categories',
         'product_type',
         'price',
+        'is_active',
+        'is_outlet',
         'is_feature_product',
+        'quantity',
         'height_cm',
         'depth_cm',
         'width_cm',
@@ -65,15 +57,10 @@ class ProductAdmin(BaseAdmin):
         'product_video',
         'created_at'
     )
-    list_editable = ('is_feature_product',)
+    list_editable = ('is_active', 'is_outlet', 'is_feature_product', 'quantity')
     search_fields = ('product_name', 'description', 'product_type__product_type_name', 'security')
-    list_filter = ('is_feature_product', 'categories', 'product_type', 'created_at')
+    list_filter = ('is_active', 'is_outlet', 'is_feature_product', 'product_type', 'created_at')
     ordering = ('id',)
-    filter_horizontal = ('categories',)
-
-    def get_categories(self, obj):
-        return ", ".join([c.category_name for c in obj.categories.all()])
-    get_categories.short_description = 'Categorías'
 
 
 @admin.register(ProductColorImage)
