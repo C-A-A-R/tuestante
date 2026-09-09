@@ -45,7 +45,7 @@ export const MOCK_PAYMENTS = [
       phone: "+58 412 1234567"
     },
     payment_stage: "initial",
-    payment_stage_label: "Pago Inicial (50%)",
+    payment_stage_label: "Pago Inicial",
     stage_badge_class: "badge-stage-initial",
     amount: 175.00,
     amount_ves: 6387.50, // Monto registrado en backend
@@ -72,7 +72,7 @@ export const MOCK_PAYMENTS = [
     reviewed_by: null,
     reviewed_at: null,
     rejection_reason: "",
-    notes: "Abono del 50% correspondiente a la fabricación de 1 estante industrial y 1 casillero locker.",
+    notes: "Abono inicial correspondiente a la fabricación de 1 estante industrial y 1 casillero locker.",
     order_summary: {
       id: 125,
       order_code: "#00125",
@@ -120,7 +120,7 @@ export const MOCK_PAYMENTS = [
       phone: "+58 424 9876543"
     },
     payment_stage: "initial",
-    payment_stage_label: "Pago Inicial (50%)",
+    payment_stage_label: "Pago Inicial",
     stage_badge_class: "badge-stage-initial",
     amount: 140.00,
     amount_ves: 5110.00,
@@ -325,7 +325,7 @@ export const MOCK_PAYMENTS = [
       phone: "+58 416 3332211"
     },
     payment_stage: "initial",
-    payment_stage_label: "Pago Inicial (50%)",
+    payment_stage_label: "Pago Inicial",
     stage_badge_class: "badge-stage-initial",
     amount: 225.00,
     amount_ves: 8190.00,
@@ -389,7 +389,7 @@ export const MOCK_PAYMENTS = [
       phone: "+58 412 8889900"
     },
     payment_stage: "initial",
-    payment_stage_label: "Pago Inicial (50%)",
+    payment_stage_label: "Pago Inicial",
     stage_badge_class: "badge-stage-initial",
     amount: 150.00,
     amount_ves: 5460.00,
@@ -726,7 +726,7 @@ export async function createPayment(paymentPayload) {
         phone: "+58 412 1234567"
       },
       payment_stage: stage,
-      payment_stage_label: stage === 'initial' ? 'Pago Inicial (50%)' : 'Pago Final (Saldo)',
+      payment_stage_label: stage === 'initial' ? 'Pago Inicial' : 'Pago Final (Saldo)',
       stage_badge_class: stage === 'initial' ? 'badge-stage-initial' : 'badge-stage-final',
       amount: amount,
       amount_ves: approxVes,
@@ -878,7 +878,7 @@ export async function getPaymentMetrics() {
 }
 
 /**
- * Obtiene la lista de pedidos con pagos pendientes.
+ * Obtiene la lista de pedidos con pagos pendientes con soporte de búsqueda por número y fecha.
  * @returns {Promise<Array>}
  */
 export async function getOrdersForPaymentSelect() {
@@ -887,10 +887,66 @@ export async function getOrdersForPaymentSelect() {
     return extractList(data);
   } catch (error) {
     return [
-      { id: 125, order_code: "#00125", client_name: "Juan Pérez", pending_stage: "initial", amount_due: 175.00, total_amount: 350.00 },
-      { id: 124, order_code: "#00124", client_name: "María López", pending_stage: "initial", amount_due: 140.00, total_amount: 280.00 },
-      { id: 123, order_code: "#00123", client_name: "Pedro Díaz", pending_stage: "final", amount_due: 95.00, total_amount: 190.00 },
-      { id: 121, order_code: "#00121", client_name: "Luis Ramírez", pending_stage: "initial", amount_due: 110.00, total_amount: 220.00 }
+      { 
+        id: 125, 
+        order_code: "#00125", 
+        client_name: "Juan Pérez", 
+        client_email: "juan@email.com", 
+        pending_stage: "initial", 
+        pending_stage_label: "Pago Inicial", 
+        amount_due: 175.00, 
+        total_amount: 350.00, 
+        formatted_date: "31/08/2026", 
+        created_at: "2026-08-31" 
+      },
+      { 
+        id: 124, 
+        order_code: "#00124", 
+        client_name: "María López", 
+        client_email: "maria@email.com", 
+        pending_stage: "initial", 
+        pending_stage_label: "Pago Inicial", 
+        amount_due: 140.00, 
+        total_amount: 280.00, 
+        formatted_date: "30/08/2026", 
+        created_at: "2026-08-30" 
+      },
+      { 
+        id: 123, 
+        order_code: "#00123", 
+        client_name: "Pedro Díaz", 
+        client_email: "pedro@email.com", 
+        pending_stage: "final", 
+        pending_stage_label: "Pago Final (Saldo)", 
+        amount_due: 95.00, 
+        total_amount: 190.00, 
+        formatted_date: "28/08/2026", 
+        created_at: "2026-08-28" 
+      },
+      { 
+        id: 121, 
+        order_code: "#00121", 
+        client_name: "Luis Ramírez", 
+        client_email: "luis@email.com", 
+        pending_stage: "initial", 
+        pending_stage_label: "Pago Inicial", 
+        amount_due: 110.00, 
+        total_amount: 220.00, 
+        formatted_date: "24/08/2026", 
+        created_at: "2026-08-24" 
+      },
+      { 
+        id: 120, 
+        order_code: "#00120", 
+        client_name: "Carla Ruiz", 
+        client_email: "carla@email.com", 
+        pending_stage: "final", 
+        pending_stage_label: "Pago Final (Saldo)", 
+        amount_due: 150.00, 
+        total_amount: 300.00, 
+        formatted_date: "20/08/2026", 
+        created_at: "2026-08-20" 
+      }
     ];
   }
 }

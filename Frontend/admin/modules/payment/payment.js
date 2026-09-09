@@ -9,8 +9,7 @@
  * - Modal de previsualización de recibos y registro manual de pagos.
  */
 
-import { initNavbar } from '../../components/navbar/navbar.js';
-import { initFooter } from '../../components/footer/footer.js';
+import { loadAdminComponents } from '../../components/navbar/navbar.js';
 import { 
   getPayments, 
   getPaymentById, 
@@ -394,7 +393,7 @@ async function openOrderSummaryModal(orderId) {
       `;
     }).join('');
 
-    // Totales y desglose de pago 50% / 50%
+    // Totales y desglose de pago inicial y saldo final
     const totalAmount = order.total_amount || 350.00;
     const totalAmountVes = order.total_amount_ves || (totalAmount * (order.exchange_rate || 36.50));
     const halfUsd = totalAmount * 0.5;
@@ -621,25 +620,167 @@ async function executePaymentRejection(paymentId) {
  * 7. MODAL 4: REGISTRAR NUEVO PAGO MANUAL
  * ==========================================================================
  */
+/**
+ * ==========================================================================
+ * 7. MODAL 4: REGISTRAR NUEVO PAGO MANUAL (CON SEARCHABLE INPUT SELECT)
+ * ==========================================================================
+ */
+function renderSearchableOrderOptions(searchTerm = '') {
+  const dropdownList = document.getElementById('payment-order-dropdown-list');
+  const clearBtn = document.getElementById('payment-order-search-clear');
+  const searchInput = document.getElementById('payment-order-search-input');
+  if (!dropdownList) return;
+
+  const term = searchTerm.toLowerCase().trim();
+  let orders = state.pendingOrdersList || [];
+
+  if (clearBtn) {
+    if (term || (searchInput && searchInput.value.trim())) {
+      clearBtn.classList.add('is-visible');
+    } else {
+      clearBtn.classList.remove('is-visible');
+    }
+  }
+
+  if (term) {
+    orders = orders.filter(o => {
+      const codeMatch = (o.order_code || '').toLowerCase().includes(term);
+      const idMatch = String(o.id || '').includes(term);
+      const nameMatch = (o.client_name || '').toLowerCase().includes(term);
+      const emailMatch = (o.client_email || '').toLowerCase().includes(term);
+      const dateMatch = (o.formatted_date || '').includes(term) || (o.created_at || '').includes(term);
+      return codeMatch || idMatch || nameMatch || emailMatch || dateMatch;
+    });
+  }
+
+  if (orders.length === 0) {
+    dropdownList.innerHTML = `
+      <div class="searchable-dropdown-empty">
+        <svg style="width: 24px; height: 24px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <strong>No se encontraron pedidos pendientes</strong>
+        <span style="font-size: 0.75rem; color: var(--text-muted);">
+          Sin coincidencias para "${searchTerm}". Prueba con número (#00125) o fecha (DD/MM/AAAA).
+        </span>
+      </div>
+    `;
+    return;
+  }
+
+  dropdownList.innerHTML = `
+    <div class="searchable-dropdown-header">
+      <span>${orders.length} pedido(s) con pago pendiente</span>
+      <span style="font-size: 0.7rem; font-weight: 500;">Búsqueda por Nro / Fecha</span>
+    </div>
+    ${orders.map(order => {
+      const stageLabel = order.pending_stage === 'final' ? 'Pago Final (Saldo)' : 'Pago Inicial';
+      const stageBadgeClass = order.pending_stage === 'final' ? 'badge-stage-final' : 'badge-stage-initial';
+      const dateText = order.formatted_date || (order.created_at ? new Date(order.created_at).toLocaleDateString('es-ES') : 'Reciente');
+      const dueUsd = order.amount_due || 0;
+      const dueVes = dueUsd * 36.50;
+
+      return `
+        <div class="searchable-dropdown-item" data-order-id="${order.id}" role="option" tabindex="0">
+          <div class="searchable-item-left">
+            <div class="searchable-item-top">
+              <span class="searchable-item-code">${order.order_code || `#00${order.id}`}</span>
+              <span class="searchable-item-date">
+                <svg style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                ${dateText}
+              </span>
+              <span class="stage-badge ${stageBadgeClass}" style="font-size: 0.68rem; padding: 2px 7px;">
+                ${stageLabel}
+              </span>
+            </div>
+            <span class="searchable-item-client">
+              ${order.client_name || 'Cliente'} ${order.client_email ? `• <span style="color: var(--text-muted);">${order.client_email}</span>` : ''}
+            </span>
+          </div>
+          <div class="searchable-item-right">
+            <span class="searchable-item-amount-usd">${formatUSD(dueUsd)}</span>
+            <span class="searchable-item-amount-ves">${formatVES(dueVes)}</span>
+          </div>
+        </div>
+      `;
+    }).join('')}
+  `;
+
+  // Asignar clics a las opciones
+  const items = dropdownList.querySelectorAll('.searchable-dropdown-item');
+  items.forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const orderId = parseInt(item.getAttribute('data-order-id'), 10);
+      selectOrderForPayment(orderId);
+    });
+  });
+}
+
+function selectOrderForPayment(orderId) {
+  const order = (state.pendingOrdersList || []).find(o => o.id === orderId);
+  if (!order) return;
+
+  const hiddenSelect = document.getElementById('payment-order-select');
+  const searchInput = document.getElementById('payment-order-search-input');
+  const amountInput = document.getElementById('payment-amount-input');
+  const stageSelect = document.getElementById('payment-stage-select');
+  const clearBtn = document.getElementById('payment-order-search-clear');
+  const dropdownList = document.getElementById('payment-order-dropdown-list');
+  const container = document.getElementById('searchable-order-select-container');
+
+  if (hiddenSelect) hiddenSelect.value = order.id;
+  if (searchInput) {
+    searchInput.value = `${order.order_code} - ${order.client_name} (${order.formatted_date || 'Reciente'})`;
+  }
+  if (amountInput && order.amount_due) {
+    amountInput.value = order.amount_due.toFixed(2);
+  }
+  if (stageSelect && order.pending_stage) {
+    stageSelect.value = order.pending_stage;
+  }
+  if (clearBtn) clearBtn.classList.add('is-visible');
+
+  // Cerrar menú desplegable
+  if (dropdownList) dropdownList.classList.remove('is-open');
+  if (container) container.classList.remove('is-open');
+}
+
+function clearOrderSelection() {
+  const hiddenSelect = document.getElementById('payment-order-select');
+  const searchInput = document.getElementById('payment-order-search-input');
+  const amountInput = document.getElementById('payment-amount-input');
+  const clearBtn = document.getElementById('payment-order-search-clear');
+  const dropdownList = document.getElementById('payment-order-dropdown-list');
+  const container = document.getElementById('searchable-order-select-container');
+
+  if (hiddenSelect) hiddenSelect.value = '';
+  if (searchInput) {
+    searchInput.value = '';
+    searchInput.focus();
+  }
+  if (amountInput) amountInput.value = '';
+  if (clearBtn) clearBtn.classList.remove('is-visible');
+
+  renderSearchableOrderOptions('');
+  if (dropdownList) dropdownList.classList.add('is-open');
+  if (container) container.classList.add('is-open');
+}
+
 async function openNewPaymentModal() {
   const modal = document.getElementById('new-payment-modal-backdrop');
-  const selectOrder = document.getElementById('payment-order-select');
   if (!modal) return;
 
   try {
     const orders = await getOrdersForPaymentSelect();
     state.pendingOrdersList = orders;
-
-    if (selectOrder) {
-      selectOrder.innerHTML = `
-        <option value="">-- Seleccione un pedido pendiente --</option>
-        ${orders.map(o => `
-          <option value="${o.id}" data-code="${o.order_code}" data-stage="${o.pending_stage || 'initial'}" data-due="${o.amount_due || 100}">
-            ${o.order_code} - ${o.client_name} (Pendiente: $${o.amount_due || 0})
-          </option>
-        `).join('')}
-      `;
-    }
+    renderSearchableOrderOptions('');
   } catch (err) {
     console.warn('[TuEstante Payment] Error al cargar pedidos pendientes:', err);
   }
@@ -652,24 +793,54 @@ function closeNewPaymentModal() {
   if (modal) modal.classList.remove('is-open');
   const form = document.getElementById('new-payment-form');
   if (form) form.reset();
+  
+  const hiddenSelect = document.getElementById('payment-order-select');
+  const searchInput = document.getElementById('payment-order-search-input');
+  const clearBtn = document.getElementById('payment-order-search-clear');
+  const dropdownList = document.getElementById('payment-order-dropdown-list');
+  const container = document.getElementById('searchable-order-select-container');
+
+  if (hiddenSelect) hiddenSelect.value = '';
+  if (searchInput) searchInput.value = '';
+  if (clearBtn) clearBtn.classList.remove('is-visible');
+  if (dropdownList) dropdownList.classList.remove('is-open');
+  if (container) container.classList.remove('is-open');
 }
 
 function setupNewPaymentFormAutoFill() {
-  const selectOrder = document.getElementById('payment-order-select');
-  const amountInput = document.getElementById('payment-amount-input');
-  const stageSelect = document.getElementById('payment-stage-select');
+  const searchInput = document.getElementById('payment-order-search-input');
+  const clearBtn = document.getElementById('payment-order-search-clear');
+  const dropdownList = document.getElementById('payment-order-dropdown-list');
+  const container = document.getElementById('searchable-order-select-container');
 
-  if (selectOrder) {
-    selectOrder.addEventListener('change', () => {
-      const selectedOption = selectOrder.selectedOptions[0];
-      if (selectedOption && selectedOption.value) {
-        const due = selectedOption.getAttribute('data-due');
-        const stage = selectedOption.getAttribute('data-stage');
-        if (amountInput && due) amountInput.value = due;
-        if (stageSelect && stage) stageSelect.value = stage;
-      }
+  if (searchInput) {
+    searchInput.addEventListener('focus', () => {
+      renderSearchableOrderOptions(searchInput.value);
+      if (dropdownList) dropdownList.classList.add('is-open');
+      if (container) container.classList.add('is-open');
+    });
+
+    searchInput.addEventListener('input', () => {
+      renderSearchableOrderOptions(searchInput.value);
+      if (dropdownList) dropdownList.classList.add('is-open');
+      if (container) container.classList.add('is-open');
     });
   }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearOrderSelection();
+    });
+  }
+
+  // Cerrar menú al hacer clic fuera del contenedor
+  document.addEventListener('click', (e) => {
+    if (container && !container.contains(e.target)) {
+      if (dropdownList) dropdownList.classList.remove('is-open');
+      if (container) container.classList.remove('is-open');
+    }
+  });
 
   const form = document.getElementById('new-payment-form');
   if (form) {
@@ -678,7 +849,14 @@ function setupNewPaymentFormAutoFill() {
       
       const selectEl = document.getElementById('payment-order-select');
       const orderId = parseInt(selectEl.value, 10);
-      const orderCode = selectEl.selectedOptions[0]?.getAttribute('data-code') || '#00125';
+      if (!orderId) {
+        showToast('info', 'Selecciona un Pedido', 'Por favor selecciona un pedido de la lista para continuar.');
+        if (searchInput) searchInput.focus();
+        return;
+      }
+
+      const selectedOrder = (state.pendingOrdersList || []).find(o => o.id === orderId);
+      const orderCode = selectedOrder?.order_code || `#00${orderId}`;
       const stage = document.getElementById('payment-stage-select').value;
       const amount = parseFloat(document.getElementById('payment-amount-input').value);
       const method = document.getElementById('payment-method-select').value;
@@ -1022,9 +1200,8 @@ function setupModalEvents() {
  * ==========================================================================
  */
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1. Inicializar Navbar y Footer
-  initNavbar({ title: 'Pagos' });
-  initFooter();
+  // 1. Cargar componentes (Navbar, Drawer, Footer)
+  await loadAdminComponents({ title: 'Pagos' });
 
   // 2. Configurar eventos de UI
   setupFiltersAndPagination();

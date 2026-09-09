@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Directorio de Trabajadores y Cartera | TuEstante Admin</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Componentes base del Admin -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Estilos del Libro de Deudas -->
+  <link rel="stylesheet" href="employee-ledger.css">
+</head>
+<body data-page-title="Trabajadores">
+
+  <!-- Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <div class="app-layout" id="app-layout">
+    
+    <!-- Placeholders para componentes reutilizables -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal -->
+    <main class="app-main-content">
+      <div class="ledger-page-container">
+
+        <!-- 1. Encabezado de la Pantalla -->
+        <section class="screen-header-card">
+          <div class="screen-header-text">
+            <h2 class="screen-main-title">Directorio de Trabajadores</h2>
+            <p class="screen-main-desc">
+              Gestión de colaboradores, límites de crédito por nómina y seguimiento de saldos en proveeduría.
+            </p>
+          </div>
+          <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" class="btn btn-outline" id="btn-reload-data">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span>Sincronizar</span>
+            </button>
+            <a href="employee-create.html" class="btn btn-primary" id="btn-open-register-employee" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>+ Registrar Empleado</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- 2. KPIs Financieros Superiores -->
+        <section class="kpis-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon-box kpi-icon-danger">💳</div>
+            <div class="kpi-details">
+              <span class="kpi-label">Cartera Total por Cobrar</span>
+              <strong class="kpi-value text-danger" id="metric-total-debt">$0.00</strong>
+              <span class="kpi-sub" id="metric-total-debt-ves">Bs. 0.00</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon-box kpi-icon-warning">👥</div>
+            <div class="kpi-details">
+              <span class="kpi-label">Trabajadores con Deuda</span>
+              <strong class="kpi-value" id="metric-emp-with-debt">0</strong>
+              <span class="kpi-sub" id="metric-total-emp-sub">De 0 colaboradores</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon-box kpi-icon-success">💵</div>
+            <div class="kpi-details">
+              <span class="kpi-label">Total Cobrado / Abonado</span>
+              <strong class="kpi-value text-success" id="metric-total-paid">$0.00</strong>
+              <span class="kpi-sub">Retenciones y abonos del período</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Barra de Búsqueda y Filtros -->
+        <section class="filters-card">
+          <div class="filter-search-group">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+              type="text" 
+              id="input-search" 
+              class="filter-search-input" 
+              placeholder="Buscar trabajador por nombre, cédula, ficha o departamento..." 
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="filters-dropdown-group">
+            <div class="filter-select-wrap">
+              <label for="select-filter-status" class="filter-label">Estado de Cuenta:</label>
+              <select id="select-filter-status" class="filter-select">
+                <option value="all">Todos los trabajadores</option>
+                <option value="with-debt">Con Saldo Pendiente</option>
+                <option value="overdue">Con Deuda Atrasada</option>
+                <option value="clean">Sin Deuda (Al Día)</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Tabla de Trabajadores y Saldos -->
+        <section class="table-card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 54px; text-align: center;">Foto</th>
+                  <th>Ficha / Doc</th>
+                  <th>Colaborador</th>
+                  <th>Cargo / Departamento</th>
+                  <th>Salario Referencia</th>
+                  <th>Deuda Acumulada</th>
+                  <th style="text-align: center;">Estado Cartera</th>
+                  <th style="text-align: right; min-width: 180px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="employees-table-body">
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">
+                    Cargando directorio de trabajadores...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: REGISTRO DE ABONO O PAGO (DebtPayment)
+       ====================================================================== -->
+  <div class="modal-backdrop" id="payment-modal" role="dialog" aria-modal="true">
+    <div class="modal-window modal-payment-window">
+      <div class="modal-header">
+        <div class="header-with-icon">
+          <span class="pay-icon-circle">💵</span>
+          <div>
+            <h3>Registrar Abono o Pago a Cuenta</h3>
+            <p class="modal-subtitle">Amortización directa sobre el saldo deudor del empleado</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-payment">✕</button>
+      </div>
+
+      <form id="payment-form" autocomplete="off">
+        <div class="modal-body">
+          <input type="hidden" id="pay-emp-id">
+
+          <!-- Tarjeta de Colaborador y Saldo Deudor -->
+          <div class="pay-worker-badge-box">
+            <div class="pay-worker-col">
+              <span class="badge-box-label">Colaborador:</span>
+              <strong class="badge-worker-name" id="pay-emp-name">Nombre Empleado</strong>
+              <span class="badge-worker-sub" id="pay-emp-doc">Ficha: EMP-000</span>
+            </div>
+            <div class="pay-worker-col pay-debt-highlight">
+              <span class="badge-box-label">Deuda Pendiente Actual:</span>
+              <strong class="badge-debt-val" id="pay-emp-debt">$0.00</strong>
+              <span class="badge-debt-ves" id="pay-emp-debt-ves">Bs. 0.00</span>
+            </div>
+          </div>
+
+          <!-- Monto del Abono en USD -->
+          <div class="form-group">
+            <label for="pay-amount" class="form-label">Monto del Abono (USD $) <span class="req">*</span></label>
+            <div class="input-with-currency">
+              <span class="currency-symbol">$</span>
+              <input type="number" step="0.01" min="0.01" id="pay-amount" class="form-input currency-input" placeholder="0.00" required>
+            </div>
+            <div class="pay-live-ves" id="pay-live-ves">Equivalente: Bs. 0.00 (Tasa BCV)</div>
+          </div>
+
+          <!-- Modalidad / Tipo de Pago -->
+          <div class="form-group">
+            <label for="pay-type" class="form-label">Modalidad del Pago <span class="req">*</span></label>
+            <select id="pay-type" class="form-select" required>
+              <option value="PAYROLL_DEDUCTION">Deducción de Nómina (Corte RRHH)</option>
+              <option value="CASH">Efectivo en Almacén / Tienda</option>
+              <option value="TRANSFER">Transferencia Bancaria / Pago Móvil</option>
+            </select>
+          </div>
+
+          <!-- Referencia Bancaria / Documento -->
+          <div class="form-group" id="group-pay-ref">
+            <label for="pay-ref" class="form-label">Nº Referencia / Recibo</label>
+            <input type="text" id="pay-ref" class="form-input" placeholder="Ej: NOM-Q1-2026 o REF-847291">
+          </div>
+
+          <!-- Observaciones -->
+          <div class="form-group">
+            <label for="pay-notes" class="form-label">Observaciones o Justificación</label>
+            <textarea id="pay-notes" class="form-textarea" rows="2" placeholder="Detalles adicionales del abono..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-payment">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-payment">
+            <span>💾 Confirmar Abono</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: REGISTRAR NUEVO EMPLEADO
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-register-employee" role="dialog" aria-modal="true">
+    <div class="modal-window modal-register-window" style="max-width: 620px;">
+      <div class="modal-header">
+        <div class="header-with-icon">
+          <span class="pay-icon-circle" style="background: #e0f2fe; color: #005187;">👤</span>
+          <div>
+            <h3>Registrar Nuevo Trabajador</h3>
+            <p class="modal-subtitle">Alta de colaborador en nómina y tienda de empleados</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-register-modal">✕</button>
+      </div>
+
+      <form id="form-register-employee" autocomplete="off">
+        <div class="modal-body" style="padding: 20px 24px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label for="reg-first-name" class="form-label">Nombre(s) <span class="req" style="color: #ef4444;">*</span></label>
+              <input type="text" id="reg-first-name" class="form-input" placeholder="Ej: Juan" required>
+            </div>
+            <div class="form-group">
+              <label for="reg-last-name" class="form-label">Apellido(s) <span class="req" style="color: #ef4444;">*</span></label>
+              <input type="text" id="reg-last-name" class="form-input" placeholder="Ej: Pérez" required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
+            <div class="form-group">
+              <label for="reg-doc" class="form-label">Cédula / Documento <span class="req" style="color: #ef4444;">*</span></label>
+              <input type="text" id="reg-doc" class="form-input" placeholder="Ej: V-12345678" required>
+            </div>
+            <div class="form-group">
+              <label for="reg-emp-number" class="form-label">Ficha / N° Empleado <span class="req" style="color: #ef4444;">*</span></label>
+              <input type="text" id="reg-emp-number" class="form-input" placeholder="Ej: EMP-042" required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
+            <div class="form-group">
+              <label for="reg-dept" class="form-label">Departamento <span class="req" style="color: #ef4444;">*</span></label>
+              <input type="text" id="reg-dept" class="form-input" placeholder="Ej: Producción, Logística..." required>
+            </div>
+            <div class="form-group">
+              <label for="reg-pos" class="form-label">Cargo / Puesto <span class="req" style="color: #ef4444;">*</span></label>
+              <input type="text" id="reg-pos" class="form-input" placeholder="Ej: Operario, Analista..." required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
+            <div class="form-group">
+              <label for="reg-salary" class="form-label">Salario Base Quincenal ($ USD) <span class="req" style="color: #ef4444;">*</span></label>
+              <input type="number" id="reg-salary" class="form-input" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+            <div class="form-group">
+              <label for="reg-email" class="form-label">Correo Electrónico (Opcional)</label>
+              <input type="email" id="reg-email" class="form-input" placeholder="empleado@correo.com">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-register">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-register">
+            <span>💾 Registrar Trabajador</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL LIGHTBOX VISUALIZADOR DE FOTO EN PANTALLA COMPLETA
+       ====================================================================== -->
+  <div class="modal-backdrop lightbox-backdrop" id="modal-image-lightbox" role="dialog" aria-modal="true">
+    <div class="lightbox-container">
+      <button type="button" class="lightbox-close-btn" id="btn-close-lightbox" title="Cerrar imagen (Esc)">✕</button>
+      <div class="lightbox-image-wrap">
+        <img id="lightbox-full-img" src="" alt="Foto de trabajador ampliada" class="lightbox-img">
+      </div>
+      <div class="lightbox-caption" id="lightbox-caption">Foto del Trabajador</div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="employee-ledger.js"></script>
+</body>
+</html>

@@ -394,15 +394,15 @@ export const VENEZUELA_LOCATIONS = {
 };
 
 /**
- * Obtiene la lista ordenada de todos los Estados disponibles.
+ * Obtiene la lista ordenada alfabéticamente de todos los Estados disponibles.
  * @returns {string[]}
  */
 export function getVenezuelaStates() {
-  return Object.keys(VENEZUELA_LOCATIONS).sort();
+  return Object.keys(VENEZUELA_LOCATIONS).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
 }
 
 /**
- * Obtiene la lista de municipios pertenecientes a un estado dado.
+ * Obtiene la lista ordenada alfabéticamente de municipios pertenecientes a un estado dado.
  * @param {string} stateName Nombre del estado
  * @returns {string[]}
  */
@@ -410,11 +410,11 @@ export function getMunicipalitiesByState(stateName) {
   if (!stateName || !VENEZUELA_LOCATIONS[stateName]) {
     return [];
   }
-  return Object.keys(VENEZUELA_LOCATIONS[stateName]).sort();
+  return Object.keys(VENEZUELA_LOCATIONS[stateName]).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
 }
 
 /**
- * Obtiene la lista de ciudades o localidades pertenecientes a un municipio y estado dados.
+ * Obtiene la lista ordenada alfabéticamente de ciudades o localidades pertenecientes a un municipio y estado dados.
  * @param {string} stateName Nombre del estado
  * @param {string} municipalityName Nombre del municipio
  * @returns {string[]}
@@ -423,5 +423,5 @@ export function getCitiesByMunicipality(stateName, municipalityName) {
   if (!stateName || !municipalityName || !VENEZUELA_LOCATIONS[stateName] || !VENEZUELA_LOCATIONS[stateName][municipalityName]) {
     return [];
   }
-  return VENEZUELA_LOCATIONS[stateName][municipalityName];
+  return [...VENEZUELA_LOCATIONS[stateName][municipalityName]].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
 }

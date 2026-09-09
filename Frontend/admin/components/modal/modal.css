@@ -1,0 +1,240 @@
+/* ==========================================================================
+   TUESTANTE ADMIN - COMPONENTE MODAL REUTILIZABLE (ALERTAS Y CONFIRMACIÓN)
+   ========================================================================== */
+
+.system-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 99999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  box-sizing: border-box;
+}
+
+/* Centrado perfecto de modales de pantalla respetando el ancho dinámico del Drawer */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: var(--drawer-current-width, 260px);
+  width: calc(100% - var(--drawer-current-width, 260px));
+  bottom: 0;
+  box-sizing: border-box;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 1023.98px) {
+  .modal-backdrop {
+    left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+.system-modal-backdrop.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.system-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 45px -10px rgba(0, 30, 60, 0.35), 0 0 0 1px rgba(203, 213, 225, 0.4);
+  padding: 28px 24px 20px;
+  position: relative;
+  box-sizing: border-box;
+  transform: translateY(16px) scale(0.97);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.system-modal-backdrop.is-visible .system-modal-card {
+  transform: translateY(0) scale(1);
+}
+
+/* Icono Superior Contextual */
+.system-modal-icon-wrap {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.system-modal-icon-wrap svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2.2;
+}
+
+/* Variantes de Color para el Icono */
+.system-modal-card.type-danger .system-modal-icon-wrap {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 2px solid #fecaca;
+}
+
+.system-modal-card.type-warning .system-modal-icon-wrap {
+  background: #fef3c7;
+  color: #d97706;
+  border: 2px solid #fde68a;
+}
+
+.system-modal-card.type-success .system-modal-icon-wrap {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 2px solid #bbf7d0;
+}
+
+.system-modal-card.type-info .system-modal-icon-wrap {
+  background: #e0f2fe;
+  color: #005187;
+  border: 2px solid #bae6fd;
+}
+
+/* Título y Mensaje */
+.system-modal-title {
+  margin: 0 0 8px 0;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.system-modal-message {
+  margin: 0 0 24px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.925rem;
+  line-height: 1.5;
+  color: #475569;
+}
+
+/* Botones de Acción */
+.system-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.system-modal-btn {
+  flex: 1;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.925rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border: none;
+  box-sizing: border-box;
+}
+
+.system-modal-btn:focus-visible {
+  outline: 2px solid #005187;
+  outline-offset: 2px;
+}
+
+/* Botón Cancelar */
+.system-modal-btn-cancel {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.system-modal-btn-cancel:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+/* Botones de Confirmación */
+.system-modal-btn-confirm {
+  background: #005187;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 81, 135, 0.25);
+}
+
+.system-modal-btn-confirm:hover {
+  background: #003e68;
+}
+
+.system-modal-card.type-danger .system-modal-btn-confirm {
+  background: #dc2626;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.system-modal-card.type-danger .system-modal-btn-confirm:hover {
+  background: #b91c1c;
+}
+
+.system-modal-card.type-warning .system-modal-btn-confirm {
+  background: #d97706;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3);
+}
+
+.system-modal-card.type-warning .system-modal-btn-confirm:hover {
+  background: #b45309;
+}
+
+.system-modal-card.type-success .system-modal-btn-confirm {
+  background: #16a34a;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+
+.system-modal-card.type-success .system-modal-btn-confirm:hover {
+  background: #15803d;
+}
+
+/* Botón de Cierre 'X' Superior */
+.system-modal-close-x {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.system-modal-close-x:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.system-modal-close-x svg {
+  width: 18px;
+  height: 18px;
+}

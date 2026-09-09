@@ -95,24 +95,6 @@ function mapProduct(p) {
 
     const mainImage = resolveImageUrl(p.product_image || p.image, '../../assets/images/productos/estante-blanco.jpeg');
 
-    let categoryIds = [];
-    if (Array.isArray(p.categories) && p.categories.length > 0) {
-        categoryIds = p.categories.map(c => (typeof c === 'object' && c !== null ? c.id : c));
-    } else if (Array.isArray(p.categories_detail) && p.categories_detail.length > 0) {
-        categoryIds = p.categories_detail.map(c => c.id);
-    } else if (p.category || p.category_detail?.id || p.categoryId) {
-        categoryIds = [p.category || p.category_detail?.id || p.categoryId];
-    }
-
-    let categories = [];
-    if (Array.isArray(p.categories_detail) && p.categories_detail.length > 0) {
-        categories = p.categories_detail.map(c => ({ id: c.id, name: c.category_name || c.name }));
-    } else if (p.category_detail?.category_name || p.categoryName) {
-        categories = [{ id: categoryIds[0] || 1, name: p.category_detail?.category_name || p.categoryName }];
-    } else {
-        categories = [{ id: 1, name: 'General' }];
-    }
-
     const primaryColorOption = {
         name: 'Color Primario',
         hex: '#005187',
@@ -162,10 +144,6 @@ function mapProduct(p) {
         id: p.id,
         typeId: p.product_type || p.product_type_detail?.id || p.typeId || 1,
         typeName: p.product_type_detail?.product_type_name || p.typeName || 'General',
-        categoryIds: categoryIds,
-        categoryId: categoryIds[0] || 1,
-        categories: categories,
-        categoryName: categories[0]?.name || 'General',
         name: p.product_name || p.name || 'Producto sin nombre',
         description: p.description || '',
         fullDescription: p.fullDescription || p.description || '',
@@ -177,6 +155,9 @@ function mapProduct(p) {
         widthCm: p.width_cm !== undefined ? parseFloat(p.width_cm) : (p.widthCm || 0),
         security: p.security || '',
         badge: p.is_feature_product ? 'Destacado' : (p.badge || ''),
+        is_active: p.is_active !== undefined ? Boolean(p.is_active) : true,
+        is_outlet: Boolean(p.is_outlet),
+        quantity: typeof p.quantity === 'number' ? p.quantity : parseInt(p.quantity, 10) || 0,
         is_favorite: Boolean(p.is_favorite),
         favorites_count: p.favorites_count || 0,
         colors: colors,
@@ -395,7 +376,13 @@ function populateProductDetails(product) {
     if (nameEl) nameEl.textContent = product.name;
 
     const priceEl = document.getElementById('detail-product-price');
-    if (priceEl) priceEl.textContent = `$${product.price.toFixed(2)}`;
+    if (priceEl) {
+        let priceHTML = `$${product.price.toFixed(2)}`;
+        if (product.is_outlet) {
+            priceHTML += ` <span style="background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; margin-left: 8px; vertical-align: middle;">⚡ OUTLET (${product.quantity} disp.)</span>`;
+        }
+        priceEl.innerHTML = priceHTML;
+    }
 
     // Renderizar Barra Lateral de Miniaturas (Ángulos + Video)
     renderProductThumbnails(product);
@@ -429,6 +416,9 @@ function populateProductDetails(product) {
     // Actualizar título de la página
     document.title = `${product.name} - TuEstante`;
 
+    // Estado de disponibilidad / Inactividad
+    const isAvailable = product.is_active && (!product.is_outlet || product.quantity > 0);
+
     // Conectar botón Agregar al Carrito (Utiliza la misma estructura e identificación data-* que en catálogo)
     const btnAddCart = document.getElementById('btn-add-to-cart');
     if (btnAddCart) {
@@ -437,10 +427,29 @@ function populateProductDetails(product) {
         btnAddCart.setAttribute('data-price', product.price);
         btnAddCart.setAttribute('data-image', product.image);
 
+        if (!isAvailable) {
+            btnAddCart.disabled = true;
+            btnAddCart.textContent = 'Agotado / No disponible';
+            btnAddCart.style.opacity = '0.6';
+            btnAddCart.style.cursor = 'not-allowed';
+            btnAddCart.style.background = '#94a3b8';
+        } else {
+            btnAddCart.disabled = false;
+            btnAddCart.textContent = 'Añadir al Carrito';
+            btnAddCart.style.opacity = '1';
+            btnAddCart.style.cursor = 'pointer';
+            btnAddCart.style.background = '';
+        }
+
         btnAddCart.onclick = (e) => {
             if (e) {
                 e.preventDefault();
                 e.stopPropagation();
+            }
+
+            if (!isAvailable) {
+                showErrorToast('Producto no disponible', 'Este producto se encuentra agotado o inactivo.');
+                return;
             }
 
             const id = parseInt(btnAddCart.getAttribute('data-id'), 10) || product.id;
@@ -456,7 +465,12 @@ function populateProductDetails(product) {
             }
 
             const qtyInput = document.getElementById('detail-qty-input');
-            const addQty = qtyInput ? Math.max(1, parseInt(qtyInput.value, 10) || 1) : 1;
+            let addQty = qtyInput ? Math.max(1, parseInt(qtyInput.value, 10) || 1) : 1;
+            if (product.is_outlet && addQty > product.quantity) {
+                addQty = product.quantity;
+                if (qtyInput) qtyInput.value = addQty;
+                showInfoToast('Límite de stock', `Solo hay ${product.quantity} unidades disponibles en Outlet.`);
+            }
 
             const CART_STORAGE_KEY = 'tuestante_cart';
             let items = [];

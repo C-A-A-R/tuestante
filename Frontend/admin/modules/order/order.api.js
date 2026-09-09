@@ -621,51 +621,51 @@ export async function getClientsList() {
         id: 1, 
         username: "juanp", 
         name: "Juan Pérez", 
+        first_name: "Juan",
+        first_last_name: "Pérez",
+        identity_document: "V-18452369",
         email: "juan@email.com", 
-        phone: "+58 412 123 4567",
-        address: "Av. Principal, Casa #123, San Cristóbal, Táchira",
-        city: "San Cristóbal",
-        state: "Táchira"
+        phone: "+58 412 123 4567"
       },
       { 
         id: 2, 
         username: "mariag", 
         name: "María González", 
+        first_name: "María",
+        first_last_name: "González",
+        identity_document: "V-20185942",
         email: "maria.gonzalez@empresa.com", 
-        phone: "+58 414 987 6543",
-        address: "CC Sambil, Nivel Autopista, Local 45, Caracas",
-        city: "Caracas",
-        state: "Distrito Capital"
+        phone: "+58 414 987 6543"
       },
       { 
         id: 3, 
         username: "carlosr", 
         name: "Carlos Rodríguez", 
+        first_name: "Carlos",
+        first_last_name: "Rodríguez",
+        identity_document: "V-15894123",
         email: "carlos.prod@gmail.com", 
-        phone: "+58 424 555 1234",
-        address: "Zona Industrial II, Galpón 12, Valencia",
-        city: "Valencia",
-        state: "Carabobo"
+        phone: "+58 424 555 1234"
       },
       { 
         id: 4, 
         username: "inv_madera", 
         name: "Inversiones Madera & Acero C.A.", 
+        first_name: "Inversiones Madera & Acero",
+        first_last_name: "C.A.",
+        identity_document: "J-31058492-1",
         email: "compras@maderayacero.com", 
-        phone: "+58 212 900 1122",
-        address: "Torre Victoria, Piso 8, Ofic. 804, Barquisimeto",
-        city: "Barquisimeto",
-        state: "Lara"
+        phone: "+58 212 900 1122"
       },
       { 
         id: 5, 
         username: "ana_torres", 
         name: "Ana Torres", 
+        first_name: "Ana",
+        first_last_name: "Torres",
+        identity_document: "V-24789512",
         email: "ana.torres@gmail.com", 
-        phone: "+58 416 333 2211",
-        address: "Calle 5 con Carrera 14, Quinta Los Pinos, Mérida",
-        city: "Mérida",
-        state: "Mérida"
+        phone: "+58 416 333 2211"
       }
     ];
   }

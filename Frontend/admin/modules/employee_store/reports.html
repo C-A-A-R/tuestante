@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cortes de Nómina y Conciliación RRHH | TuEstante Admin</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Estilos del Módulo -->
+  <link rel="stylesheet" href="reports.css">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="../../assets/images/logo.jpeg">
+</head>
+<body data-page-title="Cortes de Nómina">
+
+  <!-- Sistema de Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="app-layout" id="app-layout">
+    <!-- Placeholders para componentes reutilizables (Drawer, Navbar, Footer) -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal -->
+    <main class="app-main-content">
+      <div class="reports-container">
+
+        <!-- 1. Encabezado de la Pantalla y Botones de Acción Global -->
+        <section class="screen-header-card">
+          <div class="screen-header-text">
+            <h2 class="screen-main-title">Generador de Cortes de Nómina y Conciliación</h2>
+            <p class="screen-main-desc">
+              Consolida los consumos en proveeduría de la quincena o mes para emitir el archivo de deducciones o liquidar saldos masivamente.
+            </p>
+          </div>
+          <div class="screen-header-actions">
+            <button type="button" id="btn-print-report" class="btn btn-outline">
+              🖨️ Imprimir Corte
+            </button>
+            <button type="button" id="btn-export-csv" class="btn btn-secondary-custom">
+              📥 Exportar Deducciones (CSV)
+            </button>
+            <button type="button" id="btn-open-bulk-deduction" class="btn btn-primary">
+              ⚡ Aplicar Corte Masivo
+            </button>
+          </div>
+        </section>
+
+        <!-- 2. Barra de Filtros de Corte -->
+        <section class="filter-card">
+          <form id="report-filter-form" class="filter-form" autocomplete="off">
+            <div class="filter-field-group">
+              <label for="start-date" class="filter-label">Fecha Desde:</label>
+              <input type="date" id="start-date" class="form-input-date" required>
+            </div>
+            
+            <div class="filter-field-group">
+              <label for="end-date" class="filter-label">Fecha Hasta:</label>
+              <input type="date" id="end-date" class="form-input-date" required>
+            </div>
+
+            <div class="filter-field-group">
+              <label for="filter-department" class="filter-label">Departamento:</label>
+              <select id="filter-department" class="form-select-dept">
+                <option value="all">Todos los departamentos</option>
+              </select>
+            </div>
+
+            <div class="filter-switch-wrap">
+              <label class="switch-toggle" for="filter-only-with-balance">
+                <input type="checkbox" id="filter-only-with-balance" checked>
+                <span class="switch-slider"></span>
+              </label>
+              <span class="switch-label">Solo con retención > $0</span>
+            </div>
+
+            <div class="filter-actions-group">
+              <button type="submit" class="btn btn-primary" id="btn-filter">
+                🔍 Generar Corte
+              </button>
+              <button type="button" class="btn btn-outline" id="btn-current-fortnight">
+                Quincena Actual
+              </button>
+              <button type="button" class="btn btn-outline" id="btn-current-month">
+                Mes Completo
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- 3. Tarjetas de Resumen Global (KPIs) -->
+        <section class="summary-grid">
+          <div class="summary-card">
+            <span class="card-label">Colaboradores con Retención</span>
+            <strong class="card-value" id="kpi-total-employees">0</strong>
+            <span class="card-sub" id="kpi-total-emp-sub">Evaluados en el período</span>
+          </div>
+          <div class="summary-card">
+            <span class="card-label">Consumos Totales en Bodega</span>
+            <strong class="card-value" id="kpi-orders-total">$0.00</strong>
+            <span class="card-sub" id="kpi-orders-count">0 órdenes emitidas</span>
+          </div>
+          <div class="summary-card">
+            <span class="card-label">Abonos Previos Registrados</span>
+            <strong class="card-value text-success" id="kpi-payments-total">$0.00</strong>
+            <span class="card-sub">Efectivo o adelantos</span>
+          </div>
+          <div class="summary-card card-highlight">
+            <span class="card-label">Monto Neto a Descontar de Nómina</span>
+            <strong class="card-value text-primary" id="kpi-net-total">$0.00</strong>
+            <span class="card-sub" id="kpi-net-total-ves">Bs. 0.00</span>
+          </div>
+        </section>
+
+        <!-- 4. Tabla Consolidada de Pre-liquidación -->
+        <section class="report-table-card">
+          <div class="report-table-header">
+            <div>
+              <h3 class="report-title">Pre-liquidación de Descuentos por Trabajador</h3>
+              <p class="report-subtitle" id="report-period-text">Período seleccionado</p>
+            </div>
+            <div class="compliance-badge-notice">
+              <span class="dot-warning"></span>
+              <span>Alerta de Ley: Descuentos mayores al 30% del salario base</span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="report-table" id="report-table">
+              <thead>
+                <tr>
+                  <th>Ficha / Doc</th>
+                  <th>Colaborador</th>
+                  <th>Departamento</th>
+                  <th>Salario Base</th>
+                  <th style="text-align: center;">Órdenes</th>
+                  <th>Consumo ($)</th>
+                  <th>Abonos ($)</th>
+                  <th>Neto a Descontar</th>
+                  <th style="text-align: center;">% Salario</th>
+                  <th>Deuda Total</th>
+                </tr>
+              </thead>
+              <tbody id="report-table-body">
+                <tr>
+                  <td colspan="10" style="text-align: center; padding: 40px; color: #64748b;">
+                    Generando pre-liquidación del corte...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: CONFIRMACIÓN DE CORTE MASIVO DE NÓMINA
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-bulk-deduction" role="dialog" aria-modal="true">
+    <div class="modal-window modal-bulk-window">
+      <div class="modal-header">
+        <div class="header-with-icon">
+          <span class="bulk-icon-alert">⚡</span>
+          <div>
+            <h3>Aplicar Corte Masivo de Nómina</h3>
+            <p class="modal-subtitle">Genera el comprobante de amortización masiva para RRHH</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-bulk-modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="bulk-warning-box">
+          <p>
+            Esta acción registrará un abono de tipo <strong>DEDUCCIÓN DE NÓMINA (PAYROLL_DEDUCTION)</strong> 
+            para cada trabajador con saldo pendiente listado en este corte.
+          </p>
+        </div>
+
+        <div class="bulk-summary-card">
+          <div class="bulk-row">
+            <span>Trabajadores afectados:</span>
+            <strong id="bulk-workers-count">0 personas</strong>
+          </div>
+          <div class="bulk-row">
+            <span>Monto total a amortizar (USD):</span>
+            <strong class="text-primary" id="bulk-total-usd">$0.00</strong>
+          </div>
+          <div class="bulk-row">
+            <span>Equivalente en Bolívares (BCV):</span>
+            <strong id="bulk-total-ves">Bs. 0.00</strong>
+          </div>
+          <div class="bulk-row">
+            <span>Referencia de Nómina:</span>
+            <input type="text" id="bulk-payroll-ref" class="form-input" placeholder="Ej: NOM-QUINCENA-1-SEP2026">
+          </div>
+        </div>
+
+        <div class="bulk-progress-wrap is-hidden" id="bulk-progress-wrap">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="bulk-progress-fill" style="width: 0%;"></div>
+          </div>
+          <span class="progress-text" id="bulk-progress-text">Procesando deducciones...</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-cancel-bulk">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-bulk-deduction">
+          <span>Confirmar y Liquidar Período</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="reports.js"></script>
+</body>
+</html>

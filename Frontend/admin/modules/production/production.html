@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fabricación | TuEstante Admin</title>
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="../../assets/images/logo.jpeg">
+
+  <!-- Estilos Específicos del Módulo de Fabricación -->
+  <link rel="stylesheet" href="./production.css">
+</head>
+<body data-page-title="Fabricación">
+
+  <!-- ========================================================================
+       SISTEMA DE NOTIFICACIONES TOAST (SIN ALERTS)
+       ======================================================================== -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ======================================================================
+       ESTRUCTURA PRINCIPAL DEL PANEL (APP-LAYOUT)
+       ====================================================================== -->
+  <div class="app-layout" id="app-layout">
+
+    <!-- Placeholders para componentes reutilizables (Drawer, Navbar, Footer) -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- ======================================================================
+         CONTENIDO PRINCIPAL: MÓDULO DE FABRICACIÓN
+         ====================================================================== -->
+    <main class="app-main-content">
+      <div class="production-container">
+
+        <!-- Encabezado de la Pantalla -->
+        <section class="screen-header-card">
+          <div class="screen-header-text">
+            <h2 class="screen-main-title">Fabricación</h2>
+            <p class="screen-main-desc">
+              Gestiona y realiza el seguimiento de la producción de los pedidos en el taller.
+            </p>
+          </div>
+          <div class="screen-header-actions">
+            <button type="button" class="btn btn-primary" id="btn-new-production-order">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Nueva Orden</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- KPIs de Fabricación -->
+        <section class="production-kpi-grid" aria-label="Métricas de fabricación" id="production-kpi-section">
+          <!-- Generado dinámicamente por production.js -->
+        </section>
+
+        <!-- Tabla de Órdenes de Fabricación -->
+        <section class="production-table-card">
+          <div class="table-responsive">
+            <table class="data-table" id="table-production">
+              <thead>
+                <tr>
+                  <th>Nº Orden</th>
+                  <th>Pedido</th>
+                  <th>Producto</th>
+                  <th>Estado</th>
+                  <th>Fecha Inicio</th>
+                  <th>Fecha Entrega</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-production">
+                <tr>
+                  <td colspan="7" style="text-align:center; padding: 40px; color: #64748b;">
+                    Cargando órdenes de fabricación...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+
+  </div>
+
+  <!-- Scripts Modulares -->
+  <script type="module" src="./production.js"></script>
+</body>
+</html>

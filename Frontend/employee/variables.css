@@ -1,0 +1,24 @@
+/* ==========================================================================
+   TUESTANTE - PALETA DE VARIABLES CSS Y SISTEMA VISUAL BASE
+   ========================================================================== */
+
+:root {
+  --color-primary: #005187;
+  --color-hover: #003e68;
+  --color-secondary: #4d82bc;
+  --color-accent: #84b6f4;
+  --color-bg-soft: #e0f2fe;
+  --color-bg-panel: #f8fafc;
+  --color-surface: #ffffff;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-border-hover: #cbd5e1;
+
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+}

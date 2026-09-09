@@ -49,8 +49,8 @@
           <span class="drawer-link-text">Inicio</span>
         </a>
       </li>
-
-      <!-- 2. Pedidos (Opción directa) -->
+      
+      <!-- 2. Pedidos -->
       <li class="drawer-item" role="none">
         <a href="modules/order/orders.html" class="drawer-link" data-nav-id="pedidos" role="menuitem">
           <span class="drawer-link-icon">
@@ -68,7 +68,7 @@
 
       <!-- 3. Fabricación -->
       <li class="drawer-item" role="none">
-        <a href="modules/manufacturing/manufacturing.html" class="drawer-link" data-nav-id="fabricacion" role="menuitem">
+        <a href="modules/production/production.html" class="drawer-link" data-nav-id="fabricacion" role="menuitem">
           <span class="drawer-link-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M2 20h20"></path>
@@ -110,7 +110,12 @@
         </a>
       </li>
 
-      <!-- 6. Productos (Opción Desplegable) -->
+      <!-- ── CATÁLOGO ──────────────────────────────────────────────── -->
+      <li class="drawer-section-label" aria-hidden="true">
+        <span class="drawer-section-text">Catálogo</span>
+      </li>
+
+      <!-- 6. Productos (Desplegable) -->
       <li class="drawer-item drawer-item-has-submenu" role="none">
         <button type="button" class="drawer-link drawer-submenu-toggle" aria-expanded="false" aria-controls="submenu-productos" data-nav-id="productos-parent" role="menuitem">
           <span class="drawer-link-icon">
@@ -131,21 +136,15 @@
         <!-- Submenú de Productos -->
         <ul id="submenu-productos" class="drawer-submenu" role="menu" aria-label="Submenú de Productos">
           <li class="drawer-submenu-item" role="none">
-            <a href="modules/product/products.html" class="drawer-submenu-link" data-nav-id="productos" role="menuitem">
+            <a href="modules/product/products.html" class="drawer-submenu-link" data-nav-id="productos-listado" role="menuitem">
               <span class="drawer-submenu-dot"></span>
-              <span class="drawer-submenu-text">Productos</span>
-            </a>
-          </li>
-          <li class="drawer-submenu-item" role="none">
-            <a href="modules/product/categories.html" class="drawer-submenu-link" data-nav-id="categorias" role="menuitem">
-              <span class="drawer-submenu-dot"></span>
-              <span class="drawer-submenu-text">Categorías</span>
+              <span class="drawer-submenu-text">Lista de Productos</span>
             </a>
           </li>
           <li class="drawer-submenu-item" role="none">
             <a href="modules/product/types.html" class="drawer-submenu-link" data-nav-id="tipos-productos" role="menuitem">
               <span class="drawer-submenu-dot"></span>
-              <span class="drawer-submenu-text">Tipos de productos</span>
+              <span class="drawer-submenu-text">Tipos de Productos</span>
             </a>
           </li>
         </ul>
@@ -164,7 +163,84 @@
         </a>
       </li>
 
-      <!-- 8. Notificaciones (con Badge) -->
+      <!-- 8. Trabajadores (Directorio y Gestión de Colaboradores) -->
+      <li class="drawer-item" role="none">
+        <a href="modules/employee_store/employee-ledger.html" class="drawer-link" data-nav-id="trabajadores" role="menuitem">
+          <span class="drawer-link-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </span>
+          <span class="drawer-link-text">Trabajadores</span>
+        </a>
+      </li>
+
+      <!-- ── TIENDA EMPLEADOS ───────────────────────────────────────── -->
+      <li class="drawer-section-label" aria-hidden="true">
+        <span class="drawer-section-text">Tienda Empleados</span>
+      </li>
+
+      <!-- 9. Tienda de Empleados (POS, Inventario, Categorías, Órdenes, Cortes) -->
+      <li class="drawer-item drawer-item-has-submenu" role="none">
+        <button type="button" class="drawer-link drawer-submenu-toggle" aria-expanded="false" aria-controls="submenu-tienda-empleados" data-nav-id="tienda-empleados-parent" role="menuitem">
+          <span class="drawer-link-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+          </span>
+          <span class="drawer-link-text">Tienda Empleados</span>
+          <span class="drawer-arrow-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+        </button>
+
+        <ul id="submenu-tienda-empleados" class="drawer-submenu" role="menu" aria-label="Submenú de Tienda de Empleados">
+          <li class="drawer-submenu-item" role="none">
+            <a href="modules/employee_store/store-pos.html" class="drawer-submenu-link" data-nav-id="tienda-pos" role="menuitem">
+              <span class="drawer-submenu-dot"></span>
+              <span class="drawer-submenu-text">Punto de Venta (POS)</span>
+            </a>
+          </li>
+          <li class="drawer-submenu-item" role="none">
+            <a href="modules/employee_store/internal-products.html" class="drawer-submenu-link" data-nav-id="tienda-productos" role="menuitem">
+              <span class="drawer-submenu-dot"></span>
+              <span class="drawer-submenu-text">Inventario de Productos</span>
+            </a>
+          </li>
+          <li class="drawer-submenu-item" role="none">
+            <a href="modules/employee_store/categories.html" class="drawer-submenu-link" data-nav-id="tienda-categorias" role="menuitem">
+              <span class="drawer-submenu-dot"></span>
+              <span class="drawer-submenu-text">Categorías y Subcat.</span>
+            </a>
+          </li>
+          <li class="drawer-submenu-item" role="none">
+            <a href="modules/employee_store/orders-history.html" class="drawer-submenu-link" data-nav-id="tienda-ordenes" role="menuitem">
+              <span class="drawer-submenu-dot"></span>
+              <span class="drawer-submenu-text">Órdenes</span>
+            </a>
+          </li>
+          <li class="drawer-submenu-item" role="none">
+            <a href="modules/employee_store/reports.html" class="drawer-submenu-link" data-nav-id="tienda-reportes" role="menuitem">
+              <span class="drawer-submenu-dot"></span>
+              <span class="drawer-submenu-text">Cortes de Nómina</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- ── SISTEMA ────────────────────────────────────────────────── -->
+      <li class="drawer-section-label" aria-hidden="true">
+        <span class="drawer-section-text">Sistema</span>
+      </li>
+
+      <!-- 9. Notificaciones (con Badge) -->
       <li class="drawer-item" role="none">
         <a href="modules/notifications/notifications.html" class="drawer-link" data-nav-id="notificaciones" role="menuitem">
           <span class="drawer-link-icon">
@@ -178,7 +254,7 @@
         </a>
       </li>
 
-      <!-- 9. Configuración -->
+      <!-- 10. Configuración -->
       <li class="drawer-item" role="none">
         <a href="modules/settings/settings.html" class="drawer-link" data-nav-id="configuracion" role="menuitem">
           <span class="drawer-link-icon">
@@ -211,3 +287,5 @@
 
 <!-- Backdrop / Overlay para Móvil y Tablet -->
 <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+
+</body>

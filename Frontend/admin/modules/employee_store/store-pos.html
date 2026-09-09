@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Punto de Venta (POS) | TuEstante Admin</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Estilos del Módulo -->
+  <link rel="stylesheet" href="store-pos.css">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="../../assets/images/logo.jpeg">
+</head>
+<body data-page-title="POS">
+
+  <div class="app-layout" id="app-layout">
+    <!-- Placeholders para componentes reutilizables (Drawer, Navbar, Footer) -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal: Interfaz POS en Mostrador -->
+    <main class="app-main-content">
+      <div class="pos-container">
+        
+        <!-- Panel Izquierdo: Selección de Empleado y Búsqueda Rápida de Productos -->
+        <section class="pos-left-panel">
+          
+          <!-- 1. Identificación del Trabajador (Cabecera) -->
+          <div class="pos-card worker-card">
+            <div class="card-header">
+              <div class="header-with-icon">
+                <div class="header-icon-bubble">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="card-title">Identificación del Trabajador</h2>
+                  <p class="card-subtitle">Busca por número de ficha, cédula o nombre</p>
+                </div>
+              </div>
+              <span class="badge badge-info" id="employee-status-badge">Selecciona un trabajador</span>
+            </div>
+
+            <!-- Buscador Rápido con Autocompletado -->
+            <div class="worker-search-box">
+              <div class="search-input-group">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input 
+                  type="text" 
+                  id="worker-search-input" 
+                  class="form-input worker-input" 
+                  placeholder="Escribe número de ficha, documento o nombre..." 
+                  autocomplete="off"
+                >
+                <button type="button" id="btn-clear-worker" class="btn-clear-input hidden" title="Limpiar selección">✕</button>
+              </div>
+
+              <!-- Lista desplegable de sugerencias de trabajadores -->
+              <div id="worker-autocomplete-list" class="worker-autocomplete-dropdown hidden"></div>
+            </div>
+
+            <!-- Tarjeta de Datos en Vivo del Trabajador (Fondo #e0f2fe, Borde #cbd5e1) -->
+            <div id="employee-live-card" class="employee-live-card hidden">
+              <div class="live-card-body">
+                <div class="worker-avatar-box">
+                  <span id="worker-initials">--</span>
+                </div>
+                <div class="worker-details-col">
+                  <h3 class="worker-name" id="emp-name">-</h3>
+                  <div class="worker-meta-row">
+                    <span>Ficha: <strong id="emp-number">-</strong></span>
+                    <span class="meta-sep">•</span>
+                    <span>Cargo/Dpto: <strong id="emp-position-dept">-</strong></span>
+                  </div>
+                </div>
+                <div class="worker-financials-col">
+                  <div class="financial-item">
+                    <span class="fin-label">Salario Base Ref.</span>
+                    <span class="fin-val" id="emp-salary">$0.00</span>
+                  </div>
+                  <div class="financial-item debt-item">
+                    <span class="fin-label">Deuda Actual</span>
+                    <strong class="fin-val-debt" id="emp-debt">$0.00</strong>
+                    <small class="fin-val-ves" id="emp-debt-ves">Bs. 0.00</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Alerta de Deuda de Períodos Anteriores -->
+              <div id="emp-overdue-alert" class="alert-banner alert-warning hidden">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-content">
+                  <strong>Saldo pendiente de períodos anteriores detectado:</strong>
+                  <p id="overdue-desc">Posee saldo pendiente atrasado.</p>
+                  <label class="override-checkbox-label">
+                    <input type="checkbox" id="admin-override-check" checked>
+                    <span><strong>Autorización Administrativa (Admin Override):</strong> Permitir entrega inmediata aun con saldo previo.</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 2. Área de Captura Rápida de Productos (Búsqueda Select & Escaneo) -->
+          <div class="pos-card product-capture-card">
+            <div class="card-header">
+              <div class="header-with-icon">
+                <div class="header-icon-bubble icon-barcode">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <line x1="6" y1="8" x2="6" y2="16"></line>
+                    <line x1="10" y1="8" x2="10" y2="16"></line>
+                    <line x1="14" y1="8" x2="14" y2="16"></line>
+                    <line x1="18" y1="8" x2="18" y2="16"></line>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="card-title">Búsqueda Rápida de Productos</h2>
+                  <p class="card-subtitle">Escribe el código o selecciona del menú para añadir a la canasta</p>
+                </div>
+              </div>
+              <span class="badge badge-success">Catálogo Activo</span>
+            </div>
+
+            <!-- Input Select de Búsqueda Rápida Integrado con Borde Reforzado en #005187 -->
+            <div class="capture-controls-box">
+              <div class="product-combobox-container" id="product-combobox-container">
+                <div class="combobox-field-wrapper">
+                  <div class="combobox-icon-search" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  </div>
+
+                  <input 
+                    type="text" 
+                    id="barcode-input" 
+                    class="form-input barcode-search-input combobox-search-input" 
+                    placeholder="Búsqueda en vivo: escribe nombre o código de barras (ej. 75010001, Harina)..." 
+                    autocomplete="off" 
+                    autofocus
+                    role="combobox"
+                    aria-expanded="false"
+                    aria-autocomplete="list"
+                    aria-controls="product-suggestions-list"
+                  >
+
+                  <button type="button" id="btn-clear-barcode" class="btn-clear-input hidden" title="Limpiar búsqueda">✕</button>
+
+                  <button type="button" id="btn-toggle-product-dropdown" class="btn-combobox-arrow" title="Desplegar catálogo completo de productos" aria-label="Desplegar catálogo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+
+                  <button type="button" class="btn btn-primary btn-scan-action" id="btn-add-by-code" title="Añadir producto seleccionado o escaneado">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Añadir</span>
+                  </button>
+                </div>
+
+                <!-- Lista desplegable integrada de catálogo y sugerencias reactivas -->
+                <div id="product-suggestions-list" class="product-suggestions-dropdown hidden" role="listbox"></div>
+              </div>
+            </div>
+
+            <!-- Grilla Rápida de Productos en Stock (Botones de un clic) -->
+            <div class="quick-products-section">
+              <div class="quick-section-header">
+                <span class="section-badge-title">Productos Frecuentes en Almacén</span>
+                <input type="text" id="quick-filter-chips" class="form-input chips-filter-input" placeholder="Filtrar botones...">
+              </div>
+              <div class="product-chips-grid" id="product-chips-grid">
+                <div class="loading-state">Cargando catálogo...</div>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- Panel Derecho: Canasta de Despacho y Procesamiento -->
+        <section class="pos-right-panel">
+          <div class="pos-card dispatch-grid-card">
+            <div class="card-header">
+              <div class="header-with-icon">
+                <div class="header-icon-bubble icon-cart">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1"></circle>
+                    <circle cx="20" cy="21" r="1"></circle>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="card-title">Lista de Despacho</h2>
+                  <p class="card-subtitle">Productos asignados para entrega inmediata</p>
+                </div>
+              </div>
+              <button type="button" id="btn-clear-cart" class="btn-clear-all" title="Vaciar canasta">
+                Vaciar lista
+              </button>
+            </div>
+
+            <!-- Tabla de Despacho con fondo blanco (#ffffff) -->
+            <div class="dispatch-table-container">
+              <div class="empty-cart-state" id="empty-cart-state">
+                <div class="empty-icon-circle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                  </svg>
+                </div>
+                <p class="empty-title">Sin productos en la orden</p>
+                <small class="empty-desc">Escribe el código o selecciona del menú desplegable para añadir artículos a entregar.</small>
+              </div>
+
+              <table class="dispatch-table hidden" id="dispatch-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>P. Unitario</th>
+                    <th style="text-align: center;">Cantidad</th>
+                    <th style="text-align: right;">Subtotal</th>
+                    <th style="text-align: center; width: 40px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="dispatch-table-body">
+                  <!-- Inyectado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Observaciones de la entrega -->
+            <div class="order-notes-box">
+              <label for="order-notes" class="notes-label">Notas u observaciones de entrega:</label>
+              <input type="text" id="order-notes" class="form-input notes-input" placeholder="Ej: Turno mañana, entrega supervisada por almacén...">
+            </div>
+
+            <!-- Resumen y Cierre de Orden -->
+            <div class="dispatch-summary-box">
+              <div class="summary-line">
+                <span>Total de Unidades a Despachar:</span>
+                <strong id="cart-total-items">0 unidades</strong>
+              </div>
+              <div class="summary-line total-highlight-line">
+                <span class="total-label">Total a Cargar a Nómina:</span>
+                <div class="total-amounts">
+                  <span class="total-amount-usd" id="cart-total-usd">$0.00</span>
+                  <span class="total-amount-ves" id="cart-total-ves">Bs. 0.00</span>
+                </div>
+              </div>
+
+              <!-- Botón Principal (#005187, Hover #003e68): "Procesar Entrega Inmediata" -->
+              <button type="button" class="btn btn-primary btn-block btn-process-delivery" id="btn-checkout" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Procesar Entrega Inmediata</span>
+              </button>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+  </div>
+
+  <!-- Modal de Comprobante / Nota de Entrega Lista para Imprimir -->
+  <div class="modal-backdrop" id="receipt-modal" role="dialog" aria-modal="true">
+    <div class="modal-window receipt-modal-window">
+      <div class="modal-header">
+        <div class="receipt-header-title">
+          <span class="success-icon-badge">✓</span>
+          <div>
+            <h3>Despacho Procesado Exitosamente</h3>
+            <p class="modal-subtitle">Comprobante de Entrega Interna a Nómina</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-modal">✕</button>
+      </div>
+
+      <div class="modal-body" id="receipt-content">
+        <!-- Renderizado dinámico del comprobante para imprimir -->
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-print-receipt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          <span>Imprimir Nota de Consumo</span>
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-new-sale">
+          <span>+ Siguiente Entrega</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+    <div id="footer-placeholder"></div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="store-pos.js"></script>
+</body>
+</html>

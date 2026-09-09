@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrar Trabajador | TuEstante Admin</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Componentes base del Admin -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Estilos de Registro de Empleados -->
+  <link rel="stylesheet" href="employee-create.css">
+</head>
+<body data-page-title="Registrar Trabajador">
+
+  <!-- Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <div class="app-layout" id="app-layout">
+    <!-- Placeholders para componentes reutilizables -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal -->
+    <main class="app-main-content">
+      <div class="employee-create-container">
+
+        <!-- 1. Encabezado de la Pantalla -->
+        <section class="screen-header-card">
+          <div class="screen-header-text">
+            <div class="header-back-link">
+              <a href="employee-ledger.html" class="back-link" id="link-back-ledger">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                <span>Volver a Trabajadores</span>
+              </a>
+            </div>
+            <h2 class="screen-main-title">Registrar Nuevo Trabajador</h2>
+            <p class="screen-main-desc">
+              Ingresa los datos personales, laborales y foto de perfil del colaborador para habilitar consumos internos a crédito de nómina.
+            </p>
+          </div>
+          <div class="header-actions">
+            <a href="employee-ledger.html" class="btn btn-outline" id="btn-cancel-top">Cancelar</a>
+            <button type="submit" form="form-create-employee" class="btn btn-primary" id="btn-submit-top">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span>Guardar Trabajador</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 2. Formulario de Registro Principal -->
+        <form id="form-create-employee" class="form-create-employee" novalidate>
+          <div class="create-grid-layout">
+            
+            <!-- Columna Izquierda: Foto de Perfil del Trabajador -->
+            <div class="photo-upload-panel">
+              <div class="panel-card">
+                <h3 class="panel-title">Foto del Trabajador</h3>
+                <p class="panel-subtitle">Sube una fotografía clara para identificación en el mostrador POS.</p>
+
+                <!-- Zona de Carga / Dropzone -->
+                <div class="photo-dropzone" id="photo-dropzone">
+                  <input type="file" id="input-employee-photo" name="photo" accept="image/png, image/jpeg, image/webp" class="file-hidden-input">
+                  
+                  <!-- Estado Vacío del Dropzone -->
+                  <div class="dropzone-empty" id="dropzone-empty">
+                    <div class="avatar-placeholder-large">
+                      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </div>
+                    <span class="dropzone-prompt">Arrastra la foto aquí o <strong>haz clic para buscar</strong></span>
+                    <small class="dropzone-hint">Formatos: PNG, JPG, WEBP (Máx. 5MB)</small>
+                  </div>
+
+                  <!-- Estado con Previsualización -->
+                  <div class="dropzone-preview hidden" id="dropzone-preview">
+                    <img id="img-photo-preview" src="" alt="Previsualización de foto" class="avatar-preview-img">
+                    <div class="preview-actions">
+                      <button type="button" class="btn-change-photo" id="btn-change-photo" title="Cambiar fotografía">Cambiar</button>
+                      <button type="button" class="btn-remove-photo" id="btn-remove-photo" title="Quitar foto">Quitar</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="photo-tips">
+                  <div class="tip-item">
+                    <span class="tip-icon">✓</span>
+                    <span>Aparecerá en el directorio y al momento del despacho en POS.</span>
+                  </div>
+                  <div class="tip-item">
+                    <span class="tip-icon">✓</span>
+                    <span>Podrá ampliarse a pantalla completa desde la tabla.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: Datos Personales y Laborales -->
+            <div class="form-fields-panel">
+              
+              <!-- Tarjeta 1: Datos de Identidad -->
+              <div class="panel-card">
+                <h3 class="panel-title">1. Datos Personales y Documento</h3>
+                <p class="panel-subtitle">Información básica y número de documento de identidad.</p>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="input-first-name" class="form-label">Nombre(s) <span class="req">*</span></label>
+                    <input type="text" id="input-first-name" name="first_name" class="form-input" placeholder="Ej: Carlos Eduardo" required autocomplete="off">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-last-name" class="form-label">Apellido(s) <span class="req">*</span></label>
+                    <input type="text" id="input-last-name" name="last_name" class="form-input" placeholder="Ej: Zaragoza" required autocomplete="off">
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="input-identity-doc" class="form-label">Cédula o Documento de Identidad <span class="req">*</span></label>
+                    <input type="text" id="input-identity-doc" name="identity_document" class="form-input" placeholder="Ej: V-12345678" required autocomplete="off">
+                    <small class="form-hint">Se utilizará para búsquedas y autenticación en la tienda.</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-email" class="form-label">Correo Electrónico (Opcional)</label>
+                    <input type="email" id="input-email" name="email" class="form-input" placeholder="trabajador@empresa.com" autocomplete="off">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tarjeta 2: Datos Laborales y Tienda -->
+              <div class="panel-card">
+                <h3 class="panel-title">2. Asignación Laboral y Crédito en Tienda</h3>
+                <p class="panel-subtitle">Definición de cargo, ficha y parámetros de consumo.</p>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <div class="label-with-action">
+                      <label for="input-employee-number" class="form-label">Ficha / Código de Empleado <span class="req">*</span></label>
+                      <button type="button" class="btn-text-action" id="btn-auto-code" title="Generar código automático">Generar</button>
+                    </div>
+                    <input type="text" id="input-employee-number" name="employee_number" class="form-input" placeholder="Ej: TRA-0001-2026" required autocomplete="off">
+                    <small class="form-hint">Código único de registro. Formato: TRA-nnnn-año. Haz clic en <strong>Generar</strong> para asignar automáticamente.</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-department" class="form-label">Departamento / Área <span class="req">*</span></label>
+                    <input type="text" id="input-department" name="department" class="form-input" placeholder="Ej: Producción, Almacén, Ventas..." list="departments-list" required autocomplete="off">
+                    <datalist id="departments-list">
+                      <option value="Producción">
+                      <option value="Almacén y Bodega">
+                      <option value="Administración">
+                      <option value="Ventas y Mostrador">
+                      <option value="Mantenimiento">
+                      <option value="Logística y Despacho">
+                      <option value="Recursos Humanos">
+                    </datalist>
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="input-position" class="form-label">Cargo o Puesto <span class="req">*</span></label>
+                    <input type="text" id="input-position" name="position" class="form-input" placeholder="Ej: Operador de Máquina, Ensamblador..." required autocomplete="off">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-salary" class="form-label">Salario Base de Referencia (USD)</label>
+                    <div class="input-prefix-wrapper">
+                      <span class="input-prefix">$</span>
+                      <input type="number" id="input-salary" name="salary" class="form-input input-with-prefix" min="0" step="0.01" value="0.00">
+                    </div>
+                    <small class="form-hint">Monto de referencia para cálculo de cupos de nómina.</small>
+                  </div>
+                </div>
+
+                <!-- Estado Activo -->
+                <div class="form-group toggle-group">
+                  <label class="toggle-switch-label">
+                    <input type="checkbox" id="input-is-active" name="is_active" class="toggle-checkbox" checked>
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">
+                      <strong>Habilitado para Compras en Tienda</strong>
+                      <small>Permite al colaborador acumular consumos y acceder al mostrador POS.</small>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Acciones Inferiores -->
+              <div class="panel-card form-footer-card">
+                <a href="employee-ledger.html" class="btn btn-outline">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btn-submit-bottom">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  <span>Registrar Trabajador</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </form>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="employee-create.js"></script>
+</body>
+</html>

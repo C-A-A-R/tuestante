@@ -1,3 +1,4 @@
+import { loadAdminComponents } from '../../components/navbar/navbar.js';
 /**
  * ==========================================================================
  * TUESTANTE ADMIN - CONTROLADOR DEL MÓDULO DE PEDIDOS (ORDER.JS)
@@ -6,8 +7,6 @@
  * paginación, modales de detalle y registro de nuevos pedidos.
  */
 
-import { initNavbar } from '../../components/navbar/navbar.js';
-import { initFooter } from '../../components/footer/footer.js';
 import { 
   getOrders, 
   getOrderById, 
@@ -100,7 +99,9 @@ function renderOrdersTable(orders) {
       <tr data-order-id="${order.id}">
         <!-- 1. Pedido -->
         <td class="order-code-cell">
-          <strong>${escapeHtml(code)}</strong>
+          <a href="order-detail.html?id=${order.id}" class="order-code-link" title="Ver pedido en pantalla completa">
+            <strong>${escapeHtml(code)}</strong>
+          </a>
         </td>
 
         <!-- 2. Cliente -->
@@ -115,7 +116,11 @@ function renderOrdersTable(orders) {
         <td>
           <div class="products-cell">
             <span class="products-count">${productsLabel}</span>
-            <button type="button" class="products-details-link btn-view-order-details" data-order-id="${order.id}" aria-label="Ver detalles de productos del pedido ${escapeHtml(code)}">
+            <button 
+              type="button" 
+              class="products-details-link btn-view-order-details" 
+              data-order-id="${order.id}" 
+              aria-label="Ver detalles de ${escapeHtml(code)}">
               Ver detalles
             </button>
           </div>
@@ -150,13 +155,13 @@ function renderOrdersTable(orders) {
         <!-- 8. Acciones -->
         <td>
           <div class="actions-cell">
-            <!-- Botón Ver Detalles (Ojo) -->
+            <!-- Botón Ver Vista Previa Modal (Ojo) -->
             <button 
               type="button" 
               class="table-action-btn btn-view-order-details" 
               data-order-id="${order.id}" 
-              title="Ver detalle del pedido" 
-              aria-label="Ver detalle del pedido ${escapeHtml(code)}">
+              title="Ver vista previa del pedido" 
+              aria-label="Ver vista previa de ${escapeHtml(code)}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
@@ -830,9 +835,8 @@ function setupEventListeners() {
  */
 async function initOrdersModule() {
   try {
-    // 1. Inicializar Navbar y Footer automáticos
-    initNavbar({ title: 'Pedidos' });
-    initFooter();
+    // 1. Inicializar componentes compartidos (Navbar, Drawer y Footer)
+    await loadAdminComponents({ title: 'Pedidos' });
 
     // 2. Configurar listeners de interacción
     setupEventListeners();

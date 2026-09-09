@@ -1,0 +1,140 @@
+<header class="navbar-trabajador" id="navbar-trabajador" role="banner">
+  <div class="navbar-container">
+    <!-- Brand / Logotipo -->
+    <div class="navbar-brand-group">
+      <a href="index.html" class="navbar-brand" id="nav-brand-link" title="Ir al Catálogo de Empleados">
+        <div class="navbar-logo-icon">
+          <img id="nav-brand-img" src="../../..//cliente/assets/images/logo.jpeg" alt="Logo TuEstante">
+        </div>
+        <div class="navbar-brand-text">
+          <span class="brand-title">TuEstante</span>
+          <span class="brand-badge">TRABAJADORES</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Buscador Central con Debounce de 300 ms -->
+    <div class="navbar-search-wrapper" role="search">
+      <div class="search-input-group">
+        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input 
+          type="search" 
+          id="navbar-search-input" 
+          class="navbar-search-input" 
+          placeholder="Buscar por nombre, código de barras o categoría..." 
+          aria-label="Buscar en la tienda de empleados"
+          autocomplete="off"
+        />
+        <button type="button" id="navbar-search-clear" class="search-clear-btn" aria-label="Limpiar búsqueda" style="display: none;">
+          &times;
+        </button>
+      </div>
+    </div>
+
+    <!-- Enlaces Directos de Navegación -->
+    <nav class="navbar-nav-links" aria-label="Navegación principal">
+      <a href="index.html" class="nav-link" data-nav="catalogo" id="nav-link-catalogo">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>Catálogo</span>
+      </a>
+      <a href="modules/order/orders.html" class="nav-link" data-nav="pedidos" id="nav-link-pedidos">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <span>Mis Pedidos</span>
+      </a>
+    </nav>
+
+    <!-- Acciones Derecha: Notificaciones, Carrito, Perfil de Usuario & Salir -->
+    <div class="navbar-actions">
+      <!-- Icono de Notificaciones -->
+      <div class="notification-dropdown-wrapper">
+        <button type="button" class="btn-notification-icon" id="btn-notifications" aria-label="Notificaciones de nómina y consumos" title="Notificaciones" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+        </button>
+
+        <!-- Popover de Notificaciones -->
+        <div class="notification-popover" id="notification-popover" style="display: none;" role="region" aria-label="Notificaciones de pedidos y nómina">
+          <div class="popover-header">
+            <div class="popover-title-wrapper">
+              <h4>Notificaciones</h4>
+              <span class="notification-unread-count" id="notification-unread-count" style="display: none;">0</span>
+            </div>
+            <button type="button" class="btn-mark-all-read" id="btn-mark-all-read" title="Marcar todas como leídas">
+              Marcar leídas
+            </button>
+          </div>
+          <div class="popover-tabs" role="tablist">
+            <button type="button" class="popover-tab active" data-tab="all" id="tab-notif-all" role="tab" aria-selected="true">Todas</button>
+            <button type="button" class="popover-tab" data-tab="unread" id="tab-notif-unread" role="tab" aria-selected="false">No leídas</button>
+          </div>
+          <div class="popover-body" id="notification-list" role="list">
+            <div class="notification-empty" id="notification-empty">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <p>No tienes notificaciones</p>
+            </div>
+          </div>
+          <div class="popover-footer">
+            <a href="modules/order/orders.html" id="link-notif-orders" class="popover-footer-link">
+              <span>Ver Mis Pedidos</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Burbuja Flotante de Carrito -->
+      <a href="modules/cart/cart.html" class="cart-bubble-btn" id="btn-cart-bubble" title="Ver Carrito de Compras" aria-label="Carrito de compras">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span class="cart-count-badge" id="cart-count-badge">0</span>
+      </a>
+
+      <!-- Perfil de Usuario con Icono de Usuario -->
+      <a href="modules/profile/profile.html" class="navbar-user-btn" id="nav-link-perfil" data-nav="perfil" title="Mi Perfil y Estado de Cuenta" aria-label="Perfil del colaborador">
+        <div class="navbar-user-avatar">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <span class="navbar-user-text" id="navbar-user-name">Mi Perfil</span>
+      </a>
+
+      <!-- Botón Salir / Logout -->
+      <button type="button" class="btn-logout" id="btn-logout-trabajador" title="Cerrar Sesión" aria-label="Cerrar sesión">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+<!-- </body> -->

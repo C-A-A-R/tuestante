@@ -77,7 +77,7 @@ export async function getDualPrice(amountUSD, customRate = null) {
 }
 
 /**
- * Calcula el desglose de pagos (Pago Inicial 50% y Pago Final 50%) en USD y Bolívares.
+ * Calcula el desglose de pagos (Pago Inicial y Pago Final) en USD y Bolívares.
  * @param {number|string} totalUSD Total de la orden en dólares.
  * @param {number} [customRate] Tasa de cambio opcional.
  * @returns {Promise<{

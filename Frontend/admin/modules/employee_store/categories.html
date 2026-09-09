@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Categorías y Subcategorías | TuEstante Admin</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Componentes base del Admin -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Estilos del Módulo -->
+  <link rel="stylesheet" href="categories.css">
+</head>
+<body data-page-title="Categorías Tienda Empleados">
+
+  <!-- Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <div class="app-layout" id="app-layout">
+    
+    <!-- Placeholders para componentes reutilizables -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal -->
+    <main class="app-main-content">
+      <div class="categories-container">
+
+        <!-- 1. Encabezado de la Pantalla -->
+        <section class="screen-header-card">
+          <div class="screen-header-text">
+            <h2 class="screen-main-title">Gestión Unificada de Categorías y Subcategorías</h2>
+            <p class="screen-main-desc">
+              Organiza la jerarquía de productos de la proveeduría para un despacho ágil en mostrador e inventario ordenado.
+            </p>
+          </div>
+          <div class="screen-header-actions">
+            <!-- Botón Crear Categoría -->
+            <button type="button" class="btn btn-primary" id="btn-create-category">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>+ Nueva Categoría</span>
+            </button>
+            <!-- Botón Crear Subcategoría -->
+            <button type="button" class="btn btn-primary" id="btn-create-subcategory">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>+ Nueva Subcategoría</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 2. Pestañas de Navegación (Tabs) & Barra de Búsqueda -->
+        <section class="tabs-and-filters-card">
+          <div class="tabs-group" role="tablist">
+            <button type="button" class="tab-btn is-active" id="tab-btn-categories" role="tab" aria-selected="true" data-tab="categories">
+              <span class="tab-icon">📁</span>
+              <span>Categorías Principales</span>
+              <span class="tab-badge" id="badge-count-cats">0</span>
+            </button>
+            <button type="button" class="tab-btn" id="tab-btn-subcategories" role="tab" aria-selected="false" data-tab="subcategories">
+              <span class="tab-icon">🏷️</span>
+              <span>Subcategorías</span>
+              <span class="tab-badge" id="badge-count-subcats">0</span>
+            </button>
+          </div>
+
+          <div class="filters-search-wrap">
+            <div class="filter-search-group">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input 
+                type="text" 
+                id="filter-categories-search" 
+                class="filter-search-input" 
+                placeholder="Buscar por nombre o descripción..." 
+                autocomplete="off"
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Vista 1: Tabla de Categorías Principales -->
+        <section class="table-card" id="view-categories">
+          <div class="table-responsive">
+            <table class="data-table" id="table-categories">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">#</th>
+                  <th style="width: 70px; text-align: center;">Imagen</th>
+                  <th>Nombre de la Categoría</th>
+                  <th>Descripción</th>
+                  <th style="text-align: center;">Subcategorías Asociadas</th>
+                  <th style="text-align: right; width: 140px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-categories">
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 40px; color: #64748b;">
+                    Cargando categorías...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 4. Vista 2: Tabla de Subcategorías (Oculta por defecto) -->
+        <section class="table-card is-hidden" id="view-subcategories">
+          <div class="table-responsive">
+            <table class="data-table" id="table-subcategories">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">#</th>
+                  <th style="width: 70px; text-align: center;">Imagen</th>
+                  <th>Categoría Padre</th>
+                  <th>Nombre de Subcategoría</th>
+                  <th>Descripción</th>
+                  <th style="text-align: right; width: 140px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-subcategories">
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 40px; color: #64748b;">
+                    Cargando subcategorías...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL POLIMÓRFICO: CATEGORÍA O SUBCATEGORÍA
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-category-subcat" role="dialog" aria-modal="true">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 id="modal-form-title">Registrar Categoría</h3>
+        <button type="button" class="modal-close-btn" id="btn-close-modal">✕</button>
+      </div>
+
+      <form id="form-category-subcat" autocomplete="off">
+        <div class="modal-body">
+          <input type="hidden" id="entity-id">
+          <input type="hidden" id="entity-type" value="category"> <!-- 'category' o 'subcategory' -->
+
+          <!-- Campo Exclusivo de Subcategoría: Selector de Categoría Padre -->
+          <div class="form-group is-hidden" id="group-parent-category">
+            <label for="input-parent-cat" class="form-label">Categoría Padre <span class="req">*</span></label>
+            <select id="input-parent-cat" class="form-select">
+              <option value="">-- Seleccionar Categoría Padre --</option>
+            </select>
+          </div>
+
+          <!-- Nombre -->
+          <div class="form-group">
+            <label for="input-entity-name" class="form-label" id="label-entity-name">Nombre de la Categoría <span class="req">*</span></label>
+            <input type="text" id="input-entity-name" class="form-input" placeholder="Ej: Víveres, Lácteos, etc." required>
+          </div>
+
+          <!-- Descripción -->
+          <div class="form-group">
+            <label for="input-entity-desc" class="form-label">Descripción (Opcional)</label>
+            <textarea id="input-entity-desc" class="form-textarea" rows="3" placeholder="Detalles o especificaciones..."></textarea>
+          </div>
+
+          <!-- Imagen / Icono (Opcional) -->
+          <div class="form-group" id="group-entity-image">
+            <label class="form-label">Imagen o Icono Representativo (Opcional)</label>
+            <div class="upload-dropzone" id="entity-image-dropzone">
+              <input type="file" id="input-entity-image" class="dropzone-file-input" accept="image/png, image/jpeg, image/webp" style="display: none;">
+              
+              <div class="dropzone-idle-view" id="entity-dropzone-idle">
+                <div class="dropzone-icon-wrap">
+                  <svg class="dropzone-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                </div>
+                <p class="dropzone-prompt">Arrastra o <span class="dropzone-highlight">haz clic para subir</span></p>
+                <p class="dropzone-sub">PNG, JPG, WEBP (Máx. 5MB)</p>
+              </div>
+
+              <div class="dropzone-preview-view hidden" id="entity-dropzone-preview">
+                <img id="entity-image-preview" src="" alt="Vista previa de imagen" class="dropzone-preview-thumb">
+                <div class="dropzone-preview-info">
+                  <span class="dropzone-preview-name" id="entity-image-preview-name">imagen.jpg</span>
+                  <button type="button" class="btn-dropzone-remove" id="btn-remove-entity-image" title="Eliminar imagen">
+                    ✕ Quitar imagen
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-entity">
+            <span>Guardar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 2: LIGHTBOX VISUALIZADOR DE IMAGEN EN PANTALLA COMPLETA
+       ====================================================================== -->
+  <div class="modal-backdrop lightbox-backdrop" id="modal-image-lightbox" role="dialog" aria-modal="true">
+    <div class="lightbox-container">
+      <button type="button" class="lightbox-close-btn" id="btn-close-lightbox" title="Cerrar imagen (Esc)">✕</button>
+      <div class="lightbox-image-wrap">
+        <img id="lightbox-full-img" src="" alt="Imagen ampliada" class="lightbox-img">
+      </div>
+      <div class="lightbox-caption" id="lightbox-caption">Categoría</div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="categories.js"></script>
+</body>
+</html>

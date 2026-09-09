@@ -1,3 +1,4 @@
+import { loadAdminComponents } from '../../components/navbar/navbar.js';
 /**
  * ==========================================================================
  * TUESTANTE ADMIN - CONTROLADOR DE CREACIÓN DE PEDIDO (ORDER-CREATE.JS)
@@ -9,8 +10,6 @@
  * - ManufacturingOrder (generada según el flujo)
  */
 
-import { initNavbar } from '../../components/navbar/navbar.js';
-import { initFooter } from '../../components/footer/footer.js';
 import { getOfficialRate } from '../../js/service/exchange-rate.service.js';
 import { 
   getClientsList, 
@@ -83,6 +82,7 @@ function setupClientSearch() {
     const filtered = createState.clients.filter(c => 
       (c.name && c.name.toLowerCase().includes(query)) ||
       (c.username && c.username.toLowerCase().includes(query)) ||
+      (c.identity_document && c.identity_document.toLowerCase().includes(query)) ||
       (c.email && c.email.toLowerCase().includes(query)) ||
       (c.phone && c.phone.toLowerCase().includes(query))
     );
@@ -110,8 +110,13 @@ function setupClientSearch() {
           <div class="client-result-meta">
             <div class="client-result-avatar">${getInitials(c.name || c.username)}</div>
             <div class="client-result-text">
-              <span class="client-result-name">${escapeHtml(c.name)} <small style="color: var(--primary); font-weight: 600;">(@${escapeHtml(c.username || 'user')})</small></span>
-              <span class="client-result-sub">${escapeHtml(c.email || c.phone || 'Sin datos de contacto')}</span>
+              <span class="client-result-name">
+                ${escapeHtml(c.name)}
+                ${c.identity_document ? `<span class="client-badge-doc" style="display: inline-block; font-size: 0.72rem; padding: 2px 7px; background: #e0f2fe; color: #0284c7; border-radius: 4px; font-weight: 700; margin-left: 6px;">${escapeHtml(c.identity_document)}</span>` : ''}
+              </span>
+              <span class="client-result-sub">
+                ${c.email ? escapeHtml(c.email) : ''} ${c.phone ? `• ${escapeHtml(c.phone)}` : ''}
+              </span>
             </div>
           </div>
           <span class="client-result-action">Seleccionar →</span>
@@ -173,12 +178,14 @@ function selectClient(client) {
     const avatarEl = document.getElementById('client-card-avatar');
     const nameEl = document.getElementById('client-card-name');
     const userEl = document.getElementById('client-card-username');
+    const docEl = document.getElementById('client-card-doc');
     const emailEl = document.getElementById('client-card-email');
     const phoneEl = document.getElementById('client-card-phone');
 
     if (avatarEl) avatarEl.textContent = getInitials(client.name);
     if (nameEl) nameEl.textContent = client.name;
     if (userEl) userEl.textContent = `@${client.username || 'user'}`;
+    if (docEl) docEl.textContent = client.identity_document || 'Sin documento';
     if (emailEl) emailEl.textContent = client.email || 'No registrado';
     if (phoneEl) phoneEl.textContent = client.phone || 'No registrado';
 
@@ -291,33 +298,26 @@ function setupVenezuelaLocations(defaultState = 'Táchira', defaultMuni = 'San C
  */
 
 /**
- * Agrega una nueva fila de producto al pedido
+ * Agrega una nueva fila de producto al pedido (Inicia en cero por defecto)
  * @param {Object} [initialData] Datos iniciales opcionales
  */
 function addOrderItem(initialData = null) {
   createState.itemCounter++;
-  const defaultProduct = createState.products[0] || {
-    id: 1,
-    product_name: "Estante Modular",
-    price: 150.00,
-    image: "../../assets/images/logo.jpeg",
-    sku: "EST-01"
-  };
 
-  const selectedProd = initialData?.product 
-    ? createState.products.find(p => p.id === initialData.product.id) || defaultProduct 
-    : defaultProduct;
+  const selectedProd = initialData?.product_id
+    ? createState.products.find(p => p.id === parseInt(initialData.product_id, 10))
+    : (initialData?.product || null);
 
   const newItem = {
     rowId: createState.itemCounter,
-    product_id: selectedProd.id,
-    product_name: selectedProd.product_name || selectedProd.name,
-    sku: selectedProd.sku || 'EST-00',
-    category: selectedProd.category || 'Mobiliario',
-    image: selectedProd.image || '../../assets/images/logo.jpeg',
+    product_id: selectedProd ? selectedProd.id : null,
+    product_name: selectedProd ? (selectedProd.product_name || selectedProd.name) : '',
+    sku: selectedProd ? (selectedProd.sku || 'EST-00') : '',
+    category: selectedProd ? (selectedProd.category || 'Mobiliario') : '',
+    image: selectedProd ? (selectedProd.image || '../../assets/images/logo.jpeg') : '../../assets/images/logo.jpeg',
     quantity: initialData?.quantity || 1,
-    unit_price: initialData?.unit_price !== undefined ? initialData.unit_price : selectedProd.price,
-    specs: initialData?.specs || selectedProd.description || 'Color: Roble natural | Dimensiones estándar'
+    unit_price: selectedProd ? (initialData?.unit_price !== undefined ? initialData.unit_price : selectedProd.price) : 0,
+    specs: initialData?.specs || ''
   };
 
   createState.orderItems.push(newItem);
@@ -346,7 +346,8 @@ function renderOrderItems() {
   if (!container) return;
 
   container.innerHTML = createState.orderItems.map((item, index) => {
-    const subtotal = item.quantity * item.unit_price;
+    const subtotal = item.product_id ? (item.quantity * item.unit_price) : 0;
+    const selectTooltip = item.product_id ? `${item.product_name} (${formatUsd(item.unit_price)})` : 'Seleccione un producto del catálogo';
 
     return `
       <div class="order-item-row-card" data-row-id="${item.rowId}">
@@ -358,13 +359,15 @@ function renderOrderItems() {
             <div class="item-product-select-wrapper">
               <img 
                 src="${escapeHtml(item.image)}" 
-                alt="${escapeHtml(item.product_name)}" 
+                alt="${escapeHtml(item.product_name || 'Producto')}" 
                 class="item-product-thumb" 
                 id="thumb-${item.rowId}" 
+                title="${escapeHtml(item.product_name || 'Seleccionar producto')}"
                 onerror="this.src='../../assets/images/logo.jpeg'">
-              <select class="form-select product-select font-bold" data-row-id="${item.rowId}">
+              <select class="form-select product-select font-bold" data-row-id="${item.rowId}" title="${escapeHtml(selectTooltip)}">
+                <option value="" disabled ${!item.product_id ? 'selected' : ''}>-- Seleccione un producto del catálogo --</option>
                 ${createState.products.map(p => `
-                  <option value="${p.id}" ${p.id === item.product_id ? 'selected' : ''}>
+                  <option value="${p.id}" title="${escapeHtml(p.product_name || p.name)} - Precio: ${formatUsd(p.price)}" ${p.id === item.product_id ? 'selected' : ''}>
                     ${escapeHtml(p.product_name || p.name)} (${formatUsd(p.price)})
                   </option>
                 `).join('')}
@@ -392,7 +395,7 @@ function renderOrderItems() {
               type="number" 
               class="form-input text-right item-price-input" 
               data-row-id="${item.rowId}" 
-              value="${item.unit_price.toFixed(2)}" 
+              value="${item.product_id ? item.unit_price.toFixed(2) : '0.00'}" 
               min="0" 
               step="0.01" 
               required>
@@ -428,7 +431,7 @@ function renderOrderItems() {
           <textarea 
             class="item-specs-textarea item-specs-input" 
             data-row-id="${item.rowId}" 
-            placeholder="Color, acabado, medidas especiales (Ej: Acabado madera natural barnizada, 180x90cm)...">${escapeHtml(item.specs)}</textarea>
+            placeholder="Color, acabado, medidas especiales (Ej: Acabado madera natural barnizada, 180x90cm)...">${escapeHtml(item.specs || '')}</textarea>
         </div>
       </div>
     `;
@@ -436,7 +439,7 @@ function renderOrderItems() {
 
   // Event Listeners para filas de productos
   container.querySelectorAll('.product-select').forEach(sel => {
-    sel.addEventListener('change', (e) => {
+    sel.addEventListener('change', () => {
       const rowId = parseInt(sel.getAttribute('data-row-id'), 10);
       const prodId = parseInt(sel.value, 10);
       const prod = createState.products.find(p => p.id === prodId);
@@ -449,7 +452,7 @@ function renderOrderItems() {
         item.category = prod.category || 'Mobiliario';
         item.image = prod.image || '../../assets/images/logo.jpeg';
         item.unit_price = prod.price || 0;
-        item.specs = prod.description || item.specs;
+        // El campo specs no se sobreescribe automáticamente, queda a criterio del administrador
 
         renderOrderItems();
         updateFinancialSummary();
@@ -465,7 +468,7 @@ function renderOrderItems() {
       if (item) {
         item.quantity = isNaN(val) || val < 1 ? 1 : val;
         const subtotalBox = document.getElementById(`subtotal-${rowId}`);
-        if (subtotalBox) subtotalBox.textContent = formatUsd(item.quantity * item.unit_price);
+        if (subtotalBox) subtotalBox.textContent = formatUsd(item.product_id ? (item.quantity * item.unit_price) : 0);
         updateFinancialSummary();
       }
     });
@@ -479,7 +482,7 @@ function renderOrderItems() {
       if (item) {
         item.unit_price = isNaN(val) || val < 0 ? 0 : val;
         const subtotalBox = document.getElementById(`subtotal-${rowId}`);
-        if (subtotalBox) subtotalBox.textContent = formatUsd(item.quantity * item.unit_price);
+        if (subtotalBox) subtotalBox.textContent = formatUsd(item.product_id ? (item.quantity * item.unit_price) : 0);
         updateFinancialSummary();
       }
     });
@@ -521,17 +524,25 @@ function updateFinancialSummary() {
 
   let totalQty = 0;
   let totalPriceUsd = 0;
+  let validProductsCount = 0;
 
   createState.orderItems.forEach(it => {
-    totalQty += it.quantity;
-    totalPriceUsd += (it.quantity * it.unit_price);
+    if (it.product_id) {
+      validProductsCount++;
+      totalQty += it.quantity;
+      totalPriceUsd += (it.quantity * it.unit_price);
+    }
   });
 
   const totalPriceBs = totalPriceUsd * createState.exchangeRate;
   const halfUsd = totalPriceUsd * 0.5;
   const halfBs = totalPriceBs * 0.5;
 
-  if (totalItemsCountEl) totalItemsCountEl.textContent = `${createState.orderItems.length} producto(s) (${totalQty} unidades)`;
+  if (totalItemsCountEl) {
+    totalItemsCountEl.textContent = validProductsCount > 0 
+      ? `${validProductsCount} producto(s) (${totalQty} unidades)`
+      : '0 productos (0 unidades)';
+  }
   if (subtotalUsdEl) subtotalUsdEl.textContent = formatUsd(totalPriceUsd);
   if (totalPriceUsdEl) totalPriceUsdEl.textContent = formatUsd(totalPriceUsd);
   if (totalPriceBsEl) totalPriceBsEl.textContent = formatBs(totalPriceBs);
@@ -548,15 +559,16 @@ function updateFinancialSummary() {
  * ==========================================================================
  */
 
-function openQuickClientModal(initialName = '') {
+function openQuickClientModal(initialQuery = '') {
   const modal = document.getElementById('quick-client-modal-backdrop');
   const nameInput = document.getElementById('quick-client-name');
-  const userInput = document.getElementById('quick-client-username');
+  const docInput = document.getElementById('quick-client-doc');
 
-  if (nameInput && initialName) {
-    nameInput.value = initialName;
-    if (userInput) {
-      userInput.value = initialName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (nameInput && initialQuery) {
+    if (/^[vjepg0-9\-\s]+$/i.test(initialQuery)) {
+      if (docInput) docInput.value = initialQuery.toUpperCase();
+    } else {
+      nameInput.value = initialQuery;
     }
   }
 
@@ -573,10 +585,10 @@ function closeQuickClientModal() {
 function handleSaveQuickClient(e) {
   e.preventDefault();
 
-  const name = document.getElementById('quick-client-name').value.trim();
-  const username = document.getElementById('quick-client-username').value.trim();
-  const email = document.getElementById('quick-client-email').value.trim();
-  const phone = document.getElementById('quick-client-phone').value.trim();
+  const name = document.getElementById('quick-client-name')?.value.trim() || '';
+  const doc = document.getElementById('quick-client-doc')?.value.trim() || '';
+  const email = document.getElementById('quick-client-email')?.value.trim() || '';
+  const phone = document.getElementById('quick-client-phone')?.value.trim() || '';
 
   if (!name || !email) {
     alert('Por favor complete el nombre y correo del cliente.');
@@ -586,7 +598,8 @@ function handleSaveQuickClient(e) {
   const newClient = {
     id: Date.now(),
     name,
-    username: username || name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+    username: name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+    identity_document: doc || 'V-00000000',
     email,
     phone
   };
@@ -670,8 +683,14 @@ async function handleCreateOrderSubmit(e) {
   }
 
   // 3. Validar Productos (OrderDetail & OrderProduct)
-  if (createState.orderItems.length === 0) {
-    alert('⚠️ El pedido debe contener al menos un producto.');
+  const validItems = createState.orderItems.filter(it => it.product_id !== null && it.product_id !== '');
+  if (validItems.length === 0) {
+    alert('⚠️ Por favor seleccione al menos un producto para registrar el pedido.');
+    return;
+  }
+
+  if (createState.orderItems.some(it => !it.product_id)) {
+    alert('⚠️ Hay filas de productos sin seleccionar. Por favor seleccione el producto correspondiente o elimine la fila vacía.');
     return;
   }
 
@@ -797,9 +816,8 @@ function escapeHtml(str) {
  */
 async function initOrderCreatePage() {
   try {
-    // 1. Inicializar Navbar y Footer
-    initNavbar({ title: 'Crear Pedido' });
-    initFooter();
+    // 1. Inicializar componentes compartidos (Navbar, Drawer y Footer)
+    await loadAdminComponents({ title: 'Crear Pedido' });
 
     // 2. Obtener Tasa de Cambio BCV
     try {

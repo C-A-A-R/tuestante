@@ -1,11 +1,5 @@
-/**
- * ==========================================================================
- * TUESTANTE ADMIN - CONTROLADOR MODULAR DEL COMPONENTE FOOTER (FOOTER.JS)
- * ==========================================================================
- * Maneja la inyección automática de estilos, año dinámico y soporte de rutas.
- */
-
 import { getBasePathPrefix } from '../drawer/drawer.js';
+import { loadComponent } from '../utils/component-loader.js';
 
 /**
  * Inyecta dinámicamente la hoja de estilo del Footer si no está presente en el <head>
@@ -23,47 +17,28 @@ function ensureFooterStylesExist() {
 /**
  * Inicializa e inyecta el Footer simple en el documento
  */
-export function initFooter() {
+export async function initFooter() {
   ensureFooterStylesExist();
 
   const currentYear = new Date().getFullYear();
 
-  // 1. Si el elemento ya existe en el DOM, actualizar el año
+  // 1. Si no existe el footer en el DOM, cargarlo en su placeholder o inyectarlo
+  if (!document.getElementById('admin-footer')) {
+    if (document.getElementById('footer-placeholder')) {
+      await loadComponent('footer-placeholder', 'components/footer/footer.html');
+    } else {
+      const appLayout = document.getElementById('app-layout') || document.querySelector('.app-layout') || document.body;
+      const placeholder = document.createElement('div');
+      placeholder.id = 'footer-placeholder';
+      appLayout.appendChild(placeholder);
+      await loadComponent('footer-placeholder', 'components/footer/footer.html');
+    }
+  }
+
+  // 2. Actualizar año actual
   const existingYear = document.getElementById('footer-current-year');
   if (existingYear) {
     existingYear.textContent = currentYear;
-  }
-
-  // 2. Si no existe el footer en el DOM, insertarlo automáticamente al final de .app-layout o body
-  if (!document.getElementById('admin-footer')) {
-    const footerMarkup = `
-      <footer id="admin-footer" class="admin-footer" role="contentinfo">
-        <div class="footer-container">
-          <div class="footer-left">
-            <span class="footer-copyright">
-              © <span id="footer-current-year">${currentYear}</span> <strong>TuEstante</strong>. Todos los derechos reservados.
-            </span>
-          </div>
-          <div class="footer-right">
-            <span class="footer-system-badge">
-              <span class="status-indicator-dot"></span>
-              Sistema Operativo TuEstante OMS
-            </span>
-            <span class="footer-divider" aria-hidden="true">•</span>
-            <span class="footer-version">v1.0.0</span>
-            <span class="footer-divider" aria-hidden="true">•</span>
-            <a href="https://wa.me/584266272286" target="_blank" rel="noopener noreferrer" class="footer-link">Soporte Técnico</a>
-          </div>
-        </div>
-      </footer>
-    `;
-
-    const appLayout = document.getElementById('app-layout') || document.querySelector('.app-layout');
-    if (appLayout) {
-      appLayout.insertAdjacentHTML('beforeend', footerMarkup);
-    } else {
-      document.body.insertAdjacentHTML('beforeend', footerMarkup);
-    }
   }
 }
 
@@ -71,3 +46,4 @@ export function initFooter() {
 if (typeof window !== 'undefined') {
   window.initFooter = initFooter;
 }
+

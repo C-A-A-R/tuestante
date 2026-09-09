@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle de Envío | TuEstante Admin</title>
+  <!-- Estilos de Componentes (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="../../assets/images/logo.jpeg">
+</head>
+<body data-page-title="Detalle de Envío">
+
+  <!-- Sistema de Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="app-layout" id="app-layout">
+    <!-- Placeholders para componentes reutilizables (Drawer, Navbar, Footer) -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- ======================================================================
+         CONTENIDO PRINCIPAL DEL DETALLE DE ENVÍO
+         ====================================================================== -->
+    <main class="app-main-content">
+      <div class="shipping-detail-container">
+        
+        <!-- Tarjeta Superior: Encabezado y Acciones -->
+        <section class="detail-header-card">
+          <div class="detail-header-left">
+            <a href="shipping.html" class="btn-back-link" title="Volver al listado de envíos">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+              <span>Volver a Envíos</span>
+            </a>
+            
+            <div class="detail-title-block">
+              <div class="detail-title-line">
+                <h2 class="detail-main-title" id="ship-title-code">ENV-00045</h2>
+                <span class="status-pill badge-ship-pending" id="ship-status-badge">
+                  <span class="status-dot"></span>
+                  <span id="ship-status-text">Pendiente</span>
+                </span>
+                <span class="carrier-badge carrier-mrw" id="ship-carrier-badge">MRW</span>
+              </div>
+              <p class="detail-subtitle" id="ship-created-date">
+                Registrado el 31/08/2026 a las 11:00 AM • Asignado a Pedido <strong id="ship-subtitle-order">#00125</strong>
+              </p>
+            </div>
+          </div>
+
+          <div class="detail-header-actions">
+            <!-- Botón Imprimir Guía -->
+            <button type="button" class="btn btn-outline" id="btn-print-dispatch">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              <span>Imprimir Guía</span>
+            </button>
+
+            <!-- Botón Habilitar Edición -->
+            <button type="button" class="btn btn-primary" id="btn-toggle-edit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <span id="btn-toggle-edit-text">Habilitar edición</span>
+            </button>
+
+            <!-- Botones visibles solo en modo edición -->
+            <div class="edit-action-buttons" id="edit-action-buttons" style="display: none;">
+              <button type="button" class="btn btn-outline" id="btn-cancel-edit">
+                Cancelar
+              </button>
+              <button type="button" class="btn btn-success" id="btn-save-edit">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Guardar cambios</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Grid de Contenido Principal -->
+        <div class="shipping-detail-grid">
+          
+          <!-- ==================================================================
+               COLUMNA IZQUIERDA: ESTADO, DIRECCIÓN Y PRODUCTOS
+               ================================================================== -->
+          <div class="detail-left-column">
+            
+            <!-- TARJETA 1: TRAZABILIDAD Y ESTADO DE ENVÍO -->
+            <section class="detail-card">
+              <div class="detail-card-header">
+                <div class="detail-card-title-wrap">
+                  <div class="card-icon-bubble">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="1" y="3" width="15" height="13"></rect>
+                      <polygon points="16 8 20 8 23 11 23 16 16 8"></polygon>
+                      <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                      <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                    </svg>
+                  </div>
+                  <h3 class="detail-card-title">Trazabilidad y Estado de Entrega</h3>
+                </div>
+                <div class="edit-state-indicator" id="edit-state-indicator">
+                  <span class="mode-badge mode-readonly" id="mode-badge">Modo solo lectura</span>
+                </div>
+              </div>
+
+              <div class="detail-card-body">
+                <!-- Stepper Visual -->
+                <div class="tracking-stepper" id="tracking-stepper">
+                  <div class="tracking-step is-done" id="step-1">
+                    <div class="tracking-circle">✓</div>
+                    <span class="tracking-label">Preparado</span>
+                  </div>
+                  <div class="tracking-step" id="step-2">
+                    <div class="tracking-circle">🚚</div>
+                    <span class="tracking-label">En camino</span>
+                  </div>
+                  <div class="tracking-step" id="step-3">
+                    <div class="tracking-circle">3</div>
+                    <span class="tracking-label">Entregado</span>
+                  </div>
+                </div>
+
+                <!-- Selector de Estado (Editable) -->
+                <div class="status-edit-row" style="margin-top: 20px;">
+                  <div class="form-group" style="flex: 1;">
+                    <label for="detail-ship-status-select" class="form-label">Estado del Despacho:</label>
+                    <select id="detail-ship-status-select" class="form-select" disabled>
+                      <option value="pending">Pendiente (Por retirar en taller)</option>
+                      <option value="in_transit">En camino / En tránsito</option>
+                      <option value="delivered">Entregado al cliente</option>
+                      <option value="returned">Devuelto a taller</option>
+                      <option value="failed">Fallido</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="flex: 1;">
+                    <label for="detail-ship-est-date" class="form-label">Fecha Estimada de Entrega:</label>
+                    <input type="date" id="detail-ship-est-date" class="form-input" disabled>
+                  </div>
+                </div>
+
+                <!-- Fechas de Registro y Despacho -->
+                <div class="timestamps-grid">
+                  <div class="timestamp-item">
+                    <span class="timestamp-label">Fecha de Registro:</span>
+                    <span class="timestamp-val" id="val-created-at">31/08/2026 - 11:00 AM</span>
+                  </div>
+                  <div class="timestamp-item">
+                    <span class="timestamp-label">Fecha de Salida (Despachado):</span>
+                    <span class="timestamp-val" id="val-shipped-at">Pendiente de salida</span>
+                  </div>
+                  <div class="timestamp-item">
+                    <span class="timestamp-label">Fecha de Entrega Real:</span>
+                    <span class="timestamp-val" id="val-delivered-at">Aún no entregado</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- TARJETA 2: DIRECCIÓN DE ENTREGA (LÓGICA CONDICIONAL ESTRICTA) -->
+            <section class="detail-card" id="card-address-section">
+              <div class="detail-card-header">
+                <div class="detail-card-title-wrap">
+                  <div class="card-icon-bubble icon-pin">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                  </div>
+                  <h3 class="detail-card-title">Dirección de Entrega y Destino</h3>
+                </div>
+                <!-- Badge Condicional de Bloqueo -->
+                <div id="address-lock-indicator">
+                  <span class="address-status-badge badge-unlocked" id="address-status-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                    </svg>
+                    <span>Modificable (No enviado)</span>
+                  </span>
+                </div>
+              </div>
+
+              <div class="detail-card-body">
+                <!-- Alerta Informativa Condicional -->
+                <div class="address-alert-box alert-info" id="address-alert-box">
+                  <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  <div class="alert-text" id="address-alert-text">
+                    <strong>Envío aún en taller:</strong> La dirección de entrega puede ser editada habilitando la edición antes de que el pedido sea despachado.
+                  </div>
+                </div>
+
+                <!-- Formulario de Dirección -->
+                <div class="address-form-grid">
+                  <div class="form-group">
+                    <label for="detail-ship-state" class="form-label">Estado:</label>
+                    <input type="text" id="detail-ship-state" class="form-input address-input" placeholder="Ej: Distrito Capital" disabled>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="detail-ship-municipality" class="form-label">Municipio:</label>
+                    <input type="text" id="detail-ship-municipality" class="form-input address-input" placeholder="Ej: Libertador" disabled>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="detail-ship-city" class="form-label">Ciudad / Localidad:</label>
+                    <input type="text" id="detail-ship-city" class="form-input address-input" placeholder="Ej: Caracas" disabled>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                  <label for="detail-ship-address" class="form-label">Sector / Dirección Exacta y Punto de Referencia:</label>
+                  <textarea id="detail-ship-address" class="form-textarea address-input" rows="3" placeholder="Calle, avenida, edificio, piso o local..." disabled></textarea>
+                </div>
+              </div>
+            </section>
+
+            <!-- TARJETA 3: PRODUCTOS INCLUIDOS EN EL PAQUETE -->
+            <section class="detail-card">
+              <div class="detail-card-header">
+                <div class="detail-card-title-wrap">
+                  <div class="card-icon-bubble">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                  </div>
+                  <h3 class="detail-card-title">Productos en este Despacho</h3>
+                </div>
+                <span class="badge-products-count" id="badge-products-count">2 artículos</span>
+              </div>
+
+              <div class="detail-card-body" style="padding: 0;">
+                <div class="table-responsive">
+                  <table class="detail-table">
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th>Especificación / Acabado</th>
+                        <th style="text-align: center; width: 80px;">Cant.</th>
+                      </tr>
+                    </thead>
+                    <tbody id="detail-products-tbody">
+                      <!-- Dinámico -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+          </div>
+
+          <!-- ==================================================================
+               COLUMNA DERECHA: PEDIDO, CLIENTE Y LOGÍSTICA
+               ================================================================== -->
+          <div class="detail-right-column">
+            
+            <!-- TARJETA 4: PEDIDO ASOCIADO Y CLIENTE -->
+            <section class="detail-card">
+              <div class="detail-card-header">
+                <div class="detail-card-title-wrap">
+                  <div class="card-icon-bubble icon-user">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  </div>
+                  <h3 class="detail-card-title">Pedido y Destinatario</h3>
+                </div>
+              </div>
+
+              <div class="detail-card-body">
+                <div class="info-list">
+                  <div class="info-row">
+                    <span class="info-row-label">Pedido Asociado:</span>
+                    <a href="#" id="detail-order-link" class="order-link-pill" title="Ver pedido en pantalla completa">
+                      #00125
+                    </a>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-row-label">Destinatario:</span>
+                    <strong class="info-row-val" id="detail-client-name">Juan Pérez</strong>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-row-label">Teléfono:</span>
+                    <span class="info-row-val" id="detail-client-phone">+58 412 876 5432</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-row-label">Correo Electrónico:</span>
+                    <span class="info-row-val" id="detail-client-email">juan@email.com</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- TARJETA 5: TRANSPORTE Y COSTOS -->
+            <section class="detail-card">
+              <div class="detail-card-header">
+                <div class="detail-card-title-wrap">
+                  <div class="card-icon-bubble">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="1" x2="12" y2="23"></line>
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                  </div>
+                  <h3 class="detail-card-title">Transporte y Costo de Envío</h3>
+                </div>
+              </div>
+
+              <div class="detail-card-body">
+                <div class="form-group">
+                  <label for="detail-ship-distributor" class="form-label">Empresa Transportadora:</label>
+                  <select id="detail-ship-distributor" class="form-select" disabled>
+                    <option value="1">MRW</option>
+                    <option value="2">ZOOM</option>
+                    <option value="3">DHL</option>
+                    <option value="4">Tealca</option>
+                    <option value="5">Domesa</option>
+                    <option value="6">Flete Propio (Entrega Directa)</option>
+                  </select>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                  <label for="detail-ship-price" class="form-label">Costo del Envío (USD):</label>
+                  <div class="input-prefix-wrapper">
+                    <span class="input-prefix">$</span>
+                    <input type="number" id="detail-ship-price" class="form-input" step="0.01" min="0" placeholder="15.00" disabled>
+                  </div>
+                  <small class="price-ves-hint" id="detail-price-ves">Equivalente: Bs. 547,50 (Tasa BCV)</small>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                  <label for="detail-ship-notes" class="form-label">Notas e Instrucciones para el Transportador:</label>
+                  <textarea id="detail-ship-notes" class="form-textarea" rows="3" placeholder="Instrucciones especiales de entrega..." disabled></textarea>
+                </div>
+              </div>
+            </section>
+
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="./shipping-detail.js"></script>
+</body>
+</html>

@@ -1,11 +1,11 @@
 import { initNavbar } from '../../components/navbar/navbar.js';
-import { obtenerProductos, obtenerCategorias, obtenerTiposProducto, alternarFavoritoProducto } from './product.api.js';
+import { obtenerProductos, obtenerTiposProducto, alternarFavoritoProducto } from './product.api.js';
 import { backendOrigin } from '../../js/config.js';
 import { getAccessToken } from '../../js/storage.js';
 import { showCartModal } from '../../components/cart-modal/cart-modal.js';
 import { showSuccessToast, showInfoToast, showErrorToast } from '../../components/toast/toast.js';
 
-function resolveImageUrl(imagePath, fallback = '../../assets/images/categoria/estante.png') {
+function resolveImageUrl(imagePath, fallback = '../../assets/images/productos/estante-blanco.jpeg') {
     if (!imagePath) return fallback;
 
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
@@ -141,10 +141,10 @@ function initHeaderCarousel(types) {
    LÓGICA DE FILTRADO Y BÚSQUEDA DEL CATÁLOGO
    ========================================================================== */
 
-function initFilters(types, categories, products) {
+function initFilters(types, products) {
     const searchInput = document.getElementById('search-input');
     const filterTypeSelect = document.getElementById('filter-type');
-    const filterCategorySelect = document.getElementById('filter-category');
+    const filterOutletSelect = document.getElementById('filter-outlet');
     const filterFeaturedSelect = document.getElementById('filter-featured');
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
 
@@ -159,22 +159,11 @@ function initFilters(types, categories, products) {
         });
     }
 
-    // 2. Llenar Select de Categorías
-    if (filterCategorySelect) {
-        filterCategorySelect.innerHTML = '<option value="all">Todas las Categorías</option>';
-        categories.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = c.name;
-            filterCategorySelect.appendChild(opt);
-        });
-    }
-
-    // 3. Función principal de aplicación de filtros
+    // 2. Función principal de aplicación de filtros
     function applyFilters() {
         const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
         const selectedType = filterTypeSelect ? filterTypeSelect.value : 'all';
-        const selectedCat = filterCategorySelect ? filterCategorySelect.value : 'all';
+        const selectedOutlet = filterOutletSelect ? filterOutletSelect.value : 'all';
         const isFeaturedOnly = filterFeaturedSelect ? (filterFeaturedSelect.value === 'featured') : false;
 
         let filtered = products.filter(p => {
@@ -185,9 +174,12 @@ function initFilters(types, categories, products) {
             const matchesType = selectedType === 'all' || 
                 (p.typeId !== undefined && p.typeId.toString() === selectedType.toString());
             
-            const pCatIds = Array.isArray(p.categoryIds) ? p.categoryIds : (p.categoryId !== undefined ? [p.categoryId] : [1]);
-            const matchesCat = selectedCat === 'all' || 
-                pCatIds.some(id => id !== undefined && id.toString() === selectedCat.toString());
+            let matchesOutlet = true;
+            if (selectedOutlet === 'outlet') {
+                matchesOutlet = Boolean(p.is_outlet);
+            } else if (selectedOutlet === 'regular') {
+                matchesOutlet = !p.is_outlet;
+            }
 
             // Filtro de destacados / más deseados
             const isFeaturedProduct = Boolean(
@@ -198,7 +190,7 @@ function initFilters(types, categories, products) {
             );
             const matchesFeatured = !isFeaturedOnly || isFeaturedProduct;
 
-            return matchesSearch && matchesType && matchesCat && matchesFeatured;
+            return matchesSearch && matchesType && matchesOutlet && matchesFeatured;
         });
 
         // Ordenamiento prioritario
@@ -219,7 +211,7 @@ function initFilters(types, categories, products) {
 
     if (searchInput) searchInput.addEventListener('input', applyFilters);
     if (filterTypeSelect) filterTypeSelect.addEventListener('change', applyFilters);
-    if (filterCategorySelect) filterCategorySelect.addEventListener('change', applyFilters);
+    if (filterOutletSelect) filterOutletSelect.addEventListener('change', applyFilters);
     if (filterFeaturedSelect) filterFeaturedSelect.addEventListener('change', applyFilters);
 
     // Botón Limpiar Filtros
@@ -227,16 +219,16 @@ function initFilters(types, categories, products) {
         clearFiltersBtn.addEventListener('click', () => {
             if (searchInput) searchInput.value = '';
             if (filterTypeSelect) filterTypeSelect.value = 'all';
-            if (filterCategorySelect) filterCategorySelect.value = 'all';
+            if (filterOutletSelect) filterOutletSelect.value = 'all';
             if (filterFeaturedSelect) filterFeaturedSelect.value = 'all';
             applyFilters();
         });
     }
 
-    // Leer parámetros de URL (?search=..., ?buscar=..., ?cat=..., ?type=..., ?featured=...)
+    // Leer parámetros de URL (?search=..., ?buscar=..., ?outlet=..., ?type=..., ?featured=...)
     const urlParams = new URLSearchParams(window.location.search);
     const paramSearch = urlParams.get('search') || urlParams.get('buscar') || urlParams.get('q') || '';
-    const paramCat = urlParams.get('cat') || urlParams.get('category') || urlParams.get('categoryId');
+    const paramOutlet = urlParams.get('outlet') || urlParams.get('is_outlet');
     const paramType = urlParams.get('type') || urlParams.get('typeId');
     const paramFeatured = urlParams.get('featured') || urlParams.get('destacados') || urlParams.get('most_favorited');
 
@@ -244,13 +236,9 @@ function initFilters(types, categories, products) {
         searchInput.value = paramSearch;
     }
 
-    if (paramCat && filterCategorySelect) {
-        const matchOpt = Array.from(filterCategorySelect.options).find(o => 
-            o.value.toString() === paramCat.toString() || 
-            o.textContent.toLowerCase().includes(paramCat.toLowerCase())
-        );
-        if (matchOpt) {
-            filterCategorySelect.value = matchOpt.value;
+    if (paramOutlet && filterOutletSelect) {
+        if (['true', '1', 'yes', 'outlet'].includes(paramOutlet.toLowerCase())) {
+            filterOutletSelect.value = 'outlet';
         }
     }
 
@@ -287,14 +275,22 @@ function createUnifiedCardHTML(p) {
             <span class="star-label">Producto Destacado</span>
         </div>
     ` : '';
+
+    const outletBadgeHTML = p.is_outlet ? `
+        <div class="badge-outlet-flag" style="position: absolute; top: 12px; left: 12px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35); z-index: 3; display: flex; align-items: center; gap: 4px;">
+            <span>⚡ OUTLET</span>
+            ${p.quantity > 0 ? `<span style="background: rgba(0,0,0,0.25); padding: 1px 6px; border-radius: 10px; font-size: 0.68rem;">${p.quantity} disp.</span>` : ''}
+        </div>
+    ` : '';
     
     return `
         <div class="unified-product-card">
-            <div class="unified-card-media">
+            <div class="unified-card-media" style="position: relative;">
                 <a href="product-details.html?id=${p.id}" class="unified-card-img-link">
                     <img src="${p.image}" alt="${p.name}" class="unified-card-img">
                 </a>
                 
+                ${outletBadgeHTML}
                 ${starBadgeHTML}
                 
                 <button class="unified-wishlist-btn ${p.is_favorite ? 'active' : ''}" data-id="${p.id}" title="${p.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos'}" aria-label="Añadir a favoritos">
@@ -392,52 +388,22 @@ function mapProductType(t) {
     };
 }
 
-function mapCategory(c) {
-    if (!c) return null;
-    return {
-        id: c.id,
-        name: c.category_name || c.name || 'Categoría General',
-        description: c.description || '',
-        image: resolveImageUrl(c.category_image || c.image, '../../assets/images/categoria/estante.png')
-    };
-}
-
 function mapProduct(p) {
     if (!p) return null;
-
-    let categoryIds = [];
-    if (Array.isArray(p.categories) && p.categories.length > 0) {
-        categoryIds = p.categories.map(c => (typeof c === 'object' && c !== null ? c.id : c));
-    } else if (Array.isArray(p.categories_detail) && p.categories_detail.length > 0) {
-        categoryIds = p.categories_detail.map(c => c.id);
-    } else if (p.category || p.category_detail?.id || p.categoryId) {
-        categoryIds = [p.category || p.category_detail?.id || p.categoryId];
-    }
-
-    let categoryNames = [];
-    if (Array.isArray(p.categories_detail) && p.categories_detail.length > 0) {
-        categoryNames = p.categories_detail.map(c => c.category_name || c.name);
-    } else if (p.category_detail?.category_name || p.categoryName) {
-        categoryNames = [p.category_detail?.category_name || p.categoryName];
-    } else {
-        categoryNames = ['General'];
-    }
 
     return {
         id: p.id,
         typeId: p.product_type || p.product_type_detail?.id || p.typeId || 1,
         typeName: p.product_type_detail?.product_type_name || p.typeName || 'General',
-        categoryIds: categoryIds,
-        categoryId: categoryIds[0] || 1,
-        categoryNames: categoryNames,
-        categoryName: categoryNames[0] || 'General',
-        allCategoryNames: categoryNames.join(', '),
         name: p.product_name || p.name || 'Producto sin nombre',
         description: p.description || '',
         price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
         rating: p.rating !== undefined ? parseFloat(p.rating) : (p.badge === 'Destacado' ? 5.0 : 4.5),
         image: resolveImageUrl(p.product_image || p.image, '../../assets/images/productos/estante-blanco.jpeg'),
         badge: (p.rating === 5.0 || p.badge === 'Destacado' || p.is_feature_product) ? 'Destacado' : '',
+        is_active: p.is_active !== undefined ? Boolean(p.is_active) : true,
+        is_outlet: Boolean(p.is_outlet),
+        quantity: typeof p.quantity === 'number' ? p.quantity : parseInt(p.quantity, 10) || 0,
         is_favorite: Boolean(p.is_favorite),
         favorites_count: p.favorites_count || 0
     };
@@ -445,35 +411,19 @@ function mapProduct(p) {
 
 async function loadCatalogData() {
     let types = [];
-    let categories = [];
     let products = [];
 
     try {
-        const response = await obtenerProductos({ include_categories_and_types: 'true' });
+        const [productsRes, typesRes] = await Promise.all([
+            obtenerProductos().catch(() => []),
+            obtenerTiposProducto().catch(() => [])
+        ]);
 
-        let rawProducts = [];
-        let rawCategories = [];
-        let rawTypes = [];
-
-        if (response && response.products) {
-            rawProducts = extractList(response.products);
-            rawCategories = extractList(response.categories);
-            rawTypes = extractList(response.product_types);
-        } else {
-            rawProducts = extractList(response);
-            const [catsRes, typesRes] = await Promise.all([
-                obtenerCategorias().catch(() => []),
-                obtenerTiposProducto().catch(() => [])
-            ]);
-            rawCategories = extractList(catsRes);
-            rawTypes = extractList(typesRes);
-        }
+        const rawProducts = extractList(productsRes);
+        const rawTypes = extractList(typesRes);
 
         if (rawProducts.length > 0) {
             products = rawProducts.map(mapProduct).filter(Boolean);
-        }
-        if (rawCategories.length > 0) {
-            categories = rawCategories.map(mapCategory).filter(Boolean);
         }
         if (rawTypes.length > 0) {
             types = rawTypes.map(mapProductType).filter(Boolean);
@@ -482,7 +432,7 @@ async function loadCatalogData() {
         console.error('Error al obtener datos del backend:', err);
     }
 
-    return { types, categories, products };
+    return { types, products };
 }
 
 export const LOCAL_5_PRODUCTS = [
@@ -490,71 +440,66 @@ export const LOCAL_5_PRODUCTS = [
         id: 101,
         typeId: 1,
         typeName: 'Lockers',
-        categoryId: 1,
-        categoryIds: [1],
-        categoryName: 'Lockers Metálicos',
         name: 'LOCKER METÁLICO EJECUTIVO L4',
         description: 'Locker metálico de 4 compartimentos con cerradura individual y ventilación reforzada.',
         price: 399.00,
         rating: 5.0,
         image: '../../assets/images/carrusel-index/LocekrL4Gris.jpg',
-        badge: 'Destacado'
+        badge: 'Destacado',
+        is_outlet: true,
+        quantity: 5
     },
     {
         id: 102,
         typeId: 2,
         typeName: 'Armarios',
-        categoryId: 2,
-        categoryIds: [2],
-        categoryName: 'Armarios Metálicos',
         name: 'ARMARIO METÁLICO MODULAR VERDE',
         description: 'Armario metálico con puertas de cristal y estantes ajustables para almacenamiento.',
         price: 610.00,
         rating: 4.5,
         image: '../../assets/images/gallery/real_space_11.jpg',
-        badge: ''
+        badge: '',
+        is_outlet: false,
+        quantity: 0
     },
     {
         id: 103,
         typeId: 1,
         typeName: 'Lockers',
-        categoryId: 1,
-        categoryIds: [1],
-        categoryName: 'Lockers Metálicos',
         name: 'LOCKER GABINETE MODULAR M3',
         description: 'Locker gabinete modular compacto de 3 casilla para vestuarios y oficinas.',
         price: 280.00,
         rating: 4.8,
         image: '../../assets/images/gallery/real_space_1.jpg',
-        badge: ''
+        badge: '',
+        is_outlet: false,
+        quantity: 0
     },
     {
         id: 104,
         typeId: 4,
         typeName: 'Estantes',
-        categoryId: 4,
-        categoryIds: [4],
-        categoryName: 'Estanterías Industriales',
         name: 'ESTANTE INDUSTRIAL DE ALTA CARGA',
         description: 'Estantería metálica con 5 baldas de alta resistencia para depósitos y talleres.',
         price: 195.00,
         rating: 4.0,
         image: '../../assets/images/gallery/real_space_4.jpg',
-        badge: ''
+        badge: '',
+        is_outlet: true,
+        quantity: 2
     },
     {
         id: 105,
         typeId: 3,
         typeName: 'Gabinetes',
-        categoryId: 3,
-        categoryIds: [3],
-        categoryName: 'Gabinetes de Oficina',
         name: 'GABINETE ARCHIVADOR TURQUESA',
         description: 'Archivador metálico de carpeta suspendida en elegante color turquesa.',
         price: 320.00,
         rating: 5.0,
         image: '../../assets/images/gallery/real_space_9.jpg',
-        badge: 'Destacado'
+        badge: 'Destacado',
+        is_outlet: false,
+        quantity: 0
     }
 ];
 
@@ -572,7 +517,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.classList.add('drawer-collapsed');
 
     // 3. Cargar datos desde el backend (con fallback a los 5 productos locales)
-    let { types, categories, products } = await loadCatalogData();
+    let { types, products } = await loadCatalogData();
 
     if (!products || products.length === 0) {
         products = LOCAL_5_PRODUCTS;
@@ -587,17 +532,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         ];
     }
 
-    if (!categories || categories.length === 0) {
-        categories = [
-            { id: 1, name: 'Lockers Metálicos' },
-            { id: 2, name: 'Armarios Metálicos' },
-            { id: 3, name: 'Gabinetes de Oficina' },
-            { id: 4, name: 'Estanterías Industriales' }
-        ];
-    }
-
     initHeaderCarousel(types);
-    initFilters(types, categories, products);
+    initFilters(types, products);
 
     // Event listener delegado para wishlist y botones + Carrito
     document.addEventListener('click', async (e) => {

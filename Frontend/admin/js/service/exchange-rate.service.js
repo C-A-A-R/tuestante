@@ -8,8 +8,18 @@
  */
 
 const CACHE_KEY = 'tuestante_exchange_rate_cache';
-const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutos de caché
 const FALLBACK_DEFAULT_RATE = 791.32; // Tasa de contingencia en caso de fallo de red
+
+/**
+ * Obtiene la fecha actual en formato YYYY-MM-DD según la zona horaria local.
+ */
+function getTodayDateString() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
 /**
  * Obtiene la tasa de cambio oficial del Dólar (BCV) en Bolívares (Bs.).
@@ -23,11 +33,12 @@ export async function getOfficialRate(forceRefresh = false) {
 
 /**
  * Obtiene los detalles completos de la tasa de cambio actual con metadatos.
+ * Consulta la API solo si no existe caché del día de hoy o si se fuerza la actualización.
  * @param {boolean} [forceRefresh=false] Forzar actualización.
  * @returns {Promise<{ rate: number, source: string, lastUpdated: string, date: Date, isCached: boolean }>}
  */
 export async function getExchangeRateDetails(forceRefresh = false) {
-    // 1. Revisar caché local válida
+    // 1. Revisar si ya tenemos la tasa del día en caché local
     if (!forceRefresh) {
         const cached = getCachedRate();
         if (cached) {
@@ -54,7 +65,8 @@ export async function getExchangeRateDetails(forceRefresh = false) {
                     rate,
                     source: data.fuente ? `BCV (${data.fuente})` : 'BCV Oficial',
                     lastUpdated: data.fechaActualizacion || new Date().toISOString(),
-                    date: new Date()
+                    date: new Date(),
+                    cache_date: getTodayDateString()
                 };
                 saveRateToCache(details);
                 return { ...details, isCached: false };
@@ -82,7 +94,8 @@ export async function getExchangeRateDetails(forceRefresh = false) {
                             rate,
                             source: 'BCV Oficial',
                             lastUpdated: bcvItem.fechaActualizacion || new Date().toISOString(),
-                            date: new Date()
+                            date: new Date(),
+                            cache_date: getTodayDateString()
                         };
                         saveRateToCache(details);
                         return { ...details, isCached: false };
@@ -94,7 +107,7 @@ export async function getExchangeRateDetails(forceRefresh = false) {
         console.warn('Error al consultar lista de monitores de respaldo:', err);
     }
 
-    // 4. Contingencia 2: Usar última tasa guardada en caché aunque haya expirado
+    // 4. Contingencia 2: Usar última tasa guardada en caché aunque sea de un día anterior
     const expiredCache = getCachedRate(true);
     if (expiredCache && expiredCache.rate > 0) {
         return {
@@ -134,7 +147,8 @@ export async function getAllMonitors() {
 }
 
 /**
- * Lee la tasa guardada en localStorage si no ha expirado.
+ * Lee la tasa guardada en localStorage si corresponde al día de hoy.
+ * @param {boolean} [ignoreExpiry=false] Si es true, devuelve la tasa guardada aunque sea de otro día.
  */
 function getCachedRate(ignoreExpiry = false) {
     try {
@@ -143,15 +157,16 @@ function getCachedRate(ignoreExpiry = false) {
         const parsed = JSON.parse(raw);
         if (!parsed || !parsed.rate) return null;
 
-        const now = Date.now();
-        const timestamp = parsed.timestamp || 0;
+        const today = getTodayDateString();
+        const cacheDate = parsed.cache_date;
 
-        if (ignoreExpiry || (now - timestamp < CACHE_TTL_MS)) {
+        if (ignoreExpiry || cacheDate === today) {
             return {
                 rate: parseFloat(parsed.rate),
                 source: parsed.source || 'BCV Oficial',
                 lastUpdated: parsed.lastUpdated || new Date().toISOString(),
-                date: new Date(timestamp)
+                date: new Date(parsed.timestamp || Date.now()),
+                cache_date: cacheDate
             };
         }
         return null;
@@ -161,7 +176,7 @@ function getCachedRate(ignoreExpiry = false) {
 }
 
 /**
- * Guarda la tasa actual en localStorage con timestamp.
+ * Guarda la tasa actual en localStorage con fecha de calendario y timestamp.
  */
 function saveRateToCache(details) {
     try {
@@ -169,6 +184,7 @@ function saveRateToCache(details) {
             rate: details.rate,
             source: details.source,
             lastUpdated: details.lastUpdated,
+            cache_date: details.cache_date || getTodayDateString(),
             timestamp: Date.now()
         }));
     } catch (err) {
@@ -178,3 +194,4 @@ function saveRateToCache(details) {
 
 // Alias para exportación
 export const getExchangeRate = getOfficialRate;
+export const getBcvRate = getOfficialRate;

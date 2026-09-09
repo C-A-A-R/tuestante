@@ -25,74 +25,10 @@
        ======================================================================== -->
   <div class="app-layout" id="app-layout">
     
-    <!-- ======================================================================
-         BARRA DE NAVEGACIÓN SUPERIOR (NAVBAR REUTILIZABLE)
-         ====================================================================== -->
-    <header id="admin-navbar" class="admin-navbar" role="banner">
-      <div class="navbar-left">
-        <button 
-          type="button" 
-          id="navbar-hamburger-btn" 
-          class="navbar-hamburger-btn" 
-          data-drawer-toggle="true" 
-          aria-label="Mostrar u ocultar menú lateral"
-          title="Mostrar menú lateral">
-          <span class="hamburger-bar"></span>
-          <span class="hamburger-bar"></span>
-          <span class="hamburger-bar"></span>
-        </button>
 
-        <div class="navbar-title-container">
-          <nav class="navbar-breadcrumb" aria-label="Navegación">
-            <a href="orders.html" class="breadcrumb-link">Pedidos</a>
-            <span class="breadcrumb-separator">/</span>
-            <span class="breadcrumb-current" id="navbar-breadcrumb-code">#00125</span>
-          </nav>
-          <span class="navbar-breadcrumb-dot" aria-hidden="true">•</span>
-          <h1 class="navbar-screen-title" id="navbar-screen-title">Detalle de Pedido</h1>
-        </div>
-      </div>
-
-      <div class="navbar-right">
-        <!-- Notificaciones -->
-        <div class="navbar-notif-wrapper">
-          <a href="../notifications/notifications.html" class="navbar-icon-btn navbar-notif-btn" id="navbar-notif-btn" aria-label="Ver notificaciones" title="Notificaciones">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-            <span class="navbar-badge" id="navbar-notif-badge" aria-label="5 notificaciones pendientes">5</span>
-          </a>
-        </div>
-
-        <div class="navbar-divider" aria-hidden="true"></div>
-
-        <!-- Perfil Dropdown -->
-        <div class="navbar-user-dropdown" id="navbar-user-dropdown">
-          <button 
-            type="button" 
-            class="navbar-user-btn" 
-            id="navbar-user-btn" 
-            aria-expanded="false" 
-            aria-haspopup="true" 
-            aria-label="Opciones de perfil de usuario">
-            <div class="navbar-avatar" id="navbar-user-avatar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            </div>
-            <div class="navbar-user-meta">
-              <span class="navbar-user-name" id="navbar-user-name">Administrador</span>
-              <span class="navbar-user-email" id="navbar-user-email">admin@tienda.com</span>
-            </div>
-            <svg class="navbar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </header>
+    <!-- Placeholders para componentes reutilizables (Drawer, Navbar, Footer) -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
 
     <!-- ======================================================================
          CONTENIDO PRINCIPAL DEL DETALLE DE PEDIDO
@@ -443,28 +379,8 @@
       </div>
     </main>
 
-    <!-- ======================================================================
-         FOOTER SIMPLE REUTILIZABLE
-         ====================================================================== -->
-    <footer id="admin-footer" class="admin-footer" role="contentinfo">
-      <div class="footer-container">
-        <div class="footer-left">
-          <span class="footer-copyright">
-            © <span id="footer-current-year">2026</span> <strong>TuEstante</strong>. Todos los derechos reservados.
-          </span>
-        </div>
-        <div class="footer-right">
-          <span class="footer-system-badge">
-            <span class="status-indicator-dot"></span>
-            Sistema Administrativo TuEstante OMS
-          </span>
-          <span class="footer-divider" aria-hidden="true">•</span>
-          <span class="footer-version">v1.0.0</span>
-          <span class="footer-divider" aria-hidden="true">•</span>
-          <a href="https://wa.me/584266272286" target="_blank" rel="noopener noreferrer" class="footer-link">Soporte Técnico</a>
-        </div>
-      </div>
-    </footer>
+
+    <div id="footer-placeholder"></div>
 
   </div>
 

@@ -6,8 +6,7 @@
  * interactivo de pedidos por estado y la tabla adaptada de pedidos recientes.
  */
 
-import { initNavbar, setNavbarTitle } from './components/navbar/navbar.js';
-import { initFooter } from './components/footer/footer.js';
+import { loadAdminComponents } from './components/navbar/navbar.js';
 import { 
   getIndexKpiMetrics, 
   getOrderStatusDistribution, 
@@ -386,8 +385,8 @@ function setupModalClose() {
  */
 async function initDashboard() {
   try {
-    // 1. Inicializar la barra de navegación superior (Navbar + Drawer + Favicon + Título)
-    const navbar = initNavbar({ title: 'Dashboard' });
+    // 1. Cargar componentes (Navbar + Drawer + Footer)
+    const navbar = await loadAdminComponents({ title: 'Dashboard' });
     window.TuEstanteNavbar = navbar;
 
     // 2. Cargar datos en paralelo desde el servicio centralizado
@@ -402,9 +401,8 @@ async function initDashboard() {
     renderDonutChart(distribution);
     renderRecentOrdersTable(recentOrders);
 
-    // 4. Configurar eventos de modal e inicializar Footer simple
+    // 4. Configurar eventos de modal
     setupModalClose();
-    initFooter();
 
     console.log('%c[TuEstante Admin] Dashboard principal cargado con éxito y paleta corporativa aplicada.', 'background: #005187; color: #fcffff; font-weight: bold; padding: 4px 8px; border-radius: 4px;');
   } catch (error) {

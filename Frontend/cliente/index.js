@@ -1,6 +1,6 @@
 import { initNavbar } from './components/navbar/navbar.js';
 import { initFooter } from './components/footer/footer.js';
-import { obtenerCategorias, obtenerTiposProducto, obtenerProductosDestacados, obtenerProductos, alternarFavoritoProducto } from './modules/product/product.api.js';
+import { obtenerTiposProducto, obtenerProductosDestacados, obtenerProductos, obtenerProductosOutlet, alternarFavoritoProducto } from './modules/product/product.api.js';
 import { obtenerProyectos } from './modules/project/project.api.js';
 import { extractList, resolveImageUrl } from './js/api.js';
 import { getAccessToken } from './js/storage.js';
@@ -63,39 +63,41 @@ async function loadComponent(placeholderId, filePath) {
 }
 
 /**
- * Carga dinámicamente las Categorías desde la API de Django.
+ * Carga dinámicamente los productos en Zona Outlet desde la API de Django.
  */
-async function loadHomeCategories() {
-  const container = document.getElementById('home-categories-container');
+async function loadHomeOutlet() {
+  const container = document.getElementById('home-outlet-container');
   if (!container) return;
 
   try {
-    const response = await obtenerCategorias();
-    const categories = extractList(response);
-    if (!categories || categories.length === 0) {
-      container.innerHTML = createApiEmptyFeedback('No hay categorías registradas por el momento.', 'Explora nuestro catálogo para conocer todos los productos disponibles.');
+    const response = await obtenerProductosOutlet();
+    const outletProducts = extractList(response);
+    if (!outletProducts || outletProducts.length === 0) {
+      container.innerHTML = createApiEmptyFeedback('No hay productos en liquidación outlet por el momento.', 'Explora nuestro catálogo para conocer todos los productos disponibles.');
       return;
     }
 
-    container.innerHTML = categories.map(cat => {
-      const name = cat.category_name || cat.name || 'Categoría';
-      const desc = cat.description || 'Mobiliario metálico seguro y resistente para tus espacios.';
-      const img = resolveImageUrl(cat.category_image || cat.image, 'assets/images/categoria/estante.png');
+    container.innerHTML = outletProducts.slice(0, 4).map(p => {
+      const name = p.product_name || p.name || 'Producto Outlet';
+      const desc = p.description || 'Oportunidad única en mobiliario metálico con entrega inmediata.';
+      const img = resolveImageUrl(p.product_image || p.image, 'assets/images/categoria/estante.png');
+      const qty = p.quantity !== undefined ? p.quantity : 1;
       return `
-        <a href="modules/product/products.html?cat=${cat.id}" class="category-card">
+        <a href="modules/product/product-details.html?id=${p.id}" class="category-card">
           <div class="category-bg" style="background-image: url('${img}');"></div>
           <div class="category-overlay"></div>
           <div class="category-content">
+            <span style="background:#ef4444;color:#fff;padding:3px 8px;border-radius:12px;font-size:0.75rem;font-weight:700;display:inline-block;margin-bottom:6px;">⚡ OUTLET (${qty} disp.)</span>
             <h3 class="category-title">${name}</h3>
             <p class="category-desc">${desc}</p>
-            <span class="category-btn">Ver Catálogo</span>
+            <span class="category-btn">Ver Oferta</span>
           </div>
         </a>
       `;
     }).join('');
   } catch (error) {
-    console.error('Error al cargar categorías en el home:', error);
-    container.innerHTML = createApiErrorFeedback('No se pudieron cargar las categorías.', 'Verifica la conexión con el servidor backend o recarga la página.');
+    console.error('Error al cargar productos outlet en el home:', error);
+    container.innerHTML = createApiErrorFeedback('No se pudieron cargar las ofertas de Outlet.', 'Verifica la conexión con el servidor backend o recarga la página.');
   }
 }
 
@@ -531,7 +533,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Cargar datos dinámicos desde el backend Django
   loadHomeFeaturedProducts();
-  loadHomeCategories();
+  loadHomeOutlet();
   loadHomeProductTypes();
 
   // Añadir por defecto la clase de drawer cerrado para ajustar el layout del footer

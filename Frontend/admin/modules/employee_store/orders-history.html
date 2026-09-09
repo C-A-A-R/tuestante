@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historial y Auditoría de Órdenes | TuEstante Admin</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Estilos del Módulo -->
+  <link rel="stylesheet" href="orders-history.css">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="../../assets/images/logo.jpeg">
+</head>
+<body data-page-title="Historial de Órdenes">
+
+  <!-- Sistema de Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="app-layout" id="app-layout">
+    <!-- Placeholders para componentes reutilizables (Drawer, Navbar, Footer) -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal -->
+    <main class="app-main-content">
+      <div class="history-container">
+
+        <!-- 1. Encabezado de la Pantalla y KPIs rápidos -->
+        <section class="screen-header-card">
+          <div class="screen-header-text">
+            <h2 class="screen-main-title">Auditoría Global de Despachos en Bodega</h2>
+            <p class="screen-main-desc">
+              Supervisa comprobantes emitidos, verifica snapshots de precios unitarios e inspecciona o anula despachos con reversión automática.
+            </p>
+          </div>
+          <div class="header-kpis-wrap">
+            <div class="kpi-mini-card">
+              <span class="kpi-mini-label">Total Órdenes</span>
+              <strong class="kpi-mini-val" id="kpi-total-orders">0</strong>
+            </div>
+            <div class="kpi-mini-card">
+              <span class="kpi-mini-label">Total Despachado</span>
+              <strong class="kpi-mini-val text-primary" id="kpi-total-amount">$0.00</strong>
+            </div>
+            <div class="kpi-mini-card">
+              <span class="kpi-mini-label">Anuladas</span>
+              <strong class="kpi-mini-val text-danger" id="kpi-total-cancelled">0</strong>
+            </div>
+          </div>
+          <div class="screen-header-actions">
+            <a href="store-pos.html" class="btn btn-primary" id="btn-create-order-pos" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>+ Crear Pedido (POS)</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- 2. Filtros y Búsqueda -->
+        <section class="filters-card">
+          <div class="filter-search-group">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+              type="text" 
+              id="filter-order-search" 
+              class="filter-search-input" 
+              placeholder="Buscar por # Orden, Nombre o Cédula de Trabajador..." 
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="filters-dates-group">
+            <div class="filter-input-wrap">
+              <label for="filter-date-from" class="filter-label">Desde:</label>
+              <input type="date" id="filter-date-from" class="filter-date-input">
+            </div>
+            <div class="filter-input-wrap">
+              <label for="filter-date-to" class="filter-label">Hasta:</label>
+              <input type="date" id="filter-date-to" class="filter-date-input">
+            </div>
+            <div class="filter-input-wrap">
+              <label for="filter-status" class="filter-label">Estado:</label>
+              <select id="filter-status" class="filter-select">
+                <option value="all">Todos los estados</option>
+                <option value="UNDELIVERED">Sin entregar</option>
+                <option value="DELIVERED">Entregado</option>
+                <option value="PAID">Pagado</option>
+                <option value="CANCELLED">Cancelado</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" id="btn-clear-order-filters">
+              Limpiar
+            </button>
+          </div>
+        </section>
+
+        <!-- 3. Tabla de Auditoría -->
+        <section class="table-card">
+          <div class="table-responsive">
+            <table class="data-table" id="table-orders">
+              <thead>
+                <tr>
+                  <th>N° de Orden</th>
+                  <th>Fecha y Hora</th>
+                  <th>Trabajador / Beneficiario</th>
+                  <th style="text-align: center;">Artículos</th>
+                  <th>Total USD</th>
+                  <th>Total VES</th>
+                  <th style="text-align: center;">Estado</th>
+                  <th style="text-align: right; width: 140px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-orders">
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">
+                    Cargando historial de despachos...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 1: INSPECCIÓN DETALLADA DE ORDEN
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-order-detail" role="dialog" aria-modal="true">
+    <div class="modal-window modal-lg-window">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <h3 id="detail-order-number">Orden #000000</h3>
+          <span class="detail-order-date" id="detail-order-date">Fecha de emisión</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-detail-modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        
+        <!-- Tarjeta Trabajador y Metadatos de la Orden -->
+        <div class="worker-summary-box">
+          <div class="worker-info-col">
+            <span class="box-label">Trabajador Despachado</span>
+            <strong class="box-worker-name" id="detail-worker-name">Nombre del Empleado</strong>
+            <span class="box-worker-sub" id="detail-worker-id">Ficha: EMP-000 | CI: V-00000000</span>
+          </div>
+          <div class="worker-info-col">
+            <span class="box-label">Estado de la Orden</span>
+            <div class="status-action-row">
+              <div id="detail-status-badge">
+                <span class="status-badge status-undelivered">Sin entregar</span>
+              </div>
+              <div class="status-change-control">
+                <select id="detail-select-status" class="status-quick-select" title="Actualizar estado">
+                  <option value="UNDELIVERED">Sin entregar</option>
+                  <option value="DELIVERED">Entregado</option>
+                  <option value="PAID">Pagado</option>
+                  <option value="CANCELLED">Cancelado</option>
+                </select>
+                <button type="button" class="btn btn-sm btn-primary" id="btn-update-detail-status">Actualizar</button>
+              </div>
+            </div>
+            <span class="box-worker-sub" id="detail-notes-preview">Sin notas registradas</span>
+          </div>
+        </div>
+
+        <!-- Tabla de Artículos Despachados (Snapshot inmutable) -->
+        <h4 class="section-subheading">Artículos Despachados (Snapshot de Precios)</h4>
+        <div class="table-responsive detail-items-table-wrap">
+          <table class="detail-items-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th style="text-align: center;">Cantidad</th>
+                <th style="text-align: right;">Precio Unit. (USD)</th>
+                <th style="text-align: right;">Subtotal (USD)</th>
+              </tr>
+            </thead>
+            <tbody id="detail-items-tbody">
+              <!-- Renderizado dinámico -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totales Finales -->
+        <div class="detail-totals-box">
+          <div class="total-row">
+            <span>Total Artículos:</span>
+            <strong id="detail-total-qty">0 unidades</strong>
+          </div>
+          <div class="total-row total-highlight">
+            <span>Total a Cobrar Nómina:</span>
+            <div class="total-values">
+              <span class="total-usd" id="detail-total-usd">$0.00</span>
+              <span class="total-ves" id="detail-total-ves">Bs. 0.00</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-reprint-from-detail">
+          🖨️ Reimprimir Comprobante
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-ok-detail">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 2: COMPROBANTE IMPRIMIBLE (RECEIPT TICKET)
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-receipt" role="dialog" aria-modal="true">
+    <div class="modal-window modal-receipt-window">
+      <div class="modal-header modal-header-print-hide">
+        <h3>Comprobante de Despacho</h3>
+        <button type="button" class="modal-close-btn" id="btn-close-receipt-modal">✕</button>
+      </div>
+      
+      <div class="modal-body receipt-modal-body">
+        <div class="printable-receipt" id="printable-receipt-area">
+          <div class="receipt-header">
+            <h2 class="receipt-brand">TUESTANTE</h2>
+            <p class="receipt-title">PROVEEDURÍA & BODEGA INTERNA</p>
+            <p class="receipt-meta">Comprobante de Despacho de Empleados</p>
+            <div class="receipt-divider"></div>
+          </div>
+
+          <div class="receipt-details">
+            <div class="receipt-row">
+              <span>N° Orden:</span>
+              <strong id="receipt-order-id">#00000</strong>
+            </div>
+            <div class="receipt-row">
+              <span>Fecha / Hora:</span>
+              <span id="receipt-date">DD/MM/AAAA HH:MM</span>
+            </div>
+            <div class="receipt-row">
+              <span>Trabajador:</span>
+              <strong id="receipt-worker">EMPLEADO</strong>
+            </div>
+            <div class="receipt-row">
+              <span>Ficha / Cédula:</span>
+              <span id="receipt-worker-doc">EMP-001 | V-0000000</span>
+            </div>
+            <div class="receipt-row">
+              <span>Tipo de Cobro:</span>
+              <span>Deducción de Nómina Quincenal</span>
+            </div>
+            <div class="receipt-divider"></div>
+          </div>
+
+          <table class="receipt-table">
+            <thead>
+              <tr>
+                <th style="text-align: left;">CANT - ARTÍCULO</th>
+                <th style="text-align: right;">P.U.</th>
+                <th style="text-align: right;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody id="receipt-items-tbody">
+              <!-- Rellenado dinámico -->
+            </tbody>
+          </table>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-totals">
+            <div class="receipt-row receipt-total-row">
+              <span>TOTAL USD:</span>
+              <span id="receipt-total-usd">$0.00</span>
+            </div>
+            <div class="receipt-row receipt-total-row">
+              <span>TOTAL VES (BCV):</span>
+              <span id="receipt-total-ves">Bs. 0.00</span>
+            </div>
+            <div class="receipt-rate" id="receipt-rate-notice">Tasa Oficial BCV: Bs. 80.00 / USD</div>
+          </div>
+
+          <div class="receipt-footer">
+            <div class="receipt-signatures">
+              <div class="sign-line">
+                <span>Firma Almacén / Despachador</span>
+              </div>
+              <div class="sign-line">
+                <span>Firma Trabajador (Conforme)</span>
+              </div>
+            </div>
+            <p class="receipt-legal">
+              Autorizo el descuento de este consumo en la próxima nómina correspondiente.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer modal-footer-print-hide">
+        <button type="button" class="btn btn-outline" id="btn-cancel-receipt">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="btn-print-receipt">
+          <span>🖨️ Imprimir Ticket</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 3: CAMBIO RÁPIDO DE ESTADO DE ORDEN
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-change-status" role="dialog" aria-modal="true">
+    <div class="modal-window" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <h3>Cambiar Estado de la Orden</h3>
+          <span class="detail-order-date" id="change-status-order-code">#ORD-00000</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-status-modal">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 22px;">
+        <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <div>
+            <span style="font-size: 0.78rem; color: #64748b; display: block;">Trabajador:</span>
+            <strong id="change-status-worker-name" style="font-size: 0.95rem; color: #0f172a;">-</strong>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 0.78rem; color: #64748b; display: block;">Estado Actual:</span>
+            <span id="change-status-current-badge"></span>
+          </div>
+        </div>
+
+        <p style="font-size: 0.85rem; color: #475569; margin-bottom: 14px;">
+          Selecciona el nuevo estado a aplicar a esta orden:
+        </p>
+
+        <div class="status-options-grid" style="display: flex; flex-direction: column; gap: 10px;">
+          <label class="status-option-card">
+            <input type="radio" name="quick-status-radio" value="UNDELIVERED" id="opt-undelivered">
+            <div class="status-option-content">
+              <span class="status-badge status-undelivered">⏳ Sin entregar</span>
+              <span class="status-option-desc">Pendiente por entrega física al trabajador.</span>
+            </div>
+          </label>
+
+          <label class="status-option-card">
+            <input type="radio" name="quick-status-radio" value="DELIVERED" id="opt-delivered">
+            <div class="status-option-content">
+              <span class="status-badge status-delivered">🚚 Entregado</span>
+              <span class="status-option-desc">Despacho físico realizado y conforme.</span>
+            </div>
+          </label>
+
+          <label class="status-option-card">
+            <input type="radio" name="quick-status-radio" value="PAID" id="opt-paid">
+            <div class="status-option-content">
+              <span class="status-badge status-paid">💳 Pagado</span>
+              <span class="status-option-desc">Cobrado / abonado a la cuenta de nómina.</span>
+            </div>
+          </label>
+
+          <label class="status-option-card" id="wrap-opt-cancelled">
+            <input type="radio" name="quick-status-radio" value="CANCELLED" id="opt-cancelled">
+            <div class="status-option-content">
+              <span class="status-badge status-cancelled">🚫 Cancelado</span>
+              <span class="status-option-desc" id="desc-opt-cancelled">Anula la orden y reintegra el inventario a almacén.</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-cancel-status-modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-status-change">
+          <span>Actualizar Estado</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="orders-history.js"></script>
+</body>
+</html>

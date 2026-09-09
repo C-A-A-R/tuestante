@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detalle de Producto | TuEstante Colaboradores</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="icon" type="image/jpeg" href="../../../cliente/assets/images/logo.jpeg" />
+
+  <!-- Estilos Globales y de Componentes -->
+  <link rel="stylesheet" href="../../variables.css?v=2.1" />
+  <link rel="stylesheet" href="../../index.css?v=2.1" />
+  <link rel="stylesheet" href="../../components/navbar/navbar.css?v=2.1" />
+  <link rel="stylesheet" href="../../components/footer/footer.css?v=2.1" />
+  <link rel="stylesheet" href="../../components/product-card/product-card.css?v=2.1" />
+  <link rel="stylesheet" href="../../components/dialog/dialog.css?v=2.2" />
+  <link rel="stylesheet" href="product-detail.css?v=2.2" />
+</head>
+<body>
+
+  <!-- Placeholder Navbar -->
+  <div id="navbar-placeholder"></div>
+
+  <!-- Contenedor Principal de Detalle -->
+  <main class="container product-detail-container">
+    
+    <!-- Migas de Pan / Back link -->
+    <nav class="breadcrumb-nav" aria-label="Ruta de navegación">
+      <a href="../../index.html" class="back-link">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Volver al Catálogo
+      </a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-current" id="breadcrumb-product-name">Cargando...</span>
+    </nav>
+
+    <!-- Sección Superior: Galería, Información y Selector de Cantidad -->
+    <section class="product-hero-section" id="product-hero">
+      <!-- Columna Izquierda: Galería / Ilustración en gran tamaño -->
+      <div class="product-gallery-card">
+        <div class="product-large-preview" id="product-large-preview">
+          <span class="product-detail-badge" id="product-category-tag">Categoría</span>
+          <div class="large-preview-illustration">
+            <svg viewBox="0 0 24 24" width="120" height="120" fill="none" stroke="currentColor" stroke-width="1.2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <span class="large-preview-barcode" id="product-barcode-display">CÓDIGO: ---</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna Derecha: Información, Precios y Acciones -->
+      <div class="product-info-card">
+        <div class="product-meta-header">
+          <span class="product-stock-badge badge" id="product-stock-badge">Consultando stock...</span>
+          <span class="product-quota-badge" id="product-quota-badge">Máx. -- por semana</span>
+        </div>
+
+        <h1 class="product-title" id="product-name">Cargando Producto...</h1>
+
+        <div class="product-price-box">
+          <div class="price-header">
+            <span class="price-label">Precio con Descuento de Nómina</span>
+            <span class="price-sub">Sin recargos ni comisiones bancarias</span>
+          </div>
+          <div class="price-amount" id="product-price">$0.00</div>
+        </div>
+
+        <!-- Ficha de Disponibilidad en Bodega (sin exponer número exacto) -->
+        <div class="warehouse-stock-box">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          </svg>
+          <div>
+            <strong>Disponibilidad en Bodega:</strong>
+            <span id="warehouse-exact-stock">Verificando disponibilidad física...</span>
+          </div>
+        </div>
+
+        <!-- Descripción Completa -->
+        <div class="product-description-section">
+          <h3>Descripción del Artículo</h3>
+          <p id="product-description">Cargando detalles técnicos del artículo...</p>
+        </div>
+
+        <!-- Selector de Cantidad Rediseñado con Subtotal en Vivo -->
+        <div class="product-actions-box">
+          <div class="quantity-card-panel">
+            <div class="quantity-picker-header">
+              <label for="detail-qty-input" class="quantity-picker-label">Cantidad a comprar:</label>
+              <span class="quantity-subtotal-text">Subtotal estimado: <strong id="detail-live-subtotal">$0.00</strong></span>
+            </div>
+
+            <div class="quantity-picker-row">
+              <div class="quantity-control detail-quantity-control">
+                <button type="button" class="btn-qty" id="btn-qty-minus" aria-label="Disminuir cantidad">&minus;</button>
+                <input type="number" id="detail-qty-input" class="qty-input" value="1" min="1" readonly aria-label="Cantidad seleccionada" />
+                <button type="button" class="btn-qty" id="btn-qty-plus" aria-label="Aumentar cantidad">&plus;</button>
+              </div>
+
+              <button type="button" class="btn btn-primary btn-add-detail" id="btn-add-to-cart-detail">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Agregar al Carrito</span>
+              </button>
+            </div>
+
+            <span class="qty-validation-hint" id="qty-validation-hint"></span>
+          </div>
+        </div>
+
+        <div class="payroll-reminder-pill">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>El consumo se descontará de manera íntegra en tu siguiente fecha de pago.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Carrusel Inferior de Artículos Similares -->
+    <section class="related-products-section" aria-label="Artículos Similares">
+      <div class="section-header">
+        <h2>Artículos Similares</h2>
+        <p>Otros suministros y artículos afines disponibles para colaboradores.</p>
+      </div>
+
+      <!-- Contenedor del Carrusel o Lista -->
+      <div class="related-products-grid" id="related-products-container">
+        <!-- Renderizado dinámico -->
+      </div>
+
+      <!-- Bloque de Fallback cuando no hay más artículos -->
+      <div class="related-empty-panel" id="related-empty-panel" style="display: none;">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+        </svg>
+        <p>No hay más productos relacionados disponibles en esta subcategoría.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Placeholder Footer -->
+  <div id="footer-placeholder"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="product-detail.js"></script>
+</body>
+</html>

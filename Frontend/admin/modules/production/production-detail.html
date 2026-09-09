@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle de Orden de Fabricación | TuEstante Admin</title>
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="../../assets/images/logo.jpeg">
+
+  <!-- Estilos Específicos del Módulo de Fabricación -->
+  <link rel="stylesheet" href="./production.css">
+</head>
+<body data-page-title="Detalle de Fabricación">
+
+  <!-- ========================================================================
+       SISTEMA DE NOTIFICACIONES TOAST (SIN ALERTS)
+       ======================================================================== -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ======================================================================
+       ESTRUCTURA PRINCIPAL DEL PANEL (APP-LAYOUT)
+       ====================================================================== -->
+  <div class="app-layout" id="app-layout">
+
+    <!-- Placeholders para componentes reutilizables (Drawer, Navbar, Footer) -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- ======================================================================
+         CONTENIDO PRINCIPAL: DETALLE DE ORDEN DE FABRICACIÓN
+         ====================================================================== -->
+    <main class="app-main-content">
+      <div class="production-detail-container">
+
+        <!-- Encabezado con navegación y acciones -->
+        <section class="detail-header-card">
+          <div class="detail-header-left">
+            <a href="production.html" class="btn-back-link" title="Volver a Fabricación">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+              <span>Volver a Fabricación</span>
+            </a>
+            <div class="detail-title-block">
+              <h2 class="detail-main-title" id="production-order-title">Orden FAB-00001</h2>
+              <span class="status-pill" id="production-status-badge">En Proceso</span>
+            </div>
+          </div>
+          <div class="detail-header-actions">
+            <button type="button" class="btn btn-primary" id="btn-update-status">
+              <span>Actualizar Estado</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Contenido de la orden (cargado dinámicamente) -->
+        <section id="production-detail-content">
+          <p style="text-align:center; padding: 40px; color: #64748b;">
+            Cargando detalle de la orden de fabricación...
+          </p>
+        </section>
+
+      </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+
+  </div>
+
+  <!-- Scripts Modulares -->
+  <script type="module" src="./production-detail.js"></script>
+</body>
+</html>

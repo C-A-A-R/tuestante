@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi Perfil y Estado de Cuenta | TuEstante Colaboradores</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="icon" type="image/jpeg" href="../../../cliente/assets/images/logo.jpeg" />
+
+  <!-- Estilos Globales y de Componentes -->
+  <link rel="stylesheet" href="../../variables.css?v=2.1" />
+  <link rel="stylesheet" href="../../index.css?v=2.1" />
+  <link rel="stylesheet" href="../../components/navbar/navbar.css?v=2.1" />
+  <link rel="stylesheet" href="../../components/footer/footer.css?v=2.1" />
+  <link rel="stylesheet" href="../../components/dialog/dialog.css?v=2.2" />
+  <link rel="stylesheet" href="profile.css?v=2.2" />
+</head>
+<body>
+
+  <!-- Placeholder Navbar -->
+  <div id="navbar-placeholder"></div>
+
+  <!-- Contenedor Principal de Perfil -->
+  <main class="container profile-page-container">
+    
+    <!-- Cabecera de Perfil -->
+    <header class="profile-header-card">
+      <div class="profile-avatar-circle">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </div>
+
+      <div class="profile-header-info">
+        <div class="profile-title-badges">
+          <h1 id="employee-full-name">Cargando Colaborador...</h1>
+          <span class="badge badge-primary" id="employee-badge-status">Activo</span>
+        </div>
+        <p class="profile-meta-line">
+          Ficha: <strong id="employee-number-display">---</strong> &bull;
+          Cargo: <span id="employee-position">---</span> &bull;
+        </p>
+      </div>
+
+      <div class="profile-salary-box">
+        <span class="salary-label">Salario Base Registrado</span>
+        <strong class="salary-amount" id="employee-salary">$0.00</strong>
+      </div>
+    </header>
+
+    <!-- Tarjeta de Deuda (KPI Principal) -->
+    <section class="debt-kpi-card" aria-label="Estado de Deuda y Consumos">
+      <div class="kpi-left-accent"></div>
+      <div class="kpi-content">
+        <div class="kpi-info">
+          <span class="kpi-subtitle">Estado Financiero en Tienda Interna</span>
+          <h2 class="kpi-title">Deuda Acumulada Actual</h2>
+          <p class="kpi-desc">
+            Balance neto de órdenes completadas menos amortizaciones y retenciones aplicadas. Se descuenta en el corte de nómina.
+          </p>
+        </div>
+        <div class="kpi-value-group">
+          <span class="kpi-amount" id="kpi-current-debt">$0.00</span>
+          <span class="badge badge-success" id="kpi-debt-status">Al Día</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pestañas Interactivas (Consumos vs Pagos y Descuentos) -->
+    <section class="profile-tabs-section">
+      <div class="tabs-nav-bar" role="tablist">
+        <button type="button" class="tab-btn active" role="tab" id="tab-btn-consumos" aria-selected="true" aria-controls="tab-pane-consumos">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          Pestaña Consumos (<span id="consumos-count">0</span>)
+        </button>
+        <button type="button" class="tab-btn" role="tab" id="tab-btn-pagos" aria-selected="false" aria-controls="tab-pane-pagos">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+            <line x1="1" y1="10" x2="23" y2="10"></line>
+          </svg>
+          Pestaña Pagos y Descuentos (<span id="pagos-count">0</span>)
+        </button>
+      </div>
+
+      <!-- Panel 1: Consumos -->
+      <div class="tab-pane active" id="tab-pane-consumos" role="tabpanel" aria-labelledby="tab-btn-consumos">
+        <div class="tab-table-wrapper">
+          <table class="profile-table">
+            <thead>
+              <tr>
+                <th>Código de Orden</th>
+                <th>Fecha de Compra</th>
+                <th>Artículos</th>
+                <th>Monto Descontado</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="table-consumos-tbody">
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">
+                  Cargando consumos...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel 2: Pagos y Descuentos -->
+      <div class="tab-pane" id="tab-pane-pagos" role="tabpanel" aria-labelledby="tab-btn-pagos" style="display: none;">
+        <div class="tab-table-wrapper">
+          <table class="profile-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo de Amortización</th>
+                <th>Comprobante / Referencia</th>
+                <th>Registrado por</th>
+                <th style="text-align: right;">Monto Abonado</th>
+                <th style="text-align: center;">Soporte</th>
+              </tr>
+            </thead>
+            <tbody id="table-pagos-tbody">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">
+                  Cargando amortizaciones...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Placeholder Footer -->
+  <div id="footer-placeholder"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="profile.js"></script>
+</body>
+</html>

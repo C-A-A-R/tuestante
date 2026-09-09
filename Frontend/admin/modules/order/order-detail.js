@@ -1,3 +1,4 @@
+import { loadAdminComponents } from '../../components/navbar/navbar.js';
 /**
  * ==========================================================================
  * TUESTANTE ADMIN - CONTROLADOR DE DETALLE DE PEDIDO (ORDER-DETAIL.JS)
@@ -10,8 +11,6 @@
  * 5. Validaciones de transición de estado y botón directo "Avanzar al siguiente estado".
  */
 
-import { initNavbar } from '../../components/navbar/navbar.js';
-import { initFooter } from '../../components/footer/footer.js';
 import { getOfficialRate } from '../../js/service/exchange-rate.service.js';
 import { 
   getOrderById, 
@@ -1062,9 +1061,8 @@ function setupDetailEventListeners() {
  */
 async function initOrderDetailPage() {
   try {
-    // 1. Inicializar Navbar y Footer
-    initNavbar({ title: 'Detalle de Pedido' });
-    initFooter();
+    // 1. Inicializar componentes compartidos (Navbar, Drawer y Footer)
+    await loadAdminComponents({ title: 'Detalle de Pedido' });
 
     // 2. Obtener tasa oficial del BCV
     try {

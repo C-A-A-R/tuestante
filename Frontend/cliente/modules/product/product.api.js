@@ -22,12 +22,12 @@ export async function obtenerProductoPorId(id, params = {}) {
 }
 
 /**
- * Obtiene la lista de categorías de productos.
+ * Obtiene la lista de productos marcados como Outlet / Liquidación.
  * @param {Object} [params] Parámetros de consulta opcionales.
- * @returns {Promise<Object>} Lista de categorías.
+ * @returns {Promise<Object>} Lista de productos outlet.
  */
-export async function obtenerCategorias(params = {}) {
-  return getRequest('/products/categories/', params, { auth: false });
+export async function obtenerProductosOutlet(params = {}) {
+  return getRequest('/products/products/', { ...params, is_outlet: 'true' }, { auth: false });
 }
 
 /**

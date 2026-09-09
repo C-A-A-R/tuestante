@@ -5,3 +5,4 @@ Pipfile.lock
 Backend/Pipfile
 Backend/Pipfile.lock
 Backend/core/settings/db.sqlite3
+.vscode/

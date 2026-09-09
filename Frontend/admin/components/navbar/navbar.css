@@ -24,12 +24,18 @@
 /* ==========================================================================
    CONTENEDOR PRINCIPAL DEL NAVBAR
    ========================================================================== */
-.admin-navbar {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
+#navbar-placeholder {
+  min-height: var(--navbar-height);
+  height: var(--navbar-height);
   width: 100%;
+  display: block;
+}
+
+.admin-navbar {
+  position: fixed;
+  top: 0;
+  left: var(--drawer-current-width, 260px);
+  width: calc(100% - var(--drawer-current-width, 260px));
   max-width: 100%;
   height: var(--navbar-height);
   background-color: var(--bg-primary);
@@ -44,7 +50,10 @@
   user-select: none;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.2s ease,
+              border-color 0.2s ease;
 }
 
 /* ==========================================================================
@@ -257,6 +266,51 @@ body.drawer-hidden .navbar-hamburger-btn {
 .search-field-close svg {
   width: 14px;
   height: 14px;
+}
+
+/* ==========================================================================
+   INDICADOR DE TASA OFICIAL DEL DÍA (BCV)
+   ========================================================================== */
+.navbar-exchange-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 0.795rem;
+  font-weight: 600;
+  cursor: default;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.navbar-exchange-badge:hover {
+  background-color: #d1fae5;
+  border-color: #6ee7b7;
+}
+
+.exchange-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+  flex-shrink: 0;
+}
+
+.navbar-exchange-badge strong {
+  font-family: var(--font-heading);
+  font-size: 0.835rem;
+  color: #047857;
+}
+
+@media (max-width: 640px) {
+  .navbar-exchange-badge {
+    display: none;
+  }
 }
 
 /* ==========================================================================
@@ -524,6 +578,11 @@ body.drawer-hidden .navbar-hamburger-btn {
   /* En pantallas móviles y tablets el botón hamburguesa SIEMPRE está visible */
   .navbar-hamburger-btn {
     display: flex !important;
+  }
+
+  .admin-navbar {
+    left: 0 !important;
+    width: 100% !important;
   }
 }
 

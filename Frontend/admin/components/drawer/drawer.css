@@ -186,8 +186,9 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 12px;
+  padding: 12px 10px;
   scrollbar-gutter: stable;
+  overscroll-behavior: contain;
 }
 
 /* Scrollbar Personalizado */
@@ -200,7 +201,7 @@
 }
 
 .drawer-nav-container::-webkit-scrollbar-thumb {
-  background: rgba(132, 182, 244, 0.2);
+  background: rgba(132, 182, 244, 0.25);
   border-radius: 10px;
 }
 
@@ -211,7 +212,7 @@
 /* Soporte Firefox */
 .drawer-nav-container {
   scrollbar-width: thin;
-  scrollbar-color: rgba(132, 182, 244, 0.2) transparent;
+  scrollbar-color: rgba(132, 182, 244, 0.25) transparent;
 }
 
 .drawer-menu {
@@ -220,7 +221,39 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+}
+
+
+/* ==========================================================================
+   ETIQUETAS DE SECCIÓN DEL MENÚ (separadores visuales de grupo)
+   ========================================================================== */
+.drawer-section-label {
+  list-style: none;
+  padding: 10px 12px 2px;
+  margin-top: 2px;
+}
+
+.drawer-section-text {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--drawer-text-muted, rgba(255, 255, 255, 0.4));
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+}
+
+/* Ocultar labels en modo colapsado desktop */
+body.drawer-collapsed .drawer-section-label {
+  padding: 8px 0 2px;
+}
+body.drawer-collapsed .drawer-section-text {
+  opacity: 0;
+  width: 0;
 }
 
 /* ==========================================================================
@@ -231,15 +264,16 @@
   list-style: none;
 }
 
+
 .drawer-link {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 14px;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 9px;
   color: var(--drawer-text-color);
   text-decoration: none;
-  font-size: 0.935rem;
+  font-size: 0.9rem;
   font-weight: 500;
   transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
   width: 100%;

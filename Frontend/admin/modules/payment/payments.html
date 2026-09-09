@@ -30,130 +30,9 @@
        ======================================================================== -->
   <div class="app-layout" id="app-layout">
     
-    <!-- ======================================================================
-         BARRA DE NAVEGACIÓN SUPERIOR (NAVBAR REUTILIZABLE)
-         ====================================================================== -->
-    <header id="admin-navbar" class="admin-navbar" role="banner">
-      <!-- Sección Izquierda: Botón Hamburguesa + Título de Pantalla -->
-      <div class="navbar-left">
-        <button 
-          type="button" 
-          id="navbar-hamburger-btn" 
-          class="navbar-hamburger-btn" 
-          data-drawer-toggle="true" 
-          aria-label="Mostrar u ocultar menú lateral"
-          title="Mostrar menú lateral">
-          <span class="hamburger-bar"></span>
-          <span class="hamburger-bar"></span>
-          <span class="hamburger-bar"></span>
-        </button>
-
-        <div class="navbar-title-container">
-          <h1 class="navbar-screen-title" id="navbar-screen-title">Pagos</h1>
-        </div>
-      </div>
-
-      <!-- Sección Derecha: Buscador, Notificaciones, Separador y Perfil -->
-      <div class="navbar-right">
-        <!-- Buscador / Icono -->
-        <div class="navbar-search-wrapper" id="navbar-search-wrapper">
-          <button type="button" class="navbar-icon-btn navbar-search-btn" id="navbar-search-toggle" aria-label="Abrir buscador" title="Buscar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </button>
-          
-          <div class="navbar-search-expand" id="navbar-search-expand">
-            <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input 
-              type="search" 
-              id="navbar-search-input" 
-              class="navbar-search-input" 
-              placeholder="Buscar pedidos, comprobantes..." 
-              aria-label="Buscar en el sistema">
-            <button type="button" class="search-field-close" id="navbar-search-close" aria-label="Cerrar buscador">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Notificaciones -->
-        <div class="navbar-notif-wrapper">
-          <a href="../notifications/notifications.html" class="navbar-icon-btn navbar-notif-btn" id="navbar-notif-btn" aria-label="Ver notificaciones" title="Notificaciones">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-            <span class="navbar-badge" id="navbar-notif-badge" aria-label="5 notificaciones pendientes">5</span>
-          </a>
-        </div>
-
-        <div class="navbar-divider" aria-hidden="true"></div>
-
-        <!-- Perfil del Administrador -->
-        <div class="navbar-user-dropdown" id="navbar-user-dropdown">
-          <button 
-            type="button" 
-            class="navbar-user-btn" 
-            id="navbar-user-btn" 
-            aria-expanded="false" 
-            aria-haspopup="true" 
-            aria-label="Opciones de perfil de usuario">
-            <div class="navbar-avatar" id="navbar-user-avatar">
-              <span>AD</span>
-            </div>
-            <div class="navbar-user-meta">
-              <span class="navbar-user-name" id="navbar-user-name">Administrador</span>
-              <span class="navbar-user-email" id="navbar-user-email">admin@tienda.com</span>
-            </div>
-            <svg class="navbar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-
-          <div class="navbar-dropdown-card" id="navbar-dropdown-menu" role="menu" aria-label="Opciones de cuenta">
-            <div class="dropdown-card-header">
-              <span class="dropdown-tag">Sesión Activa</span>
-              <strong class="dropdown-name" id="dropdown-user-name">Administrador</strong>
-              <span class="dropdown-email" id="dropdown-user-email">admin@tienda.com</span>
-            </div>
-            <div class="dropdown-card-links">
-              <a href="../settings/profile.html" class="dropdown-card-item" role="menuitem">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                <span>Mi Perfil</span>
-              </a>
-              <a href="../settings/settings.html" class="dropdown-card-item" role="menuitem">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="3"></circle>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-                <span>Configuración</span>
-              </a>
-            </div>
-            <div class="dropdown-card-footer">
-              <button type="button" class="dropdown-card-item logout-link" id="navbar-logout-btn" role="menuitem">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                <span>Cerrar Sesión</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
+    <!-- Placeholders para componentes reutilizables (Drawer, Navbar, Footer) -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
 
     <!-- ======================================================================
          CONTENIDO PRINCIPAL DEL MÓDULO DE PAGOS
@@ -165,7 +44,7 @@
         <div class="page-header">
           <div class="page-header-info">
             <h2 class="page-title">Gestión de Pagos y Comprobantes</h2>
-            <p class="page-subtitle">Revisa transferencias, aprueba abonos del 50% y verifica saldos finales de entrega en USD y Bolívares.</p>
+            <p class="page-subtitle">Revisa transferencias, aprueba abonos iniciales y verifica saldos finales de entrega en USD y Bolívares.</p>
           </div>
           <div class="page-header-actions">
             <button type="button" class="btn btn-outline" id="btn-refresh-payments" title="Recargar lista de pagos">
@@ -221,7 +100,7 @@
             </div>
           </div>
 
-          <!-- 3. Pagos Iniciales 50% -->
+          <!-- 3. Pagos Iniciales -->
           <div class="payment-kpi-card">
             <div class="kpi-icon-container kpi-icon-purple">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -232,7 +111,7 @@
               </svg>
             </div>
             <div class="kpi-details">
-              <span class="kpi-title">Abonos Iniciales (50%)</span>
+              <span class="kpi-title">Abonos Iniciales</span>
               <span class="kpi-value" id="kpi-initial-stage">14</span>
               <span class="kpi-subtext">Habilitan fabricación</span>
             </div>
@@ -296,7 +175,7 @@
             <!-- Filtro por Etapa -->
             <select id="filter-stage-select" class="filter-select" aria-label="Filtrar por etapa de pago">
               <option value="all">Todas las Etapas</option>
-              <option value="initial">Pago Inicial (50%)</option>
+              <option value="initial">Pago Inicial</option>
               <option value="final">Pago Final (Saldo)</option>
             </select>
 
@@ -355,26 +234,7 @@
       </div>
     </main>
 
-    <!-- Pie de Página Modular -->
-    <footer id="admin-footer" class="admin-footer" role="contentinfo">
-      <div class="footer-container">
-        <div class="footer-left">
-          <span class="footer-copyright">
-            © <span id="footer-current-year">2026</span> <strong>TuEstante</strong>. Todos los derechos reservados.
-          </span>
-        </div>
-        <div class="footer-right">
-          <span class="footer-system-badge">
-            <span class="status-indicator-dot"></span>
-            Sistema Administrativo TuEstante OMS
-          </span>
-          <span class="footer-divider" aria-hidden="true">•</span>
-          <span class="footer-version">v1.0.0</span>
-          <span class="footer-divider" aria-hidden="true">•</span>
-          <a href="https://wa.me/584266272286" target="_blank" rel="noopener noreferrer" class="footer-link">Soporte Técnico</a>
-        </div>
-      </div>
-    </footer>
+    <div id="footer-placeholder"></div>
 
   </div>
 
@@ -440,7 +300,7 @@
           </div>
 
           <div class="financial-row">
-            <span class="info-label">Abono Inicial Requerido (50%):</span>
+            <span class="info-label">Abono Inicial Requerido:</span>
             <div style="text-align: right;">
               <span id="modal-order-initial-usd">$175.00</span>
               <span style="font-size: 0.8rem; color: var(--secondary); margin-left: 6px;" id="modal-order-initial-ves">(Bs. 6.387,50)</span>
@@ -448,7 +308,7 @@
           </div>
 
           <div class="financial-row">
-            <span class="info-label">Saldo Final al Despacho (50%):</span>
+            <span class="info-label">Saldo Final al Despacho:</span>
             <div style="text-align: right;">
               <span id="modal-order-final-usd">$175.00</span>
               <span style="font-size: 0.8rem; color: var(--secondary); margin-left: 6px;" id="modal-order-final-ves">(Bs. 6.387,50)</span>
@@ -575,7 +435,7 @@
           </div>
           <div class="receipt-info-item">
             <span class="info-label">Etapa:</span>
-            <span class="info-value" id="modal-receipt-stage">Pago Inicial (50%)</span>
+            <span class="info-value" id="modal-receipt-stage">Pago Inicial</span>
           </div>
           <div class="receipt-info-item">
             <span class="info-label">Método / Banco:</span>
@@ -602,7 +462,7 @@
         <!-- Notas adicionales -->
         <div class="receipt-info-item" id="modal-receipt-notes-container">
           <span class="info-label">Notas del Cliente / Registro:</span>
-          <p class="info-value" style="font-weight: 400; font-size: 0.84rem; color: var(--text-muted); margin-top: 2px;" id="modal-receipt-notes">Abono del 50% para inicio de producción.</p>
+          <p class="info-value" style="font-weight: 400; font-size: 0.84rem; color: var(--text-muted); margin-top: 2px;" id="modal-receipt-notes">Abono inicial para inicio de producción.</p>
         </div>
 
         <!-- Campo desplegable para motivo de rechazo -->
@@ -633,7 +493,7 @@
   </div>
 
   <!-- ========================================================================
-       MODAL 4: REGISTRO MANUAL DE PAGO (NEW PAYMENT MODAL)
+       MODAL 4: REGISTRO MANUAL DE PAGO (NEW PAYMENT MODAL CON SEARCHABLE SELECT)
        ======================================================================== -->
   <div id="new-payment-modal-backdrop" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal-new-payment-title">
     <div class="modal-window" role="document">
@@ -648,19 +508,49 @@
       </div>
       <form id="new-payment-form">
         <div class="modal-body">
+          
+          <!-- Selector con Buscador Integrado de Pedido (Número, Fecha, Cliente) -->
           <div class="form-group">
-            <label for="payment-order-select" class="form-label">Seleccionar Pedido:</label>
-            <select id="payment-order-select" class="form-select" required>
-              <option value="">-- Seleccione un pedido pendiente --</option>
-              <!-- Dinámico -->
-            </select>
+            <label for="payment-order-search-input" class="form-label">Seleccionar Pedido Pendiente:</label>
+            <div class="searchable-select-container" id="searchable-order-select-container">
+              <div class="searchable-input-wrapper">
+                <svg class="searchable-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input 
+                  type="text" 
+                  id="payment-order-search-input" 
+                  class="searchable-input" 
+                  placeholder="Buscar pedido por número (#00125), fecha o cliente..." 
+                  autocomplete="off" 
+                  required>
+                <button type="button" class="searchable-input-clear" id="payment-order-search-clear" aria-label="Limpiar selección" title="Limpiar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+                <svg class="searchable-input-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+
+              <!-- Input Oculto con el ID del Pedido -->
+              <input type="hidden" id="payment-order-select" name="order_id" required>
+
+              <!-- Menú Desplegable con Resultados Filtrados en Vivo -->
+              <div class="searchable-dropdown-list" id="payment-order-dropdown-list" role="listbox">
+                <!-- Renderizado dinámico desde payment.js -->
+              </div>
+            </div>
           </div>
 
           <div class="form-row-2">
             <div class="form-group">
               <label for="payment-stage-select" class="form-label">Etapa del Pago:</label>
               <select id="payment-stage-select" class="form-select" required>
-                <option value="initial">Pago Inicial (50% - Habilita Fabricación)</option>
+                <option value="initial">Pago Inicial (Habilita Fabricación)</option>
                 <option value="final">Pago Final (Saldo - Habilita Envío)</option>
               </select>
             </div>

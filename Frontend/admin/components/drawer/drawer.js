@@ -7,10 +7,14 @@
  */
 
 import { clearTokens, clearCurrentUser } from '../../js/storage.js';
+import { showConfirmModal } from '../modal/modal.js';
 
 // Claves para persistencia de estado en LocalStorage
 const STORAGE_KEY_COLLAPSED = 'tu_admin_drawer_collapsed';
 const STORAGE_KEY_HIDDEN = 'tu_admin_drawer_hidden';
+
+// Instancia singleton para evitar múltiples inicializaciones y eventos duplicados
+let drawerSingletonInstance = null;
 
 /**
  * Determina el prefijo de ruta relativa hacia la raíz del proyecto.
@@ -46,6 +50,7 @@ export class AdminDrawer {
     this.logoutBtn = null;
     this.badge = null;
     this.isMobile = false;
+    this._listenersAttached = false;
 
     if (this.options.autoInit) {
       if (document.readyState === 'loading') {
@@ -64,7 +69,9 @@ export class AdminDrawer {
     this.backdrop = document.querySelector(this.options.backdropSelector);
 
     if (!this.drawer) {
-      console.warn('[TuEstante Drawer] No se encontró el elemento drawer en el DOM:', this.options.drawerSelector);
+      // Si el drawer aún no está montado (por ejemplo, si se inyecta asíncronamente),
+      // los listeners de delegación global en document seguirán funcionando cuando aparezca.
+      this.setupEventListeners();
       return;
     }
 
@@ -74,7 +81,6 @@ export class AdminDrawer {
 
     this.updateScreenMode();
     this.setupTooltips();
-    this.setupSubmenus();
     this.setupActiveRoute();
     this.setupEventListeners();
     this.restorePersistedState();
@@ -95,6 +101,7 @@ export class AdminDrawer {
    * Ajusta las rutas relativas de enlaces e imágenes si el componente está en una subcarpeta
    */
   fixRelativePaths() {
+    if (!this.drawer) return;
     const prefix = getBasePathPrefix();
     if (!prefix) return;
 
@@ -121,6 +128,7 @@ export class AdminDrawer {
    * Configura atributos data-tooltip para el modo colapsado (iconos)
    */
   setupTooltips() {
+    if (!this.drawer) return;
     const mainLinks = this.drawer.querySelectorAll('.drawer-link');
     mainLinks.forEach(link => {
       const textSpan = link.querySelector('.drawer-link-text');
@@ -131,41 +139,10 @@ export class AdminDrawer {
   }
 
   /**
-   * Configura la lógica de acordeón para submenús desplegables (e.g. Productos)
-   */
-  setupSubmenus() {
-    const submenuToggles = this.drawer.querySelectorAll('.drawer-submenu-toggle');
-    
-    submenuToggles.forEach(toggle => {
-      toggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        
-        // Si está en modo colapsado desktop, expandir el menú primero
-        if (document.body.classList.contains('drawer-collapsed') && !this.isMobile) {
-          this.expand();
-        }
-
-        const parent = toggle.closest('.drawer-item-has-submenu');
-        const submenu = parent ? parent.querySelector('.drawer-submenu') : null;
-        
-        if (submenu) {
-          const isOpen = submenu.classList.contains('is-open');
-          if (isOpen) {
-            submenu.classList.remove('is-open');
-            toggle.setAttribute('aria-expanded', 'false');
-          } else {
-            submenu.classList.add('is-open');
-            toggle.setAttribute('aria-expanded', 'true');
-          }
-        }
-      });
-    });
-  }
-
-  /**
    * Resalta automáticamente el enlace correspondiente a la URL actual
    */
   setupActiveRoute() {
+    if (!this.drawer) return;
     const currentPath = window.location.pathname.toLowerCase();
     const allLinks = this.drawer.querySelectorAll('.drawer-link, .drawer-submenu-link');
 
@@ -217,77 +194,113 @@ export class AdminDrawer {
   }
 
   /**
-   * Configura listeners de eventos para interactividad
+   * Configura listeners de eventos centralizados para interactividad sin duplicados
    */
   setupEventListeners() {
-    // 1. Botón de toggle en el encabezado del drawer
-    if (this.toggleBtn) {
-      this.toggleBtn.addEventListener('click', () => {
+    if (this._listenersAttached) {
+      return;
+    }
+    this._listenersAttached = true;
+
+    // 1. Delegación global de clicks en el Documento (evita colisiones y dobles toggles)
+    document.addEventListener('click', (e) => {
+      // A. Botón de toggle en el encabezado del drawer (#drawer-toggle-btn / .drawer-action-btn)
+      const headerBtn = e.target.closest('#drawer-toggle-btn, .drawer-action-btn');
+      if (headerBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.updateScreenMode();
         if (this.isMobile) {
           this.closeMobile();
         } else {
           this.toggleCollapse();
         }
-      });
-    }
+        return;
+      }
 
-    // 2. Backdrop para cerrar en móvil
-    if (this.backdrop) {
-      this.backdrop.addEventListener('click', () => {
+      // B. Disparador general de toggle (ej. botón hamburguesa del Navbar)
+      const toggleTrigger = e.target.closest('[data-drawer-toggle]');
+      if (toggleTrigger) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggle();
+        return;
+      }
+
+      // C. Disparador explícito de colapsar
+      const collapseTrigger = e.target.closest('[data-drawer-collapse]');
+      if (collapseTrigger) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggleCollapse();
+        return;
+      }
+
+      // D. Disparador de ocultar totalmente
+      const hideTrigger = e.target.closest('[data-drawer-hide]');
+      if (hideTrigger) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggleHidden();
+        return;
+      }
+
+      // E. Clic en Backdrop para cerrar en móvil/tablet
+      if (e.target.closest('#drawer-backdrop')) {
+        e.preventDefault();
         this.closeMobile();
-      });
-    }
+        return;
+      }
 
-    // 3. Tecla Escape para cerrar en móvil
+      // F. Botón de Cerrar Sesión del drawer
+      const logoutBtn = e.target.closest('#drawer-logout-btn');
+      if (logoutBtn) {
+        e.preventDefault();
+        this.handleLogout();
+        return;
+      }
+
+      // G. Despliegue de submenús tipo acordeón (ej. Productos)
+      const submenuToggle = e.target.closest('.drawer-submenu-toggle');
+      if (submenuToggle && document.getElementById('admin-drawer')?.contains(submenuToggle)) {
+        e.preventDefault();
+        
+        // Si está en modo colapsado desktop, expandir el menú primero
+        if (document.body.classList.contains('drawer-collapsed') && !this.isMobile) {
+          this.expand();
+        }
+
+        const parent = submenuToggle.closest('.drawer-item-has-submenu');
+        const submenu = parent ? parent.querySelector('.drawer-submenu') : null;
+        
+        if (submenu) {
+          const isOpen = submenu.classList.contains('is-open');
+          if (isOpen) {
+            submenu.classList.remove('is-open');
+            submenuToggle.setAttribute('aria-expanded', 'false');
+          } else {
+            submenu.classList.add('is-open');
+            submenuToggle.setAttribute('aria-expanded', 'true');
+          }
+        }
+        return;
+      }
+
+      // H. Cierre automático en móvil al hacer clic en un enlace de navegación
+      const navLink = e.target.closest('#admin-drawer .drawer-link:not(.drawer-submenu-toggle), #admin-drawer .drawer-submenu-link');
+      if (navLink && this.isMobile) {
+        this.closeMobile();
+      }
+    });
+
+    // 2. Tecla Escape para cerrar en móvil
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && document.body.classList.contains('drawer-mobile-open')) {
         this.closeMobile();
       }
     });
 
-    // 4. Delegación global para botones externos (ej. navbar con data-drawer-toggle)
-    document.addEventListener('click', (e) => {
-      const toggleTrigger = e.target.closest('[data-drawer-toggle]');
-      if (toggleTrigger) {
-        e.preventDefault();
-        this.toggle();
-        return;
-      }
-
-      const collapseTrigger = e.target.closest('[data-drawer-collapse]');
-      if (collapseTrigger) {
-        e.preventDefault();
-        this.toggleCollapse();
-        return;
-      }
-
-      const hideTrigger = e.target.closest('[data-drawer-hide]');
-      if (hideTrigger) {
-        e.preventDefault();
-        this.toggleHidden();
-        return;
-      }
-    });
-
-    // 5. Cierre automático en móvil al hacer clic en un enlace de navegación
-    const navLinks = this.drawer.querySelectorAll('.drawer-link:not(.drawer-submenu-toggle), .drawer-submenu-link');
-    navLinks.forEach(link => {
-      link.addEventListener('click', () => {
-        if (this.isMobile) {
-          this.closeMobile();
-        }
-      });
-    });
-
-    // 6. Botón de Cerrar Sesión
-    if (this.logoutBtn) {
-      this.logoutBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.handleLogout();
-      });
-    }
-
-    // 7. Evento Resize de ventana
+    // 3. Evento Resize de ventana
     window.addEventListener('resize', () => {
       const wasMobile = this.isMobile;
       this.updateScreenMode();
@@ -302,9 +315,15 @@ export class AdminDrawer {
   /**
    * Maneja el proceso de cierre de sesión
    */
-  handleLogout() {
-    const confirmLogout = window.confirm('¿Estás seguro de que deseas cerrar sesión?');
-    if (!confirmLogout) return;
+  async handleLogout() {
+    const confirmed = await showConfirmModal({
+      title: 'Cerrar Sesión',
+      message: '¿Estás seguro de que deseas cerrar sesión en el panel de administración?',
+      confirmText: 'Cerrar Sesión',
+      cancelText: 'Cancelar',
+      type: 'danger'
+    });
+    if (!confirmed) return;
 
     try {
       clearTokens();
@@ -317,9 +336,9 @@ export class AdminDrawer {
     const logoutEvent = new CustomEvent('auth:logout', { bubbles: true });
     window.dispatchEvent(logoutEvent);
 
-    // Redirigir a login o página principal
+    // Redirigir al inicio de sesión de administradores
     const prefix = getBasePathPrefix();
-    window.location.href = `${prefix}index.html`;
+    window.location.href = `${prefix}login.html`;
   }
 
   /* ========================================================================
@@ -348,7 +367,8 @@ export class AdminDrawer {
    */
   openMobile() {
     document.body.classList.add('drawer-mobile-open');
-    this.drawer.setAttribute('aria-hidden', 'false');
+    if (!this.drawer) this.drawer = document.querySelector(this.options.drawerSelector);
+    if (this.drawer) this.drawer.setAttribute('aria-hidden', 'false');
     this.dispatchStateChange('mobile-open');
   }
 
@@ -357,7 +377,8 @@ export class AdminDrawer {
    */
   closeMobile() {
     document.body.classList.remove('drawer-mobile-open');
-    this.drawer.setAttribute('aria-hidden', 'true');
+    if (!this.drawer) this.drawer = document.querySelector(this.options.drawerSelector);
+    if (this.drawer) this.drawer.setAttribute('aria-hidden', 'true');
     this.dispatchStateChange('mobile-close');
   }
 
@@ -443,6 +464,9 @@ export class AdminDrawer {
    * @param {number|string} count Cantidad de notificaciones
    */
   setNotificationCount(count) {
+    if (!this.badge && this.drawer) {
+      this.badge = this.drawer.querySelector(this.options.badgeSelector);
+    }
     if (!this.badge) return;
     const num = parseInt(count, 10);
     if (isNaN(num) || num <= 0) {
@@ -460,6 +484,9 @@ export class AdminDrawer {
    * @param {string} navId Identificador del item (data-nav-id)
    */
   setActive(navId) {
+    if (!this.drawer) this.drawer = document.querySelector(this.options.drawerSelector);
+    if (!this.drawer) return;
+
     const allLinks = this.drawer.querySelectorAll('.drawer-link, .drawer-submenu-link');
     allLinks.forEach(l => l.classList.remove('active'));
 
@@ -510,17 +537,22 @@ export class AdminDrawer {
 }
 
 /**
- * Función de inicialización automática o manual
+ * Función de inicialización automática o manual con patrón Singleton
  * @param {Object} options Opciones de configuración
  * @returns {AdminDrawer} Instancia del controlador
  */
 export function initDrawer(options = {}) {
-  const instance = new AdminDrawer(options);
-  window.TuEstanteDrawer = instance;
-  return instance;
+  if (drawerSingletonInstance) {
+    drawerSingletonInstance.init();
+    return drawerSingletonInstance;
+  }
+  drawerSingletonInstance = new AdminDrawer(options);
+  window.TuEstanteDrawer = drawerSingletonInstance;
+  return drawerSingletonInstance;
 }
 
 // Auto-inicialización global si se importa directamente como script
 if (typeof window !== 'undefined') {
   window.initDrawer = initDrawer;
 }
+

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mis Pedidos e Historial de Consumos | TuEstante Colaboradores</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="icon" type="image/jpeg" href="../../../cliente/assets/images/logo.jpeg" />
+
+  <!-- Estilos Globales y de Componentes -->
+  <link rel="stylesheet" href="../../variables.css?v=2.1" />
+  <link rel="stylesheet" href="../../index.css?v=2.1" />
+  <link rel="stylesheet" href="../../components/navbar/navbar.css?v=2.1" />
+  <link rel="stylesheet" href="../../components/footer/footer.css?v=2.1" />
+  <link rel="stylesheet" href="../../components/dialog/dialog.css?v=2.2" />
+  <link rel="stylesheet" href="orders.css?v=2.2" />
+</head>
+<body>
+
+  <!-- Placeholder Navbar -->
+  <div id="navbar-placeholder"></div>
+
+  <!-- Contenedor Principal de Pedidos -->
+  <main class="container orders-page-container">
+    <div class="orders-header">
+      <div class="orders-title-group">
+        <h1>Historial de Consumos y Pedidos</h1>
+        <p>Consulta tus órdenes de compra interna registradas y los montos a descontar en tu nómina quincenal.</p>
+      </div>
+
+      <div class="orders-actions">
+        <a href="../../index.html" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Nueva Compra
+        </a>
+      </div>
+    </div>
+
+    <!-- Banner Informativo de Compra Confirmada (visible solo cuando viene de checkout) -->
+    <div class="order-success-banner" id="order-success-banner" style="display: none;">
+      <div class="success-banner-icon">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <div class="success-banner-content">
+        <h4>¡Pedido confirmado exitosamente!</h4>
+        <p>Tu orden <strong>#<span id="confirmed-order-number">---</span></strong> ha sido registrada y despachada a bodega. El monto total será aplicado en tu próximo corte de nómina.</p>
+      </div>
+      <button type="button" class="btn-close-banner" id="btn-close-success-banner" aria-label="Cerrar aviso">&times;</button>
+    </div>
+
+    <!-- Tabla de Pedidos -->
+    <div class="orders-table-wrapper" id="orders-table-container">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th scope="col">Código de Orden</th>
+            <th scope="col">Fecha y Hora</th>
+            <th scope="col">Cant. Ítems</th>
+            <th scope="col">Total a Descontar</th>
+            <th scope="col">Estado</th>
+            <th scope="col" style="text-align: right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="orders-table-tbody">
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">
+              Cargando historial de consumos...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Estado Vacío -->
+    <div class="orders-empty-state" id="orders-empty-state" style="display: none;">
+      <div class="empty-icon-circle">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+        </svg>
+      </div>
+      <h3>Aún no has registrado pedidos</h3>
+      <p>Todos los consumos que realices en la tienda interna se reflejarán aquí para tu control quincenal.</p>
+      <a href="../../index.html" class="btn btn-primary">Ir al Catálogo</a>
+    </div>
+
+  </main>
+
+  <!-- MODAL DE DESGLOSE DE ORDEN Y COMPROBANTE -->
+  <dialog class="order-detail-modal" id="order-detail-modal" aria-labelledby="modal-order-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="modal-tag">Comprobante de Consumo Interno</span>
+          <h3 class="modal-title" id="modal-order-title">Orden #---</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-modal" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-body" id="modal-order-body">
+        <!-- Metadatos de la orden -->
+        <div class="order-meta-grid">
+          <div>
+            <span class="meta-label">Fecha de Compra</span>
+            <strong id="modal-order-date">--/--/----</strong>
+          </div>
+          <div>
+            <span class="meta-label">Colaborador</span>
+            <strong id="modal-order-employee">---</strong>
+          </div>
+          <div>
+            <span class="meta-label">Ficha</span>
+            <strong id="modal-order-code">---</strong>
+          </div>
+          <div>
+            <span class="meta-label">Estado</span>
+            <span class="badge badge-warning" id="modal-order-status">Sin entregar</span>
+          </div>
+        </div>
+
+        <!-- Tabla de Productos con precio histórico congelado unit_price -->
+        <div class="modal-items-table-wrap">
+          <table class="modal-items-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Código</th>
+                <th>Cant.</th>
+                <th>Precio Congelado</th>
+                <th style="text-align: right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="modal-order-items-tbody">
+              <!-- Renderizado dinámico -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Total de la Orden -->
+        <div class="modal-order-total-bar">
+          <div>
+            <span class="modal-payroll-subtext">Cargo a deducir en nómina quincenal</span>
+          </div>
+          <div class="modal-total-display">
+            <span>Total:</span>
+            <strong id="modal-order-total">$0.00</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-modal-close-action">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="btn-print-receipt">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Imprimir Comprobante
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Placeholder Footer -->
+  <div id="footer-placeholder"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="orders.js"></script>
+</body>
+</html>
