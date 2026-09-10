@@ -138,7 +138,7 @@ def checkout_internal_order(employee, items_data, user=None, notes='', is_admin_
             status=status,
             created_by=user, 
             notes=notes
-        )43
+        )
         order.save()
 
         total_amount = Decimal('0.00')
@@ -247,3 +247,31 @@ def generate_settlement_report(start_date, end_date, employee_id=None):
         })
 
     return report_data
+
+
+def sync_employee_orders_paid_status(employee):
+    """
+    Sincroniza el estado de las órdenes de un empleado en función de sus abonos acumulados (FIFO).
+    Cualquier orden activa cuyo total acumulado de consumos sea cubierto por la suma de abonos
+    pasa automáticamente a estado 'PAID'.
+    """
+    if not employee:
+        return
+
+    total_payments = employee.payments.filter(
+        is_deleted=False
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+    orders = employee.orders.filter(
+        is_deleted=False
+    ).exclude(status='CANCELLED').order_by('created_at', 'id')
+
+    accumulated_orders_cost = Decimal('0.00')
+
+    for order in orders:
+        accumulated_orders_cost += order.total_amount
+        if total_payments >= accumulated_orders_cost:
+            if order.status != 'PAID':
+                order.status = 'PAID'
+                order.save(update_fields=['status', 'updated_at'])
+

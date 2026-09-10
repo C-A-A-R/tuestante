@@ -354,19 +354,19 @@
         </p>
 
         <div class="status-options-grid" style="display: flex; flex-direction: column; gap: 10px;">
-          <label class="status-option-card">
+          <label class="status-option-card" id="wrap-opt-undelivered">
             <input type="radio" name="quick-status-radio" value="UNDELIVERED" id="opt-undelivered">
             <div class="status-option-content">
               <span class="status-badge status-undelivered">⏳ Sin entregar</span>
-              <span class="status-option-desc">Pendiente por entrega física al trabajador.</span>
+              <span class="status-option-desc" id="desc-opt-undelivered">Pendiente por entrega física al trabajador.</span>
             </div>
           </label>
 
-          <label class="status-option-card">
+          <label class="status-option-card" id="wrap-opt-delivered">
             <input type="radio" name="quick-status-radio" value="DELIVERED" id="opt-delivered">
             <div class="status-option-content">
               <span class="status-badge status-delivered">🚚 Entregado</span>
-              <span class="status-option-desc">Despacho físico realizado y conforme.</span>
+              <span class="status-option-desc" id="desc-opt-delivered">Despacho físico realizado y conforme.</span>
             </div>
           </label>
 
@@ -394,6 +394,69 @@
           <span>Actualizar Estado</span>
         </button>
       </div>
+    </div>
+  <!-- MODAL DE REGISTRO DE ABONO / PAGO PARA LA ORDEN -->
+  <div class="modal-backdrop" id="modal-order-payment" role="dialog" aria-modal="true">
+    <div class="modal-card" style="background: #ffffff; max-width: 460px; width: 100%; border-radius: 12px; overflow: hidden;">
+      <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.3rem;">💵</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #0f172a;">Registrar Pago de Orden</h3>
+            <p style="margin: 0; font-size: 0.78rem; color: #64748b;" id="pay-modal-order-num">Orden #</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btn-close-pay-modal" style="background: transparent; border: none; font-size: 1.4rem; color: #64748b; cursor: pointer;">&times;</button>
+      </div>
+      <form id="form-order-payment" autocomplete="off">
+        <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+          <input type="hidden" id="pay-order-emp-id">
+          <input type="hidden" id="pay-order-id">
+
+          <div style="padding: 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="font-size: 0.75rem; color: #64748b; display: block;">Trabajador:</span>
+              <strong id="pay-modal-worker-name" style="font-size: 0.9rem; color: #0f172a;">-</strong>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 0.75rem; color: #64748b; display: block;">Monto de la Orden:</span>
+              <strong id="pay-modal-order-amount" style="font-size: 1rem; color: #16a34a;">$0.00</strong>
+            </div>
+          </div>
+
+          <div>
+            <label for="pay-modal-amount" style="display: block; font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Monto del Pago (USD $) <span style="color: #dc2626;">*</span></label>
+            <input type="number" step="0.01" min="0.01" id="pay-modal-amount" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem;" placeholder="0.00" required>
+            <div id="pay-modal-ves-preview" style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Equivalente: Bs. 0.00</div>
+          </div>
+
+          <div>
+            <label for="pay-modal-type" style="display: block; font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Forma de Pago <span style="color: #dc2626;">*</span></label>
+            <select id="pay-modal-type" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" required>
+              <option value="CASH">Efectivo en Tienda / Almacén</option>
+              <option value="TRANSFER">Transferencia Bancaria / Pago Móvil</option>
+              <option value="PAYROLL_DEDUCTION">Descuento de Nómina (Corte RRHH)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="pay-modal-ref" style="display: block; font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Nº Referencia / Recibo (Opcional)</label>
+            <input type="text" id="pay-modal-ref" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" placeholder="Ej: REF-849201">
+          </div>
+
+          <div>
+            <label for="pay-modal-notes" style="display: block; font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Notas u Observaciones</label>
+            <textarea id="pay-modal-notes" rows="2" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.88rem;" placeholder="Observaciones del cobro..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
+          <button type="button" class="btn btn-outline" id="btn-cancel-pay-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-order-payment">
+            <span>💾 Registrar Pago y Finalizar</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 

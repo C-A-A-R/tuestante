@@ -413,7 +413,7 @@ async function setupNotifications() {
         </div>
       `;
       alertEl.addEventListener('click', () => {
-        window.location.href = `${prefix}modules/profile/profile.html`;
+        openNotificationDetailModal(null, alert);
       });
       list.appendChild(alertEl);
     });
@@ -478,7 +478,7 @@ async function setupNotifications() {
         ` : ''}
       `;
 
-      // Click en el botón de check (marcar leída sin redirigir)
+      // Click en el botón de check (marcar leída sin abrir modal)
       const btnCheck = itemEl.querySelector('.btn-item-check');
       if (btnCheck) {
         btnCheck.addEventListener('click', async (e) => {
@@ -494,31 +494,116 @@ async function setupNotifications() {
         });
       }
 
-      // Click en el elemento (marcar leída y redirigir a pedido o perfil)
+      // Click en el elemento (marcar leída y abrir modal de lectura)
       itemEl.addEventListener('click', async () => {
         if (!notif.is_read) {
           try {
             await marcarNotificacionLeida(notif.id);
             notif.is_read = true;
             updateBadges();
+            renderList();
           } catch (err) {
             console.warn('[Notifications] No se pudo marcar como leída:', err);
           }
         }
-
-        // Redirección contextual
-        if (notif.internal_order || notif.notification_type === 'employee_order' || notif.notification_type === 'order') {
-          const orderTarget = notif.internal_order
-            ? `${prefix}modules/order/orders.html?orderId=${notif.internal_order}`
-            : `${prefix}modules/order/orders.html`;
-          window.location.href = orderTarget;
-        } else if (notif.notification_type === 'payroll') {
-          window.location.href = `${prefix}modules/profile/profile.html`;
-        }
+        openNotificationDetailModal(notif);
       });
 
       list.appendChild(itemEl);
     });
+  }
+
+  // Modal de Detalle de Notificación (Lectura Completa)
+  const notifModal = document.getElementById('modal-notification-detail');
+  const btnCloseNotifModal = document.getElementById('btn-close-notif-modal');
+  const btnNotifModalClose = document.getElementById('btn-notif-modal-close');
+  const btnNotifModalAction = document.getElementById('btn-notif-modal-action');
+
+  function closeNotifDetailModal() {
+    if (notifModal) notifModal.style.display = 'none';
+  }
+
+  btnCloseNotifModal?.addEventListener('click', closeNotifDetailModal);
+  btnNotifModalClose?.addEventListener('click', closeNotifDetailModal);
+  notifModal?.addEventListener('click', (e) => {
+    if (e.target === notifModal) closeNotifDetailModal();
+  });
+
+  function openNotificationDetailModal(notif, alertData = null) {
+    if (!notifModal) return;
+
+    const modalTitle = document.getElementById('notif-modal-title');
+    const modalTime = document.getElementById('notif-modal-time');
+    const modalTypeTag = document.getElementById('notif-modal-type-tag');
+    const modalMsg = document.getElementById('notif-modal-message');
+
+    if (alertData) {
+      if (modalTitle) modalTitle.textContent = alertData.title || 'Aviso de Nómina';
+      if (modalTime) modalTime.textContent = 'Aviso Pendiente';
+      if (modalMsg) modalMsg.textContent = alertData.desc || '';
+      if (modalTypeTag) {
+        modalTypeTag.className = 'notification-type-tag tag-alert';
+        modalTypeTag.textContent = 'Aviso Nómina';
+        modalTypeTag.style.background = '#fef2f2';
+        modalTypeTag.style.color = '#dc2626';
+      }
+      if (btnNotifModalAction) {
+        btnNotifModalAction.style.display = 'inline-block';
+        btnNotifModalAction.textContent = 'Ver Estado de Cuenta';
+        btnNotifModalAction.onclick = () => {
+          closeNotifDetailModal();
+          window.location.href = `${prefix}modules/profile/profile.html`;
+        };
+      }
+    } else if (notif) {
+      if (modalTitle) modalTitle.textContent = notif.title || 'Notificación';
+      if (modalTime) modalTime.textContent = formatRelativeTime(notif.created_at);
+      if (modalMsg) modalMsg.textContent = notif.message || 'Sin contenido adicional.';
+
+      if (modalTypeTag) {
+        if (notif.notification_type === 'employee_order' || notif.notification_type === 'order' || notif.internal_order) {
+          modalTypeTag.className = 'notification-type-tag tag-order';
+          modalTypeTag.textContent = notif.internal_order_number ? `Pedido #${notif.internal_order_number}` : 'Pedido';
+          modalTypeTag.style.background = '#eff6ff';
+          modalTypeTag.style.color = '#2563eb';
+        } else if (notif.notification_type === 'payroll') {
+          modalTypeTag.className = 'notification-type-tag tag-payroll';
+          modalTypeTag.textContent = 'Nómina';
+          modalTypeTag.style.background = '#f0fdf4';
+          modalTypeTag.style.color = '#16a34a';
+        } else {
+          modalTypeTag.className = 'notification-type-tag tag-general';
+          modalTypeTag.textContent = 'General';
+          modalTypeTag.style.background = '#f1f5f9';
+          modalTypeTag.style.color = '#475569';
+        }
+      }
+
+      if (btnNotifModalAction) {
+        if (notif.internal_order || notif.notification_type === 'employee_order' || notif.notification_type === 'order') {
+          btnNotifModalAction.style.display = 'inline-block';
+          btnNotifModalAction.textContent = 'Ir a Mis Pedidos';
+          btnNotifModalAction.onclick = () => {
+            closeNotifDetailModal();
+            const orderTarget = notif.internal_order
+              ? `${prefix}modules/order/orders.html?orderId=${notif.internal_order}`
+              : `${prefix}modules/order/orders.html`;
+            window.location.href = orderTarget;
+          };
+        } else if (notif.notification_type === 'payroll') {
+          btnNotifModalAction.style.display = 'inline-block';
+          btnNotifModalAction.textContent = 'Ver Estado de Cuenta';
+          btnNotifModalAction.onclick = () => {
+            closeNotifDetailModal();
+            window.location.href = `${prefix}modules/profile/profile.html`;
+          };
+        } else {
+          btnNotifModalAction.style.display = 'none';
+        }
+      }
+    }
+
+    notifModal.style.display = 'flex';
   }
 
   // Actualizar indicadores numéricos de no leídas

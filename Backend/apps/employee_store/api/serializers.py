@@ -230,6 +230,7 @@ class DebtPaymentSerializer(serializers.ModelSerializer):
     employee_number = serializers.ReadOnlyField(source='employee.employee_number')
     employee_name = serializers.SerializerMethodField()
     registered_by_name = serializers.SerializerMethodField()
+    order_number = serializers.ReadOnlyField(source='order.order_number')
 
     class Meta:
         model = DebtPayment
@@ -238,6 +239,8 @@ class DebtPaymentSerializer(serializers.ModelSerializer):
             'employee',
             'employee_number',
             'employee_name',
+            'order',
+            'order_number',
             'amount',
             'payment_type',
             'registered_by',

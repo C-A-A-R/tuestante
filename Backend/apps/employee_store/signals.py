@@ -78,11 +78,20 @@ def on_internal_order_change(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=DebtPayment)
 def on_debt_payment_created(sender, instance, created, **kwargs):
-    """Notifica al empleado cuando se le acredita un abono o deducción de nómina a su deuda."""
+    """Notifica al empleado cuando se le acredita un abono o deducción de nómina y sincroniza el estado de sus órdenes."""
     if not created:
         return
 
+    from apps.employee_store.services import sync_employee_orders_paid_status
     from apps.notification.services.notification_service import send_notification
+
+    # Si el abono está asociado a una orden específica, marcar esa orden como PAID
+    if instance.order and instance.order.status != 'PAID':
+        instance.order.status = 'PAID'
+        instance.order.save(update_fields=['status', 'updated_at'])
+
+    # Sincronizar órdenes acumuladas (FIFO)
+    sync_employee_orders_paid_status(instance.employee)
 
     user = getattr(instance.employee, 'user', None)
     if not user:

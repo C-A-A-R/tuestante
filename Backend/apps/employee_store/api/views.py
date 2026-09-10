@@ -260,6 +260,18 @@ class InternalOrderViewSet(BaseViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+            # Restricción de regresión de estado
+            if instance.status in ('DELIVERED', 'COMPLETED') and new_status == 'UNDELIVERED':
+                return Response(
+                    {"error": "No se puede regresar el estado de una orden de 'Entregado' a 'Sin entregar'."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if instance.status == 'PAID' and new_status in ('UNDELIVERED', 'DELIVERED', 'COMPLETED'):
+                return Response(
+                    {"error": "No se puede regresar el estado de una orden que ya ha sido marcada como 'Pagada'."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
         return super().update(request, *args, partial=partial, **kwargs)
 
 

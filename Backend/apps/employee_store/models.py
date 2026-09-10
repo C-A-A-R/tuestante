@@ -269,6 +269,14 @@ class DebtPayment(BaseModel):
         related_name='payments',
         verbose_name='Empleado'
     )
+    order = models.ForeignKey(
+        'InternalOrder',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments',
+        verbose_name='Orden Relacionada'
+    )
     amount = models.DecimalField('Monto del Abono', max_digits=12, decimal_places=2)
     payment_type = models.CharField(
         'Tipo de Pago',

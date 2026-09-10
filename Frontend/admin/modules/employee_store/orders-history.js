@@ -8,7 +8,8 @@ import {
   fetchOrders,
   fetchOrder,
   cancelOrder,
-  updateOrderStatus
+  updateOrderStatus,
+  createDebtPayment
 } from './employee-store.api.js';
 
 import { getBcvRate } from '../../js/service/exchange-rate.service.js';
@@ -499,6 +500,36 @@ function openChangeStatusModal(orderId) {
   const radioEl = document.getElementById(radioId);
   if (radioEl) radioEl.checked = true;
 
+  // Restringir regresión de estado (Sin entregar)
+  const wrapUndelivered = document.getElementById('wrap-opt-undelivered');
+  const optUndelivered = document.getElementById('opt-undelivered');
+  const descUndelivered = document.getElementById('desc-opt-undelivered');
+
+  if (currentStatus === 'DELIVERED' || currentStatus === 'PAID') {
+    if (wrapUndelivered) wrapUndelivered.classList.add('is-disabled');
+    if (optUndelivered) optUndelivered.disabled = true;
+    if (descUndelivered) descUndelivered.textContent = 'No disponible: el estado no puede regresar a "Sin entregar".';
+  } else {
+    if (wrapUndelivered) wrapUndelivered.classList.remove('is-disabled');
+    if (optUndelivered) optUndelivered.disabled = false;
+    if (descUndelivered) descUndelivered.textContent = 'Pendiente por entrega física al trabajador.';
+  }
+
+  // Restringir regresión de estado (Entregado si ya está Pagado)
+  const wrapDelivered = document.getElementById('wrap-opt-delivered');
+  const optDelivered = document.getElementById('opt-delivered');
+  const descDelivered = document.getElementById('desc-opt-delivered');
+
+  if (currentStatus === 'PAID') {
+    if (wrapDelivered) wrapDelivered.classList.add('is-disabled');
+    if (optDelivered) optDelivered.disabled = true;
+    if (descDelivered) descDelivered.textContent = 'No disponible: la orden ya ha sido liquidada/pagada.';
+  } else {
+    if (wrapDelivered) wrapDelivered.classList.remove('is-disabled');
+    if (optDelivered) optDelivered.disabled = false;
+    if (descDelivered) descDelivered.textContent = 'Despacho físico realizado y conforme.';
+  }
+
   // Restringir cancelación si ya fue finalizada
   const wrapCancelled = document.getElementById('wrap-opt-cancelled');
   const optCancelled = document.getElementById('opt-cancelled');
@@ -534,6 +565,17 @@ async function handleSaveOrderStatus() {
 
   if (newStatus === currentStatus) {
     closeChangeStatusModal();
+    return;
+  }
+
+  // Validaciones de no regresión de estado
+  if ((currentStatus === 'DELIVERED' || currentStatus === 'PAID') && newStatus === 'UNDELIVERED') {
+    showToast('El estado de una orden no puede regresar. Una orden entregada o pagada no puede volver a "Sin entregar".', 'warning');
+    return;
+  }
+
+  if (currentStatus === 'PAID' && newStatus === 'DELIVERED') {
+    showToast('Una orden en estado "Pagada" no puede regresar a "Entregada".', 'warning');
     return;
   }
 
@@ -714,6 +756,9 @@ function setupEventListeners() {
   document.getElementById('btn-close-status-modal')?.addEventListener('click', closeChangeStatusModal);
   document.getElementById('btn-cancel-status-modal')?.addEventListener('click', closeChangeStatusModal);
   document.getElementById('btn-confirm-status-change')?.addEventListener('click', handleSaveOrderStatus);
+
+  // Eventos Modal Pago de Orden
+  setupOrderPaymentEvents();
 }
 
 // ============================================================================
