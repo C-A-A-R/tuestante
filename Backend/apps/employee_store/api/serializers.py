@@ -56,11 +56,16 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     username = serializers.ReadOnlyField(source='user.username')
     first_name = serializers.CharField(source='user.first_name', required=False, allow_blank=True)
+    second_name = serializers.CharField(source='user.second_name', required=False, allow_blank=True)
     last_name = serializers.CharField(source='user.last_name', required=False, allow_blank=True)
+    second_last_name = serializers.CharField(source='user.second_last_name', required=False, allow_blank=True)
     full_name = serializers.SerializerMethodField()
     email = serializers.CharField(source='user.email', required=False, allow_blank=True, allow_null=True)
+    phone = serializers.CharField(source='user.phone', required=False, allow_blank=True)
     id_number = serializers.CharField(source='user.identity_document', required=False, allow_blank=True, allow_null=True)
     identity_document = serializers.CharField(source='user.identity_document', required=False, allow_blank=True, allow_null=True)
+    birth_date = serializers.DateField(source='user.birth_date', required=False, allow_null=True)
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
     photo = serializers.ImageField(required=False, allow_null=True)
     current_debt = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     has_overdue_debt = serializers.SerializerMethodField()
@@ -73,11 +78,16 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             'user',
             'username',
             'first_name',
+            'second_name',
             'last_name',
+            'second_last_name',
             'full_name',
             'email',
+            'phone',
             'id_number',
             'identity_document',
+            'birth_date',
+            'password',
             'employee_number',
             'department',
             'position',
@@ -101,15 +111,50 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         _, debt_amount, _ = has_overdue_weekly_debt(obj)
         return debt_amount
 
+    def validate_password(self, value):
+        if value:
+            if len(value) < 6:
+                raise serializers.ValidationError("La contraseña debe tener al menos 6 caracteres.")
+            if not any(c.isupper() for c in value):
+                raise serializers.ValidationError("La contraseña debe contener al menos una letra mayúscula.")
+            if not any(c.isdigit() for c in value):
+                raise serializers.ValidationError("La contraseña debe contener al menos un número.")
+        return value
+
+    def validate_birth_date(self, value):
+        if value:
+            from datetime import date
+            today = date.today()
+            if value > today:
+                raise serializers.ValidationError("La fecha de nacimiento no puede ser una fecha futura.")
+            age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+            if age < 15:
+                raise serializers.ValidationError("El trabajador debe tener al menos 15 años de edad cumplidos.")
+            if age > 100:
+                raise serializers.ValidationError("Por favor ingresa una fecha de nacimiento válida (edad superior a 100 años no permitida).")
+        return value
+
+    def validate(self, attrs):
+        if not self.instance:
+            pwd = attrs.get('password')
+            if not pwd:
+                raise serializers.ValidationError({'password': 'La contraseña es obligatoria para registrar un nuevo trabajador.'})
+        return attrs
+
     def create(self, validated_data):
         from django.contrib.auth import get_user_model
         User = get_user_model()
         user_data = validated_data.pop('user', {})
+        password = validated_data.pop('password', None)
 
         identity_doc = user_data.get('identity_document') or validated_data.get('employee_number')
         first_name = user_data.get('first_name', '')
+        second_name = user_data.get('second_name', '')
         last_name = user_data.get('last_name', '')
+        second_last_name = user_data.get('second_last_name', '')
+        birth_date = user_data.get('birth_date', None) or None
         email = user_data.get('email', None) or None
+        phone = user_data.get('phone', '')
 
         user = None
         if identity_doc:
@@ -124,32 +169,75 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 email=email,
                 identity_document=identity_doc or None,
                 first_name=first_name,
+                second_name=second_name,
                 last_name=last_name,
                 first_last_name=last_name,
+                second_last_name=second_last_name,
+                birth_date=birth_date,
+                phone=phone,
                 is_registered=False
             )
+            if password:
+                user.set_password(password)
+                user.save()
         else:
+            update_fields = []
             if first_name:
-                user.first_name = first_name
+                user.first_name = first_name; update_fields.append('first_name')
+            if second_name is not None:
+                user.second_name = second_name; update_fields.append('second_name')
             if last_name:
                 user.last_name = last_name
                 user.first_last_name = last_name
-            user.save()
+                update_fields.extend(['last_name', 'first_last_name'])
+            if second_last_name is not None:
+                user.second_last_name = second_last_name; update_fields.append('second_last_name')
+            if birth_date is not None:
+                user.birth_date = birth_date; update_fields.append('birth_date')
+            if phone is not None:
+                user.phone = phone; update_fields.append('phone')
+            if password:
+                user.set_password(password)
+                update_fields.append('password')
+            if update_fields:
+                user.save()
 
         validated_data['user'] = user
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('user', {})
-        if user_data:
+        password = validated_data.pop('password', None)
+        if user_data or password:
             user = instance.user
-            for attr, val in user_data.items():
-                if attr in ['first_name', 'last_name', 'identity_document', 'email']:
-                    if val != '' or attr in ['first_name', 'last_name']:
-                        setattr(user, attr, val if val != '' else None if attr in ['identity_document', 'email'] else '')
-                        if attr == 'last_name':
-                            user.first_last_name = val
-            user.save()
+            user_update_fields = []
+            user_field_map = {
+                'first_name': 'first_name',
+                'second_name': 'second_name',
+                'last_name': 'last_name',
+                'second_last_name': 'second_last_name',
+                'identity_document': 'identity_document',
+                'birth_date': 'birth_date',
+                'email': 'email',
+                'phone': 'phone',
+            }
+            for attr, field in user_field_map.items():
+                if attr in user_data:
+                    val = user_data[attr]
+                    if val == '' and attr in ['identity_document', 'email', 'birth_date']:
+                        val = None
+                    setattr(user, field, val)
+                    user_update_fields.append(field)
+                    if attr == 'last_name':
+                        user.first_last_name = val or ''
+                        user_update_fields.append('first_last_name')
+                    if attr == 'second_last_name':
+                        user.second_last_name = val or ''
+            if password:
+                user.set_password(password)
+                user_update_fields.append('password')
+            if user_update_fields:
+                user.save()
         return super().update(instance, validated_data)
 
 
@@ -173,6 +261,10 @@ class InternalOrderItemSerializer(serializers.ModelSerializer):
 class InternalOrderDetailSerializer(serializers.ModelSerializer):
     employee_number = serializers.ReadOnlyField(source='employee.employee_number')
     employee_name = serializers.SerializerMethodField()
+    employee_doc = serializers.SerializerMethodField()
+    employee_identity_document = serializers.SerializerMethodField()
+    employee_department = serializers.ReadOnlyField(source='employee.department')
+    employee_position = serializers.ReadOnlyField(source='employee.position')
     created_by_name = serializers.SerializerMethodField()
     items = InternalOrderItemSerializer(many=True, read_only=True)
 
@@ -184,6 +276,10 @@ class InternalOrderDetailSerializer(serializers.ModelSerializer):
             'employee',
             'employee_number',
             'employee_name',
+            'employee_doc',
+            'employee_identity_document',
+            'employee_department',
+            'employee_position',
             'total_amount',
             'status',
             'created_by',
@@ -194,7 +290,19 @@ class InternalOrderDetailSerializer(serializers.ModelSerializer):
         )
 
     def get_employee_name(self, obj):
-        return obj.employee.user.get_full_name() or obj.employee.user.username
+        if obj.employee and obj.employee.user:
+            return obj.employee.user.get_full_name() or obj.employee.user.username
+        return 'Trabajador'
+
+    def get_employee_doc(self, obj):
+        if obj.employee and obj.employee.user:
+            return getattr(obj.employee.user, 'identity_document', None) or obj.employee.employee_number or ''
+        return ''
+
+    def get_employee_identity_document(self, obj):
+        if obj.employee and obj.employee.user:
+            return getattr(obj.employee.user, 'identity_document', None) or ''
+        return ''
 
     def get_created_by_name(self, obj):
         if obj.created_by:
@@ -246,6 +354,7 @@ class DebtPaymentSerializer(serializers.ModelSerializer):
             'registered_by',
             'registered_by_name',
             'reference',
+            'voucher',
             'notes',
             'created_at',
         )
@@ -258,3 +367,22 @@ class DebtPaymentSerializer(serializers.ModelSerializer):
         if obj.registered_by:
             return obj.registered_by.get_full_name() or obj.registered_by.username
         return ''
+
+
+class BulkPayrollCutItemSerializer(serializers.Serializer):
+    employee_id = serializers.IntegerField()
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0.01'))
+    reference = serializers.CharField(required=False, allow_blank=True, default='')
+    notes = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+class BulkPayrollCutSerializer(serializers.Serializer):
+    payroll_reference = serializers.CharField(required=False, allow_blank=True, default='CORTE-NOMINA')
+    notes = serializers.CharField(required=False, allow_blank=True, default='')
+    voucher = serializers.FileField(required=False, allow_null=True, default=None)
+    cuts = BulkPayrollCutItemSerializer(many=True)
+
+    def validate_cuts(self, value):
+        if not value:
+            raise serializers.ValidationError("Debe seleccionar al menos un trabajador para procesar el corte de nómina.")
+        return value

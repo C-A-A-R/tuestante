@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -44,11 +44,14 @@ class EmployeeProfileViewSet(BaseViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['employee_number', 'user__first_name', 'user__last_name', 'user__username', 'department', 'position']
+    search_fields = ['employee_number', 'user__first_name', 'user__last_name', 'user__username', 'user__identity_document', 'department', 'position']
     ordering_fields = ['employee_number', 'department', 'position', 'created_at', 'id']
 
     def _get_statement_data(self, employee):
+        from datetime import timedelta
+        from django.db.models import Sum
         from apps.employee_store.models import InternalOrderItem
+
         items_prefetch = Prefetch(
             'items',
             queryset=InternalOrderItem.objects.filter(is_deleted=False).select_related('product')
@@ -63,12 +66,24 @@ class EmployeeProfileViewSet(BaseViewSet):
 
         has_debt, debt_amount, cutoff_date = has_overdue_weekly_debt(employee)
 
+        # Consumo acumulado en los últimos 7 días por producto (para validación de cuotas semanales)
+        since_date = timezone.now().date() - timedelta(days=7)
+        weekly_items = InternalOrderItem.objects.filter(
+            order__employee=employee,
+            order__created_at__gte=since_date,
+            order__is_deleted=False,
+            order__status__in=['UNDELIVERED', 'DELIVERED', 'COMPLETED', 'PAID'],
+            is_deleted=False
+        ).values('product_id').annotate(total_qty=Sum('quantity'))
+        weekly_consumed = {item['product_id']: item['total_qty'] for item in weekly_items}
+
         return {
             'employee': EmployeeProfileSerializer(employee).data,
             'current_debt': employee.current_debt,
             'has_overdue_debt': has_debt,
             'overdue_debt_amount': debt_amount,
             'cutoff_date': cutoff_date,
+            'weekly_consumed_by_product': weekly_consumed,
             'orders': InternalOrderDetailSerializer(orders, many=True).data,
             'payments': DebtPaymentSerializer(payments, many=True).data,
         }
@@ -79,15 +94,30 @@ class EmployeeProfileViewSet(BaseViewSet):
         employee = self.get_object()
         return Response(self._get_statement_data(employee), status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['patch'], url_path='toggle-active')
+    def toggle_active(self, request, pk=None):
+        """Activa o desactiva el acceso del trabajador a la tienda interna."""
+        employee = self.get_object()
+        employee.is_active = not employee.is_active
+        employee.save(update_fields=['is_active'])
+        state = 'activado' if employee.is_active else 'desactivado'
+        return Response(
+            {
+                'id': employee.id,
+                'is_active': employee.is_active,
+                'detail': f'Trabajador {state} correctamente.'
+            },
+            status=status.HTTP_200_OK
+        )
+
     @action(detail=False, methods=['get'])
     def me(self, request):
         """Retorna el perfil y estado de cuenta consolidado del empleado autenticado actual."""
         employee = EmployeeProfile.objects.filter(user=request.user, is_deleted=False).first()
         if not employee:
             # Auto-provisionar perfil de colaborador para el usuario autenticado
-            emp_number = f"EMP-{request.user.id:04d}"
-            if EmployeeProfile.objects.filter(employee_number=emp_number).exists():
-                emp_number = f"EMP-{request.user.id:04d}-{int(timezone.now().timestamp())}"
+            from apps.employee_store.utils import generate_employee_number
+            emp_number = generate_employee_number()
 
             department = "Operaciones"
             position = "Colaborador"
@@ -203,11 +233,11 @@ class InternalOrderViewSet(BaseViewSet):
         employee_id = serializer.validated_data['employee_id']
         employee = get_object_or_404(EmployeeProfile, id=employee_id, is_deleted=False)
 
-        # Determinar si el usuario tiene privilegios de administrador para override de deudas
+        # Determinar si el usuario tiene privilegios de administrador para override (límites semanales y deudas)
         is_staff = getattr(request.user, 'is_staff', False) or getattr(request.user, 'is_superuser', False)
         requested_override = serializer.validated_data.get('is_admin_override', False)
-        # Si el usuario es admin o staff, se habilita la posibilidad de override
-        is_admin_override = is_staff and (requested_override or True)
+        # Se aplica override si el usuario tiene permisos administrativos y se solicita el override
+        is_admin_override = bool(is_staff and requested_override)
 
         order_status = serializer.validated_data.get('status', 'UNDELIVERED')
         order = checkout_internal_order(
@@ -283,6 +313,7 @@ class DebtPaymentViewSet(BaseViewSet):
         is_deleted=False
     ).select_related('employee', 'employee__user', 'registered_by')
     serializer_class = DebtPaymentSerializer
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['employee__employee_number', 'employee__user__first_name', 'employee__user__last_name', 'reference']
@@ -290,6 +321,90 @@ class DebtPaymentViewSet(BaseViewSet):
 
     def perform_create(self, serializer):
         serializer.save(registered_by=self.request.user)
+
+    @action(detail=False, methods=['post'], url_path='bulk-cut')
+    def bulk_cut(self, request):
+        """
+        Aplica el corte masivo de nómina:
+        Recibe una lista de deducciones por empleado con montos personalizados, referencias y voucher.
+        Ejecuta todas las amortizaciones en una transacción atómica y sincroniza el estado PAID de las órdenes.
+        """
+        import json
+        from apps.employee_store.services import sync_employee_orders_paid_status
+
+        cuts_data = request.data.get('cuts')
+        if isinstance(cuts_data, str):
+            try:
+                cuts_data = json.loads(cuts_data)
+            except Exception:
+                pass
+
+        if not cuts_data or not isinstance(cuts_data, list):
+            return Response(
+                {"error": "Debe proporcionar una lista de deducciones en el campo 'cuts'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        payroll_ref = request.data.get('payroll_reference') or 'CORTE-NOMINA'
+        global_notes = request.data.get('notes') or 'Corte de Nómina General'
+        global_voucher = request.FILES.get('voucher')
+
+        created_payments = []
+        errors = []
+
+        with transaction.atomic():
+            for idx, item in enumerate(cuts_data):
+                emp_id = item.get('employee_id')
+                try:
+                    amount = Decimal(str(item.get('amount', 0)))
+                except Exception:
+                    errors.append(f"Fila {idx+1}: Monto inválido.")
+                    continue
+
+                if amount <= Decimal('0.00'):
+                    continue
+
+                try:
+                    employee = EmployeeProfile.objects.select_for_update().get(id=emp_id, is_deleted=False)
+                except EmployeeProfile.DoesNotExist:
+                    errors.append(f"Fila {idx+1}: Empleado #{emp_id} no encontrado.")
+                    continue
+
+                if amount > employee.current_debt:
+                    errors.append(
+                        f"El monto a descontar (${amount:,.2f}) supera la deuda actual (${employee.current_debt:,.2f}) del colaborador {employee.employee_number}."
+                    )
+                    continue
+
+                item_ref = item.get('reference') or payroll_ref
+                item_notes = item.get('notes') or global_notes
+                emp_voucher = request.FILES.get(f"voucher_{emp_id}") or global_voucher
+
+                payment = DebtPayment.objects.create(
+                    employee=employee,
+                    amount=amount,
+                    payment_type='PAYROLL_DEDUCTION',
+                    registered_by=request.user,
+                    reference=item_ref,
+                    voucher=emp_voucher,
+                    notes=item_notes
+                )
+                created_payments.append(payment)
+                sync_employee_orders_paid_status(employee)
+
+            if errors:
+                transaction.set_rollback(True)
+                return Response(
+                    {"error": "Errores de validación en el corte de nómina.", "details": errors},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        return Response({
+            "detail": f"Se procesaron exitosamente {len(created_payments)} deducciones de nómina.",
+            "total_deductions_count": len(created_payments),
+            "total_amount_deducted": sum(p.amount for p in created_payments),
+            "payroll_reference": payroll_ref,
+        }, status=status.HTTP_201_CREATED)
 
 
 class SettlementReportAPIView(APIView):
@@ -315,7 +430,8 @@ class SettlementReportAPIView(APIView):
         report = generate_settlement_report(
             start_date=start_date,
             end_date=end_date,
-            employee_id=employee_id
+            employee_id=employee_id,
+            request=request
         )
 
         return Response({
@@ -325,4 +441,117 @@ class SettlementReportAPIView(APIView):
             'grand_orders_total': sum(r['period_orders_total'] for r in report),
             'grand_payments_total': sum(r['period_payments_total'] for r in report),
             'data': report
+        }, status=status.HTTP_200_OK)
+
+
+class GlobalSearchAPIView(APIView):
+    """Buscador global consolidado y de alta velocidad para la barra de navegación superior.
+
+    Optimizado en una sola petición para retornar hasta 5 coincidencias inmediatas por categoría:
+    - Colaboradores (nombre, apellido, cédula, ficha)
+    - Productos (nombre, código de barras, SKU)
+    - Órdenes internas (número de orden, trabajador, estatus)
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        query = request.query_params.get('q', '').strip()
+        if not query or len(query) < 2:
+            return Response({
+                'workers': [],
+                'products': [],
+                'orders': []
+            }, status=status.HTTP_200_OK)
+
+        clean_digits = ''.join(c for c in query if c.isdigit())
+
+        # 1. Colaboradores
+        emp_filter = (
+            Q(employee_number__icontains=query) |
+            Q(user__first_name__icontains=query) |
+            Q(user__last_name__icontains=query) |
+            Q(user__username__icontains=query) |
+            Q(user__identity_document__icontains=query) |
+            Q(department__icontains=query) |
+            Q(position__icontains=query)
+        )
+        if clean_digits and len(clean_digits) >= 3:
+            emp_filter |= Q(user__identity_document__icontains=clean_digits)
+
+        workers = (
+            EmployeeProfile.objects.filter(is_deleted=False)
+            .filter(emp_filter)
+            .select_related('user')
+            .only('id', 'employee_number', 'department', 'position', 'photo', 'user__first_name', 'user__last_name', 'user__identity_document', 'user__username')[:6]
+        )
+        workers_data = [
+            {
+                'id': w.id,
+                'employee_number': w.employee_number,
+                'name': w.user.get_full_name() or f"{w.user.first_name} {w.user.last_name}".strip() or w.user.username,
+                'doc': getattr(w.user, 'identity_document', None) or w.employee_number or '',
+                'department': w.department or '',
+                'position': w.position or '',
+                'photo': w.photo.url if w.photo else None
+            }
+            for w in workers
+        ]
+
+        # 2. Productos
+        prod_filter = (
+            Q(name__icontains=query) |
+            Q(barcode__icontains=query) |
+            Q(description__icontains=query)
+        )
+        products = (
+            InternalProduct.objects.filter(is_deleted=False, is_active=True)
+            .filter(prod_filter)
+            .only('id', 'name', 'barcode', 'price', 'stock', 'image')[:6]
+        )
+        products_data = [
+            {
+                'id': p.id,
+                'name': p.name,
+                'barcode': p.barcode or '',
+                'price': str(p.price),
+                'stock': p.stock,
+                'image': p.image.url if p.image else None
+            }
+            for p in products
+        ]
+
+        # 3. Órdenes internas
+        order_filter = (
+            Q(order_number__icontains=query) |
+            Q(employee__employee_number__icontains=query) |
+            Q(employee__user__first_name__icontains=query) |
+            Q(employee__user__last_name__icontains=query) |
+            Q(employee__user__identity_document__icontains=query)
+        )
+        if clean_digits and len(clean_digits) >= 3:
+            order_filter |= Q(employee__user__identity_document__icontains=clean_digits)
+
+        orders = (
+            InternalOrder.objects.filter(is_deleted=False)
+            .filter(order_filter)
+            .select_related('employee__user')
+            .only('id', 'order_number', 'total_amount', 'status', 'created_at', 'employee__employee_number', 'employee__user__first_name', 'employee__user__last_name')[:6]
+        )
+        orders_data = [
+            {
+                'id': o.id,
+                'order_number': o.order_number,
+                'total_amount': str(o.total_amount),
+                'status': o.status,
+                'employee_name': (o.employee.user.get_full_name() if o.employee and o.employee.user else 'Trabajador'),
+                'created_at': o.created_at.strftime('%d/%m/%Y %H:%M') if o.created_at else ''
+            }
+            for o in orders
+        ]
+
+        return Response({
+            'workers': workers_data,
+            'products': products_data,
+            'orders': orders_data
         }, status=status.HTTP_200_OK)

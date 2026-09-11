@@ -291,6 +291,13 @@ class DebtPayment(BaseModel):
         verbose_name='Registrado por'
     )
     reference = models.CharField('Referencia / Comprobante', max_length=100, blank=True)
+    voucher = models.FileField(
+        'Voucher / Comprobante',
+        upload_to='employee_store/vouchers/',
+        null=True,
+        blank=True,
+        help_text='Comprobante de transferencia, bauche bancario o recibo firmado'
+    )
     notes = models.TextField('Notas', blank=True)
 
     class Meta:

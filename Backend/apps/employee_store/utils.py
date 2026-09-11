@@ -46,41 +46,35 @@ def generate_internal_order_number():
 
 def generate_employee_number():
     """
-    Genera un número/código de trabajador único correlativo para el año en curso
-    siguiendo el formato TRA-nnnn-año (ej. TRA-0001-2026).
+    Genera un número/código de trabajador único correlativo global
+    siguiendo el formato TRAnnnnn (ej. TRA00001, TRA00042).
     """
     from apps.employee_store.models import EmployeeProfile
 
-    year = timezone.now().year
-    prefix = "TRA-"
-    suffix = f"-{year}"
+    prefix = "TRA"
 
     last_employee = (
         EmployeeProfile.objects.filter(
-            employee_number__startswith=prefix,
-            employee_number__endswith=suffix
+            employee_number__startswith=prefix
         )
         .order_by('-id')
         .first()
     )
 
     if last_employee and last_employee.employee_number:
-        match = re.match(r'^TRA-(\d+)-\d{4}$', last_employee.employee_number)
+        match = re.match(r'^TRA(\d+)$', last_employee.employee_number)
         if match:
             new_seq = int(match.group(1)) + 1
         else:
-            new_seq = (
-                EmployeeProfile.objects.filter(
-                    employee_number__startswith=prefix,
-                    employee_number__endswith=suffix
-                ).count() + 1
-            )
+            new_seq = EmployeeProfile.objects.filter(
+                employee_number__startswith=prefix
+            ).count() + 1
     else:
         new_seq = 1
 
-    emp_number = f"TRA-{new_seq:04d}-{year}"
+    emp_number = f"TRA{new_seq:05d}"
     while EmployeeProfile.objects.filter(employee_number=emp_number).exists():
         new_seq += 1
-        emp_number = f"TRA-{new_seq:04d}-{year}"
+        emp_number = f"TRA{new_seq:05d}"
 
     return emp_number

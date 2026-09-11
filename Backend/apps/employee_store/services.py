@@ -165,8 +165,9 @@ def checkout_internal_order(employee, items_data, user=None, notes='', is_admin_
                     f"Disponible: {product.stock}, Solicitado: {quantity}."
                 )
 
-            # Validar límite semanal por empleado
-            validate_weekly_limit(employee, product, quantity)
+            # Validar límite semanal por empleado (se omite si es override administrativo)
+            if not is_admin_override:
+                validate_weekly_limit(employee, product, quantity)
 
             # Descontar stock
             product.stock -= quantity
@@ -200,12 +201,12 @@ def calculate_employee_debt(employee):
     return employee.current_debt
 
 
-def generate_settlement_report(start_date, end_date, employee_id=None):
+def generate_settlement_report(start_date, end_date, employee_id=None, request=None):
     """
     Genera el reporte consolidado de consumos, abonos y balance por empleado en un rango de fechas.
     Ideal para nómina / Recursos Humanos en cortes quincenales o mensuales.
     """
-    profiles = EmployeeProfile.objects.filter(is_deleted=False)
+    profiles = EmployeeProfile.objects.filter(is_deleted=False).select_related('user')
     if employee_id:
         profiles = profiles.filter(id=employee_id)
 
@@ -230,14 +231,25 @@ def generate_settlement_report(start_date, end_date, employee_id=None):
         payments_count = payments.count()
 
         net_period = orders_sum - payments_sum
+        user = emp.user
+
+        photo_url = None
+        if getattr(emp, 'photo', None) and emp.photo:
+            try:
+                photo_url = request.build_absolute_uri(emp.photo.url) if request else emp.photo.url
+            except Exception:
+                photo_url = emp.photo.url
 
         report_data.append({
             'employee_id': emp.id,
             'employee_number': emp.employee_number,
-            'full_name': emp.user.get_full_name() or emp.user.username,
+            'full_name': user.get_full_name() or user.username,
+            'identity_document': getattr(user, 'identity_document', '') or '',
             'department': emp.department,
             'position': emp.position,
             'salary': emp.salary,
+            'photo': photo_url,
+            'is_active': emp.is_active,
             'period_orders_count': orders_count,
             'period_orders_total': orders_sum,
             'period_payments_count': payments_count,

@@ -9,6 +9,7 @@ from apps.employee_store.api.views import (
     InternalOrderViewSet,
     DebtPaymentViewSet,
     SettlementReportAPIView,
+    GlobalSearchAPIView,
 )
 
 router = DefaultRouter()
@@ -21,4 +22,5 @@ router.register(r'payments', DebtPaymentViewSet, basename='debt-payments')
 
 urlpatterns = [
     path('reports/settlement/', SettlementReportAPIView.as_view(), name='settlement-report'),
+    path('global-search/', GlobalSearchAPIView.as_view(), name='global-search'),
 ] + router.urls

@@ -100,6 +100,16 @@ class EmployeeStoreServicesTestCase(TestCase):
         )
         self.assertEqual(order2.items.first().quantity, 1)
 
+        # 4. Con is_admin_override=True, el administrador puede exceder el límite semanal
+        order_override = checkout_internal_order(
+            employee=self.employee,
+            items_data=[{'barcode': self.product1.barcode, 'quantity': 5}],
+            user=self.admin_user,
+            is_admin_override=True
+        )
+        self.assertIsNotNone(order_override)
+        self.assertEqual(order_override.items.first().quantity, 5)
+
     def test_concurrency_and_insufficient_stock(self):
         """Fallo si el stock físico no es suficiente y comprobación de integridad del stock."""
         # Intentar comprar 10 galletas cuando solo hay 5
