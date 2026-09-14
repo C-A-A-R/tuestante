@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Actualizar Trabajador | TuEstante Admin</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Componentes base del Admin -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+  <link rel="stylesheet" href="../../components/modal/modal.css">
+
+  <!-- Estilos base de Formulario y específicos de Edición -->
+  <link rel="stylesheet" href="employee-create.css">
+  <link rel="stylesheet" href="employee-edit.css">
+</head>
+<body data-page-title="Actualizar Trabajador">
+
+  <!-- Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <div class="app-layout" id="app-layout">
+    <!-- Placeholders para componentes reutilizables -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal -->
+    <main class="app-main-content">
+      <div class="employee-create-container">
+
+        <!-- 1. Encabezado de la Pantalla -->
+        <section class="screen-header-card">
+          <div class="screen-header-text">
+            <div class="header-back-link">
+              <a href="employee-ledger.html" class="back-link" id="link-back-ledger">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                <span>Volver a Trabajadores</span>
+              </a>
+            </div>
+            <h2 class="screen-main-title">
+              Actualizar Trabajador
+              <span class="header-emp-badge" id="header-emp-badge" style="display: none;">EMP-0000</span>
+            </h2>
+            <p class="screen-main-desc">
+              Modifica la información personal, asignación laboral y parámetros de consumo en tienda del colaborador.
+            </p>
+          </div>
+          <div class="header-actions">
+            <a href="employee-ledger.html" class="btn btn-outline" id="btn-cancel-top">Cancelar</a>
+            <button type="submit" form="form-edit-employee" class="btn btn-primary" id="btn-submit-top">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span>Guardar Cambios</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 2. Formulario de Actualización Principal -->
+        <form id="form-edit-employee" class="form-create-employee" novalidate>
+          <div class="create-grid-layout">
+            
+            <!-- Columna Izquierda: Foto de Perfil del Trabajador -->
+            <div class="photo-upload-panel">
+              <div class="panel-card">
+                <h3 class="panel-title">Foto del Trabajador</h3>
+                <p class="panel-subtitle">Fotografía de identificación para mostrador POS y kardex.</p>
+
+                <!-- Área Dropzone / Previsualización -->
+                <div class="photo-dropzone" id="photo-dropzone">
+                  <input type="file" id="input-photo-file" accept="image/png, image/jpeg, image/webp" class="file-hidden-input file-input-hidden" style="display: none !important;" aria-label="Seleccionar fotografía del trabajador">
+                  
+                  <!-- Estado Vacío del Dropzone -->
+                  <div class="dropzone-empty" id="dropzone-empty">
+                    <div class="avatar-placeholder-large">
+                      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </div>
+                    <span class="dropzone-prompt">Arrastra la foto aquí o <strong>haz clic para buscar</strong></span>
+                    <small class="dropzone-hint">Formatos: PNG, JPG, WEBP (Máx. 5MB)</small>
+                  </div>
+
+                  <!-- Estado con Previsualización -->
+                  <div class="dropzone-preview hidden" id="dropzone-preview">
+                    <div class="avatar-preview-wrapper" id="avatar-preview-wrapper" title="Haz clic para ver la foto en pantalla completa">
+                      <img id="img-photo-preview" src="" alt="Previsualización de foto" class="avatar-preview-img">
+                      <div class="avatar-zoom-overlay">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="11" cy="11" r="8"></circle>
+                          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                          <line x1="11" y1="8" x2="11" y2="14"></line>
+                          <line x1="8" y1="11" x2="14" y2="11"></line>
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="preview-zoom-hint" id="preview-zoom-hint">🔍 Clic para ampliar a pantalla completa</span>
+                    <div class="preview-actions">
+                      <button type="button" class="btn-change-photo" id="btn-change-photo" title="Subir o cambiar fotografía">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="17 8 12 3 7 8"></polyline>
+                          <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>Cambiar</span>
+                      </button>
+                      <button type="button" class="btn-zoom-photo" id="btn-zoom-photo" title="Ver foto ampliada">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="11" cy="11" r="8"></circle>
+                          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <span>Ampliar</span>
+                      </button>
+                      <button type="button" class="btn-remove-photo" id="btn-remove-photo" title="Quitar foto">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        <span>Quitar</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="photo-tips">
+                  <div class="tip-item">
+                    <span class="tip-icon">✓</span>
+                    <span>Visible en el POS para confirmar la identidad del colaborador.</span>
+                  </div>
+                  <div class="tip-item">
+                    <span class="tip-icon">✓</span>
+                    <span>Se puede actualizar o remover en cualquier momento.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: Paneles de Datos del Formulario -->
+            <div class="form-fields-panel">
+
+              <!-- Tarjeta 1: Datos Personales e Identificación -->
+              <div class="panel-card">
+                <h3 class="panel-title">1. Información Personal</h3>
+                <p class="panel-subtitle">Nombres, apellidos y datos de contacto del trabajador.</p>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="input-first-name" class="form-label">Primer Nombre <span class="req">*</span></label>
+                    <input type="text" id="input-first-name" name="first_name" class="form-input" placeholder="Ej: Carlos" required autocomplete="off">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-second-name" class="form-label">Segundo Nombre</label>
+                    <input type="text" id="input-second-name" name="second_name" class="form-input" placeholder="Ej: Alberto" autocomplete="off">
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="input-last-name" class="form-label">Primer Apellido <span class="req">*</span></label>
+                    <input type="text" id="input-last-name" name="last_name" class="form-input" placeholder="Ej: Aragoza" required autocomplete="off">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-second-last-name" class="form-label">Segundo Apellido</label>
+                    <input type="text" id="input-second-last-name" name="second_last_name" class="form-input" placeholder="Ej: Romero" autocomplete="off">
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="input-identity-doc" class="form-label">Cédula o Documento de Identidad <span class="req">*</span></label>
+                    <input type="text" id="input-identity-doc" name="identity_document" class="form-input" placeholder="Ej: V-12345678" required autocomplete="off">
+                    <small class="form-hint">Utilizado para búsquedas rápidas en POS y compras a crédito.</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-birth-date" class="form-label">Fecha de Nacimiento <span class="req">*</span></label>
+                    <input type="date" id="input-birth-date" name="birth_date" class="form-input" required>
+                    <small class="form-hint" id="birth-date-hint">Mínimo 15 años cumplidos (edad válida hasta 100 años).</small>
+                    <small class="form-error-msg" id="birth-date-error" style="display: none; color: #dc2626; font-size: 0.8rem; margin-top: 4px; font-weight: 500;"></small>
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="input-phone" class="form-label">Teléfono de Contacto</label>
+                    <input type="tel" id="input-phone" name="phone" class="form-input" placeholder="Ej: 0414-1234567" autocomplete="off">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-email" class="form-label">Correo Electrónico (Opcional)</label>
+                    <input type="email" id="input-email" name="email" class="form-input" placeholder="trabajador@empresa.com" autocomplete="off">
+                  </div>
+                </div>
+
+                <!-- Seguridad: Botón para actualizar contraseña -->
+                <div class="form-group" style="margin-top: 18px;">
+                  <label class="form-label">Contraseña de Acceso</label>
+                  <div>
+                    <button type="button" class="btn-open-password-modal" id="btn-open-password-modal" title="Abrir ventana para actualizar la contraseña del colaborador">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                      <span>Actualizar Contraseña</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Tarjeta 2: Datos Laborales y Tienda -->
+              <div class="panel-card">
+                <h3 class="panel-title">2. Asignación Laboral y Crédito en Tienda</h3>
+                <p class="panel-subtitle">Definición de cargo, ficha y parámetros de consumo.</p>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="input-employee-number" class="form-label">Ficha / Código de Empleado <span class="req">*</span></label>
+                    <input type="text" id="input-employee-number" name="employee_number" class="form-input" placeholder="Ej: TRA00001" required autocomplete="off">
+                    <small class="form-hint">Código único de registro del colaborador.</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-department" class="form-label">Departamento / Área <span class="req">*</span></label>
+                    <input type="text" id="input-department" name="department" class="form-input" placeholder="Ej: Producción, Almacén, Ventas..." list="departments-list" required autocomplete="off">
+                    <datalist id="departments-list">
+                      <option value="Producción">
+                      <option value="Almacén y Bodega">
+                      <option value="Administración">
+                      <option value="Ventas y Mostrador">
+                      <option value="Mantenimiento">
+                      <option value="Logística y Despacho">
+                      <option value="Recursos Humanos">
+                      <option value="Informatica">
+                    </datalist>
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="input-position" class="form-label">Cargo o Puesto <span class="req">*</span></label>
+                    <input type="text" id="input-position" name="position" class="form-input" placeholder="Ej: Operador de Máquina, Analista..." required autocomplete="off">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-salary" class="form-label">Salario Base de Referencia (USD)</label>
+                    <div class="input-prefix-wrapper">
+                      <span class="input-prefix">$</span>
+                      <input type="number" id="input-salary" name="salary" class="form-input input-with-prefix" min="0" step="0.01" value="0.00">
+                    </div>
+                    <small class="form-hint">Monto de referencia para cálculo de cupos de nómina.</small>
+                  </div>
+                </div>
+
+                <!-- Estado Activo -->
+                <div class="form-group toggle-group">
+                  <label class="toggle-switch-label">
+                    <input type="checkbox" id="input-is-active" name="is_active" class="toggle-checkbox" checked>
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">
+                      <strong>Habilitado para Compras en Tienda</strong>
+                      <small>Permite al colaborador acumular consumos y acceder al mostrador POS.</small>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Acciones Inferiores -->
+              <div class="panel-card form-footer-card">
+                <a href="employee-ledger.html" class="btn btn-outline" id="btn-cancel-bottom">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btn-submit-bottom">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  <span>Guardar Cambios</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </form>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- Modal para Actualizar Contraseña -->
+  <div class="modal-change-password-backdrop" id="modal-change-password" role="dialog" aria-modal="true">
+    <div class="modal-change-password-card">
+      
+      <!-- Encabezado Modal -->
+      <div class="modal-change-password-header">
+        <div class="modal-header-info">
+          <div class="modal-header-icon">🔑</div>
+          <div>
+            <h3 class="modal-header-title">Actualizar Contraseña de Acceso</h3>
+            <p class="modal-header-subtitle" id="pwd-modal-emp-info">Para el colaborador</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-pwd-modal" title="Cerrar ventana">✕</button>
+      </div>
+
+      <!-- Formulario de Cambio de Contraseña -->
+      <form id="form-change-password" novalidate>
+        <div class="modal-change-password-body">
+
+          <!-- Campo Nueva Contraseña -->
+          <div class="form-group">
+            <label for="modal-input-password" class="form-label">Nueva Contraseña <span class="req" style="color: #ef4444;">*</span></label>
+            <div style="position: relative; display: flex; align-items: center;">
+              <input type="password" id="modal-input-password" class="form-input" placeholder="••••••••" required autocomplete="new-password" style="padding-right: 42px;">
+              <button type="button" id="btn-toggle-modal-pwd" class="btn-toggle-password" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: #64748b; padding: 4px; display: flex; align-items: center;" title="Mostrar u ocultar contraseña">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Campo Confirmar Nueva Contraseña -->
+          <div class="form-group">
+            <label for="modal-input-confirm-password" class="form-label">Confirmar Nueva Contraseña <span class="req" style="color: #ef4444;">*</span></label>
+            <div style="position: relative; display: flex; align-items: center;">
+              <input type="password" id="modal-input-confirm-password" class="form-input" placeholder="••••••••" required autocomplete="new-password" style="padding-right: 42px;">
+              <button type="button" id="btn-toggle-modal-confirm-pwd" class="btn-toggle-password" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: #64748b; padding: 4px; display: flex; align-items: center;" title="Mostrar u ocultar confirmación">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <small id="modal-pwd-match-error" style="display: none; color: #dc2626; font-size: 0.8rem; margin-top: 4px; font-weight: 500;">Las contraseñas no coinciden.</small>
+          </div>
+
+          <!-- Checklist de Requisitos en Vivo -->
+          <div class="modal-password-rules-box" id="modal-password-rules-box">
+            <span class="modal-rules-title">Requisitos de seguridad obligatorios:</span>
+            <div id="modal-rule-len" class="modal-rule-item">
+              <span class="modal-rule-icon">○</span>
+              <span class="modal-rule-text">Mínimo 6 caracteres</span>
+            </div>
+            <div id="modal-rule-upper" class="modal-rule-item">
+              <span class="modal-rule-icon">○</span>
+              <span class="modal-rule-text">Al menos una letra mayúscula (A-Z)</span>
+            </div>
+            <div id="modal-rule-num" class="modal-rule-item">
+              <span class="modal-rule-icon">○</span>
+              <span class="modal-rule-text">Al menos un número (0-9)</span>
+            </div>
+            <div id="modal-rule-match" class="modal-rule-item">
+              <span class="modal-rule-icon">○</span>
+              <span class="modal-rule-text">Las contraseñas coinciden</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Pie del Modal -->
+        <div class="modal-change-password-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-pwd-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-pwd-modal">
+            Actualizar Contraseña
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Modal Lightbox de Foto del Trabajador a Pantalla Completa -->
+  <div class="modal-backdrop modal-photo-lightbox" id="modal-photo-lightbox" role="dialog" aria-modal="true">
+    <div class="lightbox-dialog">
+      <button type="button" class="lightbox-close-btn" id="btn-close-photo-lightbox" title="Cerrar vista completa (Esc)">✕</button>
+      <div class="lightbox-image-wrap">
+        <img id="img-lightbox-full" src="" alt="Fotografía del Trabajador" class="lightbox-photo-img">
+      </div>
+      <div class="lightbox-footer">
+        <div class="lightbox-caption" id="lightbox-caption">Fotografía del Trabajador</div>
+        <button type="button" class="btn-lightbox-change" id="btn-lightbox-change-photo" title="Subir nueva fotografía">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span>Cambiar Foto</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="employee-edit.js"></script>
+</body>
+</html>

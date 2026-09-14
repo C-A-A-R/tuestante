@@ -201,6 +201,22 @@ export async function updateEmployee(employeeId, payload) {
   return await patchRequest(`/employee-store/employees/${employeeId}/`, payload);
 }
 
+/**
+ * Elimina (borrado lógico) el perfil de un empleado.
+ * @param {number|string} employeeId
+ */
+export async function deleteEmployee(employeeId) {
+  return await deleteRequest(`/employee-store/employees/${employeeId}/`);
+}
+
+/**
+ * Activa o desactiva el acceso de un trabajador a la tienda interna.
+ * @param {number|string} employeeId
+ */
+export async function toggleEmployeeStatus(employeeId) {
+  return await patchRequest(`/employee-store/employees/${employeeId}/toggle-active/`, {});
+}
+
 /* ==========================================================================
    4. ÓRDENES DE CONSUMO INTERNO (INTERNAL ORDERS)
    ========================================================================== */
@@ -271,6 +287,14 @@ export async function fetchPayments(params = {}) {
  */
 export async function createDebtPayment(payload) {
   return await postRequest('/employee-store/payments/', payload);
+}
+
+/**
+ * Ejecuta el corte masivo de nómina con validaciones atómicas y soporte de comprobantes.
+ * @param {FormData|Object} payload - FormData o { cuts, payroll_reference, notes, voucher }
+ */
+export async function executeBulkPayrollCut(payload) {
+  return await postRequest('/employee-store/payments/bulk-cut/', payload);
 }
 
 /* ==========================================================================

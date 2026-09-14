@@ -23,14 +23,15 @@ class NotificationViewSet(BaseViewSet):
     ordering_fields = ['created_at', 'is_read', 'id']
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'destroy', 'mark_as_read', 'mark_all_as_read']:
+        if self.action in ['list', 'retrieve', 'destroy', 'mark_as_read', 'mark_all_as_read', 'unread_count']:
             return [permissions.IsAuthenticated()]
         return [permissions.IsAdminUser()]
 
     def get_queryset(self):
         """
         Retorna notificaciones no eliminadas.
-        - Filtra por el usuario autenticado a menos que sea personal/admin.
+        - Por defecto filtra por el usuario autenticado (incluso para admins, para su panel personal).
+        - Si es staff y se pasa ?all=true o ?user_id=X, permite consultar notificaciones globales.
         - Excluye media eliminada y órdenes eliminadas.
         """
         media_prefetch = Prefetch(
@@ -43,7 +44,13 @@ class NotificationViewSet(BaseViewSet):
             Q(order__isnull=True) | Q(order__is_deleted=False)
         ).prefetch_related(media_prefetch).select_related('user', 'order', 'internal_order')
 
-        if not (self.request.user and self.request.user.is_staff):
+        # Filtro de usuario
+        user_param = self.request.query_params.get('user_id')
+        all_param = self.request.query_params.get('all')
+        if self.request.user and self.request.user.is_staff and (all_param == 'true' or user_param):
+            if user_param:
+                queryset = queryset.filter(user_id=user_param)
+        elif self.request.user and self.request.user.is_authenticated:
             queryset = queryset.filter(user=self.request.user)
 
         is_read_param = self.request.query_params.get('is_read')
@@ -64,6 +71,12 @@ class NotificationViewSet(BaseViewSet):
             queryset = queryset.filter(internal_order_id=internal_order_id)
 
         return queryset
+
+    @action(detail=False, methods=['get'])
+    def unread_count(self, request):
+        """Retorna el número de notificaciones no leídas del usuario autenticado."""
+        count = self.get_queryset().filter(is_read=False).count()
+        return Response({"unread_count": count}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def mark_as_read(self, request, pk=None):

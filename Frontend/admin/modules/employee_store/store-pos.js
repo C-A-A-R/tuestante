@@ -1,4 +1,3 @@
-import { loadAdminComponents } from '../../components/navbar/navbar.js';
 /**
  * ==========================================================================
  * PUNTO DE VENTA EN MOSTRADOR (BODEGA POS) - TUESTANTE OMS
@@ -8,6 +7,7 @@ import { loadAdminComponents } from '../../components/navbar/navbar.js';
  * verificación de límites semanales y confirmación de entrega inmediata.
  */
 
+import { loadAdminComponents } from '../../components/navbar/navbar.js';
 import { getOfficialRate } from '../../js/service/exchange-rate.service.js';
 import {
   fetchEmployees,
@@ -17,13 +17,14 @@ import {
   createInternalOrder
 } from './employee-store.api.js';
 import { resolveImageUrl } from '../../js/api.js';
+import { showLoadingOverlay, hideLoadingOverlay } from '../../components/modal/modal.js';
 
 // Estado local reactivo del POS
 const state = {
   employees: [],
   selectedEmployee: null,
   products: [],
-  cart: [], // [{ product, quantity, subtotal, isLimitExceeded }]
+  cart: [], // [{ product, quantity, subtotal, isLimitExceeded, alreadyConsumed }]
   exchangeRate: 80.00,
   isProcessing: false
 };
@@ -113,6 +114,8 @@ function renderProductSuggestions(filterText = '') {
     return;
   }
 
+  const consumedMap = (state.selectedEmployee && state.selectedEmployee.weekly_consumed_by_product) || {};
+
   const itemsHtml = filtered.map((p, index) => {
     const isOutOfStock = p.stock <= 0;
     const priceUsd = parseFloat(p.price || 0);
@@ -121,6 +124,22 @@ function renderProductSuggestions(filterText = '') {
     const thumbMarkup = imgUrl
       ? `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(p.name)}" class="suggest-product-thumb" onerror="this.onerror=null;this.parentElement.innerHTML='📦';">`
       : `<div class="suggest-product-no-thumb">📦</div>`;
+
+    // Badge de límite semanal reactivo
+    let limitBadgeHtml = '';
+    if (p.weekly_limit_per_employee > 0) {
+      if (state.selectedEmployee) {
+        const consumed = consumedMap[p.id] || 0;
+        const limit = p.weekly_limit_per_employee;
+        if (consumed >= limit) {
+          limitBadgeHtml = `<span class="badge-limit" style="background:#fee2e2; color:#dc2626; font-weight:700;">⛔ Cupo agotado (${consumed}/${limit}/sem)</span>`;
+        } else {
+          limitBadgeHtml = `<span class="badge-limit" style="background:#fef3c7; color:#b45309;">📊 Cupo: ${consumed}/${limit}/sem</span>`;
+        }
+      } else {
+        limitBadgeHtml = `<span class="badge-limit">Máx: ${p.weekly_limit_per_employee}/sem</span>`;
+      }
+    }
 
     return `
       <div class="product-suggest-item ${index === 0 && term ? 'is-selected' : ''}" data-product-id="${p.id}" role="option" tabindex="-1">
@@ -133,7 +152,7 @@ function renderProductSuggestions(filterText = '') {
             <div class="suggest-product-badges">
               <span class="badge-barcode">🏷️ ${escapeHtml(p.barcode || 'S/C')}</span>
               ${p.category_name ? `<span class="badge-category">${escapeHtml(p.category_name)}</span>` : ''}
-              ${p.weekly_limit_per_employee > 0 ? `<span class="badge-limit">Máx: ${p.weekly_limit_per_employee}/sem</span>` : ''}
+              ${limitBadgeHtml}
             </div>
           </div>
         </div>
@@ -200,12 +219,26 @@ function renderProductChips(filterText = '') {
     return;
   }
 
+  const consumedMap = (state.selectedEmployee && state.selectedEmployee.weekly_consumed_by_product) || {};
+
   filtered.forEach(prod => {
     const chip = document.createElement('div');
     chip.className = 'product-quick-chip';
+
+    let chipLimitBadge = '';
+    if (prod.weekly_limit_per_employee > 0 && state.selectedEmployee) {
+      const consumed = consumedMap[prod.id] || 0;
+      const limit = prod.weekly_limit_per_employee;
+      if (consumed >= limit) {
+        chipLimitBadge = `<span style="font-size: 0.68rem; background: #fee2e2; color: #dc2626; padding: 1px 5px; border-radius: 4px; font-weight: 700;">Cupo agotado (${consumed}/${limit})</span>`;
+      } else {
+        chipLimitBadge = `<span style="font-size: 0.68rem; background: #fef3c7; color: #b45309; padding: 1px 5px; border-radius: 4px;">Cupo: ${consumed}/${limit}</span>`;
+      }
+    }
+
     chip.innerHTML = `
       <div class="chip-title" title="${escapeHtml(prod.name)}">${escapeHtml(prod.name)}</div>
-      <div class="chip-barcode">🏷️ ${escapeHtml(prod.barcode)}</div>
+      <div class="chip-barcode">🏷️ ${escapeHtml(prod.barcode)} ${chipLimitBadge}</div>
       <div class="chip-footer">
         <span class="chip-price">$${parseFloat(prod.price).toFixed(2)}</span>
         <span class="chip-stock">${prod.stock > 0 ? `${prod.stock} disp.` : 'Agotado'}</span>
@@ -243,28 +276,42 @@ function setupWorkerSearch() {
     }
 
     debounceTimer = setTimeout(() => {
+      const cleanQuery = query.replace(/[^0-9a-z]/gi, '');
       const matches = state.employees.filter(emp => {
-        const full = (emp.full_name || '').toLowerCase();
+        const full = (emp.full_name || emp.username || '').toLowerCase();
         const num = (emp.employee_number || '').toLowerCase();
-        const doc = (emp.user && emp.user.username ? emp.user.username : '').toLowerCase();
+        const cleanNum = num.replace(/[^0-9a-z]/gi, '');
+        const doc = (emp.id_number || emp.identity_document || (emp.user && emp.user.identity_document) || (emp.user && emp.user.username ? emp.user.username : '')).toLowerCase();
+        const cleanDoc = doc.replace(/[^0-9a-z]/gi, '');
         const dept = (emp.department || '').toLowerCase();
-        return full.includes(query) || num.includes(query) || doc.includes(query) || dept.includes(query);
+        const pos = (emp.position || '').toLowerCase();
+
+        return full.includes(query) ||
+               num.includes(query) ||
+               (cleanQuery && cleanNum.includes(cleanQuery)) ||
+               doc.includes(query) ||
+               (cleanQuery && cleanDoc.includes(cleanQuery)) ||
+               dept.includes(query) ||
+               pos.includes(query);
       });
 
       if (matches.length === 0) {
         dropdown.innerHTML = '<div class="worker-suggest-item" style="color: #64748b; cursor: default;">No se encontraron trabajadores</div>';
       } else {
-        dropdown.innerHTML = matches.slice(0, 8).map(emp => `
-          <div class="worker-suggest-item" data-employee-id="${emp.id}">
-            <div>
-              <div class="item-title">${escapeHtml(emp.full_name || emp.username)}</div>
-              <div class="item-sub">Ficha: <strong>${escapeHtml(emp.employee_number)}</strong> • ${escapeHtml(emp.department || 'General')}</div>
+        dropdown.innerHTML = matches.slice(0, 8).map(emp => {
+          const docStr = emp.id_number || emp.identity_document || (emp.user && emp.user.identity_document) || 'S/D';
+          return `
+            <div class="worker-suggest-item" data-employee-id="${emp.id}">
+              <div>
+                <div class="item-title">${escapeHtml(emp.full_name || emp.username)}</div>
+                <div class="item-sub">Ficha: <strong>${escapeHtml(emp.employee_number || 'S/N')}</strong> • C.I: <strong>${escapeHtml(docStr)}</strong> • ${escapeHtml(emp.department || 'General')}</div>
+              </div>
+              <div class="item-debt" title="Deuda actual">
+                $${parseFloat(emp.current_debt || 0).toFixed(2)}
+              </div>
             </div>
-            <div class="item-debt" title="Deuda actual">
-              $${parseFloat(emp.current_debt || 0).toFixed(2)}
-            </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
 
         dropdown.querySelectorAll('.worker-suggest-item[data-employee-id]').forEach(el => {
           el.addEventListener('click', () => {
@@ -316,7 +363,8 @@ async function selectWorker(employeeId) {
       current_debt: statement.current_debt,
       has_overdue_debt: statement.has_overdue_debt,
       overdue_debt_amount: statement.overdue_debt_amount,
-      cutoff_date: statement.cutoff_date
+      cutoff_date: statement.cutoff_date,
+      weekly_consumed_by_product: statement.weekly_consumed_by_product || {}
     };
 
     // Renderizar datos en tarjeta viva
@@ -325,6 +373,24 @@ async function selectWorker(employeeId) {
 
     document.getElementById('emp-name').textContent = emp.full_name || emp.username;
     document.getElementById('emp-number').textContent = emp.employee_number || 'S/N';
+    
+    const docEl = document.getElementById('emp-doc');
+    if (docEl) docEl.textContent = emp.id_number || emp.identity_document || (emp.user && emp.user.identity_document) || 'S/D';
+
+    const birthEl = document.getElementById('emp-birth');
+    if (birthEl) {
+      if (emp.birth_date) {
+        const [by, bm, bd] = emp.birth_date.split('-');
+        const today = new Date();
+        let age = today.getFullYear() - Number(by);
+        const mDiff = today.getMonth() - (Number(bm) - 1);
+        if (mDiff < 0 || (mDiff === 0 && today.getDate() < Number(bd))) age--;
+        birthEl.textContent = `${bd}/${bm}/${by} (${age}a)`;
+      } else {
+        birthEl.textContent = 'No reg.';
+      }
+    }
+
     document.getElementById('emp-position-dept').textContent = `${emp.position || 'Empleado'} / ${emp.department || 'General'}`;
     document.getElementById('emp-salary').textContent = `$${parseFloat(emp.salary || 0).toFixed(2)}`;
 
@@ -365,6 +431,13 @@ async function selectWorker(employeeId) {
     }
 
     liveCard.classList.remove('hidden');
+
+    // Recalcular límites y actualizar vistas reactivas
+    checkWeeklyLimits();
+    renderCart();
+    renderProductSuggestions(document.getElementById('barcode-input')?.value || '');
+    renderProductChips(document.getElementById('quick-filter-chips')?.value || '');
+
     updateCheckoutButtonState();
     focusBarcodeInput();
 
@@ -387,6 +460,13 @@ function clearSelectedWorker() {
     badge.textContent = 'Selecciona un trabajador';
     badge.className = 'badge badge-info';
   }
+
+  // Recalcular límites y actualizar vistas reactivas
+  checkWeeklyLimits();
+  renderCart();
+  renderProductSuggestions(document.getElementById('barcode-input')?.value || '');
+  renderProductChips(document.getElementById('quick-filter-chips')?.value || '');
+
   updateCheckoutButtonState();
 }
 
@@ -450,7 +530,7 @@ function setupProductCapture() {
       }
     });
 
-    // Filtrado reactivo en tiempo real al escribir código o nombre (SIN necesidad de pulsar Enter)
+    // Filtrado reactivo en tiempo real al escribir código o nombre
     let remoteSearchDebounce = null;
 
     barcodeInput.addEventListener('input', () => {
@@ -460,12 +540,10 @@ function setupProductCapture() {
         else btnClear.classList.add('hidden');
       }
 
-      // 1. Filtrado instantáneo en dropdown y chips
       renderProductSuggestions(val);
       renderProductChips(val);
       openDropdown();
 
-      // 2. Si no hay coincidencias locales y el término tiene al menos 2 caracteres, buscar en API automáticamente
       clearTimeout(remoteSearchDebounce);
       const term = val.toLowerCase().trim();
       if (term.length >= 2) {
@@ -499,7 +577,7 @@ function setupProductCapture() {
       }
     });
 
-    // Navegación por teclado (Flechas, Enter y Escape)
+    // Navegación por teclado
     barcodeInput.addEventListener('keydown', async (e) => {
       if (!dropdown) return;
 
@@ -529,7 +607,6 @@ function setupProductCapture() {
         e.preventDefault();
         const code = barcodeInput.value.trim();
 
-        // Si hay un elemento seleccionado con las flechas
         if (activeIndex >= 0 && items[activeIndex]) {
           const prodId = parseInt(items[activeIndex].getAttribute('data-product-id'), 10);
           const product = state.products.find(p => p.id === prodId);
@@ -543,7 +620,6 @@ function setupProductCapture() {
           }
         }
 
-        // Si el usuario ingresó un código de barras o nombre y pulsó Enter (o escaneó con pistola)
         if (code) {
           await handleBarcodeEntry(code);
           closeDropdown();
@@ -656,6 +732,30 @@ function addProductToCart(product) {
   }
 
   const existing = state.cart.find(item => item.product.id === product.id);
+  const currentInCart = existing ? existing.quantity : 0;
+  const weeklyLimit = product.weekly_limit_per_employee || 0;
+  const consumedMap = (state.selectedEmployee && state.selectedEmployee.weekly_consumed_by_product) || {};
+  const alreadyConsumed = consumedMap[product.id] || 0;
+
+  // Validación y bloqueo estricto de límite semanal por empleado en mostrador POS
+  if (state.selectedEmployee && weeklyLimit > 0) {
+    if (alreadyConsumed >= weeklyLimit) {
+      showToast(
+        'error',
+        'Límite Semanal Agotado',
+        `El trabajador ya consumió todo su cupo de "${product.name}" (${alreadyConsumed}/${weeklyLimit} unidades en los últimos 7 días). No se permite despachar más en punto de venta.`
+      );
+      return;
+    } else if (currentInCart + 1 > (weeklyLimit - alreadyConsumed)) {
+      const remaining = Math.max(0, weeklyLimit - alreadyConsumed);
+      showToast(
+        'error',
+        'Límite Semanal Excedido',
+        `El trabajador ya adquirió ${alreadyConsumed} unidades esta semana. Solo puede agregar ${remaining} más (Límite: ${weeklyLimit}/sem).`
+      );
+      return;
+    }
+  }
 
   if (existing) {
     if (existing.quantity + 1 > product.stock) {
@@ -669,11 +769,12 @@ function addProductToCart(product) {
       product,
       quantity: 1,
       subtotal: parseFloat(product.price),
-      isLimitExceeded: false
+      isLimitExceeded: false,
+      alreadyConsumed: 0
     });
   }
 
-  // Validar límites semanales
+  // Validar límites semanales y actualizar vista
   checkWeeklyLimits();
   renderCart();
   showToast('info', 'Producto añadido', `${product.name} añadido a la orden.`);
@@ -694,6 +795,22 @@ function updateCartQuantity(productId, delta) {
     return;
   }
 
+  // Bloqueo estricto si se supera el límite semanal al incrementar cantidad en mostrador POS
+  if (delta > 0 && state.selectedEmployee) {
+    const weeklyLimit = item.product.weekly_limit_per_employee || 0;
+    const consumedMap = state.selectedEmployee.weekly_consumed_by_product || {};
+    const alreadyConsumed = consumedMap[item.product.id] || 0;
+    if (weeklyLimit > 0 && (newQty + alreadyConsumed) > weeklyLimit) {
+      const remaining = Math.max(0, weeklyLimit - alreadyConsumed);
+      showToast(
+        'error',
+        'Límite Semanal Excedido',
+        `No es posible aumentar la cantidad: el límite semanal para "${item.product.name}" es de ${weeklyLimit} unidades (ya consumió ${alreadyConsumed}, cupo restante: ${remaining}).`
+      );
+      return;
+    }
+  }
+
   item.quantity = newQty;
   item.subtotal = item.quantity * parseFloat(item.product.price);
   checkWeeklyLimits();
@@ -712,12 +829,17 @@ function clearCart() {
 }
 
 /**
- * Comprueba el límite semanal por empleado para cada ítem en la canasta
+ * Comprueba el límite semanal por empleado para cada ítem en la canasta,
+ * tomando en cuenta el consumo registrado en los últimos 7 días.
  */
 function checkWeeklyLimits() {
+  const consumedMap = (state.selectedEmployee && state.selectedEmployee.weekly_consumed_by_product) || {};
+
   state.cart.forEach(item => {
     const limit = item.product.weekly_limit_per_employee || 0;
-    item.isLimitExceeded = (limit > 0 && item.quantity > limit);
+    const alreadyConsumed = consumedMap[item.product.id] || 0;
+    item.alreadyConsumed = alreadyConsumed;
+    item.isLimitExceeded = (state.selectedEmployee && limit > 0 && (item.quantity + alreadyConsumed) > limit);
   });
 }
 
@@ -752,8 +874,8 @@ function renderCart() {
 
     const rowClass = item.isLimitExceeded ? 'dispatch-row quota-exceeded-row' : 'dispatch-row';
     const limitBadge = item.isLimitExceeded ? `
-      <div class="quota-warning-badge" title="Límite semanal por trabajador excedido">
-        ⚠️ Límite semanal excedido (Máx: ${item.product.weekly_limit_per_employee} uds)
+      <div class="quota-warning-badge" title="Límite semanal por trabajador excedido" style="margin-top: 4px; font-size: 0.73rem; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 4px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;">
+        ⚠️ Límite semanal excedido: Lleva ${item.quantity} en orden + ${item.alreadyConsumed} consumidas en 7 días (Límite: ${item.product.weekly_limit_per_employee}/sem)
       </div>
     ` : '';
 
@@ -772,7 +894,7 @@ function renderCart() {
           </div>
           <div class="product-table-info">
             <span class="product-table-name">${escapeHtml(item.product.name)}</span>
-            <span class="product-table-code">Código: ${escapeHtml(item.product.barcode)}</span>
+            <span class="product-table-code">Código: ${escapeHtml(item.product.barcode || 'S/C')}</span>
             ${limitBadge}
           </div>
         </div>
@@ -839,8 +961,15 @@ function updateCheckoutButtonState() {
 
   const hasItems = state.cart.length > 0;
   const hasWorker = !!state.selectedEmployee;
+  const hasLimitExceeded = state.cart.some(item => item.isLimitExceeded);
 
-  btn.disabled = (!hasItems || !hasWorker || state.isProcessing);
+  btn.disabled = (!hasItems || !hasWorker || state.isProcessing || hasLimitExceeded);
+
+  if (hasLimitExceeded) {
+    btn.title = 'No se puede procesar: Uno o más productos superan el límite semanal permitido.';
+  } else {
+    btn.title = '';
+  }
 }
 
 // ============================================================================
@@ -866,6 +995,21 @@ async function processImmediateDelivery() {
     }
   }
 
+  // Validación estricta de límites semanales: NO PERMITIR enviar la petición si se excede el límite
+  checkWeeklyLimits();
+  const exceededItem = state.cart.find(item => item.isLimitExceeded);
+  if (exceededItem) {
+    const limit = exceededItem.product.weekly_limit_per_employee;
+    const consumed = exceededItem.alreadyConsumed || 0;
+    showToast(
+      'error',
+      'Límite Semanal Excedido',
+      `No se puede procesar la entrega: "${exceededItem.product.name}" excede el límite semanal permitido (${exceededItem.quantity} en orden + ${consumed} consumidas en 7 días, límite: ${limit}/sem).`
+    );
+    updateCheckoutButtonState();
+    return;
+  }
+
   const btn = document.getElementById('btn-checkout');
   const overrideCheck = document.getElementById('admin-override-check');
   const notesInput = document.getElementById('order-notes');
@@ -885,11 +1029,18 @@ async function processImmediateDelivery() {
     })),
     status: 'DELIVERED',
     notes: notesInput?.value.trim() || 'Despacho presencial en bodega',
-    is_admin_override: overrideCheck ? overrideCheck.checked : true
+    is_admin_override: false // En Punto de Venta POS de mostrador no se omite el límite semanal
   };
+
+  showLoadingOverlay({
+    title: 'Procesando Entrega Inmediata...',
+    message: 'Generando orden de consumo, actualizando saldo y rebajando stock...',
+    estimatedDuration: 1300
+  });
 
   try {
     const createdOrder = await createInternalOrder(payload);
+    await hideLoadingOverlay(true);
 
     showToast('success', '¡Entrega Procesada!', `Orden #${createdOrder.order_number} registrada y cargada a nómina.`);
 
@@ -901,10 +1052,16 @@ async function processImmediateDelivery() {
     if (notesInput) notesInput.value = '';
     renderCart();
 
-    // Actualizar catálogo y productos en memoria para refrescar stock
+    // Actualizar catálogo y productos en memoria para refrescar stock en tiempo real
     await loadProducts();
 
+    // Actualizar estado del trabajador (saldo y consumos)
+    if (state.selectedEmployee) {
+      await selectWorker(state.selectedEmployee.id);
+    }
+
   } catch (err) {
+    await hideLoadingOverlay(false);
     console.error('Error al procesar orden:', err);
     let msg = 'Error al conectar con la proveeduría.';
     if (err.data) {

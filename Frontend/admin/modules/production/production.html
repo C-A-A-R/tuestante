@@ -43,7 +43,7 @@
     <main class="app-main-content">
       <div class="production-container">
 
-        <!-- Encabezado de la Pantalla -->
+        <!-- 1. Encabezado de la Pantalla -->
         <section class="screen-header-card">
           <div class="screen-header-text">
             <h2 class="screen-main-title">Fabricación</h2>
@@ -62,42 +62,372 @@
           </div>
         </section>
 
-        <!-- KPIs de Fabricación -->
+        <!-- 2. KPIs de Fabricación (Métricas del Taller) -->
         <section class="production-kpi-grid" aria-label="Métricas de fabricación" id="production-kpi-section">
-          <!-- Generado dinámicamente por production.js -->
-        </section>
+          <div class="kpi-card">
+            <div class="kpi-icon-wrapper kpi-icon-queued">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">En Cola de Espera</span>
+              <div class="kpi-number-row">
+                <span class="kpi-value" id="kpi-queued">0</span>
+                <span class="kpi-unit">órdenes</span>
+              </div>
+            </div>
+          </div>
 
-        <!-- Tabla de Órdenes de Fabricación -->
-        <section class="production-table-card">
-          <div class="table-responsive">
-            <table class="data-table" id="table-production">
-              <thead>
-                <tr>
-                  <th>Nº Orden</th>
-                  <th>Pedido</th>
-                  <th>Producto</th>
-                  <th>Estado</th>
-                  <th>Fecha Inicio</th>
-                  <th>Fecha Entrega</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="tbody-production">
-                <tr>
-                  <td colspan="7" style="text-align:center; padding: 40px; color: #64748b;">
-                    Cargando órdenes de fabricación...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="kpi-card">
+            <div class="kpi-icon-wrapper kpi-icon-progress">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">En Proceso (Taller)</span>
+              <div class="kpi-number-row">
+                <span class="kpi-value" id="kpi-in-progress">0</span>
+                <span class="kpi-unit">órdenes</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrapper kpi-icon-completed">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">Completadas</span>
+              <div class="kpi-number-row">
+                <span class="kpi-value" id="kpi-completed">0</span>
+                <span class="kpi-unit">órdenes</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrapper kpi-icon-units">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-label">Unidades Totales</span>
+              <div class="kpi-number-row">
+                <span class="kpi-value" id="kpi-total-units">0</span>
+                <span class="kpi-unit">piezas</span>
+              </div>
+            </div>
           </div>
         </section>
+
+        <!-- 3. Selector de Vistas / Pestañas (Productos vs Órdenes) -->
+        <div class="production-view-switch-wrapper">
+          <div class="view-switch-tabs">
+            <button type="button" class="view-tab-btn active" id="tab-btn-products">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              <span>Productos en Fabricación</span>
+            </button>
+            <button type="button" class="view-tab-btn" id="tab-btn-orders">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>Órdenes de Fabricación</span>
+            </button>
+          </div>
+          <span class="view-switch-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            Seguimiento de fases y hojas de ruta de taller
+          </span>
+        </div>
+
+        <!-- 4. Barra Universal de Filtros -->
+        <section class="production-filters-card">
+          <div class="filters-main-row">
+            <div class="filter-search-col">
+              <label for="filter-search" class="filter-label">Búsqueda rápida</label>
+              <div class="filter-search-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="filter-search" class="filter-search-input" placeholder="Buscar por código, pedido, cliente o producto...">
+              </div>
+            </div>
+
+            <div class="filter-select-col">
+              <label for="filter-status" class="filter-label">Fase de Producción</label>
+              <select id="filter-status" class="filter-select">
+                <option value="all">Todas las Fases</option>
+                <option value="queued">En cola de espera</option>
+                <option value="assembling">En corte y ensamblaje</option>
+                <option value="painting">En pintura y acabado</option>
+                <option value="quality_check">En control de calidad</option>
+                <option value="completed">Fabricación completada</option>
+              </select>
+            </div>
+
+            <div class="filter-date-col">
+              <label for="filter-date-from" class="filter-label">Desde</label>
+              <input type="date" id="filter-date-from" class="filter-date-input">
+            </div>
+
+            <div class="filter-date-col">
+              <label for="filter-date-to" class="filter-label">Hasta</label>
+              <input type="date" id="filter-date-to" class="filter-date-input">
+            </div>
+
+            <div class="filter-actions-col">
+              <button type="button" class="btn btn-outline" id="btn-clear-filters">
+                Limpiar
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. Tablas de Fabricación -->
+
+        <!-- Vista 1: Productos en Fabricación -->
+        <section class="production-table-section active-view" id="section-products-view">
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="production-table" id="table-products">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Pedido</th>
+                    <th>Cliente</th>
+                    <th style="text-align: center;">Cant.</th>
+                    <th>Fase Actual</th>
+                    <th>Fecha Inicio</th>
+                    <th>Entrega Estimada</th>
+                    <th style="text-align: center;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="products-table-body">
+                  <tr>
+                    <td colspan="8" style="text-align:center; padding: 40px; color: #64748b;">
+                      Cargando productos en fabricación...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Vista 2: Órdenes de Fabricación -->
+        <section class="production-table-section" id="section-orders-view">
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="production-table" id="table-orders">
+                <thead>
+                  <tr>
+                    <th>Nº Orden</th>
+                    <th>Pedido</th>
+                    <th>Cliente</th>
+                    <th>Fase Actual</th>
+                    <th>Productos</th>
+                    <th>Fecha Creación</th>
+                    <th>Entrega Estimada</th>
+                    <th style="text-align: center;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-table-body">
+                  <tr>
+                    <td colspan="8" style="text-align:center; padding: 40px; color: #64748b;">
+                      Cargando órdenes de fabricación...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. Paginación Reactiva -->
+        <div class="production-pagination-wrapper">
+          <div class="pagination-info" id="pagination-info">Mostrando 0 elementos</div>
+          <div class="pagination-controls" id="pagination-controls"></div>
+        </div>
 
       </div>
     </main>
 
     <div id="footer-placeholder"></div>
 
+  </div>
+
+  <!-- ======================================================================
+       MODAL 1: DETALLES DE PRODUCTOS DE LA ORDEN DE FABRICACIÓN
+       ====================================================================== -->
+  <div class="modal-backdrop" id="production-products-modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-card modal-products-card">
+      <div class="modal-header">
+        <div class="modal-header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+        </div>
+        <div>
+          <h3 class="modal-title" id="modal-prod-title">Productos de la Orden</h3>
+          <p class="modal-subtitle" id="modal-prod-subtitle">Orden de fabricación</p>
+        </div>
+        <button type="button" class="btn-modal-close" id="btn-close-products-modal" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body-content">
+        <div class="modal-order-summary-meta">
+          <div>
+            <span class="meta-label">Cliente:</span>
+            <strong class="meta-val" id="modal-prod-client">-</strong>
+          </div>
+          <div>
+            <span class="meta-label">Fase Actual:</span>
+            <span id="modal-prod-status-badge" class="status-stage-badge badge-stage-queued">En cola</span>
+          </div>
+          <div>
+            <span class="meta-label">Entrega Estimada:</span>
+            <strong class="meta-val" id="modal-prod-est-date">-</strong>
+          </div>
+        </div>
+
+        <div class="modal-tech-notes-box" id="modal-prod-notes-container" style="display: none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div>
+            <strong>Instrucciones Técnicas de Taller:</strong>
+            <p id="modal-prod-notes-text" style="margin-top: 2px;"></p>
+          </div>
+        </div>
+
+        <div class="modal-products-table-wrap">
+          <table class="modal-products-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th style="text-align: center; width: 80px;">Cant.</th>
+              </tr>
+            </thead>
+            <tbody id="modal-prod-tbody">
+              <!-- Renderizado dinámico -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" id="btn-cancel-products-modal">Cerrar</button>
+        <button type="button" class="btn btn-outline" id="btn-modal-export-worksheet">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          <span>Imprimir Hoja de Taller</span>
+        </button>
+        <a href="#" class="btn btn-primary" id="btn-modal-go-detail">
+          <span>Ver Detalle Completo</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 2: CREAR NUEVA ORDEN DE FABRICACIÓN
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-new-order-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-icon" style="background: #ecfdf5; color: #16a34a;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </div>
+        <div>
+          <h3 class="modal-title">Nueva Orden de Fabricación</h3>
+          <p class="modal-subtitle">Asigna un pedido a la línea de ensamblaje en taller</p>
+        </div>
+        <button type="button" class="btn-modal-close" id="btn-close-new-modal" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-create-production-order">
+        <div class="modal-body-content">
+          <div>
+            <label for="new-order-select" class="filter-label" style="display: block; margin-bottom: 6px;">
+              Pedido Asociado <span style="color: #dc2626;">*</span>
+            </label>
+            <select id="new-order-select" class="filter-select" style="width: 100%;" required>
+              <option value="" disabled selected>Cargando pedidos disponibles...</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="new-estimated-date" class="filter-label" style="display: block; margin-bottom: 6px;">
+              Fecha Estimada de Entrega <span style="color: #dc2626;">*</span>
+            </label>
+            <input type="date" id="new-estimated-date" class="filter-date-input" style="width: 100%;" required>
+          </div>
+
+          <div>
+            <label for="new-technical-notes" class="filter-label" style="display: block; margin-bottom: 6px;">
+              Instrucciones y Especificaciones de Taller
+            </label>
+            <textarea id="new-technical-notes" rows="3" class="filter-search-input" style="height: auto; padding: 10px; width: 100%; resize: vertical;" placeholder="Cortes biselados, tipos de madera, acabado de pintura, refuerzos..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 18px;">
+          <button type="button" class="btn btn-outline" id="btn-cancel-new-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-new-order">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Crear e Iniciar Fabricación</span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Scripts Modulares -->

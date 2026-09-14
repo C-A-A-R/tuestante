@@ -130,7 +130,7 @@
                   <th>Salario Referencia</th>
                   <th>Deuda Acumulada</th>
                   <th style="text-align: center;">Estado Cartera</th>
-                  <th style="text-align: right; min-width: 180px;">Acciones</th>
+                  <th style="text-align: right; min-width: 130px;">Acciones</th>
                 </tr>
               </thead>
               <tbody id="employees-table-body">
@@ -211,6 +211,36 @@
             <input type="text" id="pay-ref" class="form-input" placeholder="Ej: NOM-Q1-2026 o REF-847291">
           </div>
 
+          <!-- Comprobante de Pago (Imagen / Voucher) -->
+          <div class="form-group">
+            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Comprobante de Pago (Imagen / Recibo)</span>
+              <small class="form-hint" style="margin: 0; font-weight: 500;">Opcional</small>
+            </label>
+            <div class="voucher-upload-box" id="pay-voucher-box">
+              <input type="file" id="pay-voucher" accept="image/png, image/jpeg, image/webp, application/pdf" class="file-hidden-input" style="display: none !important;">
+              <label for="pay-voucher" class="voucher-dropzone-content" id="pay-voucher-dropzone">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#005187" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <div class="voucher-upload-text">
+                  <strong>Adjuntar Comprobante de Pago</strong>
+                  <span>Haz clic para seleccionar la imagen del comprobante (PNG, JPG, WEBP)</span>
+                </div>
+              </label>
+              <div class="voucher-preview-strip hidden" id="pay-voucher-preview">
+                <img id="pay-voucher-img" src="" alt="Comprobante" class="voucher-thumb-img">
+                <div class="voucher-file-info">
+                  <span class="voucher-filename" id="pay-voucher-name">comprobante.png</span>
+                  <span class="voucher-filesize" id="pay-voucher-size">0 KB</span>
+                </div>
+                <button type="button" class="btn-remove-voucher" id="btn-remove-pay-voucher" title="Quitar comprobante">✕</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Observaciones -->
           <div class="form-group">
             <label for="pay-notes" class="form-label">Observaciones o Justificación</label>
@@ -263,27 +293,35 @@
               <input type="text" id="reg-doc" class="form-input" placeholder="Ej: V-12345678" required>
             </div>
             <div class="form-group">
-              <label for="reg-emp-number" class="form-label">Ficha / N° Empleado <span class="req" style="color: #ef4444;">*</span></label>
-              <input type="text" id="reg-emp-number" class="form-input" placeholder="Ej: EMP-042" required>
+              <label for="reg-birth-date" class="form-label">Fecha de Nacimiento <span class="req" style="color: #ef4444;">*</span></label>
+              <input type="date" id="reg-birth-date" class="form-input" required>
+              <small class="form-hint" style="font-size: 0.75rem; color: #64748b;">Mínimo 15 años cumplidos.</small>
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
+            <div class="form-group">
+              <label for="reg-emp-number" class="form-label">Ficha / N° Empleado <span class="req" style="color: #ef4444;">*</span></label>
+              <input type="text" id="reg-emp-number" class="form-input" placeholder="Ej: EMP-042" required>
+            </div>
             <div class="form-group">
               <label for="reg-dept" class="form-label">Departamento <span class="req" style="color: #ef4444;">*</span></label>
               <input type="text" id="reg-dept" class="form-input" placeholder="Ej: Producción, Logística..." required>
             </div>
-            <div class="form-group">
-              <label for="reg-pos" class="form-label">Cargo / Puesto <span class="req" style="color: #ef4444;">*</span></label>
-              <input type="text" id="reg-pos" class="form-input" placeholder="Ej: Operario, Analista..." required>
-            </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
             <div class="form-group">
+              <label for="reg-pos" class="form-label">Cargo / Puesto <span class="req" style="color: #ef4444;">*</span></label>
+              <input type="text" id="reg-pos" class="form-input" placeholder="Ej: Operario, Analista..." required>
+            </div>
+            <div class="form-group">
               <label for="reg-salary" class="form-label">Salario Base Quincenal ($ USD) <span class="req" style="color: #ef4444;">*</span></label>
               <input type="number" id="reg-salary" class="form-input" step="0.01" min="0" placeholder="0.00" required>
             </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 12px;">
             <div class="form-group">
               <label for="reg-email" class="form-label">Correo Electrónico (Opcional)</label>
               <input type="email" id="reg-email" class="form-input" placeholder="empleado@correo.com">

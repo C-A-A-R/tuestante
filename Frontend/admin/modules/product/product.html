@@ -89,8 +89,8 @@
           </div>
         </section>
 
-        <!-- 2. Cajas Superiores de Resumen (KPI Cards) -->
-        <section class="products-kpi-grid" aria-label="Resumen de productos">
+        <!-- 2. Cajas Superiores de Resumen (KPI Cards con Estadísticas de Favoritos y Destacados) -->
+        <section class="products-kpi-grid" aria-label="Resumen y estadísticas de productos">
           <!-- KPI 1: Total de productos -->
           <div class="kpi-card">
             <div class="kpi-icon-bubble icon-blue">
@@ -102,11 +102,37 @@
             </div>
             <div class="kpi-info-box">
               <span class="kpi-card-label">Total de productos</span>
-              <span class="kpi-card-count" id="kpi-total-products">6</span>
+              <span class="kpi-card-count" id="kpi-total-products">0</span>
             </div>
           </div>
 
-          <!-- KPI 2: Activos -->
+          <!-- KPI 2: Productos Destacados -->
+          <div class="kpi-card">
+            <div class="kpi-icon-bubble icon-gold">
+              <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </div>
+            <div class="kpi-info-box">
+              <span class="kpi-card-label">Destacados</span>
+              <span class="kpi-card-count" id="kpi-featured-products">0</span>
+            </div>
+          </div>
+
+          <!-- KPI 3: Productos Favoritos / Deseados -->
+          <div class="kpi-card">
+            <div class="kpi-icon-bubble icon-heart">
+              <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </div>
+            <div class="kpi-info-box">
+              <span class="kpi-card-label">Favoritos / Deseados</span>
+              <span class="kpi-card-count" id="kpi-favorites-products">0</span>
+            </div>
+          </div>
+
+          <!-- KPI 4: Activos -->
           <div class="kpi-card">
             <div class="kpi-icon-bubble icon-green">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -116,11 +142,25 @@
             </div>
             <div class="kpi-info-box">
               <span class="kpi-card-label">Activos en catálogo</span>
-              <span class="kpi-card-count" id="kpi-active-products">5</span>
+              <span class="kpi-card-count" id="kpi-active-products">0</span>
             </div>
           </div>
 
-          <!-- KPI 3: Inactivos -->
+          <!-- KPI 5: Productos Outlet -->
+          <div class="kpi-card">
+            <div class="kpi-icon-bubble icon-amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                <line x1="7" y1="7" x2="7.01" y2="7"></line>
+              </svg>
+            </div>
+            <div class="kpi-info-box">
+              <span class="kpi-card-label">Productos Outlet</span>
+              <span class="kpi-card-count" id="kpi-outlet-products">0</span>
+            </div>
+          </div>
+
+          <!-- KPI 6: Inactivos -->
           <div class="kpi-card">
             <div class="kpi-icon-bubble icon-gray">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -130,21 +170,8 @@
               </svg>
             </div>
             <div class="kpi-info-box">
-              <span class="kpi-card-label">Inactivos / Borradores</span>
-              <span class="kpi-card-count" id="kpi-inactive-products">1</span>
-            </div>
-          </div>
-
-          <!-- KPI 4: Productos Outlet -->
-          <div class="kpi-card">
-            <div class="kpi-icon-bubble icon-amber">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
-            </div>
-            <div class="kpi-info-box">
-              <span class="kpi-card-label">Productos Outlet</span>
-              <span class="kpi-card-count" id="kpi-outlet-products">2</span>
+              <span class="kpi-card-label">Inactivos</span>
+              <span class="kpi-card-count" id="kpi-inactive-products">0</span>
             </div>
           </div>
         </section>
@@ -173,6 +200,16 @@
                 <option value="Mobiliario Modular">Mobiliario Modular</option>
                 <option value="Almacenamiento Metálico">Almacenamiento Metálico</option>
                 <option value="Accesorios y Repuestos">Accesorios y Repuestos</option>
+              </select>
+            </div>
+
+            <!-- Filtro Destacados / Favoritos -->
+            <div class="filter-select-wrapper">
+              <label for="filter-featured" class="filter-select-label">Destacado / Popular:</label>
+              <select id="filter-featured" class="filter-select">
+                <option value="all" selected>Todos</option>
+                <option value="featured">⭐ Solo Destacados</option>
+                <option value="favorites">❤️ Con Favoritos / Deseados</option>
               </select>
             </div>
 

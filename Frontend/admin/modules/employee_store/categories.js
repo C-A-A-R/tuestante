@@ -456,22 +456,20 @@ function openSubcategoryModal(subId = null) {
 }
 
 function setEntityDropzonePreview(imageUrl, fileName = 'imagen.jpg') {
-  const idleView = document.getElementById('entity-dropzone-idle');
-  const previewView = document.getElementById('entity-dropzone-preview');
+  const dropzone = document.getElementById('entity-image-dropzone');
   const previewImg = document.getElementById('entity-image-preview');
-  const nameLabel = document.getElementById('entity-image-preview-name');
+  const removeBtn = document.getElementById('btn-remove-entity-image');
   const fileInput = document.getElementById('input-entity-image');
 
   if (imageUrl) {
-    if (previewImg) previewImg.src = imageUrl;
-    if (nameLabel) nameLabel.textContent = fileName;
-    if (idleView) idleView.classList.add('hidden');
-    if (previewView) previewView.classList.remove('hidden');
+    if (previewImg) { previewImg.src = imageUrl; previewImg.classList.remove('hidden'); }
+    if (removeBtn) removeBtn.classList.remove('hidden');
+    if (dropzone) dropzone.classList.add('has-image');
   } else {
     if (fileInput) fileInput.value = '';
-    if (previewImg) previewImg.src = '';
-    if (previewView) previewView.classList.add('hidden');
-    if (idleView) idleView.classList.remove('hidden');
+    if (previewImg) { previewImg.src = ''; previewImg.classList.add('hidden'); }
+    if (removeBtn) removeBtn.classList.add('hidden');
+    if (dropzone) dropzone.classList.remove('has-image');
   }
 }
 

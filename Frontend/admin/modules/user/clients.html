@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clientes | TuEstante Admin</title>
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes Reutilizables (Drawer, Navbar, Footer, Modal) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+  <link rel="stylesheet" href="../../components/modal/modal.css">
+
+  <!-- Estilos Específicos del Módulo de Clientes -->
+  <link rel="stylesheet" href="clients.css">
+</head>
+<body data-page-title="Clientes">
+
+  <!-- Contenedor Semántico para Notificaciones Toast Reutilizables -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- Layout Principal de la Aplicación -->
+  <div class="app-layout" id="app-layout">
+    
+    <!-- Placeholders para Drawer y Navbar Compartidos -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal -->
+    <main class="app-main-content">
+      <div class="clients-module-container">
+
+        <!-- 1. ENCABEZADO DE PANTALLA -->
+        <header class="clients-header-row">
+          <div class="header-titles">
+            <h1 class="page-title">Clientes</h1>
+            <p class="page-subtitle">Gestiona la información, historial de compras y contactos de tus clientes.</p>
+          </div>
+          <div class="header-actions">
+            <button type="button" class="btn btn-outline" id="btn-export-clients" title="Exportar listado de clientes">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Exportar</span>
+            </button>
+            <button type="button" class="btn btn-primary" id="btn-new-client">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Nuevo cliente</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- 2. TARJETAS KPI SUPERIORES (5 MÉTRICAS) -->
+        <section class="kpis-grid" aria-label="Resumen de estadísticas de clientes">
+          
+          <!-- KPI 1: Total de Clientes -->
+          <article class="kpi-card">
+            <div class="kpi-icon-box kpi-icon-blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-title">Total de clientes</span>
+              <strong class="kpi-value" id="kpi-total-clients">--</strong>
+              <span class="kpi-subtitle">Todos los clientes</span>
+            </div>
+          </article>
+
+          <!-- KPI 2: Clientes Nuevos este Mes -->
+          <article class="kpi-card">
+            <div class="kpi-icon-box kpi-icon-purple" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-title">Clientes nuevos (este mes)</span>
+              <strong class="kpi-value" id="kpi-new-clients">--</strong>
+              <span class="kpi-subtitle kpi-trend-text text-success" id="kpi-new-clients-growth">+0% vs mes anterior</span>
+            </div>
+          </article>
+
+          <!-- KPI 3: Clientes con Pedidos -->
+          <article class="kpi-card">
+            <div class="kpi-icon-box kpi-icon-indigo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-title">Clientes con pedidos</span>
+              <strong class="kpi-value" id="kpi-clients-with-orders">--</strong>
+              <span class="kpi-subtitle"><span id="kpi-clients-orders-pct">0.0%</span> del total</span>
+            </div>
+          </article>
+
+          <!-- KPI 4: Gasto Total de Clientes -->
+          <article class="kpi-card">
+            <div class="kpi-icon-box kpi-icon-green" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-title">Gasto total de clientes</span>
+              <strong class="kpi-value" id="kpi-total-spent">$0.00</strong>
+              <span class="kpi-subtitle">Suma de todos los pedidos</span>
+            </div>
+          </article>
+
+          <!-- KPI 5: Ticket Promedio -->
+          <article class="kpi-card">
+            <div class="kpi-icon-box kpi-icon-teal" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+                <circle cx="7" cy="15" r="1"></circle>
+              </svg>
+            </div>
+            <div class="kpi-content">
+              <span class="kpi-title">Ticket promedio</span>
+              <strong class="kpi-value" id="kpi-avg-ticket">$0.00</strong>
+              <span class="kpi-subtitle">Por pedido</span>
+            </div>
+          </article>
+
+        </section>
+
+        <!-- 3. BARRA DE HERRAMIENTAS Y FILTROS -->
+        <section class="filters-toolbar" aria-label="Filtros de búsqueda de clientes">
+          
+          <!-- Campo de Búsqueda -->
+          <div class="search-input-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+              type="text" 
+              id="search-input" 
+              class="toolbar-input" 
+              placeholder="Buscar cliente por nombre, cédula, correo o teléfono..."
+              aria-label="Buscar clientes">
+          </div>
+
+          <div class="selects-group">
+            <!-- Filtro Estado -->
+            <div class="select-field">
+              <label for="filter-status" class="field-label">Estado</label>
+              <div class="select-wrap">
+                <select id="filter-status" class="toolbar-select">
+                  <option value="all">Todos</option>
+                  <option value="active">Activo</option>
+                  <option value="inactive">Inactivo</option>
+                </select>
+                <svg class="chevron-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Filtro Ciudad -->
+            <div class="select-field">
+              <label for="filter-city" class="field-label">Ciudad</label>
+              <div class="select-wrap">
+                <select id="filter-city" class="toolbar-select">
+                  <option value="all">Todas</option>
+                </select>
+                <svg class="chevron-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Filtro Fecha de Registro -->
+            <div class="select-field">
+              <label for="filter-date" class="field-label">Fecha de registro</label>
+              <div class="select-wrap">
+                <select id="filter-date" class="toolbar-select">
+                  <option value="all">Todos</option>
+                  <option value="today">Hoy</option>
+                  <option value="this_week">Esta semana</option>
+                  <option value="this_month">Este mes</option>
+                  <option value="this_year">Este año</option>
+                </select>
+                <svg class="chevron-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Botón Limpiar Filtros -->
+            <button type="button" class="btn-clear-filters" id="btn-clear-filters" title="Limpiar todos los filtros">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              <span>Limpiar filtros</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 4. TABLA DE CLIENTES -->
+        <section class="table-container-card">
+          <div class="table-responsive">
+            <table class="clients-table" id="clients-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="th-client">Cliente</th>
+                  <th scope="col" class="th-email">Correo</th>
+                  <th scope="col" class="th-contact">Contacto</th>
+                  <th scope="col" class="th-city">Ciudad</th>
+                  <th scope="col" class="th-orders">Pedidos</th>
+                  <th scope="col" class="th-spent">Total comprado</th>
+                  <th scope="col" class="th-last-order">Último pedido</th>
+                  <th scope="col" class="th-status">Estado</th>
+                  <th scope="col" class="th-actions">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="clients-table-body">
+                <!-- Filas renderizadas dinámicamente con JavaScript -->
+                <tr class="loading-row">
+                  <td colspan="9">
+                    <div class="table-spinner-wrap">
+                      <div class="table-spinner"></div>
+                      <span>Cargando clientes...</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pie de Tabla: Contador y Paginación -->
+          <footer class="table-footer-row">
+            <div class="footer-info">
+              <span id="footer-count-text">Mostrando 0 a 0 de 0 clientes</span>
+            </div>
+            <div class="footer-pagination" id="table-pagination">
+              <!-- Botones de paginación inyectados por JS -->
+            </div>
+          </footer>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Placeholder para Footer Compartido -->
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- ========================================================================
+       MODALES DEL MÓDULO DE CLIENTES
+       ======================================================================== -->
+
+  <!-- 1. Modal Nuevo / Editar Cliente -->
+  <div class="modal-backdrop" id="modal-client-form-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal-form-title">
+    <div class="modal-card client-form-modal-card">
+      <div class="modal-card-header">
+        <div class="modal-title-wrap">
+          <h2 class="modal-title" id="modal-form-title">Nuevo Cliente</h2>
+          <p class="modal-subtitle">Ingresa la información personal y de contacto del cliente.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-form-modal" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-client" class="modal-form" novalidate>
+        <input type="hidden" id="form-client-id" value="">
+
+        <div class="form-grid">
+          <!-- Primer Nombre -->
+          <div class="form-group">
+            <label for="input-first-name" class="form-label">Primer Nombre <span class="required">*</span></label>
+            <input type="text" id="input-first-name" class="form-input" placeholder="Ej. Juan" required>
+            <span class="field-error" id="error-first-name"></span>
+          </div>
+
+          <!-- Segundo Nombre -->
+          <div class="form-group">
+            <label for="input-second-name" class="form-label">Segundo Nombre</label>
+            <input type="text" id="input-second-name" class="form-input" placeholder="Ej. Carlos">
+          </div>
+
+          <!-- Primer Apellido -->
+          <div class="form-group">
+            <label for="input-last-name" class="form-label">Primer Apellido <span class="required">*</span></label>
+            <input type="text" id="input-last-name" class="form-input" placeholder="Ej. Pérez" required>
+            <span class="field-error" id="error-last-name"></span>
+          </div>
+
+          <!-- Segundo Apellido -->
+          <div class="form-group">
+            <label for="input-second-last-name" class="form-label">Segundo Apellido</label>
+            <input type="text" id="input-second-last-name" class="form-input" placeholder="Ej. Gómez">
+          </div>
+
+          <!-- Documento de Identidad (Cédula / RIF) -->
+          <div class="form-group">
+            <label for="input-doc-number" class="form-label">Documento de Identidad <span class="required">*</span></label>
+            <div class="input-with-prefix">
+              <select id="select-doc-type" class="doc-type-select" aria-label="Tipo de documento">
+                <option value="V">V-</option>
+                <option value="E">E-</option>
+                <option value="J">J-</option>
+                <option value="G">G-</option>
+              </select>
+              <input type="text" id="input-doc-number" class="form-input doc-number-input" placeholder="12345678" required>
+            </div>
+            <span class="field-error" id="error-doc"></span>
+          </div>
+
+          <!-- Correo Electrónico -->
+          <div class="form-group">
+            <label for="input-email" class="form-label">Correo Electrónico <span class="required">*</span></label>
+            <input type="email" id="input-email" class="form-input" placeholder="cliente@email.com" required>
+            <span class="field-error" id="error-email"></span>
+          </div>
+
+          <!-- Teléfono de Contacto -->
+          <div class="form-group">
+            <label for="input-phone" class="form-label">Teléfono de Contacto</label>
+            <input type="tel" id="input-phone" class="form-input" placeholder="+58 412 1234567">
+          </div>
+
+          <!-- Ciudad -->
+          <div class="form-group">
+            <label for="input-city" class="form-label">Ciudad</label>
+            <input type="text" id="input-city" class="form-input" placeholder="Ej. Caracas">
+          </div>
+
+          <!-- Estado / Región -->
+          <div class="form-group">
+            <label for="input-state" class="form-label">Estado</label>
+            <input type="text" id="input-state" class="form-input" placeholder="Ej. Miranda">
+          </div>
+
+          <!-- Estado Activo/Inactivo -->
+          <div class="form-group form-group-toggle">
+            <label class="form-label" for="toggle-client-status">Estado de Cuenta</label>
+            <label class="switch-toggle" for="toggle-client-status">
+              <input type="checkbox" id="toggle-client-status" checked>
+              <span class="toggle-slider"></span>
+              <span class="toggle-label-text" id="toggle-status-text">Cliente Activo</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-card-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-form">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-client">
+            <span class="btn-spinner" id="form-spinner" style="display: none;" aria-hidden="true"></span>
+            <span class="btn-text" id="btn-submit-text">Guardar Cliente</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Modal Detalle del Cliente -->
+  <div class="modal-backdrop" id="modal-client-detail-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal-detail-title">
+    <div class="modal-card client-detail-modal-card">
+      <div class="modal-card-header">
+        <div class="modal-title-wrap">
+          <h2 class="modal-title" id="modal-detail-title">Detalle del Cliente</h2>
+          <p class="modal-subtitle">Resumen general y actividad de compras.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-detail-modal" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="6"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="detail-modal-body">
+        
+        <!-- Ficha de Perfil -->
+        <div class="detail-profile-hero">
+          <div class="detail-avatar-circle" id="detail-avatar">JP</div>
+          <div class="detail-profile-info">
+            <h3 class="detail-name" id="detail-full-name">Juan Pérez</h3>
+            <div class="detail-badges-row">
+              <span class="doc-badge" id="detail-document">V-12345678</span>
+              <span class="status-badge" id="detail-status-badge">Activo</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Métricas Rápidas del Cliente -->
+        <div class="detail-metrics-grid">
+          <div class="detail-metric-item">
+            <span class="metric-item-label">Pedidos Registrados</span>
+            <strong class="metric-item-value" id="detail-orders-count">0</strong>
+          </div>
+          <div class="detail-metric-item">
+            <span class="metric-item-label">Total Comprado</span>
+            <strong class="metric-item-value text-primary" id="detail-total-spent">$0.00</strong>
+          </div>
+          <div class="detail-metric-item">
+            <span class="metric-item-label">Último Pedido</span>
+            <strong class="metric-item-value" id="detail-last-order">-</strong>
+          </div>
+        </div>
+
+        <!-- Datos de Contacto y Ubicación -->
+        <div class="detail-info-sections">
+          <div class="info-section">
+            <h4 class="section-heading">Información de Contacto</h4>
+            <div class="info-row">
+              <span class="info-label">Correo electrónico:</span>
+              <span class="info-value" id="detail-email">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Teléfono:</span>
+              <span class="info-value" id="detail-phone">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Fecha de Registro:</span>
+              <span class="info-value" id="detail-date-joined">-</span>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h4 class="section-heading">Ubicación</h4>
+            <div class="info-row">
+              <span class="info-label">Ciudad / Estado:</span>
+              <span class="info-value" id="detail-location">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pedidos Recientes -->
+        <div class="detail-orders-section">
+          <h4 class="section-heading">Pedidos Recientes</h4>
+          <div class="detail-orders-table-wrap">
+            <table class="detail-orders-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Fecha</th>
+                  <th>Total</th>
+                  <th>Estado</th>
+                  <th style="text-align: right;">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="detail-orders-table-body">
+                <tr>
+                  <td colspan="5" class="text-center text-muted">Cargando pedidos...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-card-footer">
+        <button type="button" class="btn btn-outline" id="btn-close-detail">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="btn-edit-from-detail">Editar Cliente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Modal Exportar Reporte -->
+  <div class="modal-backdrop" id="modal-client-export-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal-export-title">
+    <div class="modal-card client-export-modal-card">
+      <div class="modal-card-header">
+        <div class="modal-title-wrap">
+          <h2 class="modal-title" id="modal-export-title">Exportar Clientes</h2>
+          <p class="modal-subtitle">Selecciona el formato deseado para descargar la lista completa de clientes.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-export-modal" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="6"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="export-options-grid">
+        <button type="button" class="export-card-option" id="btn-export-excel">
+          <div class="export-card-icon icon-excel">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="8" y1="13" x2="16" y2="13"></line>
+              <line x1="8" y1="17" x2="16" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </div>
+          <div class="export-card-text">
+            <strong>Descargar Excel (.xlsx)</strong>
+            <span>Hoja de cálculo completa con todos los datos y totales</span>
+          </div>
+        </button>
+
+        <button type="button" class="export-card-option" id="btn-export-pdf">
+          <div class="export-card-icon icon-pdf">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <circle cx="12" cy="14" r="3"></circle>
+            </svg>
+          </div>
+          <div class="export-card-text">
+            <strong>Descargar PDF (.pdf)</strong>
+            <span>Documento imprimible con formato oficial del sistema</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="modal-card-footer">
+        <button type="button" class="btn btn-outline" id="btn-cancel-export">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menú Contextual Flotante de Acciones -->
+  <div class="actions-dropdown-menu" id="actions-dropdown-menu" role="menu" aria-hidden="true">
+    <button type="button" class="actions-dropdown-item" id="action-view-detail" role="menuitem">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+      <span>Ver detalle</span>
+    </button>
+    <button type="button" class="actions-dropdown-item" id="action-edit-client" role="menuitem">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+      <span>Editar cliente</span>
+    </button>
+    <button type="button" class="actions-dropdown-item" id="action-toggle-status" role="menuitem">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+        <line x1="12" y1="2" x2="12" y2="12"></line>
+      </svg>
+      <span id="action-toggle-status-text">Cambiar estado</span>
+    </button>
+    <div class="actions-dropdown-divider"></div>
+    <button type="button" class="actions-dropdown-item text-danger" id="action-delete-client" role="menuitem">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      </svg>
+      <span>Eliminar cliente</span>
+    </button>
+  </div>
+
+  <!-- Contenedor para Modales Dinámicos del Sistema (showConfirmModal, etc.) -->
+  <div id="system-modal-container"></div>
+
+  <!-- Scripts: Controlador del Módulo de Clientes -->
+  <script type="module" src="clients.js"></script>
+</body>
+</html>

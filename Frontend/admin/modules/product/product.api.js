@@ -13,10 +13,40 @@ import { getRequest, postRequest, patchRequest, putRequest, deleteRequest } from
 // ==========================================================================
 
 let mockProductTypes = [
-  { id: 1, product_type_name: 'Mobiliario Modular', description: 'Estructuras armables personalizables.', count: 18 },
-  { id: 2, product_type_name: 'Almacenamiento Metálico', description: 'Muebles de chapa de acero calibre reforzado.', count: 11 },
-  { id: 3, product_type_name: 'Accesorios y Repuestos', description: 'Piezas y componentes individuales.', count: 6 }
+  {
+    id: 1,
+    product_type_name: 'Muebles de Madera',
+    description: 'Productos fabricados principalmente en madera.',
+    product_type_image: '../../assets/images/products/tipo-producto-estante.png',
+    count: 22,
+    is_active: true
+  },
+  {
+    id: 2,
+    product_type_name: 'Muebles de Metal',
+    description: 'Productos fabricados principalmente en metal.',
+    product_type_image: '../../assets/images/products/armario-blanco.png',
+    count: 14,
+    is_active: true
+  },
+  {
+    id: 3,
+    product_type_name: 'Muebles Mixtos',
+    description: 'Productos combinados con madera, metal y otros materiales.',
+    product_type_image: '../../assets/images/products/armario blanco una puerta.jpeg',
+    count: 16,
+    is_active: true
+  },
+  {
+    id: 4,
+    product_type_name: 'Accesorios y Decoración',
+    description: 'Accesorios decorativos y artículos complementarios.',
+    product_type_image: '../../assets/images/logo.jpeg',
+    count: 19,
+    is_active: true
+  }
 ];
+
 
 let mockProducts = [
   {
@@ -30,6 +60,7 @@ let mockProducts = [
     is_active: true,
     is_outlet: false,
     is_feature_product: true,
+    favorites_count: 14,
     height_cm: 180.0,
     width_cm: 80.0,
     depth_cm: 30.0,
@@ -59,6 +90,7 @@ let mockProducts = [
     is_active: true,
     is_outlet: false,
     is_feature_product: false,
+    favorites_count: 8,
     height_cm: 75.0,
     width_cm: 140.0,
     depth_cm: 80.0,
@@ -86,6 +118,7 @@ let mockProducts = [
     is_active: true,
     is_outlet: true,
     is_feature_product: false,
+    favorites_count: 0,
     height_cm: 15.0,
     width_cm: 20.0,
     depth_cm: 5.0,
@@ -111,6 +144,7 @@ let mockProducts = [
     is_active: true,
     is_outlet: false,
     is_feature_product: true,
+    favorites_count: 23,
     height_cm: 190.0,
     width_cm: 40.0,
     depth_cm: 45.0,
@@ -139,6 +173,7 @@ let mockProducts = [
     is_active: false,
     is_outlet: true,
     is_feature_product: false,
+    favorites_count: 3,
     height_cm: 185.0,
     width_cm: 60.0,
     depth_cm: 45.0,
@@ -165,6 +200,7 @@ let mockProducts = [
     is_active: true,
     is_outlet: false,
     is_feature_product: true,
+    favorites_count: 19,
     height_cm: 190.0,
     width_cm: 60.0,
     depth_cm: 45.0,
@@ -201,6 +237,7 @@ function normalizeBackendProduct(p) {
     is_active: p.is_deleted === false && (p.is_active !== undefined ? p.is_active : true),
     is_outlet: Boolean(p.is_outlet),
     is_feature_product: Boolean(p.is_feature_product),
+    favorites_count: p.favorites_count !== undefined ? p.favorites_count : (p.favorite_count || p.wishlist_count || 0),
     height_cm: parseFloat(p.height_cm) || 0,
     width_cm: parseFloat(p.width_cm) || 0,
     depth_cm: parseFloat(p.depth_cm) || 0,
@@ -222,7 +259,7 @@ function normalizeBackendProduct(p) {
 }
 
 /**
- * Obtiene la lista de productos con filtros reactivos (búsqueda, tipo, outlet, estado)
+ * Obtiene la lista de productos con filtros reactivos (búsqueda, tipo, outlet, estado, destacados/favoritos)
  */
 export async function getProducts(params = {}) {
   try {
@@ -260,6 +297,15 @@ export async function getProducts(params = {}) {
   if (params.outlet !== undefined && params.outlet !== 'all') {
     const isOutlet = params.outlet === 'true' || params.outlet === true;
     result = result.filter(p => p.is_outlet === isOutlet);
+  }
+
+  // Filtro por destacados / favoritos
+  if (params.featured && params.featured !== 'all') {
+    if (params.featured === 'featured') {
+      result = result.filter(p => p.is_feature_product);
+    } else if (params.featured === 'favorites') {
+      result = result.filter(p => p.favorites_count && p.favorites_count > 0);
+    }
   }
 
   // Filtro por estado (activo / inactivo)
@@ -421,24 +467,30 @@ export async function deleteProduct(id) {
 }
 
 /**
- * Obtiene métricas superiores de resumen de productos (KPI cards: Total, Activos, Inactivos, Outlet)
+ * Obtiene métricas superiores de resumen de productos (KPI cards: Total, Destacados, Favoritos, Activos, Inactivos, Outlet)
  */
 export async function getProductMetrics() {
   let active = 0;
   let inactive = 0;
   let outlet = 0;
+  let featured = 0;
+  let favorites = 0;
 
   mockProducts.forEach(p => {
     if (!p.is_active) inactive++;
     else active++;
     if (p.is_outlet) outlet++;
+    if (p.is_feature_product) featured++;
+    if (p.favorites_count && p.favorites_count > 0) favorites += p.favorites_count;
   });
 
   return {
     total: mockProducts.length,
     active,
     inactive,
-    outlet
+    outlet,
+    featured,
+    favorites
   };
 }
 
@@ -447,12 +499,126 @@ export async function getProductMetrics() {
  */
 export async function getProductTypes() {
   try {
-    const res = await getRequest('/product-types/', { auth: true });
-    if (Array.isArray(res)) return res;
-    if (res && Array.isArray(res.results)) return res.results;
+    const res = await getRequest('/products/product-types/', { auth: true });
+    let items = [];
+    if (Array.isArray(res)) items = res;
+    else if (res && Array.isArray(res.results)) items = res.results;
+
+    if (items.length > 0) {
+      return items.map(t => ({
+        id: t.id,
+        product_type_name: t.product_type_name,
+        description: t.description || '',
+        product_type_image: t.product_type_image || '../../assets/images/logo.jpeg',
+        count: t.products_count !== undefined ? t.products_count : (t.count || 0),
+        is_active: t.is_active !== undefined ? t.is_active : true
+      }));
+    }
   } catch (err) {
     console.warn('[TuEstante Product API] Usando tipos mock:', err);
   }
   return mockProductTypes;
 }
+
+/**
+ * Obtiene un tipo de producto específico por su ID
+ */
+export async function getProductType(id) {
+  try {
+    const res = await getRequest(`/products/product-types/${id}/`, { auth: true });
+    if (res && res.id) return res;
+  } catch (err) {
+    console.warn(`[TuEstante Product API] Fallo al obtener tipo ${id} de backend, buscando en mock:`, err);
+  }
+  return mockProductTypes.find(t => String(t.id) === String(id)) || null;
+}
+
+/**
+ * Crea un nuevo tipo de producto
+ */
+export async function createProductType(data) {
+  try {
+    const res = await postRequest('/products/product-types/', data, { auth: true });
+    if (res && res.id) {
+      mockProductTypes.unshift({
+        id: res.id,
+        product_type_name: res.product_type_name,
+        description: res.description || '',
+        product_type_image: res.product_type_image || '../../assets/images/logo.jpeg',
+        count: 0,
+        is_active: true
+      });
+      return res;
+    }
+  } catch (err) {
+    console.warn('[TuEstante Product API] Fallo al crear en backend, creando en mock:', err);
+  }
+
+  // Fallback local mock
+  const newId = mockProductTypes.length ? Math.max(...mockProductTypes.map(t => t.id)) + 1 : 1;
+  const name = (data instanceof FormData) ? data.get('product_type_name') : data.product_type_name;
+  const desc = (data instanceof FormData) ? data.get('description') : data.description;
+  const image = (data instanceof FormData) ? (data.get('product_type_image_url') || '../../assets/images/logo.jpeg') : (data.product_type_image || '../../assets/images/logo.jpeg');
+
+  const newType = {
+    id: newId,
+    product_type_name: name || `Tipo #${newId}`,
+    description: desc || '',
+    product_type_image: image,
+    count: 0,
+    is_active: true
+  };
+  mockProductTypes.unshift(newType);
+  return newType;
+}
+
+/**
+ * Actualiza un tipo de producto existente
+ */
+export async function updateProductType(id, data) {
+  try {
+    const res = await patchRequest(`/products/product-types/${id}/`, data, { auth: true });
+    if (res && res.id) {
+      const idx = mockProductTypes.findIndex(t => String(t.id) === String(id));
+      if (idx !== -1) {
+        mockProductTypes[idx] = { ...mockProductTypes[idx], ...res };
+      }
+      return res;
+    }
+  } catch (err) {
+    console.warn(`[TuEstante Product API] Fallo al actualizar en backend, actualizando en mock:`, err);
+  }
+
+  const idx = mockProductTypes.findIndex(t => String(t.id) === String(id));
+  if (idx !== -1) {
+    const name = (data instanceof FormData) ? data.get('product_type_name') : data.product_type_name;
+    const desc = (data instanceof FormData) ? data.get('description') : data.description;
+    const img = (data instanceof FormData) ? data.get('product_type_image_url') : data.product_type_image;
+
+    if (name) mockProductTypes[idx].product_type_name = name;
+    if (desc !== undefined) mockProductTypes[idx].description = desc;
+    if (img) mockProductTypes[idx].product_type_image = img;
+    return mockProductTypes[idx];
+  }
+  return null;
+}
+
+/**
+ * Elimina un tipo de producto
+ */
+export async function deleteProductType(id) {
+  try {
+    await deleteRequest(`/products/product-types/${id}/`, { auth: true });
+  } catch (err) {
+    console.warn(`[TuEstante Product API] Fallo al eliminar en backend, eliminando en mock:`, err);
+  }
+
+  const idx = mockProductTypes.findIndex(t => String(t.id) === String(id));
+  if (idx !== -1) {
+    mockProductTypes.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
 

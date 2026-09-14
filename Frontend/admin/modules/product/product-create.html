@@ -75,10 +75,9 @@
           </div>
         </section>
 
-        <!-- Layout en 2 Columnas: Formulario a la Izquierda, Preview en Vivo a la Derecha -->
+        <!-- Formulario Amplio a Todo el Ancho -->
         <form id="form-create-product" class="create-product-grid" autocomplete="off">
           
-          <!-- COLUMNA PRINCIPAL (FORMULARIO) -->
           <div class="form-main-column">
 
             <!-- 1. TARJETA: INFORMACIÓN BÁSICA DEL PRODUCTO -->
@@ -308,42 +307,61 @@
                     <label class="form-label">Imagen de Portada <span class="required-mark">*</span></label>
                     <div class="image-dropzone" id="dropzone-main-image">
                       <input type="file" id="input-main-image" accept="image/*" class="file-input-hidden">
+
+                      <!-- Imagen de previsualización (fondo del dropzone) -->
+                      <img src="" alt="Portada" id="img-main-preview" class="dropzone-bg-img hidden">
+
+                      <!-- Botón quitar (esquina superior derecha) -->
+                      <button type="button" class="btn-remove-preview hidden" id="btn-remove-main-img" title="Cambiar imagen">
+                        ✕ Quitar
+                      </button>
+
+                      <!-- Barra inferior siempre visible -->
                       <div class="dropzone-content" id="dropzone-main-placeholder">
                         <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                           <polyline points="17 8 12 3 7 8"></polyline>
                           <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
-                        <span class="dropzone-text">Arrastra o <strong>haz clic para subir</strong></span>
+                        <span class="dropzone-text">Arrastra o <strong>haz clic para subir portada</strong></span>
                         <span class="dropzone-hint">PNG, JPG, WEBP (Máx. 5MB)</span>
-                      </div>
-                      
-                      <!-- Preview contenedor -->
-                      <div class="dropzone-preview" id="dropzone-main-preview" style="display: none;">
-                        <img src="" alt="Portada" id="img-main-preview" class="main-preview-img">
-                        <button type="button" class="btn-remove-preview" id="btn-remove-main-img" title="Cambiar imagen">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                          </svg>
-                        </button>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Video Demostrativo -->
+                  <!-- Video Demostrativo (Subir Archivo de Video) -->
                   <div class="media-upload-wrapper">
-                    <label for="input-product-video" class="form-label">Video Demostrativo (Opcional)</label>
-                    <div class="video-input-box">
-                      <input 
-                        type="url" 
-                        id="input-product-video" 
-                        name="product_video" 
-                        class="form-input" 
-                        placeholder="https://ejemplo.com/video-demo.mp4">
-                      <p class="video-hint">Ingresa la URL del video MP4 o enlace de presentación del producto.</p>
-                      <div class="video-preview-frame" id="video-preview-container" style="display: none;">
-                        <video id="video-preview-player" controls preload="metadata"></video>
+                    <label class="form-label">Video Demostrativo (Opcional)</label>
+                    <div class="video-dropzone" id="video-dropzone">
+                      <input type="file" id="input-product-video-file" name="product_video_file" accept="video/mp4,video/webm,video/ogg,video/quicktime" class="file-hidden-input">
+                      
+                      <!-- Estado Vacío -->
+                      <div class="video-dropzone-empty" id="video-dropzone-empty">
+                        <div class="video-icon-circle">
+                          <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                          </svg>
+                        </div>
+                        <span class="video-dropzone-prompt">Arrastra el video aquí o <strong>haz clic para buscar</strong></span>
+                        <small class="video-dropzone-hint">Formatos: MP4, WEBM, MOV (Máx. 100MB)</small>
+                      </div>
+
+                      <!-- Estado con Previsualización y Reproductor -->
+                      <div class="video-dropzone-preview hidden" id="video-dropzone-preview">
+                        <div class="video-player-container">
+                          <video id="video-preview-player" controls preload="metadata" class="video-player-frame"></video>
+                        </div>
+                        <div class="video-info-bar">
+                          <div class="video-meta">
+                            <span class="video-filename" id="video-filename">video-demostrativo.mp4</span>
+                            <span class="video-filesize" id="video-filesize">0.0 MB</span>
+                          </div>
+                          <div class="video-actions">
+                            <button type="button" class="btn-change-video" id="btn-change-video" title="Reemplazar video">Cambiar</button>
+                            <button type="button" class="btn-remove-video" id="btn-remove-video" title="Quitar video">Quitar</button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -368,9 +386,9 @@
                   <div>
                     <div class="title-with-badge">
                       <h3 class="section-title">Variantes de Color</h3>
-                      <span class="count-badge" id="badge-color-count">1 color</span>
+                      <span class="count-badge" id="badge-color-count">0 colores</span>
                     </div>
-                    <p class="section-subtitle">Asigna muestras de color hexadecimal y la foto correspondiente para cada acabado.</p>
+                    <p class="section-subtitle">Asigna muestras de color y sube la foto correspondiente para cada acabado.</p>
                   </div>
                 </div>
 
@@ -389,14 +407,17 @@
                 <div class="color-presets-wrapper">
                   <span class="presets-label">Paleta rápida:</span>
                   <div class="presets-chips">
-                    <button type="button" class="chip-preset-btn" data-hex="#A67C52" data-name="Roble Natural" style="--chip-color: #A67C52;">Roble</button>
-                    <button type="button" class="chip-preset-btn" data-hex="#5A3825" data-name="Nogal Oscuro" style="--chip-color: #5A3825;">Nogal</button>
-                    <button type="button" class="chip-preset-btn" data-hex="#FFFFFF" data-name="Blanco Polar" style="--chip-color: #FFFFFF; color: #0f172a;">Blanco</button>
-                    <button type="button" class="chip-preset-btn" data-hex="#101010" data-name="Negro Mate" style="--chip-color: #101010;">Negro</button>
-                    <button type="button" class="chip-preset-btn" data-hex="#005187" data-name="Azul Petróleo" style="--chip-color: #005187;">Azul</button>
-                    <button type="button" class="chip-preset-btn" data-hex="#4A4A4A" data-name="Gris Grafito" style="--chip-color: #4A4A4A;">Gris</button>
-                    <button type="button" class="chip-preset-btn" data-hex="#2E7D32" data-name="Verde Industrial" style="--chip-color: #2E7D32;">Verde</button>
-                    <button type="button" class="chip-preset-btn" data-hex="#E91E63" data-name="Rosa Pastel" style="--chip-color: #E91E63;">Rosa</button>
+                    <button type="button" class="chip-preset-btn" data-hex="#0272bc" data-name="Azul Rey" style="--chip-color: #0272bc;">Azul rey</button>
+                    <button type="button" class="chip-preset-btn" data-hex="#3d5ead" data-name="Azul Oscuro" style="--chip-color: #3d5ead;">Azul oscuro</button>
+                    <button type="button" class="chip-preset-btn" data-hex="#702c91" data-name="Morado" style="--chip-color: #702c91;">Morado</button>
+                    <button type="button" class="chip-preset-btn" data-hex="#b6217f" data-name="Fuccia" style="--chip-color: #b6217f;">Fuccia</button>
+                    <button type="button" class="chip-preset-btn" data-hex="#ef1c25" data-name="Rojo" style="--chip-color: #ef1c25;">Rojo</button>
+                    <button type="button" class="chip-preset-btn" data-hex="#f15a21" data-name="Naranja" style="--chip-color: #f15a21;">Naranja</button>
+                    <button type="button" class="chip-preset-btn text-dark" data-hex="#fff300" data-name="Amarillo" style="--chip-color: #fff300; color: #0f172a;">Amarillo</button>
+                    <button type="button" class="chip-preset-btn" data-hex="#00a28a" data-name="Turqueza" style="--chip-color: #00a28a;">Turqueza</button>
+                    <button type="button" class="chip-preset-btn" data-hex="#4eb043" data-name="Verde Pasto" style="--chip-color: #4eb043;">Verde pasto</button>
+                    <button type="button" class="chip-preset-btn" data-hex="#9ec536" data-name="Verde" style="--chip-color: #9ec536;">Verde</button>
+                    <button type="button" class="chip-preset-btn text-dark" data-hex="#ffc20f" data-name="Mostaza" style="--chip-color: #ffc20f; color: #0f172a;">Mostaza</button>
                   </div>
                 </div>
 
@@ -444,98 +465,42 @@
               </div>
             </section>
 
+            <!-- 6. TARJETA: ACCIONES Y CONFIRMACIÓN INFERIOR -->
+            <section class="form-section-card form-footer-card">
+              <div class="form-footer-flex">
+                <div class="checklist-summary-inline">
+                  <div class="checklist-item" id="check-name">
+                    <span class="check-icon">✓</span>
+                    <span>Nombre</span>
+                  </div>
+                  <div class="checklist-item" id="check-price">
+                    <span class="check-icon">✓</span>
+                    <span>Precio</span>
+                  </div>
+                  <div class="checklist-item" id="check-type">
+                    <span class="check-icon">✓</span>
+                    <span>Tipo</span>
+                  </div>
+                  <div class="checklist-item" id="check-media">
+                    <span class="check-icon">✓</span>
+                    <span>Portada</span>
+                  </div>
+                </div>
+
+                <div class="form-footer-buttons">
+                  <a href="./products.html" class="btn btn-outline">Cancelar y Regresar</a>
+                  <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-main">
+                    <svg class="btn-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none; width: 18px; height: 18px;">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M12 2a10 10 0 0 1 10 10"></path>
+                    </svg>
+                    <span class="btn-text">Guardar y Publicar Producto</span>
+                  </button>
+                </div>
+              </div>
+            </section>
+
           </div>
-
-          <!-- COLUMNA LATERAL (PREVIEW EN VIVO Y ACCIONES) -->
-          <aside class="form-sidebar-column">
-            
-            <!-- TARJETA DE PREVIEW EN TIEMPO REAL -->
-            <div class="sticky-preview-wrapper">
-              <section class="preview-card-panel">
-                <div class="preview-panel-header">
-                  <div class="pulse-dot"></div>
-                  <h4 class="preview-panel-title">Vista Previa en Tienda</h4>
-                </div>
-
-                <!-- Tarjeta del Producto Simulada -->
-                <div class="product-live-mockup">
-                  
-                  <div class="mockup-media-box">
-                    <img src="../../assets/images/products/tipo-producto-estante.png" alt="Preview" id="preview-mockup-img" class="mockup-img">
-                    
-                    <!-- Badges Flotantes -->
-                    <div class="mockup-badges-top">
-                      <span class="mockup-badge badge-outlet" id="preview-badge-outlet" style="display: none;">OUTLET</span>
-                      <span class="mockup-badge badge-featured" id="preview-badge-featured" style="display: none;">DESTACADO</span>
-                    </div>
-
-                    <div class="mockup-status-tag" id="preview-status-tag">Activo</div>
-                  </div>
-
-                  <div class="mockup-body">
-                    <span class="mockup-type" id="preview-mockup-type">Mobiliario Modular</span>
-                    <h4 class="mockup-title" id="preview-mockup-title">Nombre del Producto</h4>
-
-                    <div class="mockup-price-box">
-                      <div class="price-usd" id="preview-mockup-usd">$0.00</div>
-                      <div class="price-ves" id="preview-mockup-ves">0,00 Bs.</div>
-                    </div>
-
-                    <!-- Muestras de Colores Disponibles -->
-                    <div class="mockup-colors-row" id="preview-mockup-colors">
-                      <!-- Renderizado dinámico de círculos de colores -->
-                    </div>
-
-                    <!-- Miniaturas de Ángulos -->
-                    <div class="mockup-angles-row" id="preview-mockup-angles">
-                      <!-- Miniaturas dinámicas -->
-                    </div>
-
-                    <!-- Medidas -->
-                    <div class="mockup-specs-box" id="preview-mockup-specs">
-                      <span>📏 Dimensiones: <strong id="preview-specs-text">— x — x — cm</strong></span>
-                    </div>
-                  </div>
-
-                </div>
-
-                <!-- TARJETA DE ACCIONES DE GUARDADO -->
-                <div class="publish-actions-card">
-                  <div class="checklist-summary">
-                    <div class="checklist-item" id="check-name">
-                      <span class="check-icon">✓</span>
-                      <span>Nombre del producto</span>
-                    </div>
-                    <div class="checklist-item" id="check-price">
-                      <span class="check-icon">✓</span>
-                      <span>Precio base en USD</span>
-                    </div>
-                    <div class="checklist-item" id="check-type">
-                      <span class="check-icon">✓</span>
-                      <span>Tipo de producto seleccionado</span>
-                    </div>
-                    <div class="checklist-item" id="check-media">
-                      <span class="check-icon">✓</span>
-                      <span>Imagen o variante asignada</span>
-                    </div>
-                  </div>
-
-                  <div class="action-buttons-stack">
-                    <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-main">
-                      <svg class="btn-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M12 2a10 10 0 0 1 10 10"></path>
-                      </svg>
-                      <span class="btn-text">Guardar y Publicar Producto</span>
-                    </button>
-                    <a href="./products.html" class="btn btn-outline btn-block">Cancelar y Regresar</a>
-                  </div>
-                </div>
-
-              </section>
-            </div>
-
-          </aside>
 
         </form>
 
@@ -544,6 +509,34 @@
 
     <div id="footer-placeholder"></div>
 
+  </div>
+
+  <!-- Modal / Pantalla de Carga y Progreso de Subida Multimedia (0% - 100%) -->
+  <div class="modal-backdrop upload-progress-overlay" id="upload-progress-modal" role="dialog" aria-modal="true">
+    <div class="upload-progress-card">
+      <div class="progress-animation-box">
+        <div class="progress-pulsing-circle">
+          <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="upload-cloud-icon">
+            <polyline points="16 16 12 12 8 16"></polyline>
+            <line x1="12" y1="12" x2="12" y2="21"></line>
+            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
+            <polyline points="16 16 12 12 8 16"></polyline>
+          </svg>
+        </div>
+      </div>
+      
+      <h3 class="progress-title" id="progress-title">Guardando y Subiendo Multimedia</h3>
+      <p class="progress-desc" id="progress-desc">Por favor espera mientras se transfieren las imágenes y el video al servidor.</p>
+      
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
+      </div>
+      
+      <div class="progress-metrics-row">
+        <span class="progress-step-text" id="progress-step-text">Iniciando preparación de datos...</span>
+        <span class="progress-percent-text" id="progress-percent-text">0%</span>
+      </div>
+    </div>
   </div>
 
   <!-- Scripts -->

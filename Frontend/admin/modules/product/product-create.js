@@ -20,39 +20,12 @@ import { formatUSD, formatVES, convertUsdToVes } from '../../js/service/currency
 const state = {
   productTypes: [],
   exchangeRate: 791.32,
-  mainImage: '../../assets/images/products/tipo-producto-estante.png',
+  mainImage: '',
   mainImageFile: null,
+  videoFile: null,
   videoUrl: '',
-  colors: [
-    {
-      id: 1,
-      color_name: 'Roble Natural',
-      color_hex: '#A67C52',
-      image: '../../assets/images/products/tipo-producto-estante.png',
-      file: null
-    },
-    {
-      id: 2,
-      color_name: 'Negro Mate',
-      color_hex: '#101010',
-      image: '../../assets/images/products/armario-blanco.png',
-      file: null
-    }
-  ],
-  angles: [
-    {
-      id: 1,
-      angle: 'Vista Frontal',
-      image: '../../assets/images/products/tipo-producto-estante.png',
-      file: null
-    },
-    {
-      id: 2,
-      angle: 'Perspectiva 3/4',
-      image: '../../assets/images/products/armario-blanco.png',
-      file: null
-    }
-  ],
+  colors: [],
+  angles: [],
   isSubmitting: false
 };
 
@@ -85,6 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 5. Vincular Eventos de Interacción
   setupFormEvents();
   setupMainImageEvents();
+  setupVideoDropzone();
   setupColorPresetButtons();
   setupLivePreviewSync();
 
@@ -198,8 +172,9 @@ function setupMainImageEvents() {
       state.mainImage = '';
       state.mainImageFile = null;
       fileInput.value = '';
-      placeholder.style.display = 'flex';
-      previewBox.style.display = 'none';
+      if (previewImg) { previewImg.src = ''; previewImg.classList.add('hidden'); }
+      if (btnRemove) btnRemove.classList.add('hidden');
+      if (dropzone) dropzone.classList.remove('has-image');
       updateLivePreview();
     });
   }
@@ -214,12 +189,123 @@ function setupMainImageEvents() {
     const objectUrl = URL.createObjectURL(file);
     state.mainImage = objectUrl;
 
-    if (previewImg) previewImg.src = objectUrl;
-    if (placeholder) placeholder.style.display = 'none';
-    if (previewBox) previewBox.style.display = 'flex';
+    if (previewImg) { previewImg.src = objectUrl; previewImg.classList.remove('hidden'); }
+    if (btnRemove) btnRemove.classList.remove('hidden');
+    if (dropzone) dropzone.classList.add('has-image');
 
     updateLivePreview();
   }
+}
+
+// ==========================================================================
+// GESTIÓN DE SUBIDA Y REPRODUCCIÓN DE VIDEO DEMOSTRATIVO
+// ==========================================================================
+
+function setupVideoDropzone() {
+  const dropzone = document.getElementById('video-dropzone');
+  const fileInput = document.getElementById('input-product-video-file');
+  const emptyState = document.getElementById('video-dropzone-empty');
+  const previewState = document.getElementById('video-dropzone-preview');
+  const previewPlayer = document.getElementById('video-preview-player');
+  const filenameEl = document.getElementById('video-filename');
+  const filesizeEl = document.getElementById('video-filesize');
+  const btnChange = document.getElementById('btn-change-video');
+  const btnRemove = document.getElementById('btn-remove-video');
+
+  if (!dropzone || !fileInput) return;
+
+  // Clic en dropzone
+  dropzone.addEventListener('click', (e) => {
+    if (e.target.closest('#btn-change-video') || e.target.closest('#btn-remove-video') || e.target.closest('video')) {
+      return;
+    }
+    if (!state.videoFile && !state.videoUrl) {
+      fileInput.click();
+    }
+  });
+
+  btnChange?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInput.click();
+  });
+
+  btnRemove?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearVideo();
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files[0]) {
+      handleVideoFileSelected(fileInput.files[0]);
+    }
+  });
+
+  // Drag & drop
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add('drag-over');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('drag-over');
+    });
+  });
+
+  dropzone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      handleVideoFileSelected(files[0]);
+    }
+  });
+
+  function handleVideoFileSelected(file) {
+    if (!file.type.startsWith('video/')) {
+      showToast('warning', 'Archivo no válido', 'Por favor selecciona un archivo de video (MP4, WEBM, MOV).');
+      return;
+    }
+
+    if (file.size > 100 * 1024 * 1024) {
+      showToast('warning', 'Video pesado', 'El video supera el tamaño recomendado de 100MB.');
+    }
+
+    state.videoFile = file;
+    const objectUrl = URL.createObjectURL(file);
+    state.videoUrl = objectUrl;
+
+    if (previewPlayer) {
+      previewPlayer.src = objectUrl;
+    }
+    if (filenameEl) filenameEl.textContent = file.name;
+    if (filesizeEl) filesizeEl.textContent = formatBytes(file.size);
+
+    emptyState?.classList.add('hidden');
+    previewState?.classList.remove('hidden');
+    updateLivePreview();
+  }
+
+  function clearVideo() {
+    state.videoFile = null;
+    state.videoUrl = '';
+    fileInput.value = '';
+    if (previewPlayer) previewPlayer.src = '';
+    emptyState?.classList.remove('hidden');
+    previewState?.classList.add('hidden');
+    updateLivePreview();
+  }
+}
+
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 // ==========================================================================
@@ -238,7 +324,7 @@ function renderColorVariants() {
   if (state.colors.length === 0) {
     container.innerHTML = `
       <div class="empty-state-notice" style="text-align: center; padding: 20px; color: #64748b; font-size: 0.85rem; border: 1px dashed #cbd5e1; border-radius: 8px;">
-        No hay colores registrados. Presiona <strong>+ Agregar Color</strong> para añadir variantes cromáticas.
+        No hay colores registrados. Presiona <strong>+ Agregar Color</strong> o haz clic en la <strong>Paleta rápida</strong> para añadir acabados.
       </div>
     `;
     updateLivePreview();
@@ -272,16 +358,22 @@ function renderColorVariants() {
         class="form-input input-color-name" 
         value="${escapeHtml(color.color_name)}" 
         data-index="${index}"
-        placeholder="Ej: Roble Nórdico, Blanco Polar..." 
+        placeholder="Ej: Azul rey, Morado..." 
         required>
 
-      <!-- 4. Subida de Foto para este color -->
+      <!-- 4. Subida de Foto para este color (Sin imagen por defecto) -->
       <div class="variant-thumb-dropzone btn-upload-color-thumb" data-index="${index}" title="Subir foto de este color">
         <input type="file" accept="image/*" class="file-input-hidden input-file-color" data-index="${index}">
         ${color.image ? `
           <img src="${color.image}" alt="${escapeHtml(color.color_name)}" class="variant-thumb-img">
         ` : `
-          <span>📷 Foto Color</span>
+          <div class="thumb-upload-prompt" style="display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.72rem; color: #64748b; padding: 4px; text-align: center;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 2px;">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            <span>Subir Foto</span>
+          </div>
         `}
       </div>
 
@@ -386,7 +478,7 @@ function setupColorPresetButtons() {
           id: Date.now(),
           color_name: name,
           color_hex: hex,
-          image: state.mainImage || '../../assets/images/products/tipo-producto-estante.png',
+          image: null,
           file: null
         });
       }
@@ -403,8 +495,8 @@ function setupColorPresetButtons() {
       state.colors.push({
         id: Date.now(),
         color_name: `Color ${state.colors.length + 1}`,
-        color_hex: '#005187',
-        image: state.mainImage || '',
+        color_hex: '#0272bc',
+        image: null,
         file: null
       });
       renderColorVariants();
@@ -467,13 +559,19 @@ function renderAngleVariants() {
         data-index="${index}"
         placeholder="Nombre del ángulo o descripción...">
 
-      <!-- 3. Subida de Imagen del Ángulo -->
+      <!-- 3. Subida de Imagen del Ángulo (Sin imagen por defecto) -->
       <div class="variant-thumb-dropzone btn-upload-angle-thumb" data-index="${index}" title="Subir foto para este ángulo">
         <input type="file" accept="image/*" class="file-input-hidden input-file-angle" data-index="${index}">
         ${angleObj.image ? `
           <img src="${angleObj.image}" alt="${escapeHtml(angleObj.angle)}" class="variant-thumb-img">
         ` : `
-          <span>📷 Foto Ángulo</span>
+          <div class="thumb-upload-prompt" style="display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.72rem; color: #64748b; padding: 4px; text-align: center;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 2px;">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            <span>Subir Ángulo</span>
+          </div>
         `}
       </div>
 
@@ -552,7 +650,7 @@ function setupAngleRowListeners() {
       state.angles.push({
         id: Date.now(),
         angle: nextAngle,
-        image: state.mainImage || '',
+        image: null,
         file: null
       });
       renderAngleVariants();
@@ -561,7 +659,7 @@ function setupAngleRowListeners() {
 }
 
 // ==========================================================================
-// PREVISUALIZACIÓN EN VIVO REACTIVA (LIVE STORE MOCKUP)
+// PREVISUALIZACIÓN EN VIVO REACTIVA
 // ==========================================================================
 
 function setupLivePreviewSync() {
@@ -574,7 +672,6 @@ function setupLivePreviewSync() {
   const switchActive = document.getElementById('switch-is-active');
   const switchOutlet = document.getElementById('switch-is-outlet');
   const switchFeatured = document.getElementById('switch-is-featured');
-  const videoInput = document.getElementById('input-product-video');
 
   // Eventos de entrada
   [nameInput, typeSelect, priceInput, heightInput, widthInput, depthInput].forEach(el => {
@@ -584,23 +681,6 @@ function setupLivePreviewSync() {
   [switchActive, switchOutlet, switchFeatured, typeSelect].forEach(el => {
     if (el) el.addEventListener('change', updateLivePreview);
   });
-
-  if (videoInput) {
-    videoInput.addEventListener('input', (e) => {
-      const val = e.target.value.trim();
-      state.videoUrl = val;
-      const playerFrame = document.getElementById('video-preview-container');
-      const player = document.getElementById('video-preview-player');
-      if (playerFrame && player) {
-        if (val && (val.endsWith('.mp4') || val.includes('video'))) {
-          player.src = val;
-          playerFrame.style.display = 'block';
-        } else {
-          playerFrame.style.display = 'none';
-        }
-      }
-    });
-  }
 }
 
 function updateLivePreview() {
@@ -611,127 +691,76 @@ function updateLivePreview() {
     ? typeSelect.options[typeSelect.selectedIndex].textContent 
     : 'Mobiliario Modular';
 
-  const h = document.getElementById('input-product-height')?.value.trim() || '—';
-  const w = document.getElementById('input-product-width')?.value.trim() || '—';
-  const d = document.getElementById('input-product-depth')?.value.trim() || '—';
+  // Checklist de validación
+  const hasName = nameVal.length >= 2 && nameVal !== 'Nombre del Producto';
+  const hasPrice = priceVal > 0;
+  const hasType = !!typeSelect?.value;
+  const hasMedia = !!state.mainImage || state.colors.some(c => !!c.image);
 
-  const isActive = document.getElementById('switch-is-active')?.checked ?? true;
-  const isOutlet = document.getElementById('switch-is-outlet')?.checked ?? false;
-  const isFeatured = document.getElementById('switch-is-featured')?.checked ?? false;
+  updateChecklist('check-name', hasName);
+  updateChecklist('check-price', hasPrice);
+  updateChecklist('check-type', hasType);
+  updateChecklist('check-media', hasMedia);
 
-  // 1. Textos principales
-  const elTitle = document.getElementById('preview-mockup-title');
-  const elType = document.getElementById('preview-mockup-type');
-  const elUsd = document.getElementById('preview-mockup-usd');
-  const elVes = document.getElementById('preview-mockup-ves');
-  const elVesConverted = document.getElementById('price-ves-converted');
-  const elSpecs = document.getElementById('preview-specs-text');
-  const elImg = document.getElementById('preview-mockup-img');
-
-  if (elTitle) elTitle.textContent = nameVal;
-  if (elType) elType.textContent = selectedType;
-  if (elSpecs) elSpecs.textContent = `${h} x ${w} x ${d} cm`;
-
-  // Precios
-  const priceVesNum = priceVal * state.exchangeRate;
-  if (elUsd) elUsd.textContent = `$${priceVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  if (elVes) elVes.textContent = `${priceVesNum.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
-  if (elVesConverted) {
-    elVesConverted.innerHTML = `Equivalente: <strong>${priceVesNum.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.</strong> <span class="bcv-rate-hint">(${state.exchangeRate.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs/$)</span>`;
+  // Conversión VES
+  const vesConverted = priceVal * state.exchangeRate;
+  const vesEl = document.getElementById('price-ves-converted');
+  if (vesEl) {
+    vesEl.textContent = `Equivalente: ${formatVES(vesConverted)} (Tasa BCV del día)`;
   }
+}
 
-  // 2. Imagen en Mockup
-  if (elImg && state.mainImage) {
-    elImg.src = state.mainImage;
+function updateChecklist(itemId, isValid) {
+  const el = document.getElementById(itemId);
+  if (!el) return;
+  if (isValid) {
+    el.classList.add('is-valid');
+  } else {
+    el.classList.remove('is-valid');
   }
+}
 
-  // 3. Badges de Estado
-  const badgeOutlet = document.getElementById('preview-badge-outlet');
-  const badgeFeatured = document.getElementById('preview-badge-featured');
-  const statusTag = document.getElementById('preview-status-tag');
-
-  if (badgeOutlet) badgeOutlet.style.display = isOutlet ? 'inline-block' : 'none';
-  if (badgeFeatured) badgeFeatured.style.display = isFeatured ? 'inline-block' : 'none';
-
-  if (statusTag) {
-    if (isActive) {
-      statusTag.textContent = 'Activo';
-      statusTag.classList.remove('is-inactive');
-    } else {
-      statusTag.textContent = 'Inactivo';
-      statusTag.classList.add('is-inactive');
-    }
-  }
-
-  // 4. Muestras de Colores
-  const colorsContainer = document.getElementById('preview-mockup-colors');
-  if (colorsContainer) {
-    if (state.colors.length > 0) {
-      colorsContainer.innerHTML = state.colors.map(c => `
-        <span 
-          class="mockup-color-dot" 
-          style="background-color: ${escapeHtml(c.color_hex)};" 
-          title="${escapeHtml(c.color_name)}"
-          data-image="${c.image || state.mainImage}">
-        </span>
-      `).join('');
-
-      colorsContainer.querySelectorAll('.mockup-color-dot').forEach(dot => {
-        dot.addEventListener('click', () => {
-          const imgUrl = dot.getAttribute('data-image');
-          if (elImg && imgUrl) elImg.src = imgUrl;
-          colorsContainer.querySelectorAll('.mockup-color-dot').forEach(d => d.classList.remove('active'));
-          dot.classList.add('active');
-        });
-      });
-    } else {
-      colorsContainer.innerHTML = '';
-    }
-  }
-
-  // 5. Miniaturas de Ángulos
-  const anglesContainer = document.getElementById('preview-mockup-angles');
-  if (anglesContainer) {
-    if (state.angles.length > 0 && state.angles.some(a => a.image)) {
-      anglesContainer.innerHTML = state.angles.filter(a => a.image).map(a => `
-        <img 
-          src="${a.image}" 
-          alt="${escapeHtml(a.angle)}" 
-          class="mockup-angle-thumb" 
-          title="${escapeHtml(a.angle)}">
-      `).join('');
-
-      anglesContainer.querySelectorAll('.mockup-angle-thumb').forEach(thumb => {
-        thumb.addEventListener('click', () => {
-          if (elImg) elImg.src = thumb.src;
-          anglesContainer.querySelectorAll('.mockup-angle-thumb').forEach(t => t.classList.remove('active'));
-          thumb.classList.add('active');
-        });
-      });
-    } else {
-      anglesContainer.innerHTML = '';
-    }
-  }
-
-  // 6. Checklist de Publicación
-  const checkName = document.getElementById('check-name');
-  const checkPrice = document.getElementById('check-price');
-  const checkType = document.getElementById('check-type');
-  const checkMedia = document.getElementById('check-media');
-
-  if (checkName) checkName.classList.toggle('is-valid', nameVal.length >= 3 && nameVal !== 'Nombre del Producto');
-  if (checkPrice) checkPrice.classList.toggle('is-valid', priceVal > 0);
-  if (checkType) checkType.classList.toggle('is-valid', !!typeSelect?.value);
-  if (checkMedia) checkMedia.classList.toggle('is-valid', Boolean(state.mainImage || state.colors.some(c => c.image)));
+function formatVES(amount) {
+  return new Intl.NumberFormat('es-VE', {
+    style: 'currency',
+    currency: 'VES',
+    minimumFractionDigits: 2
+  }).format(amount).replace('VES', 'Bs.');
 }
 
 // ==========================================================================
-// ENVÍO DEL FORMULARIO Y VALIDACIÓN
+// PANTALLA DE CARGA Y PROGRESO DE SUBIDA (0% - 100%)
+// ==========================================================================
+
+function showUploadProgress(percent, stepText) {
+  const modal = document.getElementById('upload-progress-modal');
+  const barFill = document.getElementById('progress-bar-fill');
+  const percentText = document.getElementById('progress-percent-text');
+  const stepTextEl = document.getElementById('progress-step-text');
+
+  if (modal) modal.classList.add('is-active');
+  if (barFill) barFill.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+  if (percentText) percentText.textContent = `${Math.round(percent)}%`;
+  if (stepText && stepTextEl) stepTextEl.textContent = stepText;
+}
+
+function hideUploadProgress() {
+  const modal = document.getElementById('upload-progress-modal');
+  if (modal) modal.classList.remove('is-active');
+}
+
+// ==========================================================================
+// PROCESAMIENTO Y ENVÍO DEL FORMULARIO
 // ==========================================================================
 
 function setupFormEvents() {
   const form = document.getElementById('form-create-product');
   if (!form) return;
+
+  // Botón superior sincronizado
+  document.getElementById('btn-save-top')?.addEventListener('click', () => {
+    form.requestSubmit();
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -770,18 +799,17 @@ function setupFormEvents() {
     const is_active = document.getElementById('switch-is-active')?.checked ?? true;
     const is_outlet = document.getElementById('switch-is-outlet')?.checked ?? false;
     const is_feature_product = document.getElementById('switch-is-featured')?.checked ?? false;
-    const product_video = document.getElementById('input-product-video')?.value.trim() || '';
 
     // Portada principal
-    let product_image = state.mainImage || '../../assets/images/products/tipo-producto-estante.png';
-    if (state.colors.length > 0 && state.colors[0].image && (!state.mainImage || state.mainImage.includes('logo.jpeg'))) {
+    let product_image = state.mainImage || '';
+    if (!product_image && state.colors.length > 0 && state.colors[0].image) {
       product_image = state.colors[0].image;
     }
 
     // Variantes de color preparadas
     const color_images = state.colors.map(c => ({
       color_name: c.color_name || 'Color Estándar',
-      color_hex: c.color_hex || '#101010',
+      color_hex: c.color_hex || '#0272bc',
       image: c.image || product_image,
       color_image: c.image || product_image
     }));
@@ -806,29 +834,50 @@ function setupFormEvents() {
       is_outlet: is_outlet,
       is_feature_product: is_feature_product,
       product_image: product_image,
-      product_video: product_video,
+      product_video: state.videoUrl || '',
       color_images: color_images,
       angle_images: angle_images
     };
 
-    // 3. Ejecutar Creación con Spinner
+    // 3. Ejecutar Creación con Pantalla de Carga y Progreso
     setSubmittingState(true);
 
     try {
+      showUploadProgress(15, 'Validando campos y estructura del producto...');
+      await new Promise(r => setTimeout(r, 200));
+
+      showUploadProgress(35, 'Procesando imágenes de portada y acabados de color...');
+      await new Promise(r => setTimeout(r, 250));
+
+      if (state.videoFile) {
+        showUploadProgress(60, 'Subiendo video demostrativo y archivos multimedia...');
+        await new Promise(r => setTimeout(r, 400));
+      } else {
+        showUploadProgress(65, 'Preparando galería de perspectivas fotográficas...');
+        await new Promise(r => setTimeout(r, 250));
+      }
+
+      showUploadProgress(85, 'Registrando producto en la base de datos...');
       const created = await createProduct(payload);
+
+      showUploadProgress(100, '¡Producto registrado y publicado exitosamente!');
+      await new Promise(r => setTimeout(r, 500));
+      hideUploadProgress();
+
       showToast(
         'success', 
         '¡Producto Creado con Éxito!', 
         `"${created.product_name}" ha sido registrado correctamente en el catálogo.${is_outlet ? ' (Marcado como Outlet)' : ''}`
       );
 
-      // Redirigir al listado tras 1.2 segundos
+      // Redirigir al listado tras 1 segundo
       setTimeout(() => {
         window.location.href = './products.html';
-      }, 1200);
+      }, 1000);
 
     } catch (err) {
       console.error('Error al registrar producto:', err);
+      hideUploadProgress();
       showToast('error', 'Error al guardar', err.message || 'No se pudo registrar el producto en el servidor.');
       setSubmittingState(false);
     }
@@ -846,7 +895,7 @@ function setSubmittingState(isSubmitting) {
     const spinner = btn.querySelector('.btn-spinner');
     const textSpan = btn.querySelector('.btn-text') || btn.querySelector('span');
     if (spinner) spinner.style.display = isSubmitting ? 'inline-block' : 'none';
-    if (textSpan) textSpan.textContent = isSubmitting ? 'Guardando...' : 'Guardar Producto';
+    if (textSpan) textSpan.textContent = isSubmitting ? 'Guardando...' : 'Guardar y Publicar Producto';
   });
 }
 

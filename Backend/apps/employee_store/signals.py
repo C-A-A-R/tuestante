@@ -19,10 +19,20 @@ def remember_order_initial_status(sender, instance, **kwargs):
 
 @receiver(post_save, sender=InternalOrder)
 def on_internal_order_change(sender, instance, created, **kwargs):
-    """Notifica al empleado ante la creación o cambio de estado de su pedido interno."""
-    from apps.notification.services.notification_service import send_notification
+    """Notifica al empleado y a los administradores ante la creación o cambio de estado de un pedido interno."""
+    from apps.notification.services.notification_service import send_notification, send_notification_to_admins
 
-    # Obtener el usuario Django del empleado
+    # Notificar a los administradores ante un nuevo pedido interno
+    if created:
+        emp_name = instance.employee.full_name if instance.employee else "Empleado"
+        send_notification_to_admins(
+            title=f"Nuevo Pedido Empleado #{instance.order_number}",
+            message=f"El empleado {emp_name} ha realizado el pedido #{instance.order_number} por un monto de ${instance.total_amount}.",
+            notification_type='employee_order',
+            internal_order=instance,
+        )
+
+    # Obtener el usuario Django del empleado para notificarle personalmente
     user = getattr(instance.employee, 'user', None)
     if not user:
         return
@@ -78,12 +88,12 @@ def on_internal_order_change(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=DebtPayment)
 def on_debt_payment_created(sender, instance, created, **kwargs):
-    """Notifica al empleado cuando se le acredita un abono o deducción de nómina y sincroniza el estado de sus órdenes."""
+    """Notifica al empleado y a administradores cuando se registra un abono o deducción de nómina y sincroniza el estado de sus órdenes."""
     if not created:
         return
 
     from apps.employee_store.services import sync_employee_orders_paid_status
-    from apps.notification.services.notification_service import send_notification
+    from apps.notification.services.notification_service import send_notification, send_notification_to_admins
 
     # Si el abono está asociado a una orden específica, marcar esa orden como PAID
     if instance.order and instance.order.status != 'PAID':
@@ -93,11 +103,21 @@ def on_debt_payment_created(sender, instance, created, **kwargs):
     # Sincronizar órdenes acumuladas (FIFO)
     sync_employee_orders_paid_status(instance.employee)
 
+    emp_name = instance.employee.full_name if instance.employee else "Empleado"
+    tipo_display = instance.get_payment_type_display() if hasattr(instance, 'get_payment_type_display') else 'Abono'
+
+    # Notificar a los administradores
+    send_notification_to_admins(
+        title=f"Abono de Empleado Registrado ({emp_name})",
+        message=f"Se ha registrado un abono de ${instance.amount} ({tipo_display}) a la cuenta de {emp_name}.",
+        notification_type='payroll',
+        internal_order=instance.order,
+    )
+
     user = getattr(instance.employee, 'user', None)
     if not user:
         return
 
-    tipo_display = instance.get_payment_type_display() if hasattr(instance, 'get_payment_type_display') else 'Abono'
     send_notification(
         user=user,
         title="Abono a tu Cuenta Registrado",

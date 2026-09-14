@@ -569,22 +569,20 @@ function openFullProductModal(productId = null) {
 }
 
 function setProductDropzonePreview(imageUrl, fileName = 'imagen_producto.jpg') {
-  const idleView = document.getElementById('product-dropzone-idle');
-  const previewView = document.getElementById('product-dropzone-preview');
+  const dropzone = document.getElementById('product-image-dropzone');
   const previewImg = document.getElementById('product-image-preview');
-  const nameLabel = document.getElementById('product-image-preview-name');
+  const removeBtn = document.getElementById('btn-remove-product-image');
   const fileInput = document.getElementById('product-image');
 
   if (imageUrl) {
-    if (previewImg) previewImg.src = imageUrl;
-    if (nameLabel) nameLabel.textContent = fileName;
-    if (idleView) idleView.classList.add('hidden');
-    if (previewView) previewView.classList.remove('hidden');
+    if (previewImg) { previewImg.src = imageUrl; previewImg.classList.remove('hidden'); }
+    if (removeBtn) removeBtn.classList.remove('hidden');
+    if (dropzone) dropzone.classList.add('has-image');
   } else {
     if (fileInput) fileInput.value = '';
-    if (previewImg) previewImg.src = '';
-    if (previewView) previewView.classList.add('hidden');
-    if (idleView) idleView.classList.remove('hidden');
+    if (previewImg) { previewImg.src = ''; previewImg.classList.add('hidden'); }
+    if (removeBtn) removeBtn.classList.add('hidden');
+    if (dropzone) dropzone.classList.remove('has-image');
   }
 }
 
@@ -593,16 +591,6 @@ function closeFullProductModal() {
   if (modal) modal.classList.remove('is-active');
   document.getElementById('form-full-product')?.reset();
   setProductDropzonePreview(null);
-}
-
-function generateRandomBarcode() {
-  // Generar código EAN-like de 11 dígitos con prefijo 750
-  const randomDigits = Math.floor(10000000 + Math.random() * 90000000);
-  const generated = `750${randomDigits}`;
-  const barcodeInput = document.getElementById('product-barcode');
-  if (barcodeInput) {
-    barcodeInput.value = generated;
-  }
 }
 
 // ============================================================================
@@ -618,6 +606,12 @@ function closeNestedCategoryModal() {
   const modal = document.getElementById('modal-nested-category');
   if (modal) modal.classList.remove('is-active');
   document.getElementById('form-nested-category')?.reset();
+
+  // Asegurar que el modal principal de producto permanezca visible
+  const productModal = document.getElementById('modal-full-product');
+  if (productModal && !productModal.classList.contains('is-active')) {
+    productModal.classList.add('is-active');
+  }
 }
 
 function openNestedSubcategoryModal() {
@@ -637,6 +631,12 @@ function closeNestedSubcategoryModal() {
   const modal = document.getElementById('modal-nested-subcategory');
   if (modal) modal.classList.remove('is-active');
   document.getElementById('form-nested-subcategory')?.reset();
+
+  // Asegurar que el modal principal de producto permanezca visible
+  const productModal = document.getElementById('modal-full-product');
+  if (productModal && !productModal.classList.contains('is-active')) {
+    productModal.classList.add('is-active');
+  }
 }
 
 // ============================================================================
@@ -665,9 +665,6 @@ function setupEventListeners() {
   document.getElementById('btn-open-new-product-modal')?.addEventListener('click', () => {
     openFullProductModal(null);
   });
-
-  // Generador de código de barras
-  document.getElementById('btn-generate-barcode')?.addEventListener('click', generateRandomBarcode);
 
   // Cambio de categoría en formulario de producto
   document.getElementById('product-category-select')?.addEventListener('change', updateSubcategorySelects);
@@ -829,68 +826,142 @@ function setupEventListeners() {
   // Envío Formulario Modal Anidado de Categoría
   document.getElementById('form-nested-category')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = document.getElementById('nested-cat-name').value.trim();
-    const description = document.getElementById('nested-cat-desc').value.trim();
+    e.stopPropagation();
+
+    const btnSave = document.getElementById('btn-save-nested-cat');
+    if (btnSave) btnSave.disabled = true;
+
+    const nameInput = document.getElementById('nested-cat-name');
+    const descInput = document.getElementById('nested-cat-desc');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const description = descInput ? descInput.value.trim() : '';
 
     if (!name) {
       showToast('El nombre de la categoría es requerido', 'warning');
+      if (btnSave) btnSave.disabled = false;
       return;
     }
 
     try {
       const newCat = await createCategory({ name, description });
-      categoriesList.push(newCat);
-      populateCategorySelectors();
-
-      // Seleccionarlo inmediatamente en el selector de categoría del producto
-      const catSelect = document.getElementById('product-category-select');
-      if (catSelect) {
-        catSelect.value = newCat.id;
-        updateSubcategorySelects();
+      if (!newCat || !newCat.id) {
+        throw new Error('No se recibió la confirmación de la categoría creada');
       }
 
+      // Actualizar lista local de categorías
+      const exists = categoriesList.some(c => String(c.id) === String(newCat.id));
+      if (!exists) {
+        categoriesList.push(newCat);
+      }
+
+      // Repoblar selectores de categoría
+      populateCategorySelectors();
+
+      // Seleccionar inmediatamente en el formulario del producto y disparar change
+      const catSelect = document.getElementById('product-category-select');
+      if (catSelect) {
+        catSelect.value = String(newCat.id);
+        catSelect.dispatchEvent(new Event('change'));
+      }
+
+      // Cerrar solo el modal anidado y garantizar que el modal de producto siga activo
       closeNestedCategoryModal();
+      const productModal = document.getElementById('modal-full-product');
+      if (productModal && !productModal.classList.contains('is-active')) {
+        productModal.classList.add('is-active');
+      }
+
       showToast(`Categoría "${newCat.name}" creada y seleccionada`, 'success');
     } catch (err) {
-      console.error('Error creando categoría:', err);
-      showToast('No se pudo crear la categoría', 'error');
+      console.error('Error creando categoría anidada:', err);
+      let errorMsg = 'No se pudo crear la categoría';
+      if (typeof err?.data === 'string') {
+        errorMsg = err.data;
+      } else if (err?.data?.name) {
+        errorMsg = `Nombre de categoría: ${Array.isArray(err.data.name) ? err.data.name.join(', ') : err.data.name}`;
+      } else if (err?.data?.detail) {
+        errorMsg = err.data.detail;
+      } else if (err?.message) {
+        errorMsg = err.message;
+      }
+      showToast(errorMsg, 'error');
+    } finally {
+      if (btnSave) btnSave.disabled = false;
     }
   });
 
   // Envío Formulario Modal Anidado de Subcategoría
   document.getElementById('form-nested-subcategory')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const category = document.getElementById('nested-subcat-parent').value;
-    const name = document.getElementById('nested-subcat-name').value.trim();
-    const description = document.getElementById('nested-subcat-desc').value.trim();
+    e.stopPropagation();
+
+    const btnSave = document.getElementById('btn-save-nested-subcat');
+    if (btnSave) btnSave.disabled = true;
+
+    const parentSelect = document.getElementById('nested-subcat-parent');
+    const nameInput = document.getElementById('nested-subcat-name');
+    const descInput = document.getElementById('nested-subcat-desc');
+
+    const category = parentSelect ? parentSelect.value : '';
+    const name = nameInput ? nameInput.value.trim() : '';
+    const description = descInput ? descInput.value.trim() : '';
 
     if (!category || !name) {
-      showToast('Selecciona una categoría padre e ingresa el nombre', 'warning');
+      showToast('Selecciona una categoría padre e ingresa el nombre de la subcategoría', 'warning');
+      if (btnSave) btnSave.disabled = false;
       return;
     }
 
     try {
-      const newSub = await createSubCategory({ category, name, description });
-      subcategoriesList.push(newSub);
-      
-      // Si la categoría del producto no es esta, asignarla
+      const parsedCatId = parseInt(category, 10) || category;
+      const newSub = await createSubCategory({ category: parsedCatId, name, description });
+      if (!newSub || !newSub.id) {
+        throw new Error('No se recibió la confirmación de la subcategoría creada');
+      }
+
+      // Actualizar lista local de subcategorías
+      const exists = subcategoriesList.some(s => String(s.id) === String(newSub.id));
+      if (!exists) {
+        subcategoriesList.push(newSub);
+      }
+
+      // Si la categoría del producto no es la padre, sincronizarla
       const prodCatSelect = document.getElementById('product-category-select');
-      if (prodCatSelect && prodCatSelect.value !== category) {
-        prodCatSelect.value = category;
+      if (prodCatSelect && String(prodCatSelect.value) !== String(category)) {
+        prodCatSelect.value = String(category);
       }
       updateSubcategorySelects();
 
-      // Seleccionar la nueva subcategoría
+      // Seleccionar la nueva subcategoría en el formulario de producto
       const prodSubSelect = document.getElementById('product-subcategory-select');
       if (prodSubSelect) {
-        prodSubSelect.value = newSub.id;
+        prodSubSelect.value = String(newSub.id);
+        prodSubSelect.dispatchEvent(new Event('change'));
       }
 
+      // Cerrar solo el modal anidado y garantizar que el modal de producto siga activo
       closeNestedSubcategoryModal();
+      const productModal = document.getElementById('modal-full-product');
+      if (productModal && !productModal.classList.contains('is-active')) {
+        productModal.classList.add('is-active');
+      }
+
       showToast(`Subcategoría "${newSub.name}" creada y seleccionada`, 'success');
     } catch (err) {
-      console.error('Error creando subcategoría:', err);
-      showToast('No se pudo crear la subcategoría', 'error');
+      console.error('Error creando subcategoría anidada:', err);
+      let errorMsg = 'No se pudo crear la subcategoría';
+      if (typeof err?.data === 'string') {
+        errorMsg = err.data;
+      } else if (err?.data?.name) {
+        errorMsg = `Nombre de subcategoría: ${Array.isArray(err.data.name) ? err.data.name.join(', ') : err.data.name}`;
+      } else if (err?.data?.detail) {
+        errorMsg = err.data.detail;
+      } else if (err?.message) {
+        errorMsg = err.message;
+      }
+      showToast(errorMsg, 'error');
+    } finally {
+      if (btnSave) btnSave.disabled = false;
     }
   });
 }

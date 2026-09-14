@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="../../components/drawer/drawer.css">
   <link rel="stylesheet" href="../../components/navbar/navbar.css">
   <link rel="stylesheet" href="../../components/footer/footer.css">
+  <link rel="stylesheet" href="../../components/modal/modal.css">
 
   <!-- Estilos de Registro de Empleados -->
   <link rel="stylesheet" href="employee-create.css">
@@ -74,7 +75,7 @@
 
                 <!-- Zona de Carga / Dropzone -->
                 <div class="photo-dropzone" id="photo-dropzone">
-                  <input type="file" id="input-employee-photo" name="photo" accept="image/png, image/jpeg, image/webp" class="file-hidden-input">
+                  <input type="file" id="input-employee-photo" name="photo" accept="image/png, image/jpeg, image/webp" class="file-hidden-input file-input-hidden" style="display: none !important;">
                   
                   <!-- Estado Vacío del Dropzone -->
                   <div class="dropzone-empty" id="dropzone-empty">
@@ -90,10 +91,41 @@
 
                   <!-- Estado con Previsualización -->
                   <div class="dropzone-preview hidden" id="dropzone-preview">
-                    <img id="img-photo-preview" src="" alt="Previsualización de foto" class="avatar-preview-img">
+                    <div class="avatar-preview-wrapper" id="avatar-preview-wrapper" title="Haz clic para ver la foto en pantalla completa">
+                      <img id="img-photo-preview" src="" alt="Previsualización de foto" class="avatar-preview-img">
+                      <div class="avatar-zoom-overlay">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="11" cy="11" r="8"></circle>
+                          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                          <line x1="11" y1="8" x2="11" y2="14"></line>
+                          <line x1="8" y1="11" x2="14" y2="11"></line>
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="preview-zoom-hint" id="preview-zoom-hint">🔍 Clic para ampliar a pantalla completa</span>
                     <div class="preview-actions">
-                      <button type="button" class="btn-change-photo" id="btn-change-photo" title="Cambiar fotografía">Cambiar</button>
-                      <button type="button" class="btn-remove-photo" id="btn-remove-photo" title="Quitar foto">Quitar</button>
+                      <button type="button" class="btn-change-photo" id="btn-change-photo" title="Subir o cambiar fotografía">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="17 8 12 3 7 8"></polyline>
+                          <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>Cambiar</span>
+                      </button>
+                      <button type="button" class="btn-zoom-photo" id="btn-zoom-photo" title="Ver foto ampliada">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="11" cy="11" r="8"></circle>
+                          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <span>Ampliar</span>
+                      </button>
+                      <button type="button" class="btn-remove-photo" id="btn-remove-photo" title="Quitar foto">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        <span>Quitar</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -121,13 +153,25 @@
 
                 <div class="form-grid-2">
                   <div class="form-group">
-                    <label for="input-first-name" class="form-label">Nombre(s) <span class="req">*</span></label>
-                    <input type="text" id="input-first-name" name="first_name" class="form-input" placeholder="Ej: Carlos Eduardo" required autocomplete="off">
+                    <label for="input-first-name" class="form-label">Primer Nombre <span class="req">*</span></label>
+                    <input type="text" id="input-first-name" name="first_name" class="form-input" placeholder="Ej: Carlos" required autocomplete="off">
                   </div>
 
                   <div class="form-group">
-                    <label for="input-last-name" class="form-label">Apellido(s) <span class="req">*</span></label>
+                    <label for="input-second-name" class="form-label">Segundo Nombre</label>
+                    <input type="text" id="input-second-name" name="second_name" class="form-input" placeholder="Ej: Eduardo" autocomplete="off">
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="input-last-name" class="form-label">Primer Apellido <span class="req">*</span></label>
                     <input type="text" id="input-last-name" name="last_name" class="form-input" placeholder="Ej: Zaragoza" required autocomplete="off">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-second-last-name" class="form-label">Segundo Apellido</label>
+                    <input type="text" id="input-second-last-name" name="second_last_name" class="form-input" placeholder="Ej: Pérez" autocomplete="off">
                   </div>
                 </div>
 
@@ -139,9 +183,54 @@
                   </div>
 
                   <div class="form-group">
+                    <label for="input-birth-date" class="form-label">Fecha de Nacimiento <span class="req">*</span></label>
+                    <input type="date" id="input-birth-date" name="birth_date" class="form-input" required>
+                    <small class="form-hint" id="birth-date-hint">Mínimo 15 años cumplidos (edad válida hasta 100 años).</small>
+                    <small class="form-error-msg" id="birth-date-error" style="display: none; color: #dc2626; font-size: 0.8rem; margin-top: 4px; font-weight: 500;"></small>
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="input-phone" class="form-label">Teléfono de Contacto</label>
+                    <input type="tel" id="input-phone" name="phone" class="form-input" placeholder="Ej: 0414-1234567" autocomplete="off">
+                  </div>
+
+                  <div class="form-group">
                     <label for="input-email" class="form-label">Correo Electrónico (Opcional)</label>
                     <input type="email" id="input-email" name="email" class="form-input" placeholder="trabajador@empresa.com" autocomplete="off">
                   </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 14px;">
+                  <label for="input-password" class="form-label">Contraseña de Acceso <span class="required-star" id="password-required-star">*</span></label>
+                  <div class="input-password-wrapper" style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="input-password" name="password" class="form-input" placeholder="••••••••" autocomplete="new-password" style="padding-right: 42px;">
+                    <button type="button" id="btn-toggle-password" class="btn-toggle-password" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: #64748b; padding: 4px; display: flex; align-items: center;" title="Mostrar u ocultar contraseña">
+                      <svg id="icon-eye-pwd" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Checklist de Requisitos en Vivo -->
+                  <div class="password-rules-checklist" id="password-rules-box" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 0.825rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
+                    <span style="font-weight: 600; color: #475569; font-size: 0.8rem; margin-bottom: 2px;">Requisitos de seguridad obligatorios:</span>
+                    <div id="rule-len" class="rule-item" style="display: flex; align-items: center; gap: 8px; color: #64748b; transition: all 0.2s;">
+                      <span class="rule-icon" style="font-size: 13px; font-weight: 700;">○</span>
+                      <span class="rule-text">Mínimo 6 caracteres</span>
+                    </div>
+                    <div id="rule-upper" class="rule-item" style="display: flex; align-items: center; gap: 8px; color: #64748b; transition: all 0.2s;">
+                      <span class="rule-icon" style="font-size: 13px; font-weight: 700;">○</span>
+                      <span class="rule-text">Al menos una letra mayúscula (A-Z)</span>
+                    </div>
+                    <div id="rule-num" class="rule-item" style="display: flex; align-items: center; gap: 8px; color: #64748b; transition: all 0.2s;">
+                      <span class="rule-icon" style="font-size: 13px; font-weight: 700;">○</span>
+                      <span class="rule-text">Al menos un número (0-9)</span>
+                    </div>
+                  </div>
+                  <small class="form-hint" id="password-hint" style="display: none;"></small>
                 </div>
               </div>
 
@@ -156,8 +245,8 @@
                       <label for="input-employee-number" class="form-label">Ficha / Código de Empleado <span class="req">*</span></label>
                       <button type="button" class="btn-text-action" id="btn-auto-code" title="Generar código automático">Generar</button>
                     </div>
-                    <input type="text" id="input-employee-number" name="employee_number" class="form-input" placeholder="Ej: TRA-0001-2026" required autocomplete="off">
-                    <small class="form-hint">Código único de registro. Formato: TRA-nnnn-año. Haz clic en <strong>Generar</strong> para asignar automáticamente.</small>
+                    <input type="text" id="input-employee-number" name="employee_number" class="form-input" placeholder="Ej: TRA00001" required autocomplete="off">
+                    <small class="form-hint">Código único de registro. Formato: TRAnnnnn. Haz clic en <strong>Generar</strong> para asignar automáticamente.</small>
                   </div>
 
                   <div class="form-group">
@@ -226,6 +315,27 @@
 
     <!-- Footer -->
     <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- Modal Lightbox de Foto del Trabajador a Pantalla Completa -->
+  <div class="modal-backdrop modal-photo-lightbox" id="modal-photo-lightbox" role="dialog" aria-modal="true">
+    <div class="lightbox-dialog">
+      <button type="button" class="lightbox-close-btn" id="btn-close-photo-lightbox" title="Cerrar vista completa (Esc)">✕</button>
+      <div class="lightbox-image-wrap">
+        <img id="img-lightbox-full" src="" alt="Fotografía del Trabajador" class="lightbox-photo-img">
+      </div>
+      <div class="lightbox-footer">
+        <div class="lightbox-caption" id="lightbox-caption">Fotografía del Trabajador</div>
+        <button type="button" class="btn-lightbox-change" id="btn-lightbox-change-photo" title="Subir nueva fotografía">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span>Cambiar Foto</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Scripts -->

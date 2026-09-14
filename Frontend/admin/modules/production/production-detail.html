@@ -20,6 +20,7 @@
 
   <!-- Estilos Específicos del Módulo de Fabricación -->
   <link rel="stylesheet" href="./production.css">
+  <link rel="stylesheet" href="./production-detail.css">
 </head>
 <body data-page-title="Detalle de Fabricación">
 
@@ -41,35 +42,166 @@
          CONTENIDO PRINCIPAL: DETALLE DE ORDEN DE FABRICACIÓN
          ====================================================================== -->
     <main class="app-main-content">
-      <div class="production-detail-container">
+      <div class="production-detail-container" id="production-detail-container">
 
-        <!-- Encabezado con navegación y acciones -->
+        <!-- Encabezado de la orden de fabricación -->
         <section class="detail-header-card">
-          <div class="detail-header-left">
-            <a href="production.html" class="btn-back-link" title="Volver a Fabricación">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-              <span>Volver a Fabricación</span>
-            </a>
-            <div class="detail-title-block">
-              <h2 class="detail-main-title" id="production-order-title">Orden FAB-00001</h2>
-              <span class="status-pill" id="production-status-badge">En Proceso</span>
+          <div class="detail-header-main">
+            <div class="header-back-wrap">
+              <a href="production.html" class="btn btn-outline btn-back" title="Volver a Fabricación">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Volver al Taller</span>
+              </a>
+            </div>
+            <div class="order-title-row">
+              <h1 class="order-main-code" id="detail-production-code">FAB-00000</h1>
+              <span class="status-stage-badge badge-queued" id="detail-stage-badge">
+                <span id="detail-stage-label">En Cola</span>
+              </span>
+              <span class="iteration-pill" id="detail-iteration-pill" style="display: none;">Iteración #1</span>
+            </div>
+            <div class="order-sub-meta">
+              <span>Cliente: <strong id="detail-client-name">-</strong></span>
+              <span class="meta-separator">•</span>
+              <span>Iniciado: <strong id="detail-start-date">-</strong></span>
+              <span class="meta-separator">•</span>
+              <span>Pedido Asociado: <a href="#" id="detail-order-link" class="order-link-badge">-</a></span>
             </div>
           </div>
           <div class="detail-header-actions">
-            <button type="button" class="btn btn-primary" id="btn-update-status">
-              <span>Actualizar Estado</span>
+            <button type="button" class="btn btn-outline" id="btn-generate-worksheet">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9V2h12v7"></path>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              <span>Generar Hoja de Taller</span>
+            </button>
+            <button type="button" class="btn btn-primary" id="btn-quick-advance">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="13 17 18 12 13 7"></polyline>
+                <polyline points="6 17 11 12 6 7"></polyline>
+              </svg>
+              <span>Avanzar a Siguiente Fase</span>
             </button>
           </div>
         </section>
 
-        <!-- Contenido de la orden (cargado dinámicamente) -->
-        <section id="production-detail-content">
-          <p style="text-align:center; padding: 40px; color: #64748b;">
-            Cargando detalle de la orden de fabricación...
-          </p>
+        <!-- Stepper / Pipeline de Fases -->
+        <section class="detail-card stepper-card">
+          <div class="card-header-clean">
+            <h3 class="card-title">Progreso del Flujo de Fabricación</h3>
+            <p class="card-caption">Ruta de transformación técnica desde el pedido hasta el control final de calidad</p>
+          </div>
+          <div class="pipeline-stepper" id="production-pipeline-stepper">
+            <!-- Rellenado dinámicamente por renderPipelineStepper() -->
+          </div>
         </section>
+
+        <!-- Grid de Contenido (2 columnas) -->
+        <div class="detail-content-grid">
+          <!-- Columna Izquierda: Productos e Instrucciones -->
+          <div class="detail-col-left">
+            <section class="detail-card">
+              <div class="card-header-clean" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                <div>
+                  <h3 class="card-title">Productos en Fabricación</h3>
+                  <p class="card-caption">Artículos y piezas asignadas a esta orden de trabajo</p>
+                </div>
+                <span class="badge-count" id="detail-products-count">0 productos</span>
+              </div>
+              <div class="products-detail-list" id="detail-products-list">
+                <!-- Rellenado dinámicamente por renderProductsList() -->
+              </div>
+            </section>
+
+            <!-- Observaciones del Pedido -->
+            <section class="detail-card">
+              <div class="card-header-clean">
+                <h3 class="card-title">Observaciones Técnicas y del Pedido</h3>
+                <p class="card-caption">Requerimientos especiales, acabados o notas proporcionadas por el cliente</p>
+              </div>
+              <div class="tech-instructions-box">
+                <div class="instruction-item">
+                  <span class="instruction-icon">📋</span>
+                  <div style="flex: 1;">
+                    <p id="detail-order-notes-text">Sin notas especiales registradas.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Columna Derecha: Control de Fase y Metadatos -->
+          <div class="detail-col-right">
+            <!-- Formulario de Fase y Notas Técnicas -->
+            <section class="detail-card">
+              <div class="card-header-clean">
+                <h3 class="card-title">Gestión de Fase de Taller</h3>
+                <p class="card-caption">Actualice la fase actual o agregue notas para los operarios</p>
+              </div>
+              <form id="form-update-detail-status">
+                <div class="form-group">
+                  <label for="detail-select-stage" class="form-label">Fase Actual:</label>
+                  <select id="detail-select-stage" class="form-select font-bold">
+                    <option value="QUEUED">1. En Cola de Fabricación</option>
+                    <option value="CUTTING">2. Dimensionado y Corte</option>
+                    <option value="ASSEMBLY">3. Ensamblaje y Estructura</option>
+                    <option value="FINISHING">4. Acabado y Pintura</option>
+                    <option value="QUALITY_CHECK">5. Control de Calidad</option>
+                    <option value="COMPLETED">Completada (Lista para Entrega)</option>
+                    <option value="ON_HOLD">En Pausa / En Espera</option>
+                    <option value="CANCELLED">Cancelada</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="detail-input-notes" class="form-label">Bitácora / Notas de Taller:</label>
+                  <textarea id="detail-input-notes" class="form-textarea" rows="4" placeholder="Ingrese observaciones del operario o detalles técnicos..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  <span>Guardar Cambios de Taller</span>
+                </button>
+              </form>
+            </section>
+
+            <!-- Metadatos de la Orden y Entrega -->
+            <section class="detail-card">
+              <div class="card-header-clean">
+                <h3 class="card-title">Información de Entrega y Pedido</h3>
+                <p class="card-caption">Datos de trazabilidad con el sistema de ventas</p>
+              </div>
+              <div class="meta-info-list">
+                <div class="meta-info-row">
+                  <span class="meta-label">Pedido Relacionado:</span>
+                  <a href="#" id="meta-linked-order-link" class="order-link-badge">-</a>
+                </div>
+                <div class="meta-info-row">
+                  <span class="meta-label">Cliente:</span>
+                  <span class="meta-val" id="meta-client-name">-</span>
+                </div>
+                <div class="meta-info-row">
+                  <span class="meta-label">Teléfono Cliente:</span>
+                  <span class="meta-val" id="meta-client-phone">-</span>
+                </div>
+                <div class="meta-info-row">
+                  <span class="meta-label">Fecha de Recepción:</span>
+                  <span class="meta-val" id="meta-created-at">-</span>
+                </div>
+                <div class="meta-info-row">
+                  <span class="meta-label">Compromiso Entrega:</span>
+                  <span class="meta-val" id="meta-est-date" style="font-weight: 700; color: var(--primary);">-</span>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
 
       </div>
     </main>

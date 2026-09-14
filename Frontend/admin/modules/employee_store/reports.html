@@ -3,232 +3,453 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cortes de Nómina y Conciliación RRHH | TuEstante Admin</title>
+  <title>Corte de Nómina y Conciliación | TuEstante Admin</title>
+  
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Estilos de Componentes (Drawer, Navbar, Footer) -->
+  <!-- Component Styles (Drawer, Navbar, Footer) -->
   <link rel="stylesheet" href="../../components/drawer/drawer.css">
   <link rel="stylesheet" href="../../components/navbar/navbar.css">
   <link rel="stylesheet" href="../../components/footer/footer.css">
 
-  <!-- Estilos del Módulo -->
+  <!-- Module Styles -->
   <link rel="stylesheet" href="reports.css">
 
   <!-- Favicon -->
   <link rel="icon" type="image/jpeg" href="../../assets/images/logo.jpeg">
 </head>
-<body data-page-title="Cortes de Nómina">
+<body data-page-title="Corte de Nómina">
 
-  <!-- Sistema de Notificaciones Toast -->
+  <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <div class="app-layout" id="app-layout">
-    <!-- Placeholders para componentes reutilizables (Drawer, Navbar, Footer) -->
     <div id="drawer-placeholder"></div>
     <div id="navbar-placeholder"></div>
 
-    <!-- Contenido Principal -->
     <main class="app-main-content">
       <div class="reports-container">
 
-        <!-- 1. Encabezado de la Pantalla y Botones de Acción Global -->
-        <section class="screen-header-card">
+        <!-- 1. Screen Header & Actions -->
+        <header class="screen-header-card">
           <div class="screen-header-text">
-            <h2 class="screen-main-title">Generador de Cortes de Nómina y Conciliación</h2>
+            <div class="screen-badge-row">
+              <span class="module-tag">Tienda Interna</span>
+              <span class="draft-indicator-pill" id="draft-status-pill" title="Estado de guardado del borrador">
+                <span class="draft-dot"></span>
+                <span class="draft-text" id="draft-status-text">Borrador listo</span>
+              </span>
+            </div>
+            <h1 class="screen-main-title">Liquidación y Corte de Nómina</h1>
             <p class="screen-main-desc">
-              Consolida los consumos en proveeduría de la quincena o mes para emitir el archivo de deducciones o liquidar saldos masivamente.
+              Gestiona las deducciones por consumos de colaboradores, ajusta montos individuales, asocia comprobantes bancarios y liquida deudas con guardado automático continuo.
             </p>
           </div>
+
           <div class="screen-header-actions">
+            <button type="button" id="btn-clear-draft" class="btn btn-outline" title="Descartar borrador y reiniciar valores">
+              🗑️ Descartar Borrador
+            </button>
             <button type="button" id="btn-print-report" class="btn btn-outline">
-              🖨️ Imprimir Corte
+              🖨️ Imprimir Resumen
             </button>
             <button type="button" id="btn-export-csv" class="btn btn-secondary-custom">
-              📥 Exportar Deducciones (CSV)
+              📥 Exportar (CSV)
             </button>
-            <button type="button" id="btn-open-bulk-deduction" class="btn btn-primary">
-              ⚡ Aplicar Corte Masivo
+            <button type="button" id="btn-apply-payroll-cut" class="btn btn-primary btn-cta">
+              ⚡ Aplicar y Liquidar Corte
             </button>
+          </div>
+        </header>
+
+        <!-- 2. Global Batch Configuration & Period Card -->
+        <section class="batch-config-card">
+          <div class="batch-card-header">
+            <div class="batch-card-title-group">
+              <span class="batch-icon">📋</span>
+              <div>
+                <h2 class="batch-card-title">Configuración del Lote de Nómina & Fechas</h2>
+                <p class="batch-card-subtitle">Datos globales que se asociarán a las amortizaciones y rango de consumos evaluados.</p>
+              </div>
+            </div>
+            <button type="button" id="btn-toggle-config" class="btn-toggle-card" aria-expanded="true">
+              <span class="toggle-icon">▲</span>
+            </button>
+          </div>
+
+          <div class="batch-card-body" id="batch-card-body">
+            <div class="batch-form-grid">
+              
+              <!-- Referencia de Nómina -->
+              <div class="form-group">
+                <label for="bulk-payroll-ref" class="form-label">
+                  Referencia / N° de Lote de Nómina <span class="required-star">*</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🔖</span>
+                  <input type="text" id="bulk-payroll-ref" class="form-control" placeholder="Ej: NOM-2026-09-Q1" required>
+                </div>
+                <span class="form-hint">Se aplicará a todas las amortizaciones que no tengan referencia individual.</span>
+              </div>
+
+              <!-- Bauche / Comprobante Global -->
+              <div class="form-group">
+                <label for="bulk-payroll-voucher" class="form-label">
+                  Voucher / Comprobante Bancario Global
+                </label>
+                <div class="voucher-upload-zone" id="voucher-dropzone">
+                  <input type="file" id="bulk-payroll-voucher" class="file-input-hidden" accept="image/*,application/pdf">
+                  <div class="voucher-zone-content" id="voucher-zone-content">
+                    <span class="upload-icon">📎</span>
+                    <div class="upload-text-wrap">
+                      <span class="upload-title" id="voucher-file-name">Subir comprobante general (PDF o Imagen)</span>
+                      <span class="upload-sub">Arrastra el archivo o haz clic para seleccionarlo</span>
+                    </div>
+                  </div>
+                  <button type="button" id="btn-remove-voucher" class="btn-remove-file is-hidden" title="Quitar comprobante">✕</button>
+                </div>
+                <span class="form-hint">Comprobante masivo transferido por la empresa para respaldar este lote.</span>
+              </div>
+
+              <!-- Rango de Fechas de Consumos -->
+              <div class="form-group date-range-group">
+                <label class="form-label">Período de Consumos Evaluado</label>
+                <div class="dates-row">
+                  <div class="date-col">
+                    <span class="date-tag">Desde:</span>
+                    <input type="date" id="start-date" class="form-control" required>
+                  </div>
+                  <div class="date-col">
+                    <span class="date-tag">Hasta:</span>
+                    <input type="date" id="end-date" class="form-control" required>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-refresh" id="btn-refresh-period" title="Recalcular consumos">
+                    🔄 Actualizar
+                  </button>
+                </div>
+                <div class="quick-dates-row">
+                  <button type="button" class="btn-pill" id="btn-current-week">Semana Actual (Lun - Hoy)</button>
+                  <button type="button" class="btn-pill" id="btn-current-fortnight">Quincena Actual</button>
+                  <button type="button" class="btn-pill" id="btn-current-month">Mes Completo</button>
+                </div>
+              </div>
+
+              <!-- Observaciones / Notas Globales -->
+              <div class="form-group full-width-group">
+                <label for="bulk-payroll-notes" class="form-label">Notas / Justificación del Corte</label>
+                <input type="text" id="bulk-payroll-notes" class="form-control" placeholder="Ej: Deducción quincenal de nómina por consumos en proveeduría de colaboradores">
+              </div>
+
+            </div>
           </div>
         </section>
 
-        <!-- 2. Barra de Filtros de Corte -->
-        <section class="filter-card">
-          <form id="report-filter-form" class="filter-form" autocomplete="off">
-            <div class="filter-field-group">
-              <label for="start-date" class="filter-label">Fecha Desde:</label>
-              <input type="date" id="start-date" class="form-input-date" required>
+        <!-- 3. Live KPI Cards -->
+        <section class="summary-grid" aria-label="Indicadores del corte en tiempo real">
+          <div class="summary-card">
+            <div class="summary-card-icon bg-icon-blue">👥</div>
+            <div class="summary-card-content">
+              <span class="card-label">Total Trabajadores</span>
+              <strong class="card-value" id="kpi-total-workers">0</strong>
+              <span class="card-sub" id="kpi-workers-sub">En plantilla activa</span>
             </div>
-            
-            <div class="filter-field-group">
-              <label for="end-date" class="filter-label">Fecha Hasta:</label>
-              <input type="date" id="end-date" class="form-input-date" required>
+          </div>
+
+          <div class="summary-card">
+            <div class="summary-card-icon bg-icon-amber">⚠️</div>
+            <div class="summary-card-content">
+              <span class="card-label">Con Deuda Pendiente</span>
+              <strong class="card-value text-amber" id="kpi-debtors-count">0</strong>
+              <span class="card-sub" id="kpi-debtors-sub">Colaboradores deudores</span>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="summary-card-icon bg-icon-indigo">☑️</div>
+            <div class="summary-card-content">
+              <span class="card-label">Seleccionados para Corte</span>
+              <strong class="card-value text-primary" id="kpi-selected-count">0</strong>
+              <span class="card-sub" id="kpi-selected-sub">Se les aplicará deducción</span>
+            </div>
+          </div>
+
+          <div class="summary-card card-highlight">
+            <div class="summary-card-icon bg-icon-green">💵</div>
+            <div class="summary-card-content">
+              <span class="card-label">Monto Total a Descontar</span>
+              <strong class="card-value text-success" id="kpi-total-cut-usd">$0.00</strong>
+              <span class="card-sub" id="kpi-total-cut-ves">Bs. 0.00 (Tasa BCV)</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Filter & Bulk Selection Toolbar -->
+        <section class="filter-toolbar-card">
+          <div class="toolbar-top">
+            <!-- Filter Tabs -->
+            <div class="filter-tabs" role="tablist">
+              <button type="button" class="tab-btn is-active" data-filter="all" id="tab-filter-all">
+                Todos <span class="tab-badge" id="badge-all">0</span>
+              </button>
+              <button type="button" class="tab-btn" data-filter="debtors" id="tab-filter-debtors">
+                ⚠️ Con Deuda <span class="tab-badge badge-warning" id="badge-debtors">0</span>
+              </button>
+              <button type="button" class="tab-btn" data-filter="non-debtors" id="tab-filter-non-debtors">
+                ✅ Sin Deuda / Al Día <span class="tab-badge badge-success" id="badge-non-debtors">0</span>
+              </button>
+              <button type="button" class="tab-btn" data-filter="selected" id="tab-filter-selected">
+                ☑️ Seleccionados <span class="tab-badge badge-primary" id="badge-selected">0</span>
+              </button>
             </div>
 
-            <div class="filter-field-group">
+            <!-- Bulk Selection Buttons -->
+            <div class="bulk-actions-row">
+              <button type="button" class="btn btn-outline btn-sm" id="btn-select-all-debtors" title="Marcar a todos los que tienen deuda pendiente">
+                ☑️ Seleccionar Todos los Deudores
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-deselect-all" title="Desmarcar a todos">
+                ⬜ Deseleccionar Todos
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-reset-amounts" title="Restablecer los montos de deducción a la deuda total">
+                🔄 Restablecer Montos a Deuda Total
+              </button>
+            </div>
+          </div>
+
+          <div class="toolbar-bottom">
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="filter-search" class="search-input" placeholder="Buscar por colaborador, cédula o ficha...">
+              <button type="button" id="btn-clear-search" class="btn-clear-input is-hidden">✕</button>
+            </div>
+
+            <div class="filter-dept-wrap">
               <label for="filter-department" class="filter-label">Departamento:</label>
-              <select id="filter-department" class="form-select-dept">
+              <select id="filter-department" class="form-select">
                 <option value="all">Todos los departamentos</option>
               </select>
             </div>
 
-            <div class="filter-switch-wrap">
-              <label class="switch-toggle" for="filter-only-with-balance">
-                <input type="checkbox" id="filter-only-with-balance" checked>
-                <span class="switch-slider"></span>
-              </label>
-              <span class="switch-label">Solo con retención > $0</span>
+            <div class="table-legend">
+              <span class="legend-item"><span class="legend-dot dot-green"></span> Al Día ($0.00)</span>
+              <span class="legend-item"><span class="legend-dot dot-amber"></span> Con Deuda</span>
+              <span class="legend-item"><span class="legend-dot dot-blue"></span> Seleccionado</span>
             </div>
-
-            <div class="filter-actions-group">
-              <button type="submit" class="btn btn-primary" id="btn-filter">
-                🔍 Generar Corte
-              </button>
-              <button type="button" class="btn btn-outline" id="btn-current-fortnight">
-                Quincena Actual
-              </button>
-              <button type="button" class="btn btn-outline" id="btn-current-month">
-                Mes Completo
-              </button>
-            </div>
-          </form>
-        </section>
-
-        <!-- 3. Tarjetas de Resumen Global (KPIs) -->
-        <section class="summary-grid">
-          <div class="summary-card">
-            <span class="card-label">Colaboradores con Retención</span>
-            <strong class="card-value" id="kpi-total-employees">0</strong>
-            <span class="card-sub" id="kpi-total-emp-sub">Evaluados en el período</span>
-          </div>
-          <div class="summary-card">
-            <span class="card-label">Consumos Totales en Bodega</span>
-            <strong class="card-value" id="kpi-orders-total">$0.00</strong>
-            <span class="card-sub" id="kpi-orders-count">0 órdenes emitidas</span>
-          </div>
-          <div class="summary-card">
-            <span class="card-label">Abonos Previos Registrados</span>
-            <strong class="card-value text-success" id="kpi-payments-total">$0.00</strong>
-            <span class="card-sub">Efectivo o adelantos</span>
-          </div>
-          <div class="summary-card card-highlight">
-            <span class="card-label">Monto Neto a Descontar de Nómina</span>
-            <strong class="card-value text-primary" id="kpi-net-total">$0.00</strong>
-            <span class="card-sub" id="kpi-net-total-ves">Bs. 0.00</span>
           </div>
         </section>
 
-        <!-- 4. Tabla Consolidada de Pre-liquidación -->
-        <section class="report-table-card">
-          <div class="report-table-header">
+        <!-- 5. Main Workers Payroll Table -->
+        <section class="payroll-table-card">
+          <div class="table-card-header">
             <div>
-              <h3 class="report-title">Pre-liquidación de Descuentos por Trabajador</h3>
-              <p class="report-subtitle" id="report-period-text">Período seleccionado</p>
+              <h3 class="table-card-title">Plantilla de Trabajadores y Deducción Individual</h3>
+              <p class="table-card-subtitle" id="table-period-legend">Calculando consumos del período...</p>
             </div>
-            <div class="compliance-badge-notice">
-              <span class="dot-warning"></span>
-              <span>Alerta de Ley: Descuentos mayores al 30% del salario base</span>
+            <div class="table-quick-info">
+              <span class="auto-save-pill" id="table-draft-saved-time">
+                💾 Autoguardado activo
+              </span>
             </div>
           </div>
 
           <div class="table-responsive">
-            <table class="report-table" id="report-table">
+            <table class="payroll-table" id="payroll-table">
               <thead>
                 <tr>
-                  <th>Ficha / Doc</th>
-                  <th>Colaborador</th>
-                  <th>Departamento</th>
-                  <th>Salario Base</th>
-                  <th style="text-align: center;">Órdenes</th>
-                  <th>Consumo ($)</th>
-                  <th>Abonos ($)</th>
-                  <th>Neto a Descontar</th>
-                  <th style="text-align: center;">% Salario</th>
-                  <th>Deuda Total</th>
+                  <th class="col-checkbox">
+                    <label class="custom-checkbox" title="Seleccionar/Deseleccionar todos los deudores visibles">
+                      <input type="checkbox" id="master-checkbox">
+                      <span class="checkbox-box"></span>
+                    </label>
+                  </th>
+                  <th class="col-worker">Colaborador</th>
+                  <th class="col-dept">Departamento / Cargo</th>
+                  <th class="col-salary">Salario Base</th>
+                  <th class="col-consumptions">Consumo Período</th>
+                  <th class="col-debt">Deuda Total</th>
+                  <th class="col-cut-amount">Monto a Descontar ($)</th>
+                  <th class="col-individual-ref">Referencia Individual</th>
+                  <th class="col-individual-voucher">Comprobante</th>
+                  <th class="col-balance">Saldo Restante</th>
                 </tr>
               </thead>
-              <tbody id="report-table-body">
+              <tbody id="payroll-table-body">
                 <tr>
-                  <td colspan="10" style="text-align: center; padding: 40px; color: #64748b;">
-                    Generando pre-liquidación del corte...
+                  <td colspan="10" class="table-empty-cell">
+                    <div class="loading-spinner-wrap">
+                      <div class="spinner"></div>
+                      <p>Cargando información de colaboradores y nómina...</p>
+                    </div>
                   </td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div class="table-card-footer">
+            <div class="table-footer-summary">
+              <span>Mostrando <strong id="visible-workers-count">0</strong> colaboradores en la vista</span>
+              <span>•</span>
+              <span><strong id="selected-workers-count">0</strong> seleccionados para el corte</span>
+              <span>•</span>
+              <span>Total a liquidar: <strong class="text-success" id="table-footer-total-usd">$0.00</strong> (<span id="table-footer-total-ves">Bs. 0.00</span>)</span>
+            </div>
           </div>
         </section>
 
       </div>
     </main>
 
-    <!-- Footer -->
     <div id="footer-placeholder"></div>
   </div>
 
   <!-- ======================================================================
-       MODAL: CONFIRMACIÓN DE CORTE MASIVO DE NÓMINA
+       MODAL: CONFIRMACIÓN DE LIQUIDACIÓN DE CORTE DE NÓMINA
        ====================================================================== -->
-  <div class="modal-backdrop" id="modal-bulk-deduction" role="dialog" aria-modal="true">
-    <div class="modal-window modal-bulk-window">
+  <div class="modal-backdrop" id="modal-confirm-cut" role="dialog" aria-modal="true">
+    <div class="modal-window modal-payroll-confirm">
       <div class="modal-header">
         <div class="header-with-icon">
-          <span class="bulk-icon-alert">⚡</span>
+          <span class="modal-header-icon bg-amber">⚡</span>
           <div>
-            <h3>Aplicar Corte Masivo de Nómina</h3>
-            <p class="modal-subtitle">Genera el comprobante de amortización masiva para RRHH</p>
+            <h3>Confirmar Corte y Liquidación de Nómina</h3>
+            <p class="modal-subtitle">Revisa el consolidado antes de procesar las amortizaciones en el sistema</p>
           </div>
         </div>
-        <button type="button" class="modal-close-btn" id="btn-close-bulk-modal">✕</button>
+        <button type="button" class="modal-close-btn" id="btn-close-confirm-modal">✕</button>
       </div>
 
       <div class="modal-body">
-        <div class="bulk-warning-box">
+        <div class="confirm-alert-box">
           <p>
-            Esta acción registrará un abono de tipo <strong>DEDUCCIÓN DE NÓMINA (PAYROLL_DEDUCTION)</strong> 
-            para cada trabajador con saldo pendiente listado en este corte.
+            Esta acción generará registros formales de pago de tipo <strong>DEDUCCIÓN DE NÓMINA</strong> 
+            para los colaboradores seleccionados, descontará sus deudas de forma atómica y marcará como pagadas 
+            las órdenes de compra cubiertas.
           </p>
         </div>
 
-        <div class="bulk-summary-card">
-          <div class="bulk-row">
-            <span>Trabajadores afectados:</span>
-            <strong id="bulk-workers-count">0 personas</strong>
+        <div class="confirm-stats-grid">
+          <div class="confirm-stat-item">
+            <span class="confirm-stat-label">Colaboradores Afectados</span>
+            <strong class="confirm-stat-value" id="confirm-workers-count">0</strong>
           </div>
-          <div class="bulk-row">
-            <span>Monto total a amortizar (USD):</span>
-            <strong class="text-primary" id="bulk-total-usd">$0.00</strong>
+          <div class="confirm-stat-item">
+            <span class="confirm-stat-label">Total a Descontar (USD)</span>
+            <strong class="confirm-stat-value text-success" id="confirm-total-usd">$0.00</strong>
           </div>
-          <div class="bulk-row">
-            <span>Equivalente en Bolívares (BCV):</span>
-            <strong id="bulk-total-ves">Bs. 0.00</strong>
+          <div class="confirm-stat-item">
+            <span class="confirm-stat-label">Equivalente en Bolívares</span>
+            <strong class="confirm-stat-value" id="confirm-total-ves">Bs. 0.00</strong>
           </div>
-          <div class="bulk-row">
-            <span>Referencia de Nómina:</span>
-            <input type="text" id="bulk-payroll-ref" class="form-input" placeholder="Ej: NOM-QUINCENA-1-SEP2026">
+          <div class="confirm-stat-item">
+            <span class="confirm-stat-label">Referencia General</span>
+            <strong class="confirm-stat-value" id="confirm-ref-preview">-</strong>
           </div>
         </div>
 
-        <div class="bulk-progress-wrap is-hidden" id="bulk-progress-wrap">
+        <div class="confirm-voucher-preview" id="confirm-voucher-preview-wrap">
+          <span class="confirm-voucher-label">📎 Comprobante General Adjunto:</span>
+          <span class="confirm-voucher-name" id="confirm-voucher-name">Ninguno</span>
+        </div>
+
+        <div class="confirm-progress-wrap is-hidden" id="confirm-progress-wrap">
           <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="bulk-progress-fill" style="width: 0%;"></div>
+            <div class="progress-bar-fill" id="confirm-progress-fill" style="width: 0%;"></div>
           </div>
-          <span class="progress-text" id="bulk-progress-text">Procesando deducciones...</span>
+          <span class="progress-text" id="confirm-progress-text">Procesando deducciones de nómina...</span>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline" id="btn-cancel-bulk">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="btn-confirm-bulk-deduction">
-          <span>Confirmar y Liquidar Período</span>
+        <button type="button" class="btn btn-outline" id="btn-cancel-confirm">Regresar a Revisar</button>
+        <button type="button" class="btn btn-primary btn-cta" id="btn-execute-cut">
+          <span>⚡ Sí, Aplicar Corte Ahora</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- ======================================================================
+       MODAL: REPORTE DE ÉXITO & RECIBO DE LIQUIDACIÓN
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-success-receipt" role="dialog" aria-modal="true">
+    <div class="modal-window modal-receipt-window">
+      <div class="modal-header">
+        <div class="header-with-icon">
+          <span class="modal-header-icon bg-green">✅</span>
+          <div>
+            <h3>Corte de Nómina Aplicado Exitosamente</h3>
+            <p class="modal-subtitle">Resumen y comprobante de liquidación generado</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-receipt-modal">✕</button>
+      </div>
+
+      <div class="modal-body" id="receipt-printable-area">
+        <div class="receipt-card">
+          <div class="receipt-header">
+            <div class="receipt-logo">
+              <h4>TUESTANTE</h4>
+              <span>Gestión de Proveeduría & Nómina</span>
+            </div>
+            <div class="receipt-meta">
+              <span id="receipt-date-time">Fecha: --/--/----</span>
+              <span id="receipt-batch-ref">Lote: --</span>
+            </div>
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-body-stats">
+            <div class="receipt-stat-row">
+              <span>Deducciones procesadas:</span>
+              <strong id="receipt-count">0 trabajadores</strong>
+            </div>
+            <div class="receipt-stat-row">
+              <span>Total amortizado (USD):</span>
+              <strong class="text-success" id="receipt-total-usd">$0.00</strong>
+            </div>
+            <div class="receipt-stat-row">
+              <span>Total en Bolívares (BCV):</span>
+              <strong id="receipt-total-ves">Bs. 0.00</strong>
+            </div>
+            <div class="receipt-stat-row">
+              <span>Tasa de cambio aplicada:</span>
+              <span id="receipt-rate">Bs. 0.00 / USD</span>
+            </div>
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-notes-box" id="receipt-notes-box">
+            <span class="receipt-notes-label">Notas registradas:</span>
+            <p id="receipt-notes-text">-</p>
+          </div>
+
+          <div class="receipt-stamp-box">
+            <div class="stamp-badge">
+              <span>PROCESADO</span>
+              <small>TRANSACCIÓN COMPLETADA</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-print-receipt">
+          🖨️ Imprimir Comprobante
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-finish-cut">
+          Aceptar y Recargar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Module Script -->
   <script type="module" src="reports.js"></script>
 </body>
 </html>

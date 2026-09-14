@@ -1,0 +1,269 @@
+/* ==========================================================================
+   TUESTANTE - ESTILOS DE EDICIÓN DE TRABAJADOR (EMPLOYEE EDIT)
+   ========================================================================== */
+
+/* Ocultamiento estricto de input nativo de archivos */
+.file-hidden-input,
+.file-input-hidden {
+  display: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Caja de Acción de Contraseña en Edición */
+.password-action-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.password-action-box:hover {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.password-action-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.password-action-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.password-action-title {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.password-action-subtitle {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.btn-open-password-modal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border: 1.5px solid #005187;
+  color: #005187;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-open-password-modal:hover {
+  background: #005187;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px -2px rgba(0, 81, 135, 0.25);
+}
+
+/* Modal de Actualización de Contraseña */
+.modal-change-password-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.modal-change-password-backdrop.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-change-password-card {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 490px;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transform: scale(0.95) translateY(10px);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-change-password-backdrop.is-visible .modal-change-password-card {
+  transform: scale(1) translateY(0);
+}
+
+.modal-change-password-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-header-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #fef3c7;
+  color: #b45309;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.modal-header-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  font-family: 'Outfit', sans-serif;
+}
+
+.modal-header-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.modal-close-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.modal-change-password-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.modal-password-rules-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.825rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.modal-rules-title {
+  font-weight: 700;
+  color: #475569;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+}
+
+.modal-rule-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.modal-rule-item.is-valid {
+  color: #16a34a !important;
+  font-weight: 600;
+}
+
+.modal-rule-item.is-valid .modal-rule-icon {
+  color: #16a34a;
+}
+
+.modal-rule-item.is-invalid {
+  color: #ef4444;
+}
+
+.modal-rule-item.is-invalid .modal-rule-icon {
+  color: #ef4444;
+}
+
+.modal-rule-icon {
+  font-size: 13px;
+  font-weight: 800;
+  width: 16px;
+  text-align: center;
+}
+
+.modal-change-password-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.header-emp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: #e0f2fe;
+  color: #0284c7;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-left: 10px;
+  vertical-align: middle;
+}

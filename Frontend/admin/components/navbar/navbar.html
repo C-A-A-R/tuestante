@@ -60,17 +60,59 @@
           </svg>
         </button>
       </div>
+
+      <!-- Resultados dinámicos en vivo del Buscador Global -->
+      <div class="navbar-search-results-popover hidden" id="navbar-search-results" role="region" aria-live="polite"></div>
     </div>
 
-    <!-- Botón de Notificaciones con Badge Contador (Rojo/Vibrante como en la captura) -->
-    <div class="navbar-notif-wrapper">
-      <a href="modules/notifications/notifications.html" class="navbar-icon-btn navbar-notif-btn" id="navbar-notif-btn" aria-label="Ver notificaciones" title="Notificaciones">
+    <!-- Botón de Notificaciones con Badge Contador y Menú Desplegable -->
+    <div class="navbar-notif-wrapper" id="navbar-notif-wrapper">
+      <button 
+        type="button" 
+        class="navbar-icon-btn navbar-notif-btn" 
+        id="navbar-notif-btn" 
+        aria-label="Ver notificaciones" 
+        title="Notificaciones"
+        aria-expanded="false"
+        aria-haspopup="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
         </svg>
-        <span class="navbar-badge" id="navbar-notif-badge" aria-label="5 notificaciones pendientes">5</span>
-      </a>
+        <span class="navbar-badge" id="navbar-notif-badge" style="display: none;">0</span>
+      </button>
+
+      <!-- Panel Desplegable de Notificaciones del Administrador -->
+      <div class="navbar-notif-popover hidden" id="navbar-notif-popover" role="region" aria-label="Notificaciones del sistema">
+        <div class="notif-popover-header">
+          <div class="notif-header-title">
+            <span class="notif-bell-icon">🔔</span>
+            <strong>Notificaciones</strong>
+            <span class="notif-unread-tag" id="notif-unread-count-tag">0 nuevas</span>
+          </div>
+          <button type="button" class="btn-mark-all-read" id="btn-mark-all-read" title="Marcar todas como leídas">
+            Marcar leídas
+          </button>
+        </div>
+
+        <div class="notif-popover-body" id="notif-popover-list">
+          <div class="notif-loading-state">
+            <div class="notif-spinner"></div>
+            <span>Cargando notificaciones...</span>
+          </div>
+        </div>
+
+        <div class="notif-popover-footer">
+          <button type="button" class="btn-refresh-notif" id="btn-refresh-notif">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6"></path>
+              <path d="M1 20v-6h6"></path>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            <span>Actualizar</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Separador Vertical Sutil -->
@@ -115,19 +157,12 @@
         </div>
         
         <div class="dropdown-card-links">
-          <a href="modules/settings/profile.html" class="dropdown-card-item" role="menuitem">
+          <a href="modules/profile/profile.html" class="dropdown-card-item" role="menuitem">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
             </svg>
             <span>Mi Perfil</span>
-          </a>
-          <a href="modules/settings/settings.html" class="dropdown-card-item" role="menuitem">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-            <span>Configuración</span>
           </a>
         </div>
 

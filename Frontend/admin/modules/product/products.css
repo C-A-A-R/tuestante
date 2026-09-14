@@ -171,11 +171,17 @@ html, body {
    ========================================================================== */
 .products-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1280px) {
+  .products-kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
   .products-kpi-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -191,10 +197,10 @@ html, body {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 16px 20px;
+  padding: 14px 16px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -205,8 +211,8 @@ html, body {
 }
 
 .kpi-icon-bubble {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -215,14 +221,16 @@ html, body {
 }
 
 .kpi-icon-bubble svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .icon-blue { background-color: #e0f2fe; color: #0284c7; }
 .icon-green { background-color: #dcfce7; color: #16a34a; }
 .icon-gray { background-color: #f1f5f9; color: #64748b; }
 .icon-amber { background-color: #fef3c7; color: #d97706; }
+.icon-gold { background-color: #fef9c3; color: #ca8a04; }
+.icon-heart { background-color: #ffe4e6; color: #e11d48; }
 
 .kpi-info-box {
   display: flex;
@@ -230,7 +238,7 @@ html, body {
 }
 
 .kpi-card-label {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -521,6 +529,37 @@ html, body {
   background: #f1f5f9;
   color: #475569;
   border: 1px solid #e2e8f0;
+}
+
+/* Badges de Destacado y Favoritos en Fila */
+.badge-featured {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.70rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fef08a;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.badge-favorites {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.70rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #ffe4e6;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 
 /* Precio */

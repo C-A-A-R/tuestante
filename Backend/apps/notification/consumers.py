@@ -30,11 +30,19 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         self.user_id = user.id
         self.group_name = f"notifications_user_{self.user_id}"
 
-        # Unirse al grupo del usuario
+        # Unirse al grupo personal del usuario
         await self.channel_layer.group_add(
             self.group_name,
             self.channel_name
         )
+
+        # Si el usuario es administrador/staff, unirse también al grupo general de admins
+        if user.is_staff:
+            self.admin_group_name = "notifications_admins"
+            await self.channel_layer.group_add(
+                self.admin_group_name,
+                self.channel_name
+            )
 
         await self.accept()
 
@@ -43,6 +51,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         if hasattr(self, 'group_name'):
             await self.channel_layer.group_discard(
                 self.group_name,
+                self.channel_name
+            )
+        if hasattr(self, 'admin_group_name'):
+            await self.channel_layer.group_discard(
+                self.admin_group_name,
                 self.channel_name
             )
 

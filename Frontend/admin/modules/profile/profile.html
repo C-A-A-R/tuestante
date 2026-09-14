@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfil de usuario | TuEstante</title>
+
+  <!-- Google Fonts: Inter y Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="icon" type="image/jpeg" href="../../assets/images/logo.jpeg">
+
+  <!-- Estilos de Componentes Comunes del Panel Admin -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Estilos Específicos del Perfil -->
+  <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+
+  <!-- 1. Drawer Lateral de Navegación -->
+  <div id="drawer-placeholder"></div>
+
+  <!-- 2. Contenedor del Layout Principal -->
+  <div class="app-layout">
+
+    <!-- 3. Barra de Navegación Superior -->
+    <div id="navbar-placeholder"></div>
+
+    <!-- 4. Contenido Principal: Perfil de Usuario Administrador -->
+    <main class="app-main-content">
+      <div class="profile-container">
+
+        <!-- Encabezado de la Pantalla -->
+        <section class="profile-page-header">
+          <h1 class="profile-main-title">Perfil de usuario</h1>
+          <p class="profile-main-desc">Gestiona tu información personal y preferencias de cuenta.</p>
+        </section>
+
+        <!-- Banner reactivo cuando está activo el Modo Edición -->
+        <div class="profile-editing-banner" id="editing-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>Estás en <strong>modo de edición</strong>. Modifica los datos necesarios y haz clic en <strong>Guardar Cambios</strong> para actualizar tu cuenta.</span>
+        </div>
+
+        <!-- Grid Principal (2 Columnas) -->
+        <div class="profile-grid-layout">
+
+          <!-- ====================================================================
+               COLUMNA IZQUIERDA: TARJETA DE RESUMEN DE USUARIO
+               ==================================================================== -->
+          <aside class="profile-sidebar-card">
+            
+            <!-- Badge de Estado Activo -->
+            <div class="profile-status-wrap">
+              <span class="status-badge-active" id="sidebar-status-badge">Activo</span>
+            </div>
+
+            <!-- Avatar del Usuario y Datos Rápidos -->
+            <div class="profile-avatar-wrapper">
+              <div class="profile-avatar-circle" id="profile-avatar-container" title="Haz clic para cambiar foto">
+                <img id="profile-avatar-img" class="profile-avatar-img" src="" alt="Foto de perfil" style="display: none;">
+                <svg id="profile-avatar-placeholder" class="profile-avatar-icon" viewBox="0 0 24 24">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+
+              <h2 class="profile-user-name" id="sidebar-user-name">Administrador</h2>
+              <p class="profile-user-email" id="sidebar-user-email">admin@mitienda.com</p>
+              <span class="profile-role-badge" id="sidebar-role-badge">Administrador</span>
+            </div>
+
+            <!-- Divisor -->
+            <div class="profile-card-divider"></div>
+
+            <!-- Botón de Cambio de Foto -->
+            <button type="button" class="btn-change-avatar" id="btn-trigger-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <span>Cambiar foto de perfil</span>
+            </button>
+            <input type="file" id="input-avatar-file" accept="image/png, image/jpeg, image/webp" style="display: none;">
+
+          </aside>
+
+          <!-- ====================================================================
+               COLUMNA DERECHA: SECCIONES DE INFORMACIÓN
+               ==================================================================== -->
+          <div class="profile-content-cards">
+
+            <!-- 1. Tarjeta: Información Personal -->
+            <section class="profile-card">
+              <div class="profile-card-header">
+                <div class="profile-card-title-group">
+                  <div class="profile-card-icon-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="profile-card-heading">Información personal</h3>
+                    <p class="profile-card-subheading">Datos básicos de tu cuenta.</p>
+                  </div>
+                </div>
+
+                <div class="profile-card-actions">
+                  <button type="button" class="btn-cancel-edit" id="btn-cancel-edit" style="display: none;">
+                    Cancelar
+                  </button>
+                  <button type="button" class="btn-edit-profile" id="btn-toggle-edit">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="icon-edit-btn">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span id="label-edit-btn">Editar</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Formulario de Información Personal -->
+              <form id="form-personal-info">
+                <div class="profile-form-grid">
+                  
+                  <!-- 1. Nombre Completo -->
+                  <div class="profile-field-group">
+                    <label for="input-full-name" class="profile-field-label">
+                      Nombre completo <span class="required-mark">*</span>
+                    </label>
+                    <div class="profile-input-wrap">
+                      <input 
+                        type="text" 
+                        id="input-full-name" 
+                        class="profile-input" 
+                        placeholder="Ej. Administrador Principal"
+                        required 
+                        disabled
+                      >
+                    </div>
+                  </div>
+
+                  <!-- 2. Usuario -->
+                  <div class="profile-field-group">
+                    <label for="input-username" class="profile-field-label">
+                      Usuario <span class="required-mark">*</span>
+                    </label>
+                    <div class="profile-input-wrap">
+                      <input 
+                        type="text" 
+                        id="input-username" 
+                        class="profile-input" 
+                        placeholder="admin"
+                        required 
+                        disabled
+                      >
+                    </div>
+                  </div>
+
+                  <!-- 3. Correo Electrónico -->
+                  <div class="profile-field-group">
+                    <label for="input-email" class="profile-field-label">
+                      Correo electrónico <span class="required-mark">*</span>
+                    </label>
+                    <div class="profile-input-wrap">
+                      <input 
+                        type="email" 
+                        id="input-email" 
+                        class="profile-input" 
+                        placeholder="admin@mitienda.com"
+                        required 
+                        disabled
+                      >
+                    </div>
+                  </div>
+
+                  <!-- 4. Rol (Solo Lectura) -->
+                  <div class="profile-field-group">
+                    <label for="input-role" class="profile-field-label">
+                      Rol <span class="required-mark">*</span>
+                    </label>
+                    <div class="profile-input-wrap">
+                      <input 
+                        type="text" 
+                        id="input-role" 
+                        class="profile-input" 
+                        value="Administrador"
+                        readonly 
+                        disabled
+                      >
+                    </div>
+                  </div>
+
+                  <!-- 5. Teléfono -->
+                  <div class="profile-field-group">
+                    <label for="input-phone" class="profile-field-label">
+                      Teléfono <span class="required-mark">*</span>
+                    </label>
+                    <div class="profile-input-wrap">
+                      <input 
+                        type="tel" 
+                        id="input-phone" 
+                        class="profile-input" 
+                        placeholder="+58 412-1234567"
+                        disabled
+                      >
+                    </div>
+                  </div>
+
+                </div>
+              </form>
+            </section>
+
+            <!-- 2. Tarjeta: Información Adicional -->
+            <section class="profile-card">
+              <div class="profile-card-header">
+                <div class="profile-card-title-group">
+                  <div class="profile-card-icon-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="profile-card-heading">Información adicional</h3>
+                    <p class="profile-card-subheading">Detalles complementarios de tu cuenta.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Grid de Campos Adicionales -->
+              <div class="profile-form-grid">
+
+                <!-- 1. Fecha de Registro -->
+                <div class="profile-field-group">
+                  <label for="input-date-joined" class="profile-field-label">Fecha de registro</label>
+                  <div class="profile-input-wrap">
+                    <svg class="input-lead-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <input 
+                      type="text" 
+                      id="input-date-joined" 
+                      class="profile-input has-icon" 
+                      placeholder="dd/mm/aaaa"
+                      readonly 
+                      disabled
+                    >
+                  </div>
+                </div>
+
+                <!-- 2. Última Sesión -->
+                <div class="profile-field-group">
+                  <label for="input-last-login" class="profile-field-label">Última sesión</label>
+                  <div class="profile-input-wrap">
+                    <svg class="input-lead-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <input 
+                      type="text" 
+                      id="input-last-login" 
+                      class="profile-input has-icon" 
+                      placeholder="dd/mm/aaaa"
+                      readonly 
+                      disabled
+                    >
+                  </div>
+                </div>
+
+                <!-- 3. Dirección -->
+                <div class="profile-field-group full-width">
+                  <label for="input-address" class="profile-field-label">Dirección</label>
+                  <div class="profile-input-wrap">
+                    <svg class="input-lead-icon" style="top: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <textarea 
+                      id="input-address" 
+                      class="profile-textarea" 
+                      rows="2" 
+                      placeholder="Ej. Av. Principal, Edif. Los Pinos, Piso 3, Apto. 3B, Maracaibo, Zulia, Venezuela"
+                      disabled
+                    ></textarea>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+
+    <!-- 5. Pie de Página del Sistema -->
+    <div id="footer-placeholder"></div>
+
+  </div>
+
+  <!-- Contenedor para Notificaciones Toast -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Lógica JavaScript del Módulo -->
+  <script type="module" src="profile.js"></script>
+</body>
+</html>

@@ -476,6 +476,73 @@ body {
   border-color: #fecaca;
 }
 
+/* Menú Contextual de 3 Puntos para Acciones de Orden */
+.order-more-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.order-more-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 205px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.18), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+  padding: 6px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.order-more-dropdown.hidden {
+  display: none !important;
+}
+
+.order-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: #1e293b;
+  font-size: 0.84rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.order-dropdown-item svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+.order-dropdown-item:hover {
+  background-color: #f1f5f9;
+  color: #005187;
+}
+
+.order-dropdown-item.text-danger {
+  color: #dc2626;
+}
+
+.order-dropdown-item.text-danger:hover {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+
 /* Modals */
 .modal-backdrop {
   position: fixed;
@@ -513,12 +580,20 @@ body {
   box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 540px;
-  max-height: 90vh;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--border-card);
   animation: slideUp 0.25s ease-out;
+}
+
+.modal-window form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .modal-lg-window {
@@ -535,6 +610,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -565,9 +641,29 @@ body {
 .modal-body {
   padding: 22px 24px;
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .modal-footer {
@@ -578,6 +674,7 @@ body {
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 /* Worker summary card in detail modal */
@@ -876,22 +973,63 @@ body {
 }
 
 .toast {
-  min-width: 280px;
-  max-width: 420px;
+  min-width: 300px;
+  max-width: 440px;
   background: #ffffff;
   border-left: 4px solid var(--primary);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
   border-radius: var(--radius-sm);
-  padding: 12px 18px;
-  font-size: 0.88rem;
+  padding: 14px 18px;
   color: var(--text-main);
   pointer-events: auto;
-  animation: slideInRight 0.3s ease-out;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.toast.toast-success { border-left-color: var(--success); }
-.toast.toast-error { border-left-color: var(--danger); }
-.toast.toast-warning { border-left-color: #f59e0b; }
+.toast.toast-success { 
+  border-left-color: var(--success); 
+  background: #f0fdf4;
+}
+
+.toast.toast-error { 
+  border-left-color: var(--danger); 
+  background: #fef2f2;
+}
+
+.toast.toast-warning { 
+  border-left-color: #f59e0b; 
+  background: #fffbeb;
+}
+
+.toast-content-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.toast-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toast-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.toast-message {
+  font-size: 0.85rem;
+  color: #334155;
+  line-height: 1.4;
+}
 
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -976,3 +1114,419 @@ body {
   color: var(--text-muted);
   line-height: 1.35;
 }
+
+/* ==========================================================================
+   Screen Header Actions & Unified Header Buttons
+   ========================================================================== */
+.screen-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.screen-header-actions .btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.screen-header-actions .btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Table Column Helpers & States
+   ========================================================================== */
+.col-center,
+th.col-center,
+td.col-center {
+  text-align: center;
+}
+
+.col-right,
+th.col-right,
+td.col-right {
+  text-align: right;
+}
+
+th.col-actions {
+  text-align: right;
+  width: 140px;
+}
+
+.table-loading-cell {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+.table-error-cell {
+  text-align: center;
+  padding: 40px;
+  color: var(--danger);
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.order-status-clickable {
+  cursor: pointer;
+  display: inline-block;
+}
+
+.status-badge svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+.status-badge.status-paid svg {
+  color: var(--success);
+}
+
+/* ==========================================================================
+   Button Variants
+   ========================================================================== */
+.btn-success {
+  background-color: var(--success);
+  color: #ffffff;
+  border: 1px solid var(--success);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-success:hover {
+  background-color: #15803d;
+  border-color: #15803d;
+}
+
+/* ==========================================================================
+   Receipt Modal Columns
+   ========================================================================== */
+.receipt-col-left {
+  text-align: left;
+}
+
+.receipt-col-right {
+  text-align: right;
+}
+
+/* ==========================================================================
+   Status Change Modal Styles
+   ========================================================================== */
+.modal-change-status-window {
+  max-width: 480px;
+}
+
+.status-modal-body {
+  padding: 22px;
+}
+
+.status-modal-worker-box {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.status-modal-lbl {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: block;
+}
+
+.status-modal-worker-val {
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.status-modal-current-wrap {
+  text-align: right;
+}
+
+.status-modal-instruction {
+  font-size: 0.85rem;
+  color: #475569;
+  margin-bottom: 14px;
+}
+
+/* ==========================================================================
+   Payment Modal Styles
+   ========================================================================== */
+.modal-payment-window {
+  max-width: 460px;
+  overflow: hidden;
+}
+
+.payment-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+}
+
+.payment-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.payment-modal-icon {
+  font-size: 1.3rem;
+}
+
+.payment-modal-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.payment-modal-subtitle {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.btn-close-modal {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.btn-close-modal:hover {
+  color: var(--text-main);
+}
+
+.payment-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  max-height: calc(88vh - 130px);
+}
+
+.payment-modal-worker-box {
+  padding: 12px;
+  background: #f1f5f9;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.payment-field-label-sm {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: block;
+}
+
+.payment-worker-val {
+  font-size: 0.9rem;
+  color: var(--text-main);
+}
+
+.payment-order-amount {
+  font-size: 1rem;
+  color: var(--success);
+}
+
+.form-group-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.text-req {
+  color: var(--danger);
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--text-main);
+  background-color: #ffffff;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+textarea.form-control {
+  font-size: 0.88rem;
+  resize: vertical;
+}
+
+.form-helper-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.payment-modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #f8fafc;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* ==========================================================================
+   VOUCHER / COMPROBANTE UPLOAD BOX (MODAL PAGO)
+   ========================================================================== */
+.voucher-upload-box {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.voucher-dropzone-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: var(--radius-md, 10px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.voucher-dropzone-content:hover {
+  background-color: #eff6ff;
+  border-color: #005187;
+}
+
+.voucher-upload-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.voucher-upload-text strong {
+  font-size: 0.84rem;
+  color: #0f172a;
+}
+
+.voucher-upload-text span {
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+.voucher-preview-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-md, 10px);
+}
+
+.voucher-preview-strip.hidden {
+  display: none !important;
+}
+
+.voucher-thumb-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+}
+
+.voucher-file-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.voucher-filename {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.voucher-filesize {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.btn-browse-voucher {
+  background-color: #005187;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: background-color 0.2s ease;
+}
+
+.voucher-dropzone-content:hover .btn-browse-voucher {
+  background-color: #003e68;
+}
+
+.btn-remove-voucher {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-remove-voucher:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+

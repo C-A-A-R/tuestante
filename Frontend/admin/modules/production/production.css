@@ -1354,3 +1354,61 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   ESTADO VACÍO (EMPTY STATE) ELEGANTE
+   ========================================================================== */
+.production-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+}
+
+.empty-state-icon-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: var(--bg-secondary);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 81, 135, 0.06);
+}
+
+.empty-state-icon-circle svg {
+  width: 36px;
+  height: 36px;
+  stroke: var(--primary);
+}
+
+.empty-state-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.empty-state-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  max-width: 520px;
+  line-height: 1.5;
+  margin-bottom: 22px;
+}
+
+.empty-state-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+

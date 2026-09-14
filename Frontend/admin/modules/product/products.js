@@ -25,6 +25,7 @@ const state = {
   filters: {
     search: '',
     type: 'all',
+    featured: 'all',
     outlet: 'all',
     status: 'all'
   },
@@ -90,11 +91,15 @@ async function loadProductMetrics() {
     state.metrics = m;
 
     const elTotal = document.getElementById('kpi-total-products');
+    const elFeatured = document.getElementById('kpi-featured-products');
+    const elFavorites = document.getElementById('kpi-favorites-products');
     const elActive = document.getElementById('kpi-active-products');
     const elInactive = document.getElementById('kpi-inactive-products');
     const elOutlet = document.getElementById('kpi-outlet-products');
 
     if (elTotal) elTotal.textContent = m.total;
+    if (elFeatured) elFeatured.textContent = m.featured;
+    if (elFavorites) elFavorites.textContent = m.favorites;
     if (elActive) elActive.textContent = m.active;
     if (elInactive) elInactive.textContent = m.inactive;
     if (elOutlet) elOutlet.textContent = m.outlet;
@@ -250,7 +255,11 @@ function renderProductsTable() {
               </span>
             </button>
             <div class="product-meta">
-              <span class="product-name">${escapeHtml(p.product_name)}</span>
+              <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+                <span class="product-name">${escapeHtml(p.product_name)}</span>
+                ${p.is_feature_product ? `<span class="badge-featured" title="Producto Destacado">⭐ Destacado</span>` : ''}
+                ${(p.favorites_count && p.favorites_count > 0) ? `<span class="badge-favorites" title="${p.favorites_count} personas lo tienen en favoritos/deseados">❤️ ${p.favorites_count}</span>` : ''}
+              </div>
               <span class="product-desc" title="${escapeHtml(p.description)}">${escapeHtml(p.description || 'Mobiliario modular')}</span>
             </div>
           </div>
@@ -601,6 +610,7 @@ function closeActivePopover() {
 function setupFilterEvents() {
   const inputSearch = document.getElementById('filter-search');
   const selectType = document.getElementById('filter-type');
+  const selectFeatured = document.getElementById('filter-featured');
   const selectOutlet = document.getElementById('filter-outlet');
   const selectStatus = document.getElementById('filter-status');
   const btnClear = document.getElementById('btn-clear-filters');
@@ -626,6 +636,14 @@ function setupFilterEvents() {
     });
   }
 
+  if (selectFeatured) {
+    selectFeatured.addEventListener('change', () => {
+      state.filters.featured = selectFeatured.value;
+      state.pagination.currentPage = 1;
+      loadProductsData();
+    });
+  }
+
   if (selectOutlet) {
     selectOutlet.addEventListener('change', () => {
       state.filters.outlet = selectOutlet.value;
@@ -646,11 +664,13 @@ function setupFilterEvents() {
     btnClear.addEventListener('click', () => {
       if (inputSearch) inputSearch.value = '';
       if (selectType) selectType.value = 'all';
+      if (selectFeatured) selectFeatured.value = 'all';
       if (selectOutlet) selectOutlet.value = 'all';
       if (selectStatus) selectStatus.value = 'all';
 
       state.filters.search = '';
       state.filters.type = 'all';
+      state.filters.featured = 'all';
       state.filters.outlet = 'all';
       state.filters.status = 'all';
       state.pagination.currentPage = 1;
@@ -680,7 +700,7 @@ function setupModalEvents() {
   const btnCloseTypes = document.getElementById('btn-close-types-modal');
   const btnCloseTypesFooter = document.getElementById('btn-close-types-footer');
 
-  if (btnTypes) btnTypes.addEventListener('click', () => openModal(modalTypes));
+  // btn-view-types is now a direct link to types.html
   if (btnCloseTypes) btnCloseTypes.addEventListener('click', () => closeModal(modalTypes));
   if (btnCloseTypesFooter) btnCloseTypesFooter.addEventListener('click', () => closeModal(modalTypes));
   if (modalTypes) modalTypes.addEventListener('click', (e) => { if (e.target === modalTypes) closeModal(modalTypes); });

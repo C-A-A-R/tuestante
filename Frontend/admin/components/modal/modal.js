@@ -258,8 +258,156 @@ export function showAlertModal({
   });
 }
 
+let activeLoadingOverlay = null;
+let loadingProgressTimer = null;
+
+/**
+ * Muestra una pantalla / overlay de carga global con progreso estimado del 0% al 100%.
+ * @param {Object} options
+ * @param {string} [options.title='Guardando información...'] Título de la operación
+ * @param {string} [options.message='Por favor espera mientras se procesa la solicitud.'] Mensaje
+ * @param {number} [options.estimatedDuration=1400] Duración estimada en ms
+ */
+export function showLoadingOverlay({
+  title = 'Guardando información...',
+  message = 'Por favor espera mientras se procesa la solicitud.',
+  estimatedDuration = 1400
+} = {}) {
+  if (activeLoadingOverlay) {
+    hideLoadingOverlay(false);
+  }
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'system-loading-overlay-root';
+  backdrop.className = 'system-loading-backdrop';
+  backdrop.setAttribute('role', 'status');
+  backdrop.setAttribute('aria-live', 'polite');
+
+  backdrop.innerHTML = `
+    <div class="system-loading-card">
+      <div class="system-loading-icon-wrap" aria-hidden="true">
+        <svg class="system-loading-spinner-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.2"></circle>
+          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor"></path>
+        </svg>
+        <svg class="system-loading-completed-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+
+      <h3 class="system-loading-title">${title}</h3>
+      <p class="system-loading-message">${message}</p>
+
+      <div class="system-loading-progress-container">
+        <div class="system-loading-progress-header">
+          <span class="system-loading-status-text">Procesando...</span>
+          <span class="system-loading-percent-label">0%</span>
+        </div>
+        <div class="system-loading-track">
+          <div class="system-loading-bar-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+
+  requestAnimationFrame(() => {
+    backdrop.classList.add('is-visible');
+  });
+
+  const barFill = backdrop.querySelector('.system-loading-bar-fill');
+  const percentLabel = backdrop.querySelector('.system-loading-percent-label');
+  const statusText = backdrop.querySelector('.system-loading-status-text');
+  const card = backdrop.querySelector('.system-loading-card');
+
+  let currentPercent = 0;
+  const startTime = Date.now();
+
+  loadingProgressTimer = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    const factor = Math.min(elapsed / estimatedDuration, 1);
+    currentPercent = Math.min(Math.round(factor * 92), 95);
+    if (barFill) barFill.style.width = `${currentPercent}%`;
+    if (percentLabel) percentLabel.textContent = `${currentPercent}%`;
+  }, 40);
+
+  activeLoadingOverlay = {
+    backdrop,
+    card,
+    barFill,
+    percentLabel,
+    statusText,
+    setPercent(pct, msg) {
+      currentPercent = Math.min(Math.max(pct, 0), 100);
+      if (barFill) barFill.style.width = `${currentPercent}%`;
+      if (percentLabel) percentLabel.textContent = `${currentPercent}%`;
+      if (msg && statusText) statusText.textContent = msg;
+    }
+  };
+
+  return activeLoadingOverlay;
+}
+
+/**
+ * Oculta la pantalla de carga completando la barra al 100% y ejecutando animación de éxito.
+ * @param {boolean} [animateComplete=true] Si debe mostrar el 100% y checkmark antes de desvanecer
+ * @returns {Promise<void>}
+ */
+export function hideLoadingOverlay(animateComplete = true) {
+  return new Promise((resolve) => {
+    if (loadingProgressTimer) {
+      clearInterval(loadingProgressTimer);
+      loadingProgressTimer = null;
+    }
+
+    if (!activeLoadingOverlay) {
+      resolve();
+      return;
+    }
+
+    const { backdrop, card, barFill, percentLabel, statusText } = activeLoadingOverlay;
+    activeLoadingOverlay = null;
+
+    if (!animateComplete) {
+      backdrop.classList.remove('is-visible');
+      setTimeout(() => {
+        backdrop.remove();
+        resolve();
+      }, 200);
+      return;
+    }
+
+    // Llevar visualmente al 100%
+    if (barFill) barFill.style.width = '100%';
+    if (percentLabel) percentLabel.textContent = '100%';
+    if (statusText) statusText.textContent = '¡Completado!';
+    if (card) card.classList.add('is-completed');
+
+    setTimeout(() => {
+      backdrop.classList.remove('is-visible');
+      setTimeout(() => {
+        backdrop.remove();
+        resolve();
+      }, 250);
+    }, 450);
+  });
+}
+
+/**
+ * Permite actualizar manualmente el progreso del overlay activo.
+ */
+export function updateLoadingProgress(percent, message) {
+  if (activeLoadingOverlay) {
+    activeLoadingOverlay.setPercent(percent, message);
+  }
+}
+
 // Registro global en window para uso directo desde cualquier script
 if (typeof window !== 'undefined') {
   window.showConfirmModal = showConfirmModal;
   window.showAlertModal = showAlertModal;
+  window.showLoadingOverlay = showLoadingOverlay;
+  window.hideLoadingOverlay = hideLoadingOverlay;
+  window.updateLoadingProgress = updateLoadingProgress;
 }

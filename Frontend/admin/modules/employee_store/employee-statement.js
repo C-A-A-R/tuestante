@@ -12,7 +12,8 @@ import {
 } from './employee-store.api.js';
 
 import { getBcvRate } from '../../js/service/exchange-rate.service.js';
-import { showConfirmModal } from '../../components/modal/modal.js';
+import { showConfirmModal, showLoadingOverlay, hideLoadingOverlay } from '../../components/modal/modal.js';
+import { resolveImageUrl } from '../../js/api.js';
 
 // ============================================================================
 // ESTADO
@@ -22,6 +23,8 @@ let employeesList = [];
 let selectedEmployeeId = null;
 let currentStatementData = null;
 let isEditMode = false;
+let currentWorkerPhoto = null;
+let currentWorkerName = '';
 
 // ============================================================================
 // INICIALIZACIÓN
@@ -136,9 +139,50 @@ function renderWorkerProfile(emp) {
   const debtVES = debtUSD * currentExchangeRate;
   const salary = parseFloat(emp.salary || 0);
 
+  currentWorkerName = fullName;
+  const avatarIcon = document.getElementById('worker-avatar-icon');
+  if (emp.photo) {
+    currentWorkerPhoto = resolveImageUrl(emp.photo);
+    if (avatarIcon) {
+      avatarIcon.innerHTML = `<img src="${escapeHtml(currentWorkerPhoto)}" alt="${escapeHtml(fullName)}" style="width: 100%; height: 100%; object-fit: cover;">`;
+    }
+  } else {
+    currentWorkerPhoto = null;
+    if (avatarIcon) {
+      avatarIcon.innerHTML = `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+    }
+  }
+
+  // Actualizar enlaces directos a la edición completa
+  const linkEdit = document.getElementById('link-full-employee-edit');
+  if (linkEdit && emp.id) {
+    linkEdit.href = `employee-edit.html?id=${emp.id}`;
+  }
+  const btnLightboxEdit = document.getElementById('btn-statement-lightbox-edit');
+  if (btnLightboxEdit && emp.id) {
+    btnLightboxEdit.href = `employee-edit.html?id=${emp.id}`;
+  }
+
   document.getElementById('worker-name').textContent = fullName;
   document.getElementById('worker-code').textContent = `Ficha: ${emp.employee_number || 'S/F'}`;
   document.getElementById('worker-doc').textContent = `C.I: ${emp.id_number || 'S/D'}`;
+
+  const birthPill = document.getElementById('worker-birth');
+  if (birthPill) {
+    if (emp.birth_date) {
+      const [by, bm, bd] = emp.birth_date.split('-');
+      const today = new Date();
+      let age = today.getFullYear() - Number(by);
+      const mDiff = today.getMonth() - (Number(bm) - 1);
+      if (mDiff < 0 || (mDiff === 0 && today.getDate() < Number(bd))) age--;
+      birthPill.textContent = `🎂 F. Nac: ${bd}/${bm}/${by} (${age} años)`;
+      birthPill.style.display = 'inline-flex';
+    } else {
+      birthPill.textContent = `🎂 F. Nac: No registrada`;
+      birthPill.style.display = 'inline-flex';
+    }
+  }
+
   document.getElementById('worker-dept').textContent = `Depto: ${emp.department || 'General'}`;
   document.getElementById('worker-pos').textContent = `Cargo: ${emp.position || 'Colaborador'}`;
   document.getElementById('worker-salary').textContent = `$${salary.toFixed(2)}`;
@@ -165,6 +209,35 @@ function renderWorkerProfile(emp) {
   document.getElementById('print-worker-pos').textContent = emp.position || 'Colaborador';
   document.getElementById('print-worker-debt').textContent = `$${debtUSD.toFixed(2)} (Bs. ${debtVES.toFixed(2)})`;
   document.getElementById('print-sign-worker-name').textContent = fullName;
+}
+
+function openStatementLightbox() {
+  const modal = document.getElementById('modal-statement-photo-lightbox');
+  const img = document.getElementById('img-statement-lightbox-full');
+  const caption = document.getElementById('statement-lightbox-caption');
+
+  if (!currentWorkerPhoto) {
+    // Si no tiene foto, redirigir a editar trabajador para cargar una
+    if (selectedEmployeeId) {
+      window.location.href = `employee-edit.html?id=${selectedEmployeeId}`;
+    }
+    return;
+  }
+
+  if (img) img.src = currentWorkerPhoto;
+  if (caption) caption.textContent = currentWorkerName ? `Fotografía: ${currentWorkerName}` : 'Fotografía del Trabajador';
+  if (modal) {
+    modal.classList.add('is-active');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeStatementLightbox() {
+  const modal = document.getElementById('modal-statement-photo-lightbox');
+  if (modal) {
+    modal.classList.remove('is-active');
+    document.body.style.overflow = '';
+  }
 }
 
 function renderKardexLedger(statementData) {
@@ -318,6 +391,56 @@ function closePaymentModal() {
   const modal = document.getElementById('payment-modal');
   if (modal) modal.classList.remove('is-active');
   document.getElementById('payment-form')?.reset();
+  resetPayVoucherPreview();
+}
+
+function resetPayVoucherPreview() {
+  const inpFile = document.getElementById('pay-voucher');
+  if (inpFile) inpFile.value = '';
+  const dropzone = document.getElementById('pay-voucher-dropzone');
+  const preview = document.getElementById('pay-voucher-preview');
+  if (dropzone) dropzone.classList.remove('hidden');
+  if (preview) preview.classList.add('hidden');
+}
+
+function setupPayVoucherEvents() {
+  const inpFile = document.getElementById('pay-voucher');
+  const dropzone = document.getElementById('pay-voucher-dropzone');
+  const preview = document.getElementById('pay-voucher-preview');
+  const imgThumb = document.getElementById('pay-voucher-img');
+  const nameLabel = document.getElementById('pay-voucher-name');
+  const sizeLabel = document.getElementById('pay-voucher-size');
+  const btnRemove = document.getElementById('btn-remove-pay-voucher');
+
+  inpFile?.addEventListener('change', () => {
+    const file = inpFile.files?.[0];
+    if (!file) {
+      resetPayVoucherPreview();
+      return;
+    }
+
+    if (nameLabel) nameLabel.textContent = file.name;
+    if (sizeLabel) sizeLabel.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (imgThumb) imgThumb.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      if (imgThumb) imgThumb.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="%23005187" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    }
+
+    if (dropzone) dropzone.classList.add('hidden');
+    if (preview) preview.classList.remove('hidden');
+  });
+
+  btnRemove?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resetPayVoucherPreview();
+  });
 }
 
 function updatePayVesPreview() {
@@ -350,6 +473,8 @@ function toggleWorkerEditMode(forceState) {
     document.getElementById('input-edit-first-name').value = emp.first_name || '';
     document.getElementById('input-edit-last-name').value = emp.last_name || '';
     document.getElementById('input-edit-doc').value = emp.id_number || emp.identity_document || '';
+    const inputEditBirth = document.getElementById('input-edit-birth-date');
+    if (inputEditBirth) inputEditBirth.value = emp.birth_date || '';
     document.getElementById('input-edit-code').value = emp.employee_number || '';
     document.getElementById('input-edit-dept').value = emp.department || '';
     document.getElementById('input-edit-pos').value = emp.position || '';
@@ -372,6 +497,8 @@ async function saveWorkerEdits() {
   const firstName = document.getElementById('input-edit-first-name').value.trim();
   const lastName = document.getElementById('input-edit-last-name').value.trim();
   const doc = document.getElementById('input-edit-doc').value.trim();
+  const birthDateInput = document.getElementById('input-edit-birth-date');
+  const birthDate = birthDateInput?.value || '';
   const empCode = document.getElementById('input-edit-code').value.trim();
   const dept = document.getElementById('input-edit-dept').value.trim();
   const pos = document.getElementById('input-edit-pos').value.trim();
@@ -381,6 +508,34 @@ async function saveWorkerEdits() {
   if (!empCode || !dept || !pos || isNaN(salary)) {
     showToast('Ficha, departamento, cargo y salario son requeridos', 'warning');
     return;
+  }
+
+  // Validación de fecha de nacimiento si se indica
+  if (birthDate) {
+    const parts = birthDate.split('-').map(Number);
+    if (parts.length === 3 && !isNaN(parts[0])) {
+      const [y, m, d] = parts;
+      const bDate = new Date(y, m - 1, d);
+      const today = new Date();
+      if (bDate > today) {
+        showToast('La fecha de nacimiento no puede ser una fecha futura.', 'warning');
+        birthDateInput?.focus();
+        return;
+      }
+      let age = today.getFullYear() - y;
+      const mDiff = today.getMonth() - (m - 1);
+      if (mDiff < 0 || (mDiff === 0 && today.getDate() < d)) age--;
+      if (age < 15) {
+        showToast('El trabajador debe tener al menos 15 años cumplidos.', 'warning');
+        birthDateInput?.focus();
+        return;
+      }
+      if (age > 100) {
+        showToast('Fecha de nacimiento no válida (edad superior a 100 años).', 'warning');
+        birthDateInput?.focus();
+        return;
+      }
+    }
   }
 
   const confirmed = await showConfirmModal({
@@ -396,6 +551,7 @@ async function saveWorkerEdits() {
     first_name: firstName,
     last_name: lastName,
     identity_document: doc,
+    birth_date: birthDate || null,
     employee_number: empCode,
     department: dept,
     position: pos,
@@ -403,13 +559,21 @@ async function saveWorkerEdits() {
     is_active: isActive
   };
 
+  showLoadingOverlay({
+    title: 'Actualizando Colaborador...',
+    message: 'Guardando modificaciones del perfil en el sistema...',
+    estimatedDuration: 1200
+  });
+
   try {
     const updated = await updateEmployee(selectedEmployeeId, payload);
+    await hideLoadingOverlay(true);
     currentStatementData.employee = { ...currentStatementData.employee, ...updated };
     renderWorkerProfile(currentStatementData.employee);
     toggleWorkerEditMode(false);
     showToast('Datos del trabajador actualizados con éxito', 'success');
   } catch (err) {
+    await hideLoadingOverlay(false);
     console.error('Error actualizando trabajador:', err);
     showToast('Error al actualizar datos del trabajador', 'error');
   }
@@ -449,6 +613,7 @@ function setupEventListeners() {
   });
 
   // Modal Pago
+  setupPayVoucherEvents();
   document.getElementById('btn-open-payment-modal')?.addEventListener('click', openPaymentModal);
   document.getElementById('btn-close-payment')?.addEventListener('click', closePaymentModal);
   document.getElementById('btn-cancel-payment')?.addEventListener('click', closePaymentModal);
@@ -462,6 +627,7 @@ function setupEventListeners() {
     const payment_type = document.getElementById('pay-type').value;
     const reference = document.getElementById('pay-ref').value.trim();
     const notes = document.getElementById('pay-notes').value.trim();
+    const voucherFile = document.getElementById('pay-voucher')?.files?.[0];
 
     if (isNaN(amount) || amount <= 0) {
       showToast('Ingresa un monto de abono válido mayor a 0', 'warning');
@@ -477,23 +643,48 @@ function setupEventListeners() {
     });
     if (!confirmed) return;
 
-    const payload = {
-      employee: empId,
-      amount,
-      payment_type,
-      reference,
-      notes
-    };
+    const formData = new FormData();
+    formData.append('employee', empId);
+    formData.append('amount', amount);
+    formData.append('payment_type', payment_type);
+    if (reference) formData.append('reference', reference);
+    if (notes) formData.append('notes', notes);
+    if (voucherFile) formData.append('voucher', voucherFile);
 
     try {
-      await createDebtPayment(payload);
+      showLoadingOverlay({
+        title: 'Procesando Abono',
+        message: 'Registrando abono y actualizando estado de cuenta...',
+        estimatedDuration: 1500
+      });
+      await createDebtPayment(formData);
+      hideLoadingOverlay(true);
       showToast('Abono registrado exitosamente', 'success');
       closePaymentModal();
       // Recargar Kardex actualizado
       await loadEmployeeStatement(empId);
     } catch (err) {
+      hideLoadingOverlay(false);
       console.error('Error guardando abono:', err);
       showToast('Error al registrar el abono', 'error');
+    }
+  });
+
+  // Lightbox de Fotografía de Perfil
+  document.getElementById('btn-worker-avatar')?.addEventListener('click', openStatementLightbox);
+  document.getElementById('btn-close-statement-lightbox')?.addEventListener('click', closeStatementLightbox);
+  
+  const modalLightbox = document.getElementById('modal-statement-photo-lightbox');
+  if (modalLightbox) {
+    modalLightbox.addEventListener('click', (e) => {
+      if (e.target === modalLightbox) closeStatementLightbox();
+    });
+  }
+
+  // Cerrar lightbox con tecla Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeStatementLightbox();
     }
   });
 }

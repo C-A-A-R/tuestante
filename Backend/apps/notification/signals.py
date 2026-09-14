@@ -20,10 +20,10 @@ from django.dispatch import receiver
 @receiver(post_save, sender='orders.Order')
 def on_order_status_change(sender, instance, created, **kwargs):
     """
-    Envía una notificación al cliente cuando el estado de su pedido cambia.
-    Todas las notificaciones de pedido son tipo 'order'.
+    Envía una notificación al cliente cuando el estado de su pedido cambia,
+    y alerta a los administradores cuando se registra un nuevo pedido o pago en revisión.
     """
-    from apps.notification.services.notification_service import send_notification
+    from apps.notification.services.notification_service import send_notification, send_notification_to_admins
 
     if created:
         send_notification(
@@ -33,6 +33,16 @@ def on_order_status_change(sender, instance, created, **kwargs):
                 f"Tu pedido #{instance.id} ha sido registrado exitosamente. "
                 "Por favor, procede con el pago inicial."
             ),
+            notification_type='order',
+            order=instance,
+        )
+
+        # Notificar a los administradores
+        client_name = instance.user.get_full_name() or instance.user.username if instance.user else "Cliente"
+        total = getattr(instance, 'total_price', getattr(instance, 'total_amount', 0))
+        send_notification_to_admins(
+            title=f"Nuevo Pedido Cliente #{instance.id}",
+            message=f"El cliente {client_name} ha creado el pedido #{instance.id} por un monto de ${total}.",
             notification_type='order',
             order=instance,
         )
@@ -90,6 +100,16 @@ def on_order_status_change(sender, instance, created, **kwargs):
             order=instance,
         )
 
+        # Notificar a los administradores si entra en revisión de pago
+        if instance.status in ('initial_payment_review', 'final_payment_review'):
+            stage_name = "Pago inicial" if instance.status == 'initial_payment_review' else "Pago final"
+            send_notification_to_admins(
+                title=f"{stage_name} por verificar en Pedido #{instance.id}",
+                message=f"El pedido #{instance.id} tiene un {stage_name.lower()} reportado y pendiente de revisión.",
+                notification_type='order',
+                order=instance,
+            )
+
 
 # ─────────────────────────────────────────────
 # Señales de Pago (Payment)
@@ -98,12 +118,20 @@ def on_order_status_change(sender, instance, created, **kwargs):
 @receiver(post_save, sender='payment.Payment')
 def on_payment_status_change(sender, instance, created, **kwargs):
     """
-    Notifica al cliente cuando su pago es aprobado o rechazado por el admin.
-    La notificación es de tipo 'order' porque el pago está vinculado a un pedido.
+    Notifica al cliente cuando su pago es aprobado o rechazado por el admin,
+    y alerta a los administradores cuando un pago es registrado.
     """
-    from apps.notification.services.notification_service import send_notification
+    from apps.notification.services.notification_service import send_notification, send_notification_to_admins
 
     if created:
+        stage_label = instance.get_payment_stage_display() if hasattr(instance, 'get_payment_stage_display') else "Pago"
+        order_id = instance.order_id or getattr(instance.order, 'id', '')
+        send_notification_to_admins(
+            title=f"Nuevo Pago Registrado (Pedido #{order_id})",
+            message=f"Se ha registrado un {stage_label.lower()} por ${instance.amount} para el pedido #{order_id}. Requiere verificación.",
+            notification_type='order',
+            order=instance.order,
+        )
         return
 
     stage_label = instance.get_payment_stage_display()

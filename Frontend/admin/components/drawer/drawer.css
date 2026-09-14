@@ -390,7 +390,7 @@ body.drawer-collapsed .drawer-section-text {
    ========================================================================== */
 .drawer-submenu {
   list-style: none;
-  padding: 4px 0 4px 26px;
+  /* padding: 4px 0 4px 26px; */
   margin: 2px 0 4px 0;
   display: flex;
   flex-direction: column;

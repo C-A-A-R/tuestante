@@ -26,6 +26,9 @@ let selectedOrderForModal = null;
 // INICIALIZACIÓN
 // ============================================================================
 document.addEventListener('DOMContentLoaded', async () => {
+  // Notificación de orden registrada inmediatamente al cargar
+  checkPendingOrderNotification();
+
   try {
     await loadAdminComponents({ title: 'Historial de Órdenes' });
   } catch (err) {
@@ -55,7 +58,7 @@ async function loadOrders() {
   if (tbody) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">
+        <td colspan="8" class="table-loading-cell">
           Cargando historial de despachos...
         </td>
       </tr>
@@ -72,7 +75,7 @@ async function loadOrders() {
     if (tbody) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="8" style="text-align: center; padding: 40px; color: #dc2626;">
+          <td colspan="8" class="table-error-cell">
             Error al consultar órdenes de proveeduría.
           </td>
         </tr>
@@ -106,6 +109,38 @@ function updateKpis() {
 // ============================================================================
 // RENDERIZADO DE TABLA Y FILTROS
 // ============================================================================
+function getWorkerDoc(order) {
+  if (!order) return 'S/D';
+  if (order.employee_doc) return order.employee_doc;
+  if (order.employee_identity_document) return order.employee_identity_document;
+  if (order.employee_number) return order.employee_number;
+  if (order.employee && typeof order.employee === 'object') {
+    return order.employee.identity_document || order.employee.id_number || order.employee.employee_number || 'S/D';
+  }
+  if (order.employee && Array.isArray(employeesList)) {
+    const matched = employeesList.find(e => String(e.id) === String(order.employee));
+    if (matched) {
+      return matched.identity_document || matched.id_number || matched.employee_number || 'S/D';
+    }
+  }
+  return 'S/D';
+}
+
+function getWorkerName(order) {
+  if (!order) return 'Trabajador';
+  if (order.employee_name) return order.employee_name;
+  if (order.employee && typeof order.employee === 'object') {
+    return order.employee.full_name || `${order.employee.first_name || ''} ${order.employee.last_name || ''}`.trim() || order.employee.username || 'Trabajador';
+  }
+  if (order.employee && Array.isArray(employeesList)) {
+    const matched = employeesList.find(e => String(e.id) === String(order.employee));
+    if (matched) {
+      return matched.full_name || `${matched.first_name || ''} ${matched.last_name || ''}`.trim() || matched.username || 'Trabajador';
+    }
+  }
+  return 'Trabajador';
+}
+
 function renderOrdersTable() {
   const tbody = document.getElementById('tbody-orders');
   if (!tbody) return;
@@ -136,8 +171,8 @@ function renderOrdersTable() {
     if (searchVal) {
       const orderNum = String(o.id || '').toLowerCase();
       const code = (o.order_number || '').toLowerCase();
-      const workerName = (o.employee_name || o.employee?.full_name || o.employee?.name || '').toLowerCase();
-      const doc = (o.employee_doc || o.employee?.id_number || o.employee?.employee_number || '').toLowerCase();
+      const workerName = getWorkerName(o).toLowerCase();
+      const doc = getWorkerDoc(o).toLowerCase();
 
       if (!orderNum.includes(searchVal) && !code.includes(searchVal) && !workerName.includes(searchVal) && !doc.includes(searchVal)) {
         return false;
@@ -150,7 +185,7 @@ function renderOrdersTable() {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">
+        <td colspan="8" class="table-loading-cell">
           No se encontraron órdenes con los criterios especificados.
         </td>
       </tr>
@@ -160,8 +195,8 @@ function renderOrdersTable() {
 
   tbody.innerHTML = filtered.map(order => {
     const formattedDate = formatDate(order.created_at);
-    const workerName = order.employee_name || order.employee?.full_name || (order.employee?.first_name ? `${order.employee.first_name} ${order.employee.last_name || ''}` : 'Trabajador');
-    const workerDoc = order.employee_doc || order.employee?.id_number || order.employee?.employee_number || 'S/D';
+    const workerName = getWorkerName(order);
+    const workerDoc = getWorkerDoc(order);
     const totalUSD = parseFloat(order.total_amount || 0);
     const orderRate = parseFloat(order.exchange_rate_snapshot || currentExchangeRate);
     const totalVES = totalUSD * orderRate;
@@ -185,7 +220,7 @@ function renderOrdersTable() {
             <span class="worker-cell-sub">Doc: ${escapeHtml(workerDoc)}</span>
           </div>
         </td>
-        <td style="text-align: center;">
+        <td class="col-center">
           <span class="items-count-pill">${itemsCount} unids</span>
         </td>
         <td>
@@ -194,8 +229,8 @@ function renderOrdersTable() {
         <td>
           <span class="amount-ves">Bs. ${totalVES.toFixed(2)}</span>
         </td>
-        <td style="text-align: center;">
-          <div class="order-status-clickable" data-id="${order.id}" title="Haga clic para cambiar estado" style="cursor: pointer; display: inline-block;">
+        <td class="col-center">
+          <div class="order-status-clickable" data-id="${order.id}" title="Haga clic para cambiar estado">
             ${statusPill}
           </div>
         </td>
@@ -203,7 +238,7 @@ function renderOrdersTable() {
           <div class="row-actions">
             <!-- Botón Cambiar Estado -->
             <button type="button" class="btn-icon-action btn-change-status" data-id="${order.id}" title="Cambiar estado de la orden">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <polyline points="1 20 1 14 7 14"></polyline>
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
@@ -211,28 +246,49 @@ function renderOrdersTable() {
             </button>
             <!-- Botón Inspeccionar -->
             <button type="button" class="btn-icon-action btn-view-order" data-id="${order.id}" title="Inspeccionar orden y precios snapshot">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
             </button>
-            <!-- Botón Reimprimir -->
-            <button type="button" class="btn-icon-action btn-reprint-order" data-id="${order.id}" title="Reimprimir Comprobante de Despacho">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
-                <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                <rect x="6" y="14" width="12" height="8"></rect>
-              </svg>
-            </button>
-            <!-- Botón Anular (Solo si es Sin entregar / no finalizada) -->
-            ${order.status === 'UNDELIVERED' ? `
-              <button type="button" class="btn-icon-action btn-cancel-order" data-id="${order.id}" title="Anular orden y revertir inventario">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            <!-- Menú de 3 Puntos (Agrupa Reimprimir, Cobrar y Anular) -->
+            <div class="order-more-menu-container">
+              <button type="button" class="btn-icon-action btn-order-more-trigger" data-id="${order.id}" title="Más opciones de la orden" aria-label="Más opciones">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="5" r="1.5"></circle>
+                  <circle cx="12" cy="12" r="1.5"></circle>
+                  <circle cx="12" cy="19" r="1.5"></circle>
                 </svg>
               </button>
-            ` : ''}
+              <div class="order-more-dropdown hidden" id="order-more-dropdown-${order.id}">
+                <button type="button" class="order-dropdown-item btn-reprint-order" data-id="${order.id}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                  </svg>
+                  <span>Reimprimir Comprobante</span>
+                </button>
+                ${order.status !== 'PAID' && order.status !== 'CANCELLED' ? `
+                  <button type="button" class="order-dropdown-item btn-pay-order" data-id="${order.id}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="1" x2="12" y2="23"></line>
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                    <span>Registrar Pago / Cobrar</span>
+                  </button>
+                ` : ''}
+                ${order.status === 'UNDELIVERED' ? `
+                  <button type="button" class="order-dropdown-item btn-cancel-order text-danger" data-id="${order.id}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                    </svg>
+                    <span>Anular Orden</span>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
           </div>
         </td>
       </tr>
@@ -248,23 +304,75 @@ function attachTableRowListeners() {
 
   // Cambiar estado rápido
   tbody.querySelectorAll('.btn-change-status, .order-status-clickable').forEach(el => {
-    el.addEventListener('click', () => openChangeStatusModal(el.dataset.id));
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openChangeStatusModal(el.dataset.id);
+    });
   });
 
   // Inspeccionar orden
   tbody.querySelectorAll('.btn-view-order').forEach(btn => {
-    btn.addEventListener('click', () => openOrderDetailModal(btn.dataset.id));
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openOrderDetailModal(btn.dataset.id);
+    });
+  });
+
+  // Toggle del menú de 3 puntos
+  tbody.querySelectorAll('.btn-order-more-trigger').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const orderId = btn.dataset.id;
+      const targetDropdown = document.getElementById(`order-more-dropdown-${orderId}`);
+      
+      document.querySelectorAll('.order-more-dropdown').forEach(dd => {
+        if (dd !== targetDropdown) dd.classList.add('hidden');
+      });
+
+      if (targetDropdown) {
+        targetDropdown.classList.toggle('hidden');
+      }
+    });
   });
 
   // Reimprimir ticket
   tbody.querySelectorAll('.btn-reprint-order').forEach(btn => {
-    btn.addEventListener('click', () => openReceiptModal(btn.dataset.id));
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dd = btn.closest('.order-more-dropdown');
+      if (dd) dd.classList.add('hidden');
+      openReceiptModal(btn.dataset.id);
+    });
+  });
+
+  // Registrar pago de orden
+  tbody.querySelectorAll('.btn-pay-order').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dd = btn.closest('.order-more-dropdown');
+      if (dd) dd.classList.add('hidden');
+      openOrderPaymentModal(btn.dataset.id);
+    });
   });
 
   // Anular orden
   tbody.querySelectorAll('.btn-cancel-order').forEach(btn => {
-    btn.addEventListener('click', () => handleCancelOrder(btn.dataset.id));
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dd = btn.closest('.order-more-dropdown');
+      if (dd) dd.classList.add('hidden');
+      handleCancelOrder(btn.dataset.id);
+    });
   });
+
+  if (!window._orderMoreDropdownGlobalHandlerAttached) {
+    window._orderMoreDropdownGlobalHandlerAttached = true;
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.order-more-menu-container')) {
+        document.querySelectorAll('.order-more-dropdown').forEach(dd => dd.classList.add('hidden'));
+      }
+    });
+  }
 }
 
 // ============================================================================
@@ -295,9 +403,9 @@ async function openOrderDetailModal(orderId) {
   document.getElementById('detail-order-number').textContent = `Orden ${detailOrderNum}`;
   document.getElementById('detail-order-date').textContent = formatDate(order.created_at);
 
-  const workerName = order.employee_name || order.employee?.full_name || (order.employee?.first_name ? `${order.employee.first_name} ${order.employee.last_name || ''}` : 'Trabajador');
-  const workerDoc = order.employee_doc || order.employee?.id_number || order.employee?.employee_number || 'S/D';
-  const dept = order.employee?.department || order.employee?.position || '';
+  const workerName = getWorkerName(order);
+  const workerDoc = getWorkerDoc(order);
+  const dept = order.employee_department || order.employee?.department || order.employee?.position || '';
 
   document.getElementById('detail-worker-name').textContent = workerName;
   document.getElementById('detail-worker-id').textContent = `Doc: ${workerDoc} ${dept ? `| Depto: ${dept}` : ''}`;
@@ -325,7 +433,7 @@ async function openOrderDetailModal(orderId) {
   if (items.length === 0) {
     itemsTbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 20px; color: #64748b;">
+        <td colspan="5" class="table-loading-cell">
           No hay artículos registrados en esta orden.
         </td>
       </tr>
@@ -343,9 +451,9 @@ async function openOrderDetailModal(orderId) {
         <tr>
           <td><span class="order-code-badge">${escapeHtml(barcode)}</span></td>
           <td><strong>${escapeHtml(productName)}</strong></td>
-          <td style="text-align: center; font-weight: 600;">${qty}</td>
-          <td style="text-align: right;">$${unitPrice.toFixed(2)}</td>
-          <td style="text-align: right; font-weight: 700; color: #005187;">$${subtotal.toFixed(2)}</td>
+          <td class="col-center font-semibold">${qty}</td>
+          <td class="col-right">$${unitPrice.toFixed(2)}</td>
+          <td class="col-right font-bold text-primary">$${subtotal.toFixed(2)}</td>
         </tr>
       `;
     }).join('');
@@ -358,6 +466,11 @@ async function openOrderDetailModal(orderId) {
   document.getElementById('detail-total-qty').textContent = `${totalQty} unidades`;
   document.getElementById('detail-total-usd').textContent = `$${totalUSD.toFixed(2)}`;
   document.getElementById('detail-total-ves').textContent = `Bs. ${totalVES.toFixed(2)} (Tasa: Bs. ${rate.toFixed(2)})`;
+
+  const btnPayDetail = document.getElementById('btn-pay-from-detail');
+  if (btnPayDetail) {
+    btnPayDetail.style.display = (order.status !== 'PAID' && order.status !== 'CANCELLED') ? 'inline-flex' : 'none';
+  }
 
   const modal = document.getElementById('modal-order-detail');
   if (modal) modal.classList.add('is-active');
@@ -384,8 +497,8 @@ async function openReceiptModal(orderId) {
     }
   }
 
-  const workerName = order.employee_name || order.employee?.full_name || (order.employee?.first_name ? `${order.employee.first_name} ${order.employee.last_name || ''}` : 'EMPLEADO');
-  const workerDoc = order.employee_doc || order.employee?.id_number || order.employee?.employee_number || 'S/D';
+  const workerName = getWorkerName(order);
+  const workerDoc = getWorkerDoc(order);
   const totalUSD = parseFloat(order.total_amount || 0);
   const rate = parseFloat(order.exchange_rate_snapshot || currentExchangeRate);
   const totalVES = totalUSD * rate;
@@ -407,8 +520,8 @@ async function openReceiptModal(orderId) {
     return `
       <tr>
         <td>${qty} x ${escapeHtml(name.substring(0, 20))}</td>
-        <td style="text-align: right;">$${unitPrice.toFixed(2)}</td>
-        <td style="text-align: right;">$${subtotal.toFixed(2)}</td>
+        <td class="receipt-col-right">$${unitPrice.toFixed(2)}</td>
+        <td class="receipt-col-right">$${subtotal.toFixed(2)}</td>
       </tr>
     `;
   }).join('');
@@ -591,6 +704,14 @@ async function handleSaveOrderStatus() {
     'CANCELLED': 'Cancelado'
   };
 
+  // Si selecciona "PAID", abrir modal de pago para registrar la modalidad y referencia
+  if (newStatus === 'PAID') {
+    const orderIdToPay = selectedOrderForStatusModal.id;
+    closeChangeStatusModal();
+    openOrderPaymentModal(orderIdToPay);
+    return;
+  }
+
   const orderNum = selectedOrderForStatusModal.order_number || `ORD-INT${String(selectedOrderForStatusModal.id).padStart(4, '0')}-${new Date().getFullYear()}`;
   const confirmed = typeof window.showConfirmModal === 'function'
     ? await window.showConfirmModal({
@@ -717,6 +838,203 @@ function getOrderStatusBadge(status) {
 }
 
 // ============================================================================
+// MODAL 4: REGISTRO DE PAGO DE ORDEN
+// ============================================================================
+let selectedOrderForPayment = null;
+
+function openOrderPaymentModal(orderId) {
+  const order = ordersList.find(o => String(o.id) === String(orderId));
+  if (!order) return;
+  selectedOrderForPayment = order;
+
+  const modal = document.getElementById('modal-order-payment');
+  if (!modal) return;
+
+  const empId = (typeof order.employee === 'object' && order.employee !== null) 
+    ? order.employee.id 
+    : (order.employee || order.employee_id || 1);
+  const orderNum = order.order_number || `ORD-INT${String(order.id).padStart(4, '0')}-${new Date().getFullYear()}`;
+  const workerName = getWorkerName(order) || 'Colaborador';
+  const totalAmount = parseFloat(order.total_amount || order.total_usd || 0);
+
+  const inpEmpId = document.getElementById('pay-order-emp-id');
+  const inpOrderId = document.getElementById('pay-order-id');
+  const lblOrderNum = document.getElementById('pay-modal-order-num');
+  const lblWorkerName = document.getElementById('pay-modal-worker-name');
+  const lblOrderAmount = document.getElementById('pay-modal-order-amount');
+  const inpAmount = document.getElementById('pay-modal-amount');
+  const lblVes = document.getElementById('pay-modal-ves-preview');
+  const inpRef = document.getElementById('pay-modal-ref');
+  const inpNotes = document.getElementById('pay-modal-notes');
+
+  if (inpEmpId) inpEmpId.value = empId;
+  if (inpOrderId) inpOrderId.value = order.id;
+  if (lblOrderNum) lblOrderNum.textContent = `Orden ${orderNum}`;
+  if (lblWorkerName) lblWorkerName.textContent = workerName;
+  if (lblOrderAmount) lblOrderAmount.textContent = `$${totalAmount.toFixed(2)}`;
+  if (inpAmount) inpAmount.value = totalAmount.toFixed(2);
+  if (inpRef) inpRef.value = '';
+  if (inpNotes) inpNotes.value = `Cobro directo de orden ${orderNum}`;
+
+  if (lblVes) {
+    const ves = totalAmount * currentExchangeRate;
+    lblVes.textContent = `Equivalente: Bs. ${ves.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  modal.classList.add('is-active');
+}
+
+function closeOrderPaymentModal() {
+  selectedOrderForPayment = null;
+  const modal = document.getElementById('modal-order-payment');
+  if (modal) {
+    modal.classList.remove('is-active');
+  }
+  document.getElementById('form-order-payment')?.reset();
+  resetOrderPayVoucherPreview();
+}
+
+function resetOrderPayVoucherPreview() {
+  const inpFile = document.getElementById('pay-modal-voucher');
+  if (inpFile) inpFile.value = '';
+  const dropzone = document.getElementById('pay-modal-voucher-dropzone');
+  const preview = document.getElementById('pay-modal-voucher-preview');
+  if (dropzone) dropzone.classList.remove('hidden');
+  if (preview) preview.classList.add('hidden');
+}
+
+function setupOrderPayVoucherEvents() {
+  const inpFile = document.getElementById('pay-modal-voucher');
+  const dropzone = document.getElementById('pay-modal-voucher-dropzone');
+  const preview = document.getElementById('pay-modal-voucher-preview');
+  const imgThumb = document.getElementById('pay-modal-voucher-img');
+  const nameLabel = document.getElementById('pay-modal-voucher-name');
+  const sizeLabel = document.getElementById('pay-modal-voucher-size');
+  const btnRemove = document.getElementById('btn-remove-pay-modal-voucher');
+
+  inpFile?.addEventListener('change', () => {
+    const file = inpFile.files?.[0];
+    if (!file) {
+      resetOrderPayVoucherPreview();
+      return;
+    }
+
+    if (nameLabel) nameLabel.textContent = file.name;
+    if (sizeLabel) sizeLabel.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (imgThumb) imgThumb.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      if (imgThumb) imgThumb.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="%23005187" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    }
+
+    if (dropzone) dropzone.classList.add('hidden');
+    if (preview) preview.classList.remove('hidden');
+  });
+
+  btnRemove?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resetOrderPayVoucherPreview();
+  });
+}
+
+function setupOrderPaymentEvents() {
+  setupOrderPayVoucherEvents();
+
+  const modal = document.getElementById('modal-order-payment');
+  const btnClose = document.getElementById('btn-close-pay-modal');
+  const btnCancel = document.getElementById('btn-cancel-pay-modal');
+  const inpAmount = document.getElementById('pay-modal-amount');
+  const lblVes = document.getElementById('pay-modal-ves-preview');
+  const form = document.getElementById('form-order-payment');
+
+  btnClose?.addEventListener('click', closeOrderPaymentModal);
+  btnCancel?.addEventListener('click', closeOrderPaymentModal);
+
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closeOrderPaymentModal();
+  });
+
+  inpAmount?.addEventListener('input', () => {
+    const val = parseFloat(inpAmount.value) || 0;
+    const ves = val * currentExchangeRate;
+    if (lblVes) {
+      lblVes.textContent = `Equivalente: Bs. ${ves.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+  });
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!selectedOrderForPayment) return;
+
+    const empId = document.getElementById('pay-order-emp-id')?.value;
+    const orderId = document.getElementById('pay-order-id')?.value || selectedOrderForPayment.id;
+    const amount = parseFloat(document.getElementById('pay-modal-amount')?.value);
+    const payment_type = document.getElementById('pay-modal-type')?.value || 'CASH';
+    const reference = document.getElementById('pay-modal-ref')?.value?.trim();
+    const notes = document.getElementById('pay-modal-notes')?.value?.trim();
+    const voucherFile = document.getElementById('pay-modal-voucher')?.files?.[0];
+
+    if (isNaN(amount) || amount <= 0) {
+      showToast('Ingresa un monto de pago válido mayor a 0', 'warning');
+      return;
+    }
+
+    const orderNum = selectedOrderForPayment.order_number || `#ORD-${orderId}`;
+    const confirmed = typeof window.showConfirmModal === 'function'
+      ? await window.showConfirmModal({
+          title: 'Confirmar Registro de Pago',
+          message: `¿Registrar pago por $${amount.toFixed(2)} USD para la orden ${orderNum} y cambiar su estado a "Pagado"?`,
+          confirmText: 'Registrar Pago',
+          cancelText: 'Cancelar',
+          type: 'info'
+        })
+      : confirm(`¿Registrar pago por $${amount.toFixed(2)} USD para la orden ${orderNum}?`);
+
+    if (!confirmed) return;
+
+    const btnSubmit = document.getElementById('btn-save-order-payment');
+    if (btnSubmit) btnSubmit.disabled = true;
+
+    try {
+      const formData = new FormData();
+      formData.append('employee', empId);
+      formData.append('order', orderId);
+      formData.append('amount', amount);
+      formData.append('payment_type', payment_type);
+      formData.append('reference', reference || `Pago Orden ${orderNum}`);
+      formData.append('notes', notes || `Cobro de orden ${orderNum}`);
+      if (voucherFile) formData.append('voucher', voucherFile);
+
+      await createDebtPayment(formData);
+      await updateOrderStatus(orderId, 'PAID');
+
+      selectedOrderForPayment.status = 'PAID';
+      const idx = ordersList.findIndex(o => String(o.id) === String(orderId));
+      if (idx !== -1) {
+        ordersList[idx].status = 'PAID';
+      }
+
+      updateKpis();
+      renderOrdersTable();
+      closeOrderPaymentModal();
+      showToast(`Pago registrado exitosamente para la orden ${orderNum}`, 'success');
+    } catch (err) {
+      console.error('Error registrando pago de orden:', err);
+      const msg = err.data?.detail || err.data?.error || err.message || 'Error al registrar el pago';
+      showToast(msg, 'error');
+    } finally {
+      if (btnSubmit) btnSubmit.disabled = false;
+    }
+  });
+}
+
+// ============================================================================
 // EVENT LISTENERS
 // ============================================================================
 function setupEventListeners() {
@@ -742,6 +1060,13 @@ function setupEventListeners() {
     if (selectedOrderForModal) {
       closeOrderDetailModal();
       openReceiptModal(selectedOrderForModal.id);
+    }
+  });
+  document.getElementById('btn-pay-from-detail')?.addEventListener('click', () => {
+    if (selectedOrderForModal) {
+      const orderIdToPay = selectedOrderForModal.id;
+      closeOrderDetailModal();
+      openOrderPaymentModal(orderIdToPay);
     }
   });
 
@@ -776,20 +1101,31 @@ function formatDate(isoStr) {
   return `${day}/${month}/${year} ${hours}:${mins}`;
 }
 
-function showToast(message, type = 'info') {
+function showToast(message, type = 'info', title = '') {
   const container = document.getElementById('toast-container');
   if (!container) return;
 
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-  toast.textContent = message;
+
+  const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+
+  toast.innerHTML = `
+    <div class="toast-content-wrap">
+      <span class="toast-icon">${icon}</span>
+      <div class="toast-body">
+        ${title ? `<strong class="toast-title">${escapeHtml(title)}</strong>` : ''}
+        <span class="toast-message">${escapeHtml(message)}</span>
+      </div>
+    </div>
+  `;
 
   container.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transform = 'translateX(30px)';
     setTimeout(() => toast.remove(), 300);
-  }, 3500);
+  }, 4500);
 }
 
 function escapeHtml(str) {
@@ -805,3 +1141,29 @@ function escapeHtml(str) {
     }
   });
 }
+
+function checkPendingOrderNotification() {
+  const pendingToast = sessionStorage.getItem('pending_order_toast');
+  if (pendingToast) {
+    sessionStorage.removeItem('pending_order_toast');
+    try {
+      const data = JSON.parse(pendingToast);
+      showToast(data.message, data.type || 'success', data.title || '¡Registro Exitoso!');
+    } catch (e) {
+      showToast('El pedido fue registrado exitosamente con estado "Sin entregar".', 'success', '¡Registro Exitoso!');
+    }
+    return;
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('created') === 'true') {
+    const orderNum = urlParams.get('order') || '';
+    const msg = orderNum 
+      ? `El pedido #${orderNum} fue registrado exitosamente con estado "Sin entregar".` 
+      : 'El pedido fue registrado exitosamente con estado "Sin entregar".';
+    showToast(msg, 'success', '¡Registro Exitoso!');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}
+
+

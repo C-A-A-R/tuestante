@@ -57,12 +57,20 @@
             </div>
           </div>
           <div class="screen-header-actions">
-            <a href="store-pos.html" class="btn btn-primary" id="btn-create-order-pos" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+            <a href="store-pos.html" class="btn btn-primary" id="btn-go-store-pos" title="Ir al Punto de Venta en mostrador">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              <span>Punto de Venta (POS)</span>
+            </a>
+            <a href="order-pos.html" class="btn btn-primary" id="btn-create-order-pos" title="Crear y registrar nuevo pedido (Sin entregar)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              <span>+ Crear Pedido (POS)</span>
+              <span>Crear Pedido (POS)</span>
             </a>
           </div>
         </section>
@@ -117,16 +125,16 @@
                   <th>N° de Orden</th>
                   <th>Fecha y Hora</th>
                   <th>Trabajador / Beneficiario</th>
-                  <th style="text-align: center;">Artículos</th>
+                  <th class="col-center">Artículos</th>
                   <th>Total USD</th>
                   <th>Total VES</th>
-                  <th style="text-align: center;">Estado</th>
-                  <th style="text-align: right; width: 140px;">Acciones</th>
+                  <th class="col-center">Estado</th>
+                  <th class="col-actions">Acciones</th>
                 </tr>
               </thead>
               <tbody id="tbody-orders">
                 <tr>
-                  <td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">
+                  <td colspan="8" class="table-loading-cell">
                     Cargando historial de despachos...
                   </td>
                 </tr>
@@ -192,9 +200,9 @@
               <tr>
                 <th>Código</th>
                 <th>Producto</th>
-                <th style="text-align: center;">Cantidad</th>
-                <th style="text-align: right;">Precio Unit. (USD)</th>
-                <th style="text-align: right;">Subtotal (USD)</th>
+                <th class="col-center">Cantidad</th>
+                <th class="col-right">Precio Unit. (USD)</th>
+                <th class="col-right">Subtotal (USD)</th>
               </tr>
             </thead>
             <tbody id="detail-items-tbody">
@@ -223,6 +231,9 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" id="btn-reprint-from-detail">
           🖨️ Reimprimir Comprobante
+        </button>
+        <button type="button" class="btn btn-success" id="btn-pay-from-detail">
+          💵 Registrar Pago
         </button>
         <button type="button" class="btn btn-primary" id="btn-ok-detail">Cerrar</button>
       </div>
@@ -275,9 +286,9 @@
           <table class="receipt-table">
             <thead>
               <tr>
-                <th style="text-align: left;">CANT - ARTÍCULO</th>
-                <th style="text-align: right;">P.U.</th>
-                <th style="text-align: right;">TOTAL</th>
+                <th class="receipt-col-left">CANT - ARTÍCULO</th>
+                <th class="receipt-col-right">P.U.</th>
+                <th class="receipt-col-right">TOTAL</th>
               </tr>
             </thead>
             <tbody id="receipt-items-tbody">
@@ -328,7 +339,7 @@
        MODAL 3: CAMBIO RÁPIDO DE ESTADO DE ORDEN
        ====================================================================== -->
   <div class="modal-backdrop" id="modal-change-status" role="dialog" aria-modal="true">
-    <div class="modal-window" style="max-width: 480px;">
+    <div class="modal-window modal-change-status-window">
       <div class="modal-header">
         <div class="modal-header-info">
           <h3>Cambiar Estado de la Orden</h3>
@@ -337,23 +348,23 @@
         <button type="button" class="modal-close-btn" id="btn-close-status-modal">✕</button>
       </div>
 
-      <div class="modal-body" style="padding: 22px;">
-        <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <div class="modal-body status-modal-body">
+        <div class="status-modal-worker-box">
           <div>
-            <span style="font-size: 0.78rem; color: #64748b; display: block;">Trabajador:</span>
-            <strong id="change-status-worker-name" style="font-size: 0.95rem; color: #0f172a;">-</strong>
+            <span class="status-modal-lbl">Trabajador:</span>
+            <strong id="change-status-worker-name" class="status-modal-worker-val">-</strong>
           </div>
-          <div style="text-align: right;">
-            <span style="font-size: 0.78rem; color: #64748b; display: block;">Estado Actual:</span>
+          <div class="status-modal-current-wrap">
+            <span class="status-modal-lbl">Estado Actual:</span>
             <span id="change-status-current-badge"></span>
           </div>
         </div>
 
-        <p style="font-size: 0.85rem; color: #475569; margin-bottom: 14px;">
+        <p class="status-modal-instruction">
           Selecciona el nuevo estado a aplicar a esta orden:
         </p>
 
-        <div class="status-options-grid" style="display: flex; flex-direction: column; gap: 10px;">
+        <div class="status-options-grid">
           <label class="status-option-card" id="wrap-opt-undelivered">
             <input type="radio" name="quick-status-radio" value="UNDELIVERED" id="opt-undelivered">
             <div class="status-option-content">
@@ -395,44 +406,48 @@
         </button>
       </div>
     </div>
-  <!-- MODAL DE REGISTRO DE ABONO / PAGO PARA LA ORDEN -->
+  </div>
+
+  <!-- ======================================================================
+       MODAL 4: REGISTRO DE ABONO / PAGO PARA LA ORDEN
+       ====================================================================== -->
   <div class="modal-backdrop" id="modal-order-payment" role="dialog" aria-modal="true">
-    <div class="modal-card" style="background: #ffffff; max-width: 460px; width: 100%; border-radius: 12px; overflow: hidden;">
-      <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.3rem;">💵</span>
+    <div class="modal-window modal-payment-window">
+      <div class="modal-header payment-modal-header">
+        <div class="payment-modal-title-wrap">
+          <span class="payment-modal-icon">💵</span>
           <div>
-            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #0f172a;">Registrar Pago de Orden</h3>
-            <p style="margin: 0; font-size: 0.78rem; color: #64748b;" id="pay-modal-order-num">Orden #</p>
+            <h3 class="payment-modal-title">Registrar Pago de Orden</h3>
+            <p class="payment-modal-subtitle" id="pay-modal-order-num">Orden #</p>
           </div>
         </div>
-        <button type="button" class="btn-close-modal" id="btn-close-pay-modal" style="background: transparent; border: none; font-size: 1.4rem; color: #64748b; cursor: pointer;">&times;</button>
+        <button type="button" class="btn-close-modal" id="btn-close-pay-modal">&times;</button>
       </div>
       <form id="form-order-payment" autocomplete="off">
-        <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+        <div class="modal-body payment-modal-body">
           <input type="hidden" id="pay-order-emp-id">
           <input type="hidden" id="pay-order-id">
 
-          <div style="padding: 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+          <div class="payment-modal-worker-box">
             <div>
-              <span style="font-size: 0.75rem; color: #64748b; display: block;">Trabajador:</span>
-              <strong id="pay-modal-worker-name" style="font-size: 0.9rem; color: #0f172a;">-</strong>
+              <span class="payment-field-label-sm">Trabajador:</span>
+              <strong id="pay-modal-worker-name" class="payment-worker-val">-</strong>
             </div>
-            <div style="text-align: right;">
-              <span style="font-size: 0.75rem; color: #64748b; display: block;">Monto de la Orden:</span>
-              <strong id="pay-modal-order-amount" style="font-size: 1rem; color: #16a34a;">$0.00</strong>
+            <div class="text-right">
+              <span class="payment-field-label-sm">Monto de la Orden:</span>
+              <strong id="pay-modal-order-amount" class="payment-order-amount">$0.00</strong>
             </div>
           </div>
 
           <div>
-            <label for="pay-modal-amount" style="display: block; font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Monto del Pago (USD $) <span style="color: #dc2626;">*</span></label>
-            <input type="number" step="0.01" min="0.01" id="pay-modal-amount" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem;" placeholder="0.00" required>
-            <div id="pay-modal-ves-preview" style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Equivalente: Bs. 0.00</div>
+            <label for="pay-modal-amount" class="form-group-label">Monto del Pago (USD $) <span class="text-req">*</span></label>
+            <input type="number" step="0.01" min="0.01" id="pay-modal-amount" class="form-control" placeholder="0.00" required>
+            <div id="pay-modal-ves-preview" class="form-helper-text">Equivalente: Bs. 0.00</div>
           </div>
 
           <div>
-            <label for="pay-modal-type" style="display: block; font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Forma de Pago <span style="color: #dc2626;">*</span></label>
-            <select id="pay-modal-type" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" required>
+            <label for="pay-modal-type" class="form-group-label">Forma de Pago <span class="text-req">*</span></label>
+            <select id="pay-modal-type" class="form-control" required>
               <option value="CASH">Efectivo en Tienda / Almacén</option>
               <option value="TRANSFER">Transferencia Bancaria / Pago Móvil</option>
               <option value="PAYROLL_DEDUCTION">Descuento de Nómina (Corte RRHH)</option>
@@ -440,17 +455,47 @@
           </div>
 
           <div>
-            <label for="pay-modal-ref" style="display: block; font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Nº Referencia / Recibo (Opcional)</label>
-            <input type="text" id="pay-modal-ref" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" placeholder="Ej: REF-849201">
+            <label for="pay-modal-ref" class="form-group-label">Nº Referencia / Recibo (Opcional)</label>
+            <input type="text" id="pay-modal-ref" class="form-control" placeholder="Ej: REF-849201">
+          </div>
+
+          <!-- Comprobante de Pago (Imagen / Voucher) -->
+          <div style="margin-top: 14px;">
+            <label class="form-group-label" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Comprobante de Pago (Imagen / Recibo)</span>
+              <small class="form-helper-text" style="margin: 0; font-weight: 500;">Opcional</small>
+            </label>
+            <div class="voucher-upload-box" id="pay-modal-voucher-box">
+              <input type="file" id="pay-modal-voucher" accept="image/png, image/jpeg, image/webp, application/pdf" class="file-hidden-input" style="display: none !important;">
+              <label for="pay-modal-voucher" class="voucher-dropzone-content" id="pay-modal-voucher-dropzone">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#005187" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <div class="voucher-upload-text">
+                  <strong>Adjuntar Comprobante de Pago</strong>
+                  <span>Haz clic para seleccionar la imagen del comprobante (PNG, JPG, WEBP)</span>
+                </div>
+              </label>
+              <div class="voucher-preview-strip hidden" id="pay-modal-voucher-preview">
+                <img id="pay-modal-voucher-img" src="" alt="Comprobante" class="voucher-thumb-img">
+                <div class="voucher-file-info">
+                  <span class="voucher-filename" id="pay-modal-voucher-name">comprobante.png</span>
+                  <span class="voucher-filesize" id="pay-modal-voucher-size">0 KB</span>
+                </div>
+                <button type="button" class="btn-remove-voucher" id="btn-remove-pay-modal-voucher" title="Quitar comprobante">✕</button>
+              </div>
+            </div>
           </div>
 
           <div>
-            <label for="pay-modal-notes" style="display: block; font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Notas u Observaciones</label>
-            <textarea id="pay-modal-notes" rows="2" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.88rem;" placeholder="Observaciones del cobro..."></textarea>
+            <label for="pay-modal-notes" class="form-group-label">Notas u Observaciones</label>
+            <textarea id="pay-modal-notes" rows="2" class="form-control" placeholder="Observaciones del cobro..."></textarea>
           </div>
         </div>
 
-        <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
+        <div class="modal-footer payment-modal-footer">
           <button type="button" class="btn btn-outline" id="btn-cancel-pay-modal">Cancelar</button>
           <button type="submit" class="btn btn-primary" id="btn-save-order-payment">
             <span>💾 Registrar Pago y Finalizar</span>

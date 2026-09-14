@@ -50,6 +50,28 @@ async function loadOrderDetail() {
     renderAllOrderDetails(order);
   } catch (err) {
     showToast('error', 'Error al cargar orden', err.message);
+    const container = document.getElementById('production-detail-container');
+    if (container) {
+      container.innerHTML = `
+        <div class="production-empty-state" style="padding: 60px 20px; text-align: center; background: var(--bg-primary); border-radius: var(--radius-lg); border: 1px solid var(--border-color); margin-top: 20px;">
+          <div class="empty-state-icon-circle" style="width: 72px; height: 72px; margin: 0 auto 16px; background: #fee2e2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h3 style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">Orden de Fabricación No Encontrada</h3>
+          <p style="font-size: 0.9rem; color: var(--text-muted); max-width: 480px; margin: 0 auto 20px;">No se pudo encontrar la orden solicitada (${state.orderId ? 'ID: ' + state.orderId : 'sin ID especificado'}). Es posible que aún no existan órdenes registradas o que haya sido eliminada.</p>
+          <a href="production.html" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            <span>Volver a Fabricación</span>
+          </a>
+        </div>
+      `;
+    }
   }
 }
 

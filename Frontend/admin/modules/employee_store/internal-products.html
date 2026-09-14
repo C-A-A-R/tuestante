@@ -47,7 +47,7 @@
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              <span>+ Nuevo Producto</span>
+              <span>Nuevo Producto</span>
             </button>
           </div>
         </section>
@@ -241,15 +241,10 @@
           <input type="hidden" id="product-id">
 
           <div class="form-grid-2">
-            <!-- Código de barras con botón de captura -->
+            <!-- Código de barras -->
             <div class="form-group">
               <label for="product-barcode" class="form-label">Código de Barras <span class="req">*</span></label>
-              <div class="input-with-action">
-                <input type="text" id="product-barcode" class="form-input" placeholder="Ej: 75010001928" required>
-                <button type="button" class="btn btn-outline btn-action-code" id="btn-generate-barcode" title="Generar código automático">
-                  ⚡ Generar
-                </button>
-              </div>
+              <input type="text" id="product-barcode" class="form-input" placeholder="Ej: 75010001928" required>
             </div>
 
             <!-- Nombre Comercial -->
@@ -318,9 +313,18 @@
             <label class="form-label">Imagen del Producto (Opcional)</label>
             <div class="upload-dropzone" id="product-image-dropzone">
               <input type="file" id="product-image" class="dropzone-file-input" accept="image/png, image/jpeg, image/webp" style="display: none;">
-              
-              <div class="dropzone-idle-view" id="product-dropzone-idle">
-                <div class="dropzone-icon-wrap">
+
+              <!-- Imagen de previsualización (fondo del dropzone) -->
+              <img id="product-image-preview" src="" alt="Vista previa del producto" class="dropzone-bg-img hidden">
+
+              <!-- Botón quitar (esquina superior derecha, solo visible con imagen) -->
+              <button type="button" class="btn-dropzone-remove hidden" id="btn-remove-product-image" title="Eliminar imagen">
+                ✕ Quitar
+              </button>
+
+              <!-- Barra inferior siempre visible (overlay cuando hay imagen) -->
+              <div class="dropzone-bottom-bar" id="product-dropzone-idle">
+                <div class="dropzone-bottom-icon">
                   <svg class="dropzone-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="17 8 12 3 7 8"></polyline>
@@ -329,16 +333,6 @@
                 </div>
                 <p class="dropzone-prompt">Arrastra o <span class="dropzone-highlight">haz clic para subir</span></p>
                 <p class="dropzone-sub">PNG, JPG, WEBP (Máx. 5MB)</p>
-              </div>
-
-              <div class="dropzone-preview-view hidden" id="product-dropzone-preview">
-                <img id="product-image-preview" src="" alt="Vista previa del producto" class="dropzone-preview-thumb">
-                <div class="dropzone-preview-info">
-                  <span class="dropzone-preview-name" id="product-image-preview-name">imagen.jpg</span>
-                  <button type="button" class="btn-dropzone-remove" id="btn-remove-product-image" title="Eliminar imagen">
-                    ✕ Quitar imagen
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -386,7 +380,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" id="btn-cancel-nested-cat">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar y Seleccionar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-nested-cat">Guardar y Seleccionar</button>
         </div>
       </form>
     </div>
@@ -420,7 +414,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" id="btn-cancel-nested-subcat">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar y Seleccionar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-nested-subcat">Guardar y Seleccionar</button>
         </div>
       </form>
     </div>

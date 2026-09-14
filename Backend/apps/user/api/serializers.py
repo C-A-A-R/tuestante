@@ -8,6 +8,11 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializador para el modelo User."""
 
     full_name = serializers.SerializerMethodField()
+    orders_count = serializers.IntegerField(read_only=True, default=0)
+    total_spent = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True, default=0.00)
+    last_order_date = serializers.DateField(read_only=True, default=None, allow_null=True)
+    city = serializers.SerializerMethodField()
+    state = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -29,6 +34,11 @@ class UserSerializer(serializers.ModelSerializer):
             "is_superuser",
             "is_registered",
             "date_joined",
+            "orders_count",
+            "total_spent",
+            "last_order_date",
+            "city",
+            "state",
             "is_deleted",
             "created_at",
             "updated_at",
@@ -37,6 +47,26 @@ class UserSerializer(serializers.ModelSerializer):
     def get_full_name(self, obj):
         """Obtiene el nombre completo del usuario."""
         return obj.get_full_name() or obj.username or ''
+
+    def get_city(self, obj):
+        if hasattr(obj, 'city') and obj.city:
+            return obj.city
+        try:
+            from apps.shipment.models import Shipment
+            sh = Shipment.objects.filter(order__user=obj, is_deleted=False).order_by('-created_at').first()
+            return sh.city if sh else ''
+        except Exception:
+            return ''
+
+    def get_state(self, obj):
+        if hasattr(obj, 'state') and obj.state:
+            return obj.state
+        try:
+            from apps.shipment.models import Shipment
+            sh = Shipment.objects.filter(order__user=obj, is_deleted=False).order_by('-created_at').first()
+            return sh.state if sh else ''
+        except Exception:
+            return ''
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -66,6 +96,9 @@ class UserCreateSerializer(serializers.ModelSerializer):
     is_active = serializers.BooleanField(required=False, default=True)
     is_registered = serializers.BooleanField(required=False)
 
+    city = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    state = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
     class Meta:
         model = User
         fields = [
@@ -81,6 +114,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
             "phone",
             "password",
             "confirm_password",
+            "city",
+            "state",
             "is_staff",
             "is_superuser",
             "is_active",
@@ -131,26 +166,33 @@ class UserCreateSerializer(serializers.ModelSerializer):
         if username and str(username).strip():
             user_by_username = User.objects.filter(username__iexact=str(username).strip()).first()
 
+        current_id = getattr(self.instance, 'id', None)
+
         if user_by_email and user_by_doc and user_by_email.id != user_by_doc.id:
-            raise serializers.ValidationError(
-                {"identity_document": "El documento de identidad ya pertenece a otra cuenta distinta al correo proporcionado."}
-            )
+            if not current_id or (user_by_email.id != current_id and user_by_doc.id != current_id):
+                raise serializers.ValidationError(
+                    {"identity_document": "El documento de identidad ya pertenece a otra cuenta distinta al correo proporcionado."}
+                )
 
         if user_by_username and user_by_email and user_by_username.id != user_by_email.id:
-            raise serializers.ValidationError(
-                {"username": "El nombre de usuario ya pertenece a otra cuenta."}
-            )
+            if not current_id or (user_by_username.id != current_id and user_by_email.id != current_id):
+                raise serializers.ValidationError(
+                    {"username": "El nombre de usuario ya pertenece a otra cuenta."}
+                )
 
         if user_by_username and user_by_doc and user_by_username.id != user_by_doc.id:
-            raise serializers.ValidationError(
-                {"username": "El nombre de usuario ya pertenece a otra cuenta."}
-            )
+            if not current_id or (user_by_username.id != current_id and user_by_doc.id != current_id):
+                raise serializers.ValidationError(
+                    {"username": "El nombre de usuario ya pertenece a otra cuenta."}
+                )
 
         return attrs
 
     def create(self, validated_data):
         validated_data.pop("confirm_password", None)
         password = validated_data.pop("password", None)
+        city = validated_data.pop("city", None)
+        state = validated_data.pop("state", None)
 
         email = validated_data.get("email")
         identity_document = validated_data.get("identity_document")
@@ -191,7 +233,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
                 existing_user.is_active = True
 
             existing_user.save()
-            return existing_user
+            user = existing_user
         else:
             # Crear nuevo usuario
             if password:
@@ -201,7 +243,57 @@ class UserCreateSerializer(serializers.ModelSerializer):
                 validated_data.setdefault('is_active', True)
 
             user = User.objects.create_user(password=password, **validated_data)
-            return user
+
+        if city or state:
+            try:
+                from apps.shipment.models import Shipment
+                from apps.orders.models import Order
+                order = Order.objects.filter(user=user, is_deleted=False).order_by('-created_at').first()
+                if order:
+                    sh = order.shipments.filter(is_deleted=False).first()
+                    if sh:
+                        if city: sh.city = city
+                        if state: sh.state = state
+                        sh.save()
+                    else:
+                        Shipment.objects.create(order=order, city=city or '', state=state or '', address='Dirección registrada')
+            except Exception:
+                pass
+
+        return user
+
+    def update(self, instance, validated_data):
+        validated_data.pop("confirm_password", None)
+        password = validated_data.pop("password", None)
+        city = validated_data.pop("city", None)
+        state = validated_data.pop("state", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if password:
+            instance.set_password(password)
+            instance.is_registered = True
+
+        instance.save()
+
+        if city or state:
+            try:
+                from apps.shipment.models import Shipment
+                from apps.orders.models import Order
+                order = Order.objects.filter(user=instance, is_deleted=False).order_by('-created_at').first()
+                if order:
+                    sh = order.shipments.filter(is_deleted=False).first()
+                    if sh:
+                        if city: sh.city = city
+                        if state: sh.state = state
+                        sh.save()
+                    else:
+                        Shipment.objects.create(order=order, city=city or '', state=state or '', address='Dirección registrada')
+            except Exception:
+                pass
+
+        return instance
 
 
 
