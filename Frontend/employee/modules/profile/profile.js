@@ -8,6 +8,7 @@ import { initNavbar } from '../../components/navbar/navbar.js';
 import { initFooter } from '../../components/footer/footer.js';
 import { showAlertModal } from '../../components/dialog/dialog.js';
 import { obtenerEstadoDeCuenta } from './profile.api.js';
+import { resolveImageUrl } from '../../../cliente/js/api.js';
 
 async function loadComponent(placeholderId, filePath) {
   try {
@@ -45,24 +46,57 @@ async function loadEmployeeStatement() {
 function renderProfileHeader(employee) {
   if (!employee) return;
 
+  const emp = employee.employee || employee;
+
   const nameEl = document.getElementById('employee-full-name');
   const codeEl = document.getElementById('employee-number-display');
   const posEl = document.getElementById('employee-position');
   const salaryEl = document.getElementById('employee-salary');
   const statusBadge = document.getElementById('employee-badge-status');
+  const avatarContainer = document.getElementById('profile-avatar-container') || document.querySelector('.profile-avatar-circle');
 
-  if (nameEl) nameEl.textContent = employee.full_name || employee.username || 'Colaborador';
-  if (codeEl) codeEl.textContent = employee.employee_number || 'N/A';
-  if (posEl) posEl.textContent = employee.position || 'No especificado';
-  if (salaryEl) salaryEl.textContent = `$${parseFloat(employee.salary || 0).toFixed(2)}`;
+  const fullName = emp.full_name || emp.username || 'Colaborador';
+
+  if (nameEl) nameEl.textContent = fullName;
+  if (codeEl) codeEl.textContent = emp.employee_number || 'N/A';
+  if (posEl) posEl.textContent = emp.position || 'No especificado';
+  if (salaryEl) salaryEl.textContent = `$${parseFloat(emp.salary || 0).toFixed(2)}`;
 
   if (statusBadge) {
-    if (employee.is_active) {
+    if (emp.is_active) {
       statusBadge.className = 'badge badge-primary';
       statusBadge.textContent = 'Activo en Tienda';
     } else {
       statusBadge.className = 'badge badge-danger';
       statusBadge.textContent = 'Inactivo';
+    }
+  }
+
+  // Renderizar imagen de perfil si está disponible
+  if (avatarContainer) {
+    const rawPhoto = emp.photo || emp.photo_url || emp.avatar || emp.image || (emp.user && (emp.user.photo || emp.user.avatar));
+    if (rawPhoto) {
+      const photoUrl = resolveImageUrl(rawPhoto);
+      avatarContainer.innerHTML = `<img src="${photoUrl}" alt="${fullName}" class="profile-avatar-img">`;
+
+      const img = avatarContainer.querySelector('img');
+      if (img) {
+        img.onerror = () => {
+          avatarContainer.innerHTML = `
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          `;
+        };
+      }
+    } else {
+      avatarContainer.innerHTML = `
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      `;
     }
   }
 }
