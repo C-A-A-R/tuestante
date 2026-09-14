@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clientes | TuEstante Admin</title>
+  <title>Directorio de Clientes | TuEstante Admin</title>
 
   <!-- Google Fonts: Inter & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,13 +33,15 @@
 
     <!-- Contenido Principal -->
     <main class="app-main-content">
-      <div class="clients-module-container">
+      <div class="clients-page-container">
 
-        <!-- 1. ENCABEZADO DE PANTALLA -->
-        <header class="clients-header-row">
-          <div class="header-titles">
-            <h1 class="page-title">Clientes</h1>
-            <p class="page-subtitle">Gestiona la información, historial de compras y contactos de tus clientes.</p>
+        <!-- 1. Encabezado de la Pantalla (Header Card Unificado) -->
+        <section class="screen-header-card">
+          <div class="screen-header-text">
+            <h2 class="screen-main-title">Directorio de Clientes</h2>
+            <p class="screen-main-desc">
+              Gestión de clientes, compras registradas y seguimiento de contactos.
+            </p>
           </div>
           <div class="header-actions">
             <button type="button" class="btn btn-outline" id="btn-export-clients" title="Exportar listado de clientes">
@@ -55,12 +57,12 @@
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              <span>Nuevo cliente</span>
+              <span>Registrar Cliente</span>
             </button>
           </div>
-        </header>
+        </section>
 
-        <!-- 2. TARJETAS KPI SUPERIORES (5 MÉTRICAS) -->
+        <!-- 2. Tarjetas KPI Superiores (5 Métricas Amplias) -->
         <section class="kpis-grid" aria-label="Resumen de estadísticas de clientes">
           
           <!-- KPI 1: Total de Clientes -->
@@ -71,10 +73,10 @@
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
             </div>
-            <div class="kpi-content">
-              <span class="kpi-title">Total de clientes</span>
+            <div class="kpi-details">
+              <span class="kpi-label">Total de clientes</span>
               <strong class="kpi-value" id="kpi-total-clients">--</strong>
-              <span class="kpi-subtitle">Todos los clientes</span>
+              <span class="kpi-sub">Todos los registrados</span>
             </div>
           </article>
 
@@ -88,10 +90,10 @@
                 <line x1="23" y1="11" x2="17" y2="11"></line>
               </svg>
             </div>
-            <div class="kpi-content">
-              <span class="kpi-title">Clientes nuevos (este mes)</span>
+            <div class="kpi-details">
+              <span class="kpi-label">Nuevos este mes</span>
               <strong class="kpi-value" id="kpi-new-clients">--</strong>
-              <span class="kpi-subtitle kpi-trend-text text-success" id="kpi-new-clients-growth">+0% vs mes anterior</span>
+              <span class="kpi-sub text-success" id="kpi-new-clients-growth">+0% vs mes anterior</span>
             </div>
           </article>
 
@@ -104,10 +106,10 @@
                 <path d="M16 10a4 4 0 0 1-8 0"></path>
               </svg>
             </div>
-            <div class="kpi-content">
-              <span class="kpi-title">Clientes con pedidos</span>
+            <div class="kpi-details">
+              <span class="kpi-label">Con pedidos activos</span>
               <strong class="kpi-value" id="kpi-clients-with-orders">--</strong>
-              <span class="kpi-subtitle"><span id="kpi-clients-orders-pct">0.0%</span> del total</span>
+              <span class="kpi-sub"><span id="kpi-clients-orders-pct">0.0%</span> del total de clientes</span>
             </div>
           </article>
 
@@ -119,10 +121,10 @@
                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
               </svg>
             </div>
-            <div class="kpi-content">
-              <span class="kpi-title">Gasto total de clientes</span>
+            <div class="kpi-details">
+              <span class="kpi-label">Facturación total</span>
               <strong class="kpi-value" id="kpi-total-spent">$0.00</strong>
-              <span class="kpi-subtitle">Suma de todos los pedidos</span>
+              <span class="kpi-sub">Suma de todos los pedidos</span>
             </div>
           </article>
 
@@ -135,17 +137,17 @@
                 <circle cx="7" cy="15" r="1"></circle>
               </svg>
             </div>
-            <div class="kpi-content">
-              <span class="kpi-title">Ticket promedio</span>
+            <div class="kpi-details">
+              <span class="kpi-label">Ticket promedio</span>
               <strong class="kpi-value" id="kpi-avg-ticket">$0.00</strong>
-              <span class="kpi-subtitle">Por pedido</span>
+              <span class="kpi-sub">Monto promedio por pedido</span>
             </div>
           </article>
 
         </section>
 
-        <!-- 3. BARRA DE HERRAMIENTAS Y FILTROS -->
-        <section class="filters-toolbar" aria-label="Filtros de búsqueda de clientes">
+        <!-- 3. Tarjeta de Herramientas y Filtros -->
+        <section class="filters-card" aria-label="Filtros de búsqueda de clientes">
           
           <!-- Campo de Búsqueda -->
           <div class="search-input-wrapper">
@@ -164,10 +166,10 @@
           <div class="selects-group">
             <!-- Filtro Estado -->
             <div class="select-field">
-              <label for="filter-status" class="field-label">Estado</label>
+              <label for="filter-status" class="field-label">Estado:</label>
               <div class="select-wrap">
                 <select id="filter-status" class="toolbar-select">
-                  <option value="all">Todos</option>
+                  <option value="all">Todos los estados</option>
                   <option value="active">Activo</option>
                   <option value="inactive">Inactivo</option>
                 </select>
@@ -179,10 +181,10 @@
 
             <!-- Filtro Ciudad -->
             <div class="select-field">
-              <label for="filter-city" class="field-label">Ciudad</label>
+              <label for="filter-city" class="field-label">Ciudad:</label>
               <div class="select-wrap">
                 <select id="filter-city" class="toolbar-select">
-                  <option value="all">Todas</option>
+                  <option value="all">Todas las ciudades</option>
                 </select>
                 <svg class="chevron-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                   <polyline points="6 9 12 15 18 9"></polyline>
@@ -192,10 +194,10 @@
 
             <!-- Filtro Fecha de Registro -->
             <div class="select-field">
-              <label for="filter-date" class="field-label">Fecha de registro</label>
+              <label for="filter-date" class="field-label">Registro:</label>
               <div class="select-wrap">
                 <select id="filter-date" class="toolbar-select">
-                  <option value="all">Todos</option>
+                  <option value="all">Cualquier fecha</option>
                   <option value="today">Hoy</option>
                   <option value="this_week">Esta semana</option>
                   <option value="this_month">Este mes</option>
@@ -212,12 +214,12 @@
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
               </svg>
-              <span>Limpiar filtros</span>
+              <span>Limpiar</span>
             </button>
           </div>
         </section>
 
-        <!-- 4. TABLA DE CLIENTES -->
+        <!-- 4. Tabla de Clientes -->
         <section class="table-container-card">
           <div class="table-responsive">
             <table class="clients-table" id="clients-table">
@@ -279,7 +281,7 @@
           <p class="modal-subtitle">Ingresa la información personal y de contacto del cliente.</p>
         </div>
         <button type="button" class="modal-close-btn" id="btn-close-form-modal" aria-label="Cerrar modal">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -289,81 +291,97 @@
       <form id="form-client" class="modal-form" novalidate>
         <input type="hidden" id="form-client-id" value="">
 
-        <div class="form-grid">
-          <!-- Primer Nombre -->
-          <div class="form-group">
-            <label for="input-first-name" class="form-label">Primer Nombre <span class="required">*</span></label>
-            <input type="text" id="input-first-name" class="form-input" placeholder="Ej. Juan" required>
-            <span class="field-error" id="error-first-name"></span>
-          </div>
-
-          <!-- Segundo Nombre -->
-          <div class="form-group">
-            <label for="input-second-name" class="form-label">Segundo Nombre</label>
-            <input type="text" id="input-second-name" class="form-input" placeholder="Ej. Carlos">
-          </div>
-
-          <!-- Primer Apellido -->
-          <div class="form-group">
-            <label for="input-last-name" class="form-label">Primer Apellido <span class="required">*</span></label>
-            <input type="text" id="input-last-name" class="form-input" placeholder="Ej. Pérez" required>
-            <span class="field-error" id="error-last-name"></span>
-          </div>
-
-          <!-- Segundo Apellido -->
-          <div class="form-group">
-            <label for="input-second-last-name" class="form-label">Segundo Apellido</label>
-            <input type="text" id="input-second-last-name" class="form-input" placeholder="Ej. Gómez">
-          </div>
-
-          <!-- Documento de Identidad (Cédula / RIF) -->
-          <div class="form-group">
-            <label for="input-doc-number" class="form-label">Documento de Identidad <span class="required">*</span></label>
-            <div class="input-with-prefix">
-              <select id="select-doc-type" class="doc-type-select" aria-label="Tipo de documento">
-                <option value="V">V-</option>
-                <option value="E">E-</option>
-                <option value="J">J-</option>
-                <option value="G">G-</option>
-              </select>
-              <input type="text" id="input-doc-number" class="form-input doc-number-input" placeholder="12345678" required>
+        <div class="modal-card-body">
+          <div class="form-grid">
+            <!-- Primer Nombre -->
+            <div class="form-group">
+              <label for="input-first-name" class="form-label">Primer Nombre <span class="required">*</span></label>
+              <input type="text" id="input-first-name" class="form-input" placeholder="Ej. Juan" maxlength="50" required>
+              <span class="field-error" id="error-first-name"></span>
             </div>
-            <span class="field-error" id="error-doc"></span>
-          </div>
 
-          <!-- Correo Electrónico -->
-          <div class="form-group">
-            <label for="input-email" class="form-label">Correo Electrónico <span class="required">*</span></label>
-            <input type="email" id="input-email" class="form-input" placeholder="cliente@email.com" required>
-            <span class="field-error" id="error-email"></span>
-          </div>
+            <!-- Segundo Nombre -->
+            <div class="form-group">
+              <label for="input-second-name" class="form-label">Segundo Nombre</label>
+              <input type="text" id="input-second-name" class="form-input" placeholder="Ej. Carlos" maxlength="50">
+              <span class="field-error" id="error-second-name"></span>
+            </div>
 
-          <!-- Teléfono de Contacto -->
-          <div class="form-group">
-            <label for="input-phone" class="form-label">Teléfono de Contacto</label>
-            <input type="tel" id="input-phone" class="form-input" placeholder="+58 412 1234567">
-          </div>
+            <!-- Primer Apellido -->
+            <div class="form-group">
+              <label for="input-last-name" class="form-label">Primer Apellido <span class="required">*</span></label>
+              <input type="text" id="input-last-name" class="form-input" placeholder="Ej. Pérez" maxlength="50" required>
+              <span class="field-error" id="error-last-name"></span>
+            </div>
 
-          <!-- Ciudad -->
-          <div class="form-group">
-            <label for="input-city" class="form-label">Ciudad</label>
-            <input type="text" id="input-city" class="form-input" placeholder="Ej. Caracas">
-          </div>
+            <!-- Segundo Apellido -->
+            <div class="form-group">
+              <label for="input-second-last-name" class="form-label">Segundo Apellido</label>
+              <input type="text" id="input-second-last-name" class="form-input" placeholder="Ej. Gómez" maxlength="50">
+              <span class="field-error" id="error-second-last-name"></span>
+            </div>
 
-          <!-- Estado / Región -->
-          <div class="form-group">
-            <label for="input-state" class="form-label">Estado</label>
-            <input type="text" id="input-state" class="form-input" placeholder="Ej. Miranda">
-          </div>
+            <!-- Documento de Identidad (Cédula / RIF) -->
+            <div class="form-group">
+              <label for="input-doc-number" class="form-label">Documento de Identidad <span class="required">*</span></label>
+              <div class="input-with-prefix">
+                <select id="select-doc-type" class="doc-type-select" aria-label="Tipo de documento">
+                  <option value="V">V-</option>
+                  <option value="E">E-</option>
+                  <option value="J">J-</option>
+                  <option value="G">G-</option>
+                  <option value="P">P-</option>
+                  <option value="R">R-</option>
+                </select>
+                <input type="text" id="input-doc-number" class="form-input doc-number-input" placeholder="12345678" inputmode="numeric" maxlength="10" required>
+              </div>
+              <span class="field-error" id="error-doc"></span>
+            </div>
 
-          <!-- Estado Activo/Inactivo -->
-          <div class="form-group form-group-toggle">
-            <label class="form-label" for="toggle-client-status">Estado de Cuenta</label>
-            <label class="switch-toggle" for="toggle-client-status">
-              <input type="checkbox" id="toggle-client-status" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label-text" id="toggle-status-text">Cliente Activo</span>
-            </label>
+            <!-- Fecha de Nacimiento (Mayor de 18 años) -->
+            <div class="form-group">
+              <label for="input-birth-date" class="form-label">Fecha de Nacimiento <span class="required">*</span></label>
+              <input type="date" id="input-birth-date" class="form-input" required>
+              <span class="field-error" id="error-birth-date"></span>
+            </div>
+
+            <!-- Correo Electrónico -->
+            <div class="form-group">
+              <label for="input-email" class="form-label">Correo Electrónico <span class="required">*</span></label>
+              <input type="email" id="input-email" class="form-input" placeholder="cliente@email.com" maxlength="120" required>
+              <span class="field-error" id="error-email"></span>
+            </div>
+
+            <!-- Teléfono de Contacto -->
+            <div class="form-group">
+              <label for="input-phone" class="form-label">Teléfono de Contacto</label>
+              <input type="tel" id="input-phone" class="form-input" placeholder="+58 412 1234567" inputmode="tel" maxlength="20">
+              <span class="field-error" id="error-phone"></span>
+            </div>
+
+            <!-- Ciudad -->
+            <div class="form-group">
+              <label for="input-city" class="form-label">Ciudad</label>
+              <input type="text" id="input-city" class="form-input" placeholder="Ej. Caracas" maxlength="80">
+              <span class="field-error" id="error-city"></span>
+            </div>
+
+            <!-- Estado / Región -->
+            <div class="form-group">
+              <label for="input-state" class="form-label">Estado</label>
+              <input type="text" id="input-state" class="form-input" placeholder="Ej. Miranda" maxlength="80">
+              <span class="field-error" id="error-state"></span>
+            </div>
+
+            <!-- Estado Activo/Inactivo -->
+            <div class="form-group form-group-toggle">
+              <label class="form-label" for="toggle-client-status">Estado de Cuenta</label>
+              <label class="switch-toggle" for="toggle-client-status">
+                <input type="checkbox" id="toggle-client-status" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label-text" id="toggle-status-text">Cliente Activo</span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -387,9 +405,9 @@
           <p class="modal-subtitle">Resumen general y actividad de compras.</p>
         </div>
         <button type="button" class="modal-close-btn" id="btn-close-detail-modal" aria-label="Cerrar modal">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="6"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
@@ -435,6 +453,10 @@
             <div class="info-row">
               <span class="info-label">Teléfono:</span>
               <span class="info-value" id="detail-phone">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Fecha de Nacimiento:</span>
+              <span class="info-value" id="detail-birth-date">-</span>
             </div>
             <div class="info-row">
               <span class="info-label">Fecha de Registro:</span>
@@ -492,9 +514,9 @@
           <p class="modal-subtitle">Selecciona el formato deseado para descargar la lista completa de clientes.</p>
         </div>
         <button type="button" class="modal-close-btn" id="btn-close-export-modal" aria-label="Cerrar modal">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="6"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
@@ -535,39 +557,6 @@
         <button type="button" class="btn btn-outline" id="btn-cancel-export">Cancelar</button>
       </div>
     </div>
-  </div>
-
-  <!-- Menú Contextual Flotante de Acciones -->
-  <div class="actions-dropdown-menu" id="actions-dropdown-menu" role="menu" aria-hidden="true">
-    <button type="button" class="actions-dropdown-item" id="action-view-detail" role="menuitem">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-        <circle cx="12" cy="12" r="3"></circle>
-      </svg>
-      <span>Ver detalle</span>
-    </button>
-    <button type="button" class="actions-dropdown-item" id="action-edit-client" role="menuitem">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-      </svg>
-      <span>Editar cliente</span>
-    </button>
-    <button type="button" class="actions-dropdown-item" id="action-toggle-status" role="menuitem">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
-        <line x1="12" y1="2" x2="12" y2="12"></line>
-      </svg>
-      <span id="action-toggle-status-text">Cambiar estado</span>
-    </button>
-    <div class="actions-dropdown-divider"></div>
-    <button type="button" class="actions-dropdown-item text-danger" id="action-delete-client" role="menuitem">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="3 6 5 6 21 6"></polyline>
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-      </svg>
-      <span>Eliminar cliente</span>
-    </button>
   </div>
 
   <!-- Contenedor para Modales Dinámicos del Sistema (showConfirmModal, etc.) -->

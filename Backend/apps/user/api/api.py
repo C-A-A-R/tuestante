@@ -47,7 +47,7 @@ class UserViewSet(BaseViewSet):
     ]
 
     def get_serializer_class(self):
-        if self.action == 'create':
+        if self.action in ['create', 'update', 'partial_update']:
             return UserCreateSerializer
         return UserSerializer
 
@@ -57,13 +57,27 @@ class UserViewSet(BaseViewSet):
 
         # Filtro de Rol / Staff
         role = self.request.query_params.get("role") or self.request.query_params.get("tipo")
+        is_client_query = False
         if role in ["client", "cliente"]:
             queryset = queryset.filter(is_staff=False, is_superuser=False)
+            is_client_query = True
         else:
             is_staff = self.request.query_params.get("is_staff")
             if is_staff is not None:
                 is_staff_normalized = is_staff.lower() in ["1", "true", "si", "yes"]
                 queryset = queryset.filter(is_staff=is_staff_normalized)
+                if not is_staff_normalized:
+                    is_client_query = True
+
+        # Excluir trabajadores a no ser de que tengan algún pedido registrado de la tienda principal
+        if is_client_query:
+            is_not_worker = Q(employee_profile__isnull=True) | Q(employee_profile__is_deleted=True)
+            is_worker_with_orders = Q(
+                employee_profile__isnull=False,
+                employee_profile__is_deleted=False,
+                orders__is_deleted=False
+            )
+            queryset = queryset.filter(is_not_worker | is_worker_with_orders).distinct()
 
         # Filtro de Estado (is_active / status)
         status_param = self.request.query_params.get("status") or self.request.query_params.get("is_active") or self.request.query_params.get("estado")
@@ -154,8 +168,18 @@ class UserViewSet(BaseViewSet):
         else:
             start_of_last_month = start_of_current_month.replace(month=start_of_current_month.month - 1)
 
-        # Base de clientes (excluye administradores)
-        clients_qs = User.objects.filter(is_deleted=False, is_staff=False, is_superuser=False)
+        # Base de clientes (excluye administradores y trabajadores sin pedidos en tienda principal)
+        is_not_worker = Q(employee_profile__isnull=True) | Q(employee_profile__is_deleted=True)
+        is_worker_with_orders = Q(
+            employee_profile__isnull=False,
+            employee_profile__is_deleted=False,
+            orders__is_deleted=False
+        )
+        clients_qs = User.objects.filter(
+            is_deleted=False, 
+            is_staff=False, 
+            is_superuser=False
+        ).filter(is_not_worker | is_worker_with_orders).distinct()
         total_clients = clients_qs.count()
 
         # Clientes nuevos este mes

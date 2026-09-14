@@ -1,3 +1,4 @@
+from django.db.models import Q
 from apps.base.reportes.services.services import BaseReportService
 from apps.user.models import User
 
@@ -29,7 +30,17 @@ class UsuariosReportService(BaseReportService):
 
         is_staff = filters.get("es_administrador")
         if is_staff is not None:
-            qs = qs.filter(is_staff=is_staff in ("true", "True", "1"))
+            is_admin_bool = is_staff in ("true", "True", "1")
+            qs = qs.filter(is_staff=is_admin_bool)
+            if not is_admin_bool:
+                # Excluir trabajadores a no ser de que tengan algún pedido de la tienda principal
+                is_not_worker = Q(employee_profile__isnull=True) | Q(employee_profile__is_deleted=True)
+                is_worker_with_orders = Q(
+                    employee_profile__isnull=False,
+                    employee_profile__is_deleted=False,
+                    orders__is_deleted=False
+                )
+                qs = qs.filter(is_not_worker | is_worker_with_orders).distinct()
 
         is_superuser = filters.get("es_superusuario")
         if is_superuser is not None:

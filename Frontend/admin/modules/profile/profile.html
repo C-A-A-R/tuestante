@@ -93,6 +93,15 @@
             </button>
             <input type="file" id="input-avatar-file" accept="image/png, image/jpeg, image/webp" style="display: none;">
 
+            <!-- Botón de Actualizar Contraseña -->
+            <button type="button" class="btn-update-password-trigger" id="btn-open-password-modal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>Actualizar contraseña</span>
+            </button>
+
           </aside>
 
           <!-- ====================================================================
@@ -134,18 +143,67 @@
               <form id="form-personal-info">
                 <div class="profile-form-grid">
                   
-                  <!-- 1. Nombre Completo -->
+                  <!-- 1. Primer Nombre -->
                   <div class="profile-field-group">
-                    <label for="input-full-name" class="profile-field-label">
-                      Nombre completo <span class="required-mark">*</span>
+                    <label for="input-first-name" class="profile-field-label">
+                      Primer nombre <span class="required-mark">*</span>
                     </label>
                     <div class="profile-input-wrap">
                       <input 
                         type="text" 
-                        id="input-full-name" 
+                        id="input-first-name" 
                         class="profile-input" 
-                        placeholder="Ej. Administrador Principal"
+                        placeholder="Ej. Juan"
                         required 
+                        disabled
+                      >
+                    </div>
+                  </div>
+
+                  <!-- 2. Segundo Nombre -->
+                  <div class="profile-field-group">
+                    <label for="input-second-name" class="profile-field-label">
+                      Segundo nombre
+                    </label>
+                    <div class="profile-input-wrap">
+                      <input 
+                        type="text" 
+                        id="input-second-name" 
+                        class="profile-input" 
+                        placeholder="Ej. Carlos"
+                        disabled
+                      >
+                    </div>
+                  </div>
+
+                  <!-- 3. Primer Apellido -->
+                  <div class="profile-field-group">
+                    <label for="input-last-name" class="profile-field-label">
+                      Primer apellido <span class="required-mark">*</span>
+                    </label>
+                    <div class="profile-input-wrap">
+                      <input 
+                        type="text" 
+                        id="input-last-name" 
+                        class="profile-input" 
+                        placeholder="Ej. Pérez"
+                        required 
+                        disabled
+                      >
+                    </div>
+                  </div>
+
+                  <!-- 4. Segundo Apellido -->
+                  <div class="profile-field-group">
+                    <label for="input-second-last-name" class="profile-field-label">
+                      Segundo apellido
+                    </label>
+                    <div class="profile-input-wrap">
+                      <input 
+                        type="text" 
+                        id="input-second-last-name" 
+                        class="profile-input" 
+                        placeholder="Ej. Gómez"
                         disabled
                       >
                     </div>
@@ -313,6 +371,128 @@
     <!-- 5. Pie de Página del Sistema -->
     <div id="footer-placeholder"></div>
 
+  </div>
+
+  <!-- ====================================================================
+       MODAL: ACTUALIZAR CONTRASEÑA
+       ==================================================================== -->
+  <div class="modal-backdrop" id="modal-change-password-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-password-title">
+    <div class="modal-card password-modal-card">
+      <div class="modal-card-header">
+        <div class="modal-title-wrap">
+          <div class="password-modal-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="modal-title" id="modal-password-title">Actualizar Contraseña</h3>
+            <p class="modal-subtitle">Ingresa tu contraseña actual y define una nueva clave segura.</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-password-modal" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="6"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-change-password" novalidate>
+        <div class="modal-card-body">
+          
+          <!-- 1. Contraseña actual -->
+          <div class="form-group">
+            <label for="input-current-password" class="form-label">
+              Contraseña actual <span class="required-mark">*</span>
+            </label>
+            <div class="password-input-wrap">
+              <input 
+                type="password" 
+                id="input-current-password" 
+                class="form-input" 
+                placeholder="Ingresa tu contraseña actual" 
+                autocomplete="current-password"
+                required
+              >
+              <button type="button" class="btn-toggle-eye" data-target="input-current-password" title="Mostrar/ocultar contraseña">
+                <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <svg class="eye-closed" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              </button>
+            </div>
+            <span class="field-error-msg" id="error-current-password"></span>
+          </div>
+
+          <!-- 2. Nueva contraseña -->
+          <div class="form-group">
+            <label for="input-new-password" class="form-label">
+              Nueva contraseña <span class="required-mark">*</span>
+            </label>
+            <div class="password-input-wrap">
+              <input 
+                type="password" 
+                id="input-new-password" 
+                class="form-input" 
+                placeholder="Ingresa la nueva contraseña" 
+                autocomplete="new-password"
+                required
+              >
+              <button type="button" class="btn-toggle-eye" data-target="input-new-password" title="Mostrar/ocultar contraseña">
+                <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <svg class="eye-closed" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              </button>
+            </div>
+            
+            <!-- Requisitos en vivo -->
+            <div class="password-rules-box" id="password-rules-box">
+              <span class="rules-title">Requisitos de seguridad:</span>
+              <ul class="rules-list">
+                <li id="rule-len" class="rule-item invalid">
+                  <span class="rule-bullet">✕</span> Al menos 8 caracteres
+                </li>
+                <li id="rule-upper" class="rule-item invalid">
+                  <span class="rule-bullet">✕</span> Al menos una letra mayúscula
+                </li>
+                <li id="rule-num" class="rule-item invalid">
+                  <span class="rule-bullet">✕</span> Al menos un número
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 3. Confirmar nueva contraseña -->
+          <div class="form-group">
+            <label for="input-confirm-password" class="form-label">
+              Confirmar nueva contraseña <span class="required-mark">*</span>
+            </label>
+            <div class="password-input-wrap">
+              <input 
+                type="password" 
+                id="input-confirm-password" 
+                class="form-input" 
+                placeholder="Repite la nueva contraseña" 
+                autocomplete="new-password"
+                required
+              >
+              <button type="button" class="btn-toggle-eye" data-target="input-confirm-password" title="Mostrar/ocultar contraseña">
+                <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <svg class="eye-closed" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              </button>
+            </div>
+            <span class="field-match-status" id="match-status-msg"></span>
+          </div>
+
+        </div>
+
+        <div class="modal-card-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-password">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-password">
+            <span id="btn-submit-password-text">Actualizar Contraseña</span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Contenedor para Notificaciones Toast -->

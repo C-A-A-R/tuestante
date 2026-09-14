@@ -140,3 +140,18 @@ export function saveAddress(address) {
     console.warn('Error al guardar dirección:', e);
   }
 }
+
+/**
+ * Solicita el cambio de contraseña para el administrador actual.
+ * @param {Object} data { current_password, new_password, confirm_new_password }
+ * @returns {Promise<Object>}
+ */
+export async function changeAdminPassword(data) {
+  return await apiRequest({
+    path: '/user/password/change/',
+    method: 'POST',
+    body: data,
+    auth: true
+  });
+}
+

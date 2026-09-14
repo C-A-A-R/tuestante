@@ -424,16 +424,15 @@ function renderizarTabla(clients) {
         <td>
           <div class="actions-cell-wrap">
             <button type="button" class="action-icon-btn btn-view-client" data-id="${c.id}" title="Ver detalle del cliente" aria-label="Ver detalle">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
             </button>
-            <button type="button" class="action-icon-btn btn-menu-client" data-id="${c.id}" title="Más opciones" aria-label="Más opciones" aria-haspopup="true">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="12" cy="12" r="1"></circle>
-                <circle cx="12" cy="5" r="1"></circle>
-                <circle cx="12" cy="19" r="1"></circle>
+            <button type="button" class="action-icon-btn btn-edit-client" data-id="${c.id}" title="Editar cliente" aria-label="Editar cliente">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
             </button>
           </div>
@@ -589,126 +588,135 @@ function setupFiltersEvents() {
 }
 
 // ==========================================================================
-// MENÚ CONTEXTUAL DE ACCIONES (⋮)
+// ACCIONES DIRECTAS DE LA TABLA DE CLIENTES
 // ==========================================================================
 
-function setupActionsDropdown() {
-  const menu = document.getElementById('actions-dropdown-menu');
+function setupTableActions() {
   const tbody = document.getElementById('clients-table-body');
+  if (!tbody) return;
 
-  if (!menu || !tbody) return;
-
-  // Abrir menú contextual
   tbody.addEventListener('click', (e) => {
-    const btn = e.target.closest('.btn-menu-client');
-    if (!btn) return;
-
-    e.stopPropagation();
-    const clientId = parseInt(btn.dataset.id, 10);
-    const client = state.clients.find((c) => c.id === clientId);
-    if (!client) return;
-
-    state.activeMenuClient = client;
-
-    // Actualizar texto de toggle status
-    const statusText = document.getElementById('action-toggle-status-text');
-    if (statusText) {
-      statusText.textContent = client.is_active ? 'Desactivar cliente' : 'Activar cliente';
+    // 1. Botón Ver Detalle (Ojo) -> Abre modal de ver detalle
+    const viewBtn = e.target.closest('.btn-view-client');
+    if (viewBtn) {
+      const clientId = parseInt(viewBtn.dataset.id, 10);
+      const client = state.clients.find((c) => c.id === clientId);
+      if (client) {
+        abrirModalDetalle(client);
+      }
+      return;
     }
 
-    // Posicionar menú
-    const rect = btn.getBoundingClientRect();
-    const menuWidth = 180;
-    let leftPos = rect.right - menuWidth + window.scrollX;
-    if (leftPos < 10) leftPos = 10;
-
-    menu.style.top = `${rect.bottom + window.scrollY + 4}px`;
-    menu.style.left = `${leftPos}px`;
-    menu.classList.add('is-active');
-  });
-
-  // Cerrar menú al hacer clic fuera
-  document.addEventListener('click', (e) => {
-    if (!menu.contains(e.target)) {
-      menu.classList.remove('is-active');
+    // 2. Botón Editar (Lápiz) -> Abre modal de edición directamente
+    const editBtn = e.target.closest('.btn-edit-client');
+    if (editBtn) {
+      const clientId = parseInt(editBtn.dataset.id, 10);
+      const client = state.clients.find((c) => c.id === clientId);
+      if (client) {
+        abrirModalFormulario(client);
+      }
+      return;
     }
   });
+}
 
-  // Evento botón Ver Detalle de la tabla
-  tbody.addEventListener('click', (e) => {
-    const btn = e.target.closest('.btn-view-client');
-    if (!btn) return;
+// ==========================================================================
+// ==========================================================================
+// VALIDACIONES Y UTILIDADES DEL FORMULARIO DE CLIENTES
+// ==========================================================================
 
-    const clientId = parseInt(btn.dataset.id, 10);
-    const client = state.clients.find((c) => c.id === clientId);
-    if (client) {
-      abrirModalDetalle(client);
-    }
-  });
+/**
+ * Calcula la edad exacta en años a partir de una fecha en formato YYYY-MM-DD
+ */
+function calcularEdad(fechaStr) {
+  if (!fechaStr) return null;
+  const parts = fechaStr.split('-');
+  if (parts.length !== 3) return null;
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
 
-  // Acciones dentro del menú
-  document.getElementById('action-view-detail')?.addEventListener('click', () => {
-    menu.classList.remove('is-active');
-    if (state.activeMenuClient) abrirModalDetalle(state.activeMenuClient);
-  });
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - year;
+  const m = (hoy.getMonth() + 1) - month;
+  if (m < 0 || (m === 0 && hoy.getDate() < day)) {
+    edad--;
+  }
+  return edad;
+}
 
-  document.getElementById('action-edit-client')?.addEventListener('click', () => {
-    menu.classList.remove('is-active');
-    if (state.activeMenuClient) abrirModalFormulario(state.activeMenuClient);
-  });
+/**
+ * Valida la fecha de nacimiento: formato, calendario real, no futura, cliente mayor de edad (>= 18)
+ */
+function validarFechaNacimiento(fechaStr) {
+  const input = document.getElementById('input-birth-date');
+  const errorEl = document.getElementById('error-birth-date');
+  if (!input || !errorEl) return false;
 
-  document.getElementById('action-toggle-status')?.addEventListener('click', async () => {
-    menu.classList.remove('is-active');
-    const client = state.activeMenuClient;
-    if (!client) return;
+  if (!fechaStr) {
+    input.classList.add('is-invalid');
+    errorEl.textContent = 'La fecha de nacimiento es obligatoria.';
+    return false;
+  }
 
-    const newStatus = !client.is_active;
-    const actionWord = newStatus ? 'activar' : 'desactivar';
+  const parts = fechaStr.split('-');
+  if (parts.length !== 3) {
+    input.classList.add('is-invalid');
+    errorEl.textContent = 'Formato de fecha inválido.';
+    return false;
+  }
 
-    const confirmed = await showConfirmModal({
-      title: `${newStatus ? 'Activar' : 'Desactivar'} Cliente`,
-      message: `¿Estás seguro de que deseas ${actionWord} a ${client.full_name || client.username || 'este cliente'}?`,
-      confirmText: newStatus ? 'Activar' : 'Desactivar',
-      type: newStatus ? 'info' : 'warning'
-    });
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+  const hoy = new Date();
 
-    if (!confirmed) return;
+  // Validar existencia real en calendario (e.g. no 31 de febrero)
+  const testDate = new Date(year, month - 1, day);
+  if (
+    testDate.getFullYear() !== year ||
+    testDate.getMonth() !== month - 1 ||
+    testDate.getDate() !== day
+  ) {
+    input.classList.add('is-invalid');
+    errorEl.textContent = 'La fecha ingresada no existe en el calendario.';
+    return false;
+  }
 
-    try {
-      await actualizarCliente(client.id, { is_active: newStatus });
-      showToast('success', 'Estado Actualizado', `El cliente ha sido ${newStatus ? 'activado' : 'desactivado'} correctamente.`);
-      cargarClientes();
-      cargarMetricas();
-    } catch (err) {
-      console.error('Error cambiando estado:', err);
-      showToast('danger', 'Error', 'No se pudo actualizar el estado del cliente.');
-    }
-  });
+  // No permitir fechas futuras
+  const birthDateTime = new Date(`${fechaStr}T00:00:00`);
+  const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  if (birthDateTime > hoyMidnight) {
+    input.classList.add('is-invalid');
+    errorEl.textContent = 'La fecha de nacimiento no puede ser futura.';
+    return false;
+  }
 
-  document.getElementById('action-delete-client')?.addEventListener('click', async () => {
-    menu.classList.remove('is-active');
-    const client = state.activeMenuClient;
-    if (!client) return;
+  // Validar edad
+  const edad = calcularEdad(fechaStr);
+  if (edad === null || isNaN(edad)) {
+    input.classList.add('is-invalid');
+    errorEl.textContent = 'Ingresa una fecha de nacimiento válida.';
+    return false;
+  }
 
-    const confirmed = await showConfirmModal({
-      title: 'Eliminar Cliente',
-      message: `¿Estás seguro de que deseas eliminar a ${client.full_name || client.username || 'este cliente'}? Esta acción realizará un borrado lógico en el sistema.`,
-      confirmText: 'Eliminar',
-      type: 'danger'
-    });
+  if (edad < 18) {
+    input.classList.add('is-invalid');
+    errorEl.textContent = 'El cliente debe ser mayor de edad (mínimo 18 años).';
+    return false;
+  }
 
-    if (!confirmed) return;
+  if (edad > 120 || year < 1900) {
+    input.classList.add('is-invalid');
+    errorEl.textContent = 'Ingresa un año de nacimiento válido (posterior a 1900).';
+    return false;
+  }
 
-    try {
-      await eliminarCliente(client.id);
-      showToast('success', 'Cliente Eliminado', 'El cliente ha sido eliminado exitosamente.');
-      cargarClientes();
-      cargarMetricas();
-    } catch (err) {
-      console.error('Error eliminando cliente:', err);
-      showToast('danger', 'Error', 'No se pudo eliminar el cliente.');
-    }
-  });
+  // Fecha válida
+  input.classList.remove('is-invalid');
+  errorEl.textContent = '';
+  return true;
 }
 
 // ==========================================================================
@@ -725,6 +733,100 @@ function setupClientFormModal() {
   const toggleLabel = document.getElementById('toggle-status-text');
 
   if (!backdrop || !form) return;
+
+  // Configuración de límites en selector de fecha (Mayor de 18 años)
+  const birthDateInput = document.getElementById('input-birth-date');
+  if (birthDateInput) {
+    const today = new Date();
+    const maxYear = today.getFullYear() - 18;
+    const maxMonth = String(today.getMonth() + 1).padStart(2, '0');
+    const maxDay = String(today.getDate()).padStart(2, '0');
+    birthDateInput.max = `${maxYear}-${maxMonth}-${maxDay}`;
+    const minYear = today.getFullYear() - 120;
+    birthDateInput.min = `${minYear}-01-01`;
+
+    birthDateInput.addEventListener('input', () => {
+      validarFechaNacimiento(birthDateInput.value);
+    });
+    birthDateInput.addEventListener('change', () => {
+      validarFechaNacimiento(birthDateInput.value);
+    });
+  }
+
+  // Filtrado en tiempo real: nombres y apellidos no permiten números
+  const nameInputs = [
+    { input: document.getElementById('input-first-name'), error: document.getElementById('error-first-name') },
+    { input: document.getElementById('input-second-name'), error: document.getElementById('error-second-name') },
+    { input: document.getElementById('input-last-name'), error: document.getElementById('error-last-name') },
+    { input: document.getElementById('input-second-last-name'), error: document.getElementById('error-second-last-name') }
+  ];
+
+  nameInputs.forEach(({ input, error }) => {
+    if (!input) return;
+    input.addEventListener('input', (e) => {
+      const cleanVal = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '');
+      if (cleanVal !== e.target.value) {
+        e.target.value = cleanVal;
+      }
+      input.classList.remove('is-invalid');
+      if (error) error.textContent = '';
+    });
+  });
+
+  // Filtrado documento de identidad: solo números
+  const docNumInput = document.getElementById('input-doc-number');
+  if (docNumInput) {
+    docNumInput.addEventListener('input', (e) => {
+      const cleanVal = e.target.value.replace(/\D/g, '');
+      if (cleanVal !== e.target.value) {
+        e.target.value = cleanVal;
+      }
+      docNumInput.closest('.input-with-prefix')?.classList.remove('is-invalid');
+      const errEl = document.getElementById('error-doc');
+      if (errEl) errEl.textContent = '';
+    });
+  }
+
+  // Limpieza en tiempo real para correo
+  const emailInput = document.getElementById('input-email');
+  if (emailInput) {
+    emailInput.addEventListener('input', () => {
+      emailInput.classList.remove('is-invalid');
+      const errEl = document.getElementById('error-email');
+      if (errEl) errEl.textContent = '';
+    });
+  }
+
+  // Teléfono: solo caracteres permitidos (+, números, guiones, espacios)
+  const phoneInput = document.getElementById('input-phone');
+  if (phoneInput) {
+    phoneInput.addEventListener('input', (e) => {
+      const cleanVal = e.target.value.replace(/[^\d+\-\s()]/g, '');
+      if (cleanVal !== e.target.value) {
+        e.target.value = cleanVal;
+      }
+      phoneInput.classList.remove('is-invalid');
+      const errEl = document.getElementById('error-phone');
+      if (errEl) errEl.textContent = '';
+    });
+  }
+
+  // Ciudad y Estado: sin números
+  const locInputs = [
+    { input: document.getElementById('input-city'), error: document.getElementById('error-city') },
+    { input: document.getElementById('input-state'), error: document.getElementById('error-state') }
+  ];
+  locInputs.forEach(({ input, error }) => {
+    if (!input) return;
+    input.addEventListener('input', (e) => {
+      const cleanVal = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'.-]/g, '');
+      if (cleanVal !== e.target.value) {
+        e.target.value = cleanVal;
+      }
+      input.classList.remove('is-invalid');
+      if (error) error.textContent = '';
+    });
+  });
 
   if (toggleCheckbox && toggleLabel) {
     toggleCheckbox.addEventListener('change', () => {
@@ -750,7 +852,8 @@ function setupClientFormModal() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Limpiar errores previos
+    // Limpiar errores previos y clases visuales
+    document.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
     document.querySelectorAll('.field-error').forEach((el) => (el.textContent = ''));
 
     const idVal = document.getElementById('form-client-id').value;
@@ -760,6 +863,7 @@ function setupClientFormModal() {
     const secondLastName = document.getElementById('input-second-last-name').value.trim();
     const docType = document.getElementById('select-doc-type').value;
     let docNum = document.getElementById('input-doc-number').value.trim();
+    const birthDate = document.getElementById('input-birth-date').value.trim();
     const email = document.getElementById('input-email').value.trim();
     const phone = document.getElementById('input-phone').value.trim();
     const city = document.getElementById('input-city').value.trim();
@@ -768,27 +872,106 @@ function setupClientFormModal() {
 
     let hasError = false;
 
+    const marcarError = (inputId, errorId, mensaje) => {
+      const input = document.getElementById(inputId);
+      const error = document.getElementById(errorId);
+      if (input) {
+        const container = input.closest('.input-with-prefix') || input;
+        container.classList.add('is-invalid');
+      }
+      if (error) {
+        error.textContent = mensaje;
+      }
+      hasError = true;
+    };
+
+    // Validar Primer Nombre
     if (!firstName) {
-      document.getElementById('error-first-name').textContent = 'El primer nombre es obligatorio.';
-      hasError = true;
+      marcarError('input-first-name', 'error-first-name', 'El primer nombre es obligatorio.');
+    } else if (firstName.length < 2) {
+      marcarError('input-first-name', 'error-first-name', 'Debe tener al menos 2 letras.');
+    } else if (/\d/.test(firstName)) {
+      marcarError('input-first-name', 'error-first-name', 'No se permiten números en el nombre.');
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/.test(firstName)) {
+      marcarError('input-first-name', 'error-first-name', 'Solo debe contener letras.');
     }
+
+    // Validar Segundo Nombre (si fue provisto)
+    if (secondName) {
+      if (secondName.length < 2) {
+        marcarError('input-second-name', 'error-second-name', 'Debe tener al menos 2 letras.');
+      } else if (/\d/.test(secondName)) {
+        marcarError('input-second-name', 'error-second-name', 'No se permiten números en el nombre.');
+      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/.test(secondName)) {
+        marcarError('input-second-name', 'error-second-name', 'Solo debe contener letras.');
+      }
+    }
+
+    // Validar Primer Apellido
     if (!lastName) {
-      document.getElementById('error-last-name').textContent = 'El primer apellido es obligatorio.';
-      hasError = true;
+      marcarError('input-last-name', 'error-last-name', 'El primer apellido es obligatorio.');
+    } else if (lastName.length < 2) {
+      marcarError('input-last-name', 'error-last-name', 'Debe tener al menos 2 letras.');
+    } else if (/\d/.test(lastName)) {
+      marcarError('input-last-name', 'error-last-name', 'No se permiten números en el apellido.');
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/.test(lastName)) {
+      marcarError('input-last-name', 'error-last-name', 'Solo debe contener letras.');
     }
+
+    // Validar Segundo Apellido (si fue provisto)
+    if (secondLastName) {
+      if (secondLastName.length < 2) {
+        marcarError('input-second-last-name', 'error-second-last-name', 'Debe tener al menos 2 letras.');
+      } else if (/\d/.test(secondLastName)) {
+        marcarError('input-second-last-name', 'error-second-last-name', 'No se permiten números en el apellido.');
+      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/.test(secondLastName)) {
+        marcarError('input-second-last-name', 'error-second-last-name', 'Solo debe contener letras.');
+      }
+    }
+
+    // Validar Documento de Identidad
     if (!docNum) {
-      document.getElementById('error-doc').textContent = 'El número de documento es obligatorio.';
-      hasError = true;
+      marcarError('input-doc-number', 'error-doc', 'El número de documento es obligatorio.');
+    } else if (docNum.length < 5) {
+      marcarError('input-doc-number', 'error-doc', 'Ingresa un documento válido (mínimo 5 dígitos).');
     }
-    if (!email) {
-      document.getElementById('error-email').textContent = 'El correo electrónico es obligatorio.';
-      hasError = true;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      document.getElementById('error-email').textContent = 'Ingresa un correo electrónico válido.';
+
+    // Validar Fecha de Nacimiento (Mayor de 18 años)
+    if (!validarFechaNacimiento(birthDate)) {
       hasError = true;
     }
 
-    if (hasError) return;
+    // Validar Correo Electrónico
+    if (!email) {
+      marcarError('input-email', 'error-email', 'El correo electrónico es obligatorio.');
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      marcarError('input-email', 'error-email', 'Ingresa un correo electrónico válido.');
+    }
+
+    // Validar Teléfono (opcional)
+    if (phone) {
+      const digitsCount = phone.replace(/\D/g, '').length;
+      if (digitsCount < 7) {
+        marcarError('input-phone', 'error-phone', 'Ingresa un teléfono válido (mínimo 7 dígitos).');
+      }
+    }
+
+    // Validar Ciudad y Estado
+    if (city && /\d/.test(city)) {
+      marcarError('input-city', 'error-city', 'La ciudad no puede contener números.');
+    }
+    if (stateVal && /\d/.test(stateVal)) {
+      marcarError('input-state', 'error-state', 'El estado no puede contener números.');
+    }
+
+    if (hasError) {
+      const firstInvalid = form.querySelector('.is-invalid');
+      if (firstInvalid) {
+        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstInvalid.focus?.();
+      }
+      return;
+    }
 
     // Normalizar documento: eliminar letras o guiones si el usuario los escribió en el input numérico
     docNum = docNum.replace(/^[A-Za-z]-?/, '').replace(/\s+/g, '');
@@ -800,6 +983,7 @@ function setupClientFormModal() {
       first_last_name: lastName,
       second_last_name: secondLastName,
       identity_document: fullDoc,
+      birth_date: birthDate,
       email: email,
       phone: phone,
       city: city,
@@ -854,6 +1038,7 @@ function abrirModalFormulario(client = null) {
   if (!backdrop || !form) return;
 
   form.reset();
+  document.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
   document.querySelectorAll('.field-error').forEach((el) => (el.textContent = ''));
 
   if (client) {
@@ -864,6 +1049,7 @@ function abrirModalFormulario(client = null) {
     document.getElementById('input-second-name').value = client.second_name || '';
     document.getElementById('input-last-name').value = client.first_last_name || '';
     document.getElementById('input-second-last-name').value = client.second_last_name || '';
+    document.getElementById('input-birth-date').value = client.birth_date ? String(client.birth_date).substring(0, 10) : '';
     document.getElementById('input-email').value = client.email || '';
     document.getElementById('input-phone').value = client.phone || '';
     document.getElementById('input-city').value = client.city || '';
@@ -875,7 +1061,7 @@ function abrirModalFormulario(client = null) {
       const parts = rawDoc.split('-');
       document.getElementById('select-doc-type').value = parts[0].toUpperCase();
       document.getElementById('input-doc-number').value = parts.slice(1).join('-');
-    } else if (/^[VEJG]/i.test(rawDoc)) {
+    } else if (/^[VEJGPR]/i.test(rawDoc)) {
       document.getElementById('select-doc-type').value = rawDoc[0].toUpperCase();
       document.getElementById('input-doc-number').value = rawDoc.slice(1);
     } else {
@@ -892,6 +1078,7 @@ function abrirModalFormulario(client = null) {
     if (submitText) submitText.textContent = 'Guardar Cliente';
     document.getElementById('form-client-id').value = '';
     document.getElementById('select-doc-type').value = 'V';
+    document.getElementById('input-birth-date').value = '';
     const toggle = document.getElementById('toggle-client-status');
     const toggleText = document.getElementById('toggle-status-text');
     if (toggle) toggle.checked = true;
@@ -969,11 +1156,13 @@ async function abrirModalDetalle(client) {
   // Información
   const emailEl = document.getElementById('detail-email');
   const phoneEl = document.getElementById('detail-phone');
+  const birthDateEl = document.getElementById('detail-birth-date');
   const dateEl = document.getElementById('detail-date-joined');
   const locEl = document.getElementById('detail-location');
 
   if (emailEl) emailEl.textContent = client.email || 'No registrado';
   if (phoneEl) phoneEl.textContent = client.phone || 'No registrado';
+  if (birthDateEl) birthDateEl.textContent = client.birth_date ? formatDate(client.birth_date) : 'No especificada';
   if (dateEl) dateEl.textContent = formatDate(client.date_joined || client.created_at);
   if (locEl) locEl.textContent = [client.city, client.state].filter(Boolean).join(', ') || 'No especificada';
 
@@ -1120,7 +1309,7 @@ async function initClientsModule() {
 
   // 2. Configurar eventos de modales, filtros y accesibilidad
   setupFiltersEvents();
-  setupActionsDropdown();
+  setupTableActions();
   setupClientFormModal();
   setupClientDetailModal();
   setupExportModal();

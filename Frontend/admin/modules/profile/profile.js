@@ -2,7 +2,8 @@
  * ==========================================================================
  * CONTROLADOR - PERFIL DE ADMINISTRADOR (PROFILE.JS) - TUESTANTE
  * Manejo de vista de perfil, edición en vivo de información personal,
- * carga de avatar personalizado y persistencia de preferencias de cuenta.
+ * 4 campos de nombre/apellido, carga de avatar personalizado y modal
+ * con validaciones en tiempo real para actualización de contraseña.
  * ==========================================================================
  */
 
@@ -10,6 +11,7 @@ import { loadAdminComponents } from '../../components/navbar/navbar.js';
 import { 
   getAdminProfile, 
   updateAdminProfile, 
+  changeAdminPassword,
   getSavedAvatar, 
   saveAvatar 
 } from './profile.api.js';
@@ -31,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 2. Vincular eventos de la interfaz
   setupEditToggle();
   setupAvatarUpload();
+  setupPasswordModal();
 
   // 3. Cargar datos del usuario
   await loadProfile();
@@ -59,7 +62,36 @@ async function loadProfile() {
 function renderProfileData(user) {
   if (!user) return;
 
-  const fullName = user.full_name || [user.first_name, user.first_last_name].filter(Boolean).join(' ') || user.username || 'Administrador';
+  // Separación inteligente de nombres y apellidos si no vienen explícitos
+  let firstName = user.first_name || '';
+  let secondName = user.second_name || '';
+  let lastName = user.first_last_name || '';
+  let secondLastName = user.second_last_name || '';
+
+  if (!firstName && user.full_name) {
+    const parts = user.full_name.trim().split(/\s+/);
+    if (parts.length === 1) {
+      firstName = parts[0];
+    } else if (parts.length === 2) {
+      firstName = parts[0];
+      lastName = parts[1];
+    } else if (parts.length === 3) {
+      firstName = parts[0];
+      lastName = parts[1];
+      secondLastName = parts[2];
+    } else if (parts.length >= 4) {
+      firstName = parts[0];
+      secondName = parts[1];
+      lastName = parts[2];
+      secondLastName = parts.slice(3).join(' ');
+    }
+  }
+
+  const fullName = [firstName, secondName, lastName, secondLastName].filter(Boolean).join(' ') 
+    || user.full_name 
+    || user.username 
+    || 'Administrador';
+
   const roleText = user.is_superuser ? 'Superadministrador' : (user.is_staff ? 'Administrador' : 'Colaborador');
   const isActive = user.is_active !== false;
 
@@ -77,14 +109,20 @@ function renderProfileData(user) {
     sidebarStatus.className = isActive ? 'status-badge-active' : 'status-badge-inactive';
   }
 
-  // 2. Tarjeta Información Personal
-  const inputFullName = document.getElementById('input-full-name');
+  // 2. Tarjeta Información Personal (4 Campos de Nombre + Usuario + Correo + Rol + Teléfono)
+  const inputFirstName = document.getElementById('input-first-name');
+  const inputSecondName = document.getElementById('input-second-name');
+  const inputLastName = document.getElementById('input-last-name');
+  const inputSecondLastName = document.getElementById('input-second-last-name');
   const inputUsername = document.getElementById('input-username');
   const inputEmail = document.getElementById('input-email');
   const inputRole = document.getElementById('input-role');
   const inputPhone = document.getElementById('input-phone');
 
-  if (inputFullName) inputFullName.value = fullName;
+  if (inputFirstName) inputFirstName.value = firstName;
+  if (inputSecondName) inputSecondName.value = secondName;
+  if (inputLastName) inputLastName.value = lastName;
+  if (inputSecondLastName) inputSecondLastName.value = secondLastName;
   if (inputUsername) inputUsername.value = user.username || '';
   if (inputEmail) inputEmail.value = user.email || '';
   if (inputRole) inputRole.value = roleText;
@@ -120,7 +158,6 @@ function setupEditToggle() {
     cancelEditMode();
   });
 
-  // Prevenir submit estándar del formulario
   form?.addEventListener('submit', (e) => {
     e.preventDefault();
     handleSaveProfile();
@@ -133,7 +170,10 @@ function enterEditMode() {
 
   // Guardar en caché los valores previos por si el usuario cancela
   profileState.cachedValues = {
-    full_name: document.getElementById('input-full-name')?.value || '',
+    first_name: document.getElementById('input-first-name')?.value || '',
+    second_name: document.getElementById('input-second-name')?.value || '',
+    last_name: document.getElementById('input-last-name')?.value || '',
+    second_last_name: document.getElementById('input-second-last-name')?.value || '',
     username: document.getElementById('input-username')?.value || '',
     email: document.getElementById('input-email')?.value || '',
     phone: document.getElementById('input-phone')?.value || '',
@@ -142,7 +182,10 @@ function enterEditMode() {
 
   // Habilitar campos editables
   const editableInputs = [
-    document.getElementById('input-full-name'),
+    document.getElementById('input-first-name'),
+    document.getElementById('input-second-name'),
+    document.getElementById('input-last-name'),
+    document.getElementById('input-second-last-name'),
     document.getElementById('input-username'),
     document.getElementById('input-email'),
     document.getElementById('input-phone'),
@@ -167,7 +210,7 @@ function enterEditMode() {
   }
 
   // Foco en el primer campo
-  document.getElementById('input-full-name')?.focus();
+  document.getElementById('input-first-name')?.focus();
 }
 
 function cancelEditMode() {
@@ -177,13 +220,19 @@ function cancelEditMode() {
   // Restaurar valores en inputs
   const cached = profileState.cachedValues;
   if (cached) {
-    const inputFullName = document.getElementById('input-full-name');
+    const inputFirstName = document.getElementById('input-first-name');
+    const inputSecondName = document.getElementById('input-second-name');
+    const inputLastName = document.getElementById('input-last-name');
+    const inputSecondLastName = document.getElementById('input-second-last-name');
     const inputUsername = document.getElementById('input-username');
     const inputEmail = document.getElementById('input-email');
     const inputPhone = document.getElementById('input-phone');
     const inputAddress = document.getElementById('input-address');
 
-    if (inputFullName) inputFullName.value = cached.full_name;
+    if (inputFirstName) inputFirstName.value = cached.first_name;
+    if (inputSecondName) inputSecondName.value = cached.second_name;
+    if (inputLastName) inputLastName.value = cached.last_name;
+    if (inputSecondLastName) inputSecondLastName.value = cached.second_last_name;
     if (inputUsername) inputUsername.value = cached.username;
     if (inputEmail) inputEmail.value = cached.email;
     if (inputPhone) inputPhone.value = cached.phone;
@@ -192,7 +241,10 @@ function cancelEditMode() {
 
   // Deshabilitar campos
   const editableInputs = [
-    document.getElementById('input-full-name'),
+    document.getElementById('input-first-name'),
+    document.getElementById('input-second-name'),
+    document.getElementById('input-last-name'),
+    document.getElementById('input-second-last-name'),
     document.getElementById('input-username'),
     document.getElementById('input-email'),
     document.getElementById('input-phone'),
@@ -219,22 +271,34 @@ function cancelEditMode() {
 }
 
 async function handleSaveProfile() {
-  const inputFullName = document.getElementById('input-full-name');
+  const inputFirstName = document.getElementById('input-first-name');
+  const inputSecondName = document.getElementById('input-second-name');
+  const inputLastName = document.getElementById('input-last-name');
+  const inputSecondLastName = document.getElementById('input-second-last-name');
   const inputUsername = document.getElementById('input-username');
   const inputEmail = document.getElementById('input-email');
   const inputPhone = document.getElementById('input-phone');
   const inputAddress = document.getElementById('input-address');
 
-  const fullName = (inputFullName?.value || '').trim();
+  const firstName = (inputFirstName?.value || '').trim();
+  const secondName = (inputSecondName?.value || '').trim();
+  const lastName = (inputLastName?.value || '').trim();
+  const secondLastName = (inputSecondLastName?.value || '').trim();
   const username = (inputUsername?.value || '').trim();
   const email = (inputEmail?.value || '').trim();
   const phone = (inputPhone?.value || '').trim();
   const address = (inputAddress?.value || '').trim();
 
   // Validaciones
-  if (!fullName) {
-    showToast('error', 'Campo requerido', 'Por favor ingresa tu nombre completo.');
-    inputFullName?.focus();
+  if (!firstName) {
+    showToast('error', 'Campo requerido', 'Por favor ingresa el primer nombre.');
+    inputFirstName?.focus();
+    return;
+  }
+
+  if (!lastName) {
+    showToast('error', 'Campo requerido', 'Por favor ingresa el primer apellido.');
+    inputLastName?.focus();
     return;
   }
 
@@ -257,7 +321,13 @@ async function handleSaveProfile() {
   if (labelEdit) labelEdit.textContent = 'Guardando...';
 
   try {
+    const fullName = [firstName, secondName, lastName, secondLastName].filter(Boolean).join(' ');
+
     const payload = {
+      first_name: firstName,
+      second_name: secondName,
+      first_last_name: lastName,
+      second_last_name: secondLastName,
       full_name: fullName,
       username: username,
       email: email,
@@ -287,6 +357,258 @@ async function handleSaveProfile() {
     showToast('error', 'Error al guardar', 'No se pudieron actualizar los datos. Intenta nuevamente.');
   } finally {
     if (btnToggle) btnToggle.disabled = false;
+  }
+}
+
+// ==========================================================================
+// MODAL DE CAMBIO DE CONTRASEÑA CON VALIDACIONES EN VIVO
+// ==========================================================================
+function setupPasswordModal() {
+  const modal = document.getElementById('modal-change-password-backdrop');
+  const btnOpen = document.getElementById('btn-open-password-modal');
+  const btnClose = document.getElementById('btn-close-password-modal');
+  const btnCancel = document.getElementById('btn-cancel-password');
+  const form = document.getElementById('form-change-password');
+
+  const inputCurrent = document.getElementById('input-current-password');
+  const inputNew = document.getElementById('input-new-password');
+  const inputConfirm = document.getElementById('input-confirm-password');
+
+  // Abrir y cerrar modal
+  btnOpen?.addEventListener('click', openPasswordModal);
+  btnClose?.addEventListener('click', closePasswordModal);
+  btnCancel?.addEventListener('click', closePasswordModal);
+
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closePasswordModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('is-active')) {
+      closePasswordModal();
+    }
+  });
+
+  // Ojitos para alternar visibilidad de contraseñas
+  document.querySelectorAll('.btn-toggle-eye').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.target;
+      const targetInput = document.getElementById(targetId);
+      if (!targetInput) return;
+
+      const isPassword = targetInput.type === 'password';
+      targetInput.type = isPassword ? 'text' : 'password';
+
+      const eyeOpen = btn.querySelector('.eye-open');
+      const eyeClosed = btn.querySelector('.eye-closed');
+      if (eyeOpen && eyeClosed) {
+        eyeOpen.style.display = isPassword ? 'none' : 'block';
+        eyeClosed.style.display = isPassword ? 'block' : 'none';
+      }
+    });
+  });
+
+  // Validaciones en vivo al escribir nueva contraseña
+  inputNew?.addEventListener('input', () => {
+    validatePasswordRules();
+    checkPasswordMatch();
+  });
+
+  // Validación en vivo de coincidencia al escribir confirmación
+  inputConfirm?.addEventListener('input', () => {
+    checkPasswordMatch();
+  });
+
+  // Envío del formulario
+  form?.addEventListener('submit', handlePasswordSubmit);
+}
+
+function openPasswordModal() {
+  const modal = document.getElementById('modal-change-password-backdrop');
+  const form = document.getElementById('form-change-password');
+  if (!modal) return;
+
+  form?.reset();
+  resetPasswordValidationUI();
+  modal.classList.add('is-active');
+
+  setTimeout(() => {
+    document.getElementById('input-current-password')?.focus();
+  }, 100);
+}
+
+function closePasswordModal() {
+  const modal = document.getElementById('modal-change-password-backdrop');
+  if (modal) modal.classList.remove('is-active');
+  resetPasswordValidationUI();
+}
+
+function resetPasswordValidationUI() {
+  ['rule-len', 'rule-upper', 'rule-num'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.className = 'rule-item invalid';
+      const bullet = el.querySelector('.rule-bullet');
+      if (bullet) bullet.textContent = '✕';
+    }
+  });
+
+  const matchMsg = document.getElementById('match-status-msg');
+  if (matchMsg) {
+    matchMsg.textContent = '';
+    matchMsg.className = 'field-match-status';
+  }
+
+  const errorCurrent = document.getElementById('error-current-password');
+  if (errorCurrent) errorCurrent.textContent = '';
+
+  // Restaurar visibilidad como password
+  document.querySelectorAll('#form-change-password input[type="text"]').forEach(input => {
+    if (input.id.includes('password')) input.type = 'password';
+  });
+  document.querySelectorAll('.btn-toggle-eye').forEach(btn => {
+    const eyeOpen = btn.querySelector('.eye-open');
+    const eyeClosed = btn.querySelector('.eye-closed');
+    if (eyeOpen && eyeClosed) {
+      eyeOpen.style.display = 'block';
+      eyeClosed.style.display = 'none';
+    }
+  });
+}
+
+function validatePasswordRules() {
+  const val = document.getElementById('input-new-password')?.value || '';
+
+  const isLenValid = val.length >= 8;
+  const isUpperValid = /[A-Z]/.test(val);
+  const isNumValid = /[0-9]/.test(val);
+
+  updateRuleStatus('rule-len', isLenValid);
+  updateRuleStatus('rule-upper', isUpperValid);
+  updateRuleStatus('rule-num', isNumValid);
+
+  return isLenValid && isUpperValid && isNumValid;
+}
+
+function updateRuleStatus(elementId, isValid) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+
+  el.className = `rule-item ${isValid ? 'valid' : 'invalid'}`;
+  const bullet = el.querySelector('.rule-bullet');
+  if (bullet) {
+    bullet.textContent = isValid ? '✓' : '✕';
+  }
+}
+
+function checkPasswordMatch() {
+  const newPass = document.getElementById('input-new-password')?.value || '';
+  const confirmPass = document.getElementById('input-confirm-password')?.value || '';
+  const matchMsg = document.getElementById('match-status-msg');
+  if (!matchMsg) return false;
+
+  if (!confirmPass) {
+    matchMsg.textContent = '';
+    matchMsg.className = 'field-match-status';
+    return false;
+  }
+
+  if (newPass === confirmPass) {
+    matchMsg.textContent = '✓ Las contraseñas coinciden';
+    matchMsg.className = 'field-match-status text-success';
+    matchMsg.style.color = '#16a34a';
+    return true;
+  } else {
+    matchMsg.textContent = '✕ Las contraseñas no coinciden';
+    matchMsg.className = 'field-match-status text-danger';
+    matchMsg.style.color = '#dc2626';
+    return false;
+  }
+}
+
+async function handlePasswordSubmit(e) {
+  e.preventDefault();
+
+  const inputCurrent = document.getElementById('input-current-password');
+  const inputNew = document.getElementById('input-new-password');
+  const inputConfirm = document.getElementById('input-confirm-password');
+  const errorCurrent = document.getElementById('error-current-password');
+  const btnSubmit = document.getElementById('btn-submit-password');
+  const btnText = document.getElementById('btn-submit-password-text');
+
+  if (errorCurrent) errorCurrent.textContent = '';
+
+  const currentPassword = inputCurrent?.value || '';
+  const newPassword = inputNew?.value || '';
+  const confirmPassword = inputConfirm?.value || '';
+
+  // 1. Validar contraseña actual
+  if (!currentPassword) {
+    showToast('error', 'Campo requerido', 'Por favor ingresa tu contraseña actual.');
+    inputCurrent?.focus();
+    return;
+  }
+
+  // 2. Validar reglas de seguridad de nueva contraseña
+  const rulesOk = validatePasswordRules();
+  if (!rulesOk) {
+    showToast('error', 'Contraseña insegura', 'La nueva contraseña debe tener al menos 8 caracteres, 1 mayúscula y 1 número.');
+    inputNew?.focus();
+    return;
+  }
+
+  // 3. Validar coincidencia
+  if (newPassword !== confirmPassword) {
+    showToast('error', 'Discrepancia', 'Las nuevas contraseñas no coinciden.');
+    inputConfirm?.focus();
+    return;
+  }
+
+  // 4. Validar que la nueva no sea igual a la actual
+  if (currentPassword === newPassword) {
+    showToast('warning', 'Contraseña idéntica', 'La nueva contraseña debe ser diferente de la contraseña actual.');
+    inputNew?.focus();
+    return;
+  }
+
+  // Iniciar envío
+  if (btnSubmit) btnSubmit.disabled = true;
+  if (btnText) btnText.textContent = 'Actualizando...';
+
+  try {
+    const payload = {
+      current_password: currentPassword,
+      new_password: newPassword,
+      confirm_new_password: confirmPassword
+    };
+
+    const res = await changeAdminPassword(payload);
+
+    closePasswordModal();
+    showToast('success', 'Contraseña actualizada', res?.message?.mensaje || 'Tu contraseña ha sido cambiada exitosamente.');
+  } catch (err) {
+    console.error('Error al cambiar contraseña:', err);
+    let errorMsg = 'No se pudo actualizar la contraseña. Revisa los datos ingresados.';
+
+    if (err.data) {
+      if (err.data.current_password) {
+        errorMsg = Array.isArray(err.data.current_password) ? err.data.current_password[0] : err.data.current_password;
+        if (errorCurrent) errorCurrent.textContent = errorMsg;
+      } else if (err.data.new_password) {
+        errorMsg = Array.isArray(err.data.new_password) ? err.data.new_password[0] : err.data.new_password;
+      } else if (err.data.detail) {
+        errorMsg = err.data.detail;
+      } else if (err.data.error) {
+        errorMsg = err.data.error;
+      }
+    } else if (err.message) {
+      errorMsg = err.message;
+    }
+
+    showToast('error', 'Error al actualizar', errorMsg);
+  } finally {
+    if (btnSubmit) btnSubmit.disabled = false;
+    if (btnText) btnText.textContent = 'Actualizar Contraseña';
   }
 }
 
@@ -374,7 +696,7 @@ function formatDateTime(dateString) {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
-    hours = hours ? hours : 12; // Hora '0' como '12'
+    hours = hours ? hours : 12;
     const strHours = String(hours).padStart(2, '0');
 
     return `${day}/${month}/${year} ${strHours}:${minutes} ${ampm}`;
