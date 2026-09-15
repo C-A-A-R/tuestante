@@ -1,5 +1,5 @@
 /* ==========================================================================
-   TUESTANTE ADMIN - COMPONENTE REUTILIZABLE NAVBAR (BARRA SUPERIOR)
+  TUESTANTE ADMIN - COMPONENTE REUTILIZABLE NAVBAR (BARRA SUPERIOR)
    ========================================================================== */
 
 :root {
@@ -22,7 +22,7 @@
 }
 
 /* ==========================================================================
-   CONTENEDOR PRINCIPAL DEL NAVBAR
+  CONTENEDOR PRINCIPAL DEL NAVBAR
    ========================================================================== */
 #navbar-placeholder {
   min-height: var(--navbar-height);
@@ -677,6 +677,21 @@ body.drawer-hidden .navbar-hamburger-btn {
   color: #059669;
 }
 
+.notif-icon-circle.type-payment {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.notif-icon-circle.type-shipping {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+
+.notif-icon-circle.type-production {
+  background-color: #ffedd5;
+  color: #c2410c;
+}
+
 .notif-icon-circle.type-general {
   background-color: #f1f5f9;
   color: #475569;
@@ -722,6 +737,25 @@ body.drawer-hidden .navbar-hamburger-btn {
   height: 6px;
   border-radius: 50%;
   background-color: #005187;
+}
+
+.notif-action-hint {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #005187;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+.notif-item:hover .notif-action-hint {
+  opacity: 1;
+  transform: translateX(2px);
+  color: #00365a;
+  text-decoration: underline;
 }
 
 .notif-empty-state,

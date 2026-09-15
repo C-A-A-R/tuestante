@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Diego Grill</title>
+    <link rel="stylesheet" href="registro.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="registro.js"></script>
+</head>
+<body>
+    <!-- <div class="header-container"></div> -->
+
+    <div class="register-container">
+        <!-- Panel izquierdo con bienvenida (gradiente + gif) -->
+        <div class="welcome-panel">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="../images/logo 3.png" >
+                </div>
+            </div>
+            <div class="welcome-content" style="padding-top:6px;">
+                <h1 class="welcome-title">¡Únete a Diego's Grill!</h1>
+                <div class="gif-container">
+                    <img src="../images/giphy.gif" alt="Bienvenida" class="welcome-gif">
+                </div>
+                <p class="welcome-text">Regístrate para hacer pedidos, recibir promociones y gestionar tu perfil rápidamente.</p>
+            </div>
+        </div>
+
+        <!-- Panel derecho con tarjeta y formulario -->
+        <div class="form-panel">
+            <div class="card">
+                <!-- Header -->
+                <div class="header">
+                    <h1 class="title">Crear Cuenta</h1>
+                    <p class="subtitle">Completa tus datos para registrarte en Diegos Grill</p>
+                </div>
+
+                <!-- Formulario -->
+                <form class="form">
+                <!-- Primera fila -->
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="usuario" class="input-label">Usuario</label>
+                        <input 
+                            type="text" 
+                            id="usuario" 
+                            name="usuario" 
+                            class="input-field" 
+                            placeholder="Ingresa tu nombre de usuario"
+                            required
+                        >
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="password" class="input-label">Contraseña</label>
+                        <div class="password-container">
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                class="input-field" 
+                                placeholder="••••••••"
+                                required
+                            >
+                            <button type="button" class="toggle-password" id="toggle-password">
+                                <img class="password-icon" src="../images/open.png" alt="Mostrar contraseña">
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Segunda fila -->
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="nombre" class="input-label">Nombre</label>
+                        <input 
+                            type="text" 
+                            id="nombre" 
+                            name="nombre" 
+                            class="input-field" 
+                            placeholder="Ingresa tu nombre"
+                            required
+                        >
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="apellido" class="input-label">Apellido</label>
+                        <input 
+                            type="text" 
+                            id="apellido" 
+                            name="apellido" 
+                            class="input-field" 
+                            placeholder="Ingresa tu apellido"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <!-- Tercera fila -->
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="email" class="input-label">Correo Electrónico</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            class="input-field" 
+                            placeholder="tu@email.com"
+                            required
+                        >
+                    </div>
+                    <!-- Teléfono: select + input pequeño. Se usa un input hidden #telefono para compatibilidad con el JS existente -->
+                    <div class="input-group select-phone">
+                        <label for="phone-small" class="input-label">Teléfono Principal</label>
+
+                        <div class="phone-row">
+                            <select name="phone-code" id="phone-code" class="input-field select-field" required>
+                                <option value="0424">0424</option>
+                                <option value="0412">0412</option>
+                                <option value="0416">0416</option>
+                                <option value="0426">0426</option>
+                                <option value="0414">0414</option>
+                            </select>
+
+                            <input id="phone-small" name="phone" type="text" class="input-field small-field" placeholder="(ejem: 1234567)" required maxlength="7" />
+                        </div>
+
+                        <!-- Mensaje específico para el campo teléfono (aparece debajo del phone-row) -->
+                        <div id="phone-message" class="phone-message" aria-live="polite"></div>
+
+                        <!-- Input oculto que mantiene el nombre 'telefono' esperado por el JS y por el envío del form -->
+                        <input type="hidden" id="telefono" name="telefono" />
+                    </div>
+
+
+
+                </div>
+
+                <!-- Cuarta fila -->
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="fecha_nacimiento" class="input-label">Fecha de Nacimiento</label>
+                        <input 
+                            type="date" 
+                            id="fecha_nacimiento" 
+                            name="fecha_nacimiento" 
+                            class="input-field" 
+                            required
+                        >
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="cedula" class="input-label">Cédula</label>
+                        <input 
+                            type="text" 
+                            id="cedula" 
+                            name="cedula" 
+                            class="input-field" 
+                            placeholder="1234567890"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <!-- Quinta fila -->
+                <div class="form-row">
+                    <div class="input-group full-width">
+                        <label for="direccion" class="input-label">Dirección</label>
+                        <input 
+                            type="text" 
+                            id="direccion" 
+                            name="direccion" 
+                            class="input-field" 
+                            placeholder="Ingresa tu dirección completa"
+                            required
+                        >
+                    </div>
+                </div>
+
+                    <!-- Botones -->
+                <div class="button-group">
+                    <button type="submit" class="btn btn-save">Registrarse</button>
+                </div>
+                <!-- Mensaje inferior para errores generales o de teléfono -->
+                <div id="form-bottom-message" class="form-bottom-message" aria-live="polite"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+</body>
+</html>

@@ -686,6 +686,14 @@ function setupEventListeners() {
   // 1. Buscador en tiempo real (Search input)
   const searchInput = document.getElementById('order-search-input');
   if (searchInput) {
+    // Inicializar búsqueda si viene por parámetro de URL (ej: redirección desde una notificación)
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialSearch = urlParams.get('search') || urlParams.get('q') || urlParams.get('id');
+    if (initialSearch) {
+      searchInput.value = initialSearch;
+      state.filters.search = initialSearch;
+    }
+
     let searchDebounceTimer;
     searchInput.addEventListener('input', () => {
       clearTimeout(searchDebounceTimer);

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crear notificación | TuEstante Admin</title>
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes Reutilizables -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+  <link rel="stylesheet" href="../../components/modal/modal.css">
+
+  <!-- Estilos del Formulario de Notificaciones -->
+  <link rel="stylesheet" href="notification-form.css">
+</head>
+<body data-page-title="Crear notificación">
+
+  <!-- Contenedor Semántico para Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- Layout Principal de la Aplicación -->
+  <div class="app-layout" id="app-layout">
+    
+    <!-- Placeholders para Drawer y Navbar Compartidos -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal -->
+    <main class="app-main-content">
+      <div class="notification-form-container">
+
+        <!-- Encabezado con Botón de Regreso -->
+        <div class="screen-header-nav">
+          <a href="notifications.html" class="btn-back-header" title="Volver a Notificaciones" aria-label="Volver">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </a>
+          <div class="screen-header-text">
+            <h1 class="screen-main-title">Crear notificación</h1>
+            <p class="screen-main-desc">Envía una comunicación a tu cliente relacionada con una orden.</p>
+          </div>
+        </div>
+
+        <form id="form-create-notification" novalidate>
+
+          <!-- 1. Selecciona la orden -->
+          <section class="form-section-card">
+            <div class="section-card-header">
+              <div class="section-title-group">
+                <h2 class="section-card-title">1. Selecciona la orden</h2>
+                <p class="section-card-desc">Elige la orden a la que va dirigida la notificación.</p>
+              </div>
+            </div>
+
+            <!-- Buscador de Órdenes -->
+            <div class="order-search-wrapper" id="order-search-wrapper">
+              <div class="order-search-box">
+                <input 
+                  type="text" 
+                  class="order-search-input" 
+                  id="input-order-search" 
+                  placeholder="Buscar pedido por número o cliente..."
+                  autocomplete="off"
+                >
+                <div class="order-search-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </div>
+              </div>
+              <div class="order-search-dropdown" id="order-search-dropdown">
+                <!-- Opciones de órdenes cargadas dinámicamente -->
+              </div>
+            </div>
+
+            <!-- Tarjeta de Orden Seleccionada -->
+            <div class="selected-order-card" id="selected-order-card" style="display: none;">
+              <div class="selected-order-left">
+                <div class="selected-order-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                </div>
+                <div class="selected-order-info">
+                  <span class="selected-order-num" id="selected-order-num">#00000</span>
+                  <span class="selected-order-client" id="selected-order-client">-</span>
+                </div>
+              </div>
+              <div class="selected-order-right">
+                <div class="selected-order-meta">
+                  <span class="selected-order-date" id="selected-order-date">-</span>
+                  <span class="order-badge-pill" id="selected-order-status">En fabricación</span>
+                </div>
+                <button type="button" class="btn-change-order" id="btn-change-order" title="Cambiar pedido">Cambiar</button>
+              </div>
+            </div>
+            <input type="hidden" id="selected-order-id" name="order_id" required>
+          </section>
+
+          <!-- 2. Información de la notificación -->
+          <section class="form-section-card">
+            <div class="section-card-header">
+              <div class="section-title-group">
+                <h2 class="section-card-title">2. Información de la notificación</h2>
+              </div>
+            </div>
+
+            <!-- Asunto -->
+            <div class="form-group">
+              <label for="input-subject" class="form-label">
+                <span>Asunto</span>
+                <span class="req-star">*</span>
+              </label>
+              <input 
+                type="text" 
+                class="form-input" 
+                id="input-subject" 
+                name="title" 
+                placeholder="Ej. Avance de fabricación" 
+                required
+                maxlength="200"
+              >
+            </div>
+
+            <!-- Mensaje -->
+            <div class="form-group">
+              <label for="input-message" class="form-label">
+                <span>Mensaje</span>
+                <span class="req-star">*</span>
+              </label>
+              <textarea 
+                class="form-textarea" 
+                id="input-message" 
+                name="message" 
+                rows="5" 
+                placeholder="Escribe aquí el mensaje que deseas enviar al cliente..." 
+                required
+                maxlength="2000"
+              ></textarea>
+              <div class="char-counter" id="char-counter">0/2000</div>
+            </div>
+          </section>
+
+          <!-- 3. Adjuntos (opcional) -->
+          <section class="form-section-card">
+            <div class="section-card-header">
+              <div class="section-title-group">
+                <h2 class="section-card-title">3. Adjuntos <span style="font-weight: 400; color: var(--text-muted); font-size: 13.5px;">(opcional)</span></h2>
+                <p class="section-card-desc">Puedes adjuntar imágenes o videos para complementar la notificación.</p>
+              </div>
+              <div class="section-header-actions">
+                <button type="button" class="btn-add-media" id="btn-add-image">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Agregar imagen</span>
+                </button>
+                <button type="button" class="btn-add-media" id="btn-add-video">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Agregar video</span>
+                </button>
+                <input type="file" id="input-file-image" accept="image/*" multiple style="display: none;">
+                <input type="file" id="input-file-video" accept="video/*" multiple style="display: none;">
+              </div>
+            </div>
+
+            <!-- Cuadrícula de Adjuntos Seleccionados -->
+            <div class="attachments-cards-grid" id="attachments-cards-grid">
+              <!-- Las tarjetas de archivos agregados se renderizan aquí dinámicamente -->
+            </div>
+
+            <!-- Tarjeta de Consejo -->
+            <div class="form-tip-card">
+              <div class="tip-icon-circle">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </div>
+              <div class="tip-content">
+                <span class="tip-title">Consejo</span>
+                <p class="tip-desc">
+                  La notificación se enviará al cliente asociado a la orden seleccionada. Puedes incluir imágenes o videos para mostrar el avance del proceso, productos o cualquier información relevante.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Botones de Acción Inferiores -->
+          <div class="form-bottom-actions">
+            <a href="notifications.html" class="btn-form-cancel">Cancelar</a>
+            <button type="submit" class="btn-form-submit" id="btn-submit-notification">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+              <span>Enviar notificación</span>
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </main>
+
+    <!-- Placeholder para Footer Compartido -->
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="notification-create.js"></script>
+</body>
+</html>

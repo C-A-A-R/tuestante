@@ -696,6 +696,7 @@ body.is-editing-profile .profile-editing-banner {
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 480px;
+  max-height: calc(100vh - 40px);
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
@@ -704,17 +705,26 @@ body.is-editing-profile .profile-editing-banner {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.modal-card.password-modal-card form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .modal-backdrop.is-active .modal-card {
   transform: scale(1) translateY(0);
 }
 
 .modal-card-header {
-  padding: 20px 24px;
+  padding: 18px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-color);
   background-color: #fafbfc;
+  flex-shrink: 0;
 }
 
 .modal-title-wrap {
@@ -773,10 +783,11 @@ body.is-editing-profile .profile-editing-banner {
 }
 
 .modal-card-body {
-  padding: 24px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
+  overflow-y: auto;
 }
 
 .form-group {
@@ -904,6 +915,7 @@ body.is-editing-profile .profile-editing-banner {
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .modal-card-footer .btn {

@@ -911,6 +911,14 @@ function setupFiltersAndPagination() {
 
   const searchInput = document.getElementById('search-payments-input');
   if (searchInput) {
+    // Inicializar búsqueda si viene por parámetro de URL (ej: redirección desde una notificación)
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialSearch = urlParams.get('search') || urlParams.get('order') || urlParams.get('order_id');
+    if (initialSearch) {
+      searchInput.value = initialSearch;
+      state.filters.search = initialSearch;
+    }
+
     let debounceTimeout = null;
     searchInput.addEventListener('input', () => {
       clearTimeout(debounceTimeout);

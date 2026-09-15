@@ -1,0 +1,462 @@
+/* Reset y configuración base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #000;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    margin: 0;
+}
+
+/* Contenedor principal con dos paneles: welcome + form */
+.register-container {
+    display: flex;
+    gap: 0;
+    width: 88vw;
+    margin: 40px auto;
+    height: auto;
+    min-height: 560px;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.45);
+    background: transparent; /* the panels provide the visual backgrounds */
+    position: relative; /* for absolute positioned logo */
+}
+.logo {
+    position: relative;
+    z-index: 2;
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    margin-bottom: 18px; /* space between logo and welcome content */
+    align-self: flex-start; /* position at top-left of the welcome panel using flex */
+}
+.logo-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+}
+
+.logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+/* Panel izquierdo - Bienvenida (gradiente) */
+.welcome-panel {
+    flex: 0 0 36%;
+    background: linear-gradient(135deg, #ffcc00 0%, #ff8c00 100%);
+    padding: 36px 36px; /* top a juego con login (40px) */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* esquina izquierda */
+    justify-content: flex-start; /* contenido desde arriba */
+    gap: 100px; /* separación entre logo y bloque de bienvenida */
+    color: #111;
+    position: relative;
+    border-radius: 0; /* ensure no per-panel rounding */
+}
+
+.welcome-panel::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(32, 0, 0, 0.1) 0%, transparent 70%);
+    animation: float 6s ease-in-out infinite;
+}
+
+.logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+.welcome-content {
+    width: 100%;
+    text-align: left;
+}
+
+.welcome-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #000;
+}
+
+.welcome-text {
+    margin-top: 16px;
+    color: rgba(0,0,0,0.8);
+    max-width: 260px;
+    padding: 20px 0;
+    text-align: center;
+    margin-left: auto; /* centrar bloque en desktop */
+    margin-right: auto; /* centrar bloque en desktop */
+}
+
+.gif-container {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.welcome-gif { width: 100%; height: 100%; object-fit: cover; }
+
+/* Panel derecho - Formulario */
+
+.form-panel {
+    flex: 0 0 64%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* card provides inner padding */
+    background: #ffffff;
+    border-radius: 0; /* ensure no per-panel rounding */
+}
+
+.card { width: 100%; max-width: 700px; background: transparent; box-shadow: none; border-radius: 0; padding: 20px; }
+
+/* Tarjeta principal */
+.card {
+    /* visual moved to parent; keep content padding but no extra box */
+    width: 100%;
+    max-width: 700px;
+    position: relative;
+}
+
+/* Header de la tarjeta */
+.header {
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+.title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.subtitle {
+    font-size: 1rem;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+/* Formulario */
+.form {
+    width: 100%;
+}
+
+/* Filas del formulario */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.form-row:last-of-type {
+    margin-bottom: 0;
+}
+
+/* Grupo de input individual */
+.input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.input-group.full-width {
+    grid-column: 1 / -1;
+}
+
+/* Etiquetas */
+.input-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 8px;
+    line-height: 1.25;
+}
+
+/* Campos de entrada */
+.input-field {
+    padding: 12px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: white;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.input-field:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input-field::placeholder {
+    color: #9ca3af;
+}
+
+.input-field.error {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* Contenedor de contraseña */
+.password-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-container .input-field {
+    padding-right: 50px;
+    width: 100%;
+}
+
+/* Estilos para fila de teléfono (select + small input) */
+.select-phone .phone-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Hacer que el select luzca como los otros inputs */
+.select-field {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: white;
+    font-size: 1rem;
+    font-family: inherit;
+    height: 46px; /* para coincidir con inputs */
+}
+
+/* Input pequeño para el teléfono (7 dígitos) */
+.small-field {
+    padding: 12px 12px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: white;
+    font-size: 1rem;
+    font-family: inherit;
+    width: 100%;
+}
+
+/* Ajuste de proporciones: select más pequeño en móviles/desktop */
+.select-field {
+    width: 35%;
+}
+
+.small-field {
+    width: 65%;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    z-index: 1;
+}
+
+.toggle-password:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.password-icon {
+    width: 18px;
+    height: 18px;
+    user-select: none;
+}
+
+/* Botones */
+.button-group {
+    display: flex;
+    gap: 16px;
+    margin-top: 40px;
+    justify-content: flex-end;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 100px;
+}
+
+.btn-cancel {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn-cancel:hover {
+    background-color: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+.btn-save {
+    width: 80%;
+    background: #ffcc00;
+    color: black;
+    padding: 14px 24px;
+    font-weight: 600;
+    margin: auto;
+    margin-bottom: 24px;
+}
+
+.btn-save:hover {
+    background: #ff8c00;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 204, 0, 0.4);
+}
+
+.btn-save:active {
+    transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 955px) {
+    .register-container {
+        flex-direction: column;
+        margin: 20px auto;
+        min-height: auto;
+        width: min(720px, 96vw);
+        border-radius: 14px;
+    }
+    /* When stacked, remove per-panel rounding and let the container show the radius */
+    .welcome-panel, .form-panel, .card { border-radius: 0; }
+    .welcome-panel { padding: 28px 24px 36px 24px; align-items: flex-start; gap: 20px; }
+    .welcome-content { width: 100%; text-align: center; }
+    .welcome-title { text-align: center; }
+    .welcome-text { text-align: center; margin-left: auto; margin-right: auto; }
+    .gif-container { width: 120px; height: 120px; }
+    .card { margin-top: 0; padding: 28px; }
+    .logo { position: relative; align-self: flex-start; margin: 12px 0 8px 0; width: 58px; height: 58px; }
+    .logo img { max-width: 100%; height: auto; display: block; }
+}
+
+@media (max-width: 480px) {
+    .register-container { margin: 10px; }
+    .welcome-title { font-size: 1.5rem; }
+    .gif-container { width: 100px; height: 100px; }
+}
+/* preserve other focus/animation/accessibility rules below (unchanged) */
+
+/* Animaciones suaves */
+.input-field,
+.btn {
+    transition: all 0.2s ease;
+}
+
+/* Estados de focus mejorados */
+.input-field:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Mejoras de accesibilidad */
+.input-label {
+    cursor: pointer;
+}
+
+.btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Estilos para campos de fecha */
+.input-field[type="date"] {
+    color: #374151;
+}
+
+.input-field[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.input-field[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* Estilos para campos de teléfono */
+.input-field[type="tel"] {
+    font-family: monospace;
+}
+
+/* Mensajes de error */
+.error-message {
+    color: #dc2626;
+    font-size: 0.75rem;
+    margin-top: 4px;
+    display: block;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+/* Mensaje global en la parte inferior del formulario (ej. errores de teléfono) */
+.form-bottom-message {
+    margin-top: 16px;
+    color: #dc2626;
+    font-size: 0.95rem;
+    text-align: left;
+    min-height: 1.2em;
+}
+
+/* Mensaje localizado debajo del campo teléfono */
+.phone-message {
+    margin-top: 8px;
+    color: #dc2626;
+    font-size: 0.875rem;
+    min-height: 1.1em;
+}

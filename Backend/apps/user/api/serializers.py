@@ -8,6 +8,7 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializador para el modelo User."""
 
     full_name = serializers.SerializerMethodField()
+    document_type_display = serializers.CharField(source='get_document_type_display', read_only=True)
     orders_count = serializers.IntegerField(read_only=True, default=0)
     total_spent = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True, default=0.00)
     last_order_date = serializers.DateField(read_only=True, default=None, allow_null=True)
@@ -24,6 +25,8 @@ class UserSerializer(serializers.ModelSerializer):
             "second_name",
             "first_last_name",
             "second_last_name",
+            "document_type",
+            "document_type_display",
             "identity_document",
             "full_name",
             "birth_date",
@@ -78,6 +81,13 @@ class UserCreateSerializer(serializers.ModelSerializer):
     second_name = serializers.CharField(allow_blank=True, required=False)
     first_last_name = serializers.CharField(allow_blank=True, required=False)
     second_last_name = serializers.CharField(allow_blank=True, required=False)
+    document_type = serializers.ChoiceField(
+        choices=User.DOCUMENT_TYPE_CHOICES,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        default=User.DocumentType.VENEZOLANO
+    )
     identity_document = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     birth_date = serializers.DateField(allow_null=True, required=False)
     phone = serializers.CharField(allow_blank=True, required=False)
@@ -109,6 +119,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
             "second_name",
             "first_last_name",
             "second_last_name",
+            "document_type",
             "identity_document",
             "birth_date",
             "phone",
@@ -304,9 +315,9 @@ class ChangePasswordSerializer(serializers.Serializer):
     user_id = serializers.IntegerField(required=False, allow_null=True)
     current_password = serializers.CharField(required=False, allow_blank=True, style={"input_type": "password"})
     new_password = serializers.CharField(
-        required=True, validators=[validate_password], style={"input_type": "password"}
+        required=True, min_length=6, validators=[validate_password], style={"input_type": "password"}
     )
-    confirm_new_password = serializers.CharField(required=True, style={"input_type": "password"})
+    confirm_new_password = serializers.CharField(required=True, min_length=6, style={"input_type": "password"})
 
     def validate(self, attrs):
         if attrs["new_password"] != attrs["confirm_new_password"]:
@@ -348,8 +359,8 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 class PasswordResetConfirmSerializer(serializers.Serializer):
     """Serializador para confirmar restablecimiento de contraseña."""
 
-    new_password = serializers.CharField(write_only=True, min_length=8)
-    confirm_new_password = serializers.CharField(write_only=True, min_length=8)
+    new_password = serializers.CharField(write_only=True, min_length=6)
+    confirm_new_password = serializers.CharField(write_only=True, min_length=6)
 
     def validate(self, attrs):
         if attrs["new_password"] != attrs["confirm_new_password"]:

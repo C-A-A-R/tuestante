@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editar notificación | TuEstante Admin</title>
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes Reutilizables -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+  <link rel="stylesheet" href="../../components/modal/modal.css">
+
+  <!-- Estilos del Formulario de Notificaciones -->
+  <link rel="stylesheet" href="notification-form.css">
+</head>
+<body data-page-title="Editar notificación">
+
+  <!-- Contenedor Semántico para Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- Layout Principal de la Aplicación -->
+  <div class="app-layout" id="app-layout">
+    
+    <!-- Placeholders para Drawer y Navbar Compartidos -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal -->
+    <main class="app-main-content">
+      <div class="notification-form-container">
+
+        <!-- Encabezado con Botón de Regreso -->
+        <div class="screen-header-nav">
+          <a href="notifications.html" class="btn-back-header" title="Volver a Notificaciones" aria-label="Volver">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </a>
+          <div class="screen-header-text">
+            <h1 class="screen-main-title">Editar notificación</h1>
+            <p class="screen-main-desc">Modifica la información de la notificación.</p>
+          </div>
+        </div>
+
+        <!-- Banner Informativo -->
+        <div class="info-notice-banner">
+          <svg viewBox="0 0 24 24" class="info-notice-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <p>
+            Esta notificación fue enviada al cliente. Puedes editar el mensaje y los adjuntos si es necesario. Los cambios se reflejarán en el historial de la orden.
+          </p>
+        </div>
+
+        <form id="form-edit-notification" novalidate>
+
+          <!-- 1. Información general -->
+          <section class="form-section-card">
+            <div class="section-card-header">
+              <div class="section-title-group">
+                <h2 class="section-card-title">1. Información general</h2>
+              </div>
+            </div>
+
+            <!-- Tarjeta de la Orden Vinculada (Solo Lectura) -->
+            <div class="selected-order-card" id="edit-order-card">
+              <div class="selected-order-left">
+                <div class="selected-order-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                </div>
+                <div class="selected-order-info">
+                  <span class="selected-order-num" id="edit-order-num">Pedido #00000</span>
+                  <span class="selected-order-client" id="edit-order-client">Cliente</span>
+                </div>
+              </div>
+              <div class="selected-order-right">
+                <div class="selected-order-meta">
+                  <span class="selected-order-date" id="edit-order-date">-</span>
+                  <span class="order-badge-pill" id="edit-order-status">En fabricación</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Asunto -->
+            <div class="form-group">
+              <label for="input-edit-subject" class="form-label">
+                <span>Asunto</span>
+                <span class="req-star">*</span>
+              </label>
+              <input 
+                type="text" 
+                class="form-input" 
+                id="input-edit-subject" 
+                name="title" 
+                placeholder="Ej. Avance de fabricación" 
+                required
+                maxlength="200"
+              >
+            </div>
+
+            <!-- Mensaje -->
+            <div class="form-group">
+              <label for="input-edit-message" class="form-label">
+                <span>Mensaje</span>
+                <span class="req-star">*</span>
+              </label>
+              <textarea 
+                class="form-textarea" 
+                id="input-edit-message" 
+                name="message" 
+                rows="5" 
+                placeholder="Escribe aquí el mensaje que deseas enviar al cliente..." 
+                required
+                maxlength="2000"
+              ></textarea>
+              <div class="char-counter" id="edit-char-counter">0/2000</div>
+            </div>
+          </section>
+
+          <!-- 2. Adjuntos -->
+          <section class="form-section-card">
+            <div class="section-card-header">
+              <div class="section-title-group">
+                <h2 class="section-card-title">2. Adjuntos</h2>
+              </div>
+              <div class="section-header-actions">
+                <button type="button" class="btn-add-media" id="btn-add-image">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Agregar imagen</span>
+                </button>
+                <button type="button" class="btn-add-media" id="btn-add-video">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Agregar video</span>
+                </button>
+                <input type="file" id="input-file-image" accept="image/*" multiple style="display: none;">
+                <input type="file" id="input-file-video" accept="video/*" multiple style="display: none;">
+              </div>
+            </div>
+
+            <!-- Cuadrícula de Adjuntos (Existentes y Nuevos) -->
+            <div class="attachments-cards-grid" id="attachments-cards-grid">
+              <!-- Miniaturas renderizadas dinámicamente -->
+            </div>
+          </section>
+
+          <!-- 3. Estado de la notificación (Informativo / Solo Lectura) -->
+          <section class="form-section-card">
+            <div class="section-card-header">
+              <div class="section-title-group">
+                <h2 class="section-card-title">3. Estado de la notificación</h2>
+              </div>
+            </div>
+
+            <div class="status-readonly-grid">
+              <!-- Visualización de Estado de Lectura -->
+              <div class="status-readonly-field">
+                <label class="form-label">
+                  <span>Estado de visualización</span>
+                </label>
+                <div class="status-display-card" id="status-view-display">
+                  <span class="status-indicator-badge status-badge-unread" id="badge-view-status">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>Enviada (Aún no vista)</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Fecha de Envío -->
+              <div class="status-readonly-field">
+                <label class="form-label">
+                  <span>Fecha de envío</span>
+                </label>
+                <div class="status-display-card" id="status-date-display">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); flex-shrink: 0;">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                  <span id="text-sent-date" style="font-weight: 500;">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nota informativa según especificación del usuario -->
+            <p class="status-system-note">
+              * Los estados no pueden actualizarse manualmente; se actualizan solos en el sistema. Puedes visualizar aquí si ya fue visto por el cliente o aún no.
+            </p>
+          </section>
+
+          <!-- Botones de Acción Inferiores -->
+          <div class="form-bottom-actions">
+            <a href="notifications.html" class="btn-form-cancel">Cancelar</a>
+            <button type="submit" class="btn-form-submit" id="btn-save-notification">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span>Guardar cambios</span>
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </main>
+
+    <!-- Placeholder para Footer Compartido -->
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="notification-edit.js"></script>
+</body>
+</html>

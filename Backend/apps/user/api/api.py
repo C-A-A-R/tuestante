@@ -30,6 +30,7 @@ class UserViewSet(BaseViewSet):
         'first_last_name',
         'second_name',
         'second_last_name',
+        'document_type',
         'identity_document',
         'phone',
     ]

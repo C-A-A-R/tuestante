@@ -364,7 +364,11 @@ function renderizarTabla(clients) {
   tbody.innerHTML = clients.map((c) => {
     const initials = escapeHtml(getInitials(c.full_name));
     const colorClass = getAvatarColorClass(c.id);
-    const docText = escapeHtml(c.identity_document ? String(c.identity_document) : 'Sin documento');
+    let rawDocStr = c.identity_document ? String(c.identity_document) : '';
+    if (rawDocStr && !rawDocStr.includes('-') && c.document_type) {
+      rawDocStr = `${c.document_type}-${rawDocStr}`;
+    }
+    const docText = escapeHtml(rawDocStr || 'Sin documento');
     const cityState = escapeHtml([c.city, c.state].filter(Boolean).join(', ') || '-');
     const totalSpentStr = escapeHtml(formatCurrency(c.total_spent));
     const lastOrderStr = escapeHtml(formatDate(c.last_order_date));
@@ -982,6 +986,7 @@ function setupClientFormModal() {
       second_name: secondName,
       first_last_name: lastName,
       second_last_name: secondLastName,
+      document_type: docType,
       identity_document: fullDoc,
       birth_date: birthDate,
       email: email,
@@ -1056,8 +1061,16 @@ function abrirModalFormulario(client = null) {
     document.getElementById('input-state').value = client.state || '';
 
     // Parsear tipo y número de documento
+    const docTypeVal = client.document_type ? String(client.document_type).toUpperCase() : '';
     const rawDoc = String(client.identity_document || '').trim();
-    if (rawDoc.includes('-')) {
+    if (docTypeVal) {
+      document.getElementById('select-doc-type').value = docTypeVal;
+      if (rawDoc.toUpperCase().startsWith(`${docTypeVal}-`)) {
+        document.getElementById('input-doc-number').value = rawDoc.substring(docTypeVal.length + 1);
+      } else {
+        document.getElementById('input-doc-number').value = rawDoc;
+      }
+    } else if (rawDoc.includes('-')) {
       const parts = rawDoc.split('-');
       document.getElementById('select-doc-type').value = parts[0].toUpperCase();
       document.getElementById('input-doc-number').value = parts.slice(1).join('-');
@@ -1138,7 +1151,13 @@ async function abrirModalDetalle(client) {
     avatar.className = `detail-avatar-circle ${getAvatarColorClass(client.id)}`;
   }
   if (fullName) fullName.textContent = client.full_name || client.username || 'Cliente';
-  if (docBadge) docBadge.textContent = client.identity_document || 'Sin documento';
+  if (docBadge) {
+    let rawDoc = client.identity_document ? String(client.identity_document) : '';
+    if (rawDoc && !rawDoc.includes('-') && client.document_type) {
+      rawDoc = `${client.document_type}-${rawDoc}`;
+    }
+    docBadge.textContent = rawDoc || 'Sin documento';
+  }
   if (statusBadge) {
     statusBadge.textContent = client.is_active ? 'Activo' : 'Inactivo';
     statusBadge.className = `status-pill ${client.is_active ? 'status-active' : 'status-inactive'}`;

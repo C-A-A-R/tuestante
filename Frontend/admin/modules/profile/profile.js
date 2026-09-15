@@ -479,7 +479,7 @@ function resetPasswordValidationUI() {
 function validatePasswordRules() {
   const val = document.getElementById('input-new-password')?.value || '';
 
-  const isLenValid = val.length >= 8;
+  const isLenValid = val.length >= 6;
   const isUpperValid = /[A-Z]/.test(val);
   const isNumValid = /[0-9]/.test(val);
 
@@ -552,7 +552,7 @@ async function handlePasswordSubmit(e) {
   // 2. Validar reglas de seguridad de nueva contraseña
   const rulesOk = validatePasswordRules();
   if (!rulesOk) {
-    showToast('error', 'Contraseña insegura', 'La nueva contraseña debe tener al menos 8 caracteres, 1 mayúscula y 1 número.');
+    showToast('error', 'Contraseña insegura', 'La nueva contraseña debe tener al menos 6 caracteres, 1 mayúscula y 1 número.');
     inputNew?.focus();
     return;
   }

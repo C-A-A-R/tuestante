@@ -72,6 +72,16 @@ class CustomUserManager(UserManager):
 class User(AbstractUser, PermissionsMixin, BaseModel):
     """Modelo de Usuario personalizado que hereda de BaseModel y AbstractUser."""
 
+    class DocumentType(models.TextChoices):
+        VENEZOLANO = 'V', 'Venezolano'
+        EXTRANJERO = 'E', 'Extranjero'
+        JURIDICO = 'J', 'Jurídico'
+        GUBERNAMENTAL = 'G', 'Gubernamental'
+        PASAPORTE = 'P', 'Pasaporte'
+        REGISTRO = 'R', 'Firma Personal / Registro'
+
+    DOCUMENT_TYPE_CHOICES = DocumentType.choices
+
     # Campos básicos de identificación
     username = models.CharField(
         'Nombre de usuario',
@@ -149,6 +159,15 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         blank=True,
         help_text='Segundo apellido del usuario'
     )
+    document_type = models.CharField(
+        'Tipo de documento',
+        max_length=2,
+        choices=DocumentType.choices,
+        default=DocumentType.VENEZOLANO,
+        null=True,
+        blank=True,
+        help_text='Tipo de documento de identidad (V, E, J, G, P, R)'
+    )
     identity_document = models.CharField(
         'Documento de identidad',
         max_length=30,
@@ -210,6 +229,14 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
             self.identity_document = None
         if self.username == '':
             self.username = None
+        if self.document_type == '':
+            self.document_type = None
+
+        # Si no se asignó document_type pero identity_document contiene prefijo (ej: V-12345678)
+        if self.identity_document and not self.document_type:
+            doc_str = str(self.identity_document).strip().upper()
+            if len(doc_str) >= 2 and doc_str[1] == '-' and doc_str[0] in dict(self.DocumentType.choices):
+                self.document_type = doc_str[0]
 
         if not self.username and not self.is_staff and not self.is_superuser:
             if self.email:

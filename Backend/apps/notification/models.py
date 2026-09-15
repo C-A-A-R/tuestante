@@ -44,9 +44,27 @@ class Notification(BaseModel):
         choices=TYPE_CHOICES,
         default='general'
     )
+    DELIVERY_STATUS_CHOICES = [
+        ('sent', 'Enviada'),
+        ('pending', 'Pendiente'),
+        ('read', 'Leída'),
+    ]
+
     is_read = models.BooleanField(
         'Fue leído',
         default=False
+    )
+    is_manual = models.BooleanField(
+        'Es manual',
+        default=False,
+        help_text='Indica si fue redactada manualmente por un administrador o generada automáticamente'
+    )
+    status = models.CharField(
+        'Estado de entrega',
+        max_length=15,
+        choices=DELIVERY_STATUS_CHOICES,
+        default='sent',
+        help_text='Estado de la notificación (Enviada, Pendiente, Leída)'
     )
     # FK directa a Order — obligatoria cuando notification_type='order', nula para notificaciones generales
     order = models.ForeignKey(

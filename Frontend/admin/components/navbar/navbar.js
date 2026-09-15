@@ -940,18 +940,168 @@ export class AdminNavbar {
       }
     };
 
-    // Helper para obtener icono y estilo según tipo de notificación
-    const getNotifIcon = (type) => {
-      switch (type) {
-        case 'order':
-          return { icon: '🛍️', class: 'type-order' };
-        case 'employee_order':
-          return { icon: '👥', class: 'type-employee_order' };
-        case 'payroll':
-          return { icon: '💵', class: 'type-payroll' };
-        default:
-          return { icon: '🔔', class: 'type-general' };
+    // Helper para obtener icono y estilo según tipo y contenido de notificación
+    const getNotifIcon = (type, title = '', message = '') => {
+      const t = (type || '').toLowerCase();
+      const combined = `${title} ${message}`.toLowerCase();
+
+      if (t === 'payment' || combined.includes('pago') || combined.includes('comprobante')) {
+        return { icon: '💳', class: 'type-payment' };
       }
+      if (t === 'payroll' || combined.includes('abono') || combined.includes('nómina')) {
+        return { icon: '💵', class: 'type-payroll' };
+      }
+      if (t === 'employee_order' || combined.includes('pedido empleado') || combined.includes('tienda de empleados')) {
+        return { icon: '👥', class: 'type-employee_order' };
+      }
+      if (t === 'shipping' || combined.includes('envío') || combined.includes('despacho') || combined.includes('entregado')) {
+        return { icon: '🚚', class: 'type-shipping' };
+      }
+      if (t === 'production' || combined.includes('fabricación') || combined.includes('producción')) {
+        return { icon: '🏭', class: 'type-production' };
+      }
+      if (t === 'order' || combined.includes('pedido') || combined.includes('orden')) {
+        return { icon: '🛍️', class: 'type-order' };
+      }
+      return { icon: '🔔', class: 'type-general' };
+    };
+
+    /**
+     * Determina la URL de destino y la etiqueta de acción contextual para una notificación
+     * @param {Object} notif Objeto de notificación
+     * @returns {{ url: string, actionLabel: string }}
+     */
+    const resolveNotificationDestination = (notif) => {
+      const prefix = getBasePathPrefix();
+      if (!notif) return { url: `${prefix}modules/order/orders.html`, actionLabel: 'Ver pedidos' };
+
+      const type = (notif.notification_type || '').toLowerCase();
+      const title = (notif.title || '').toLowerCase();
+      const message = (notif.message || '').toLowerCase();
+      const combined = `${title} ${message}`;
+
+      // Extraer identificadores de orden
+      const orderId = notif.order_id ?? (typeof notif.order === 'object' ? notif.order?.id : notif.order) ?? null;
+      const internalOrderId = notif.internal_order_id ?? (typeof notif.internal_order === 'object' ? notif.internal_order?.id : notif.internal_order) ?? null;
+
+      let parsedOrderId = orderId;
+      if (!parsedOrderId) {
+        const match = combined.match(/(?:pedido|orden)\s*#?0*(\d+)/i);
+        if (match) {
+          parsedOrderId = parseInt(match[1], 10);
+        }
+      }
+
+      // 1. Pagos y Comprobantes
+      const isPayment = type === 'payment' ||
+                        title.includes('pago') ||
+                        title.includes('comprobante') ||
+                        (combined.includes('pago') && (combined.includes('verificar') || combined.includes('registrado') || combined.includes('revisión') || combined.includes('aprobado') || combined.includes('rechazado')));
+
+      if (isPayment) {
+        // Abono o deducción de empleado
+        if (type === 'payroll' || combined.includes('abono') || combined.includes('nómina') || combined.includes('deducción')) {
+          return {
+            url: `${prefix}modules/employee_store/reports.html`,
+            actionLabel: 'Ver nómina'
+          };
+        }
+        // Pago registrado de cliente
+        if (parsedOrderId) {
+          if (title.includes('pago registrado')) {
+            return {
+              url: `${prefix}modules/payment/payments.html?search=${parsedOrderId}`,
+              actionLabel: 'Ver pago'
+            };
+          }
+          return {
+            url: `${prefix}modules/order/order-detail.html?id=${parsedOrderId}`,
+            actionLabel: 'Ver pedido'
+          };
+        }
+        return {
+          url: `${prefix}modules/payment/payments.html`,
+          actionLabel: 'Ver pagos'
+        };
+      }
+
+      // 2. Pedidos Internos de Empleados
+      if (type === 'employee_order' || internalOrderId || combined.includes('pedido empleado') || combined.includes('tienda de empleados')) {
+        return {
+          url: `${prefix}modules/employee_store/orders-history.html`,
+          actionLabel: 'Ver orden'
+        };
+      }
+
+      // 3. Nómina / Cortes
+      if (type === 'payroll' || combined.includes('nómina') || combined.includes('abono')) {
+        return {
+          url: `${prefix}modules/employee_store/reports.html`,
+          actionLabel: 'Ver nómina'
+        };
+      }
+
+      // 4. Envíos y Despachos
+      if (type === 'shipping' || combined.includes('envío') || combined.includes('despacho') || combined.includes('en camino') || combined.includes('entregado')) {
+        if (parsedOrderId) {
+          return {
+            url: `${prefix}modules/order/order-detail.html?id=${parsedOrderId}`,
+            actionLabel: 'Ver pedido'
+          };
+        }
+        return {
+          url: `${prefix}modules/shipping/shipping.html`,
+          actionLabel: 'Ver envíos'
+        };
+      }
+
+      // 5. Fabricación y Producción
+      if (type === 'production' || combined.includes('fabricación') || combined.includes('producción')) {
+        if (parsedOrderId) {
+          return {
+            url: `${prefix}modules/order/order-detail.html?id=${parsedOrderId}`,
+            actionLabel: 'Ver pedido'
+          };
+        }
+        return {
+          url: `${prefix}modules/production/production.html`,
+          actionLabel: 'Ver fabricación'
+        };
+      }
+
+      // 6. Directorio de Clientes
+      if (type === 'client' || type === 'user' || (combined.includes('cliente') && !combined.includes('pedido'))) {
+        return {
+          url: `${prefix}modules/user/clients.html`,
+          actionLabel: 'Ver clientes'
+        };
+      }
+
+      // 7. Pedidos de Clientes
+      if (type === 'order' || combined.includes('pedido') || parsedOrderId) {
+        if (parsedOrderId) {
+          return {
+            url: `${prefix}modules/order/order-detail.html?id=${parsedOrderId}`,
+            actionLabel: 'Ver pedido'
+          };
+        }
+        return {
+          url: `${prefix}modules/order/orders.html`,
+          actionLabel: 'Ver pedidos'
+        };
+      }
+
+      // Fallback
+      if (parsedOrderId) {
+        return {
+          url: `${prefix}modules/order/order-detail.html?id=${parsedOrderId}`,
+          actionLabel: 'Ver pedido'
+        };
+      }
+      return {
+        url: `${prefix}modules/order/orders.html`,
+        actionLabel: 'Ver detalle'
+      };
     };
 
     // 1. Cargar conteo de notificaciones no leídas
@@ -1000,7 +1150,8 @@ export class AdminNavbar {
           item.setAttribute('role', 'button');
           item.setAttribute('tabindex', '0');
 
-          const iconMeta = getNotifIcon(notif.notification_type);
+          const iconMeta = getNotifIcon(notif.notification_type, notif.title, notif.message);
+          const dest = resolveNotificationDestination(notif);
 
           item.innerHTML = `
             <div class="notif-icon-circle ${iconMeta.class}">
@@ -1011,34 +1162,41 @@ export class AdminNavbar {
               <div class="notif-message">${notif.message || ''}</div>
               <div class="notif-meta">
                 <span class="notif-time">${formatTimeAgo(notif.created_at)}</span>
+                <span class="notif-action-hint">${dest.actionLabel} &rarr;</span>
                 ${!notif.is_read ? '<span class="notif-unread-dot"></span>' : ''}
               </div>
             </div>
           `;
 
-          // Clic en notificación individual
-          item.addEventListener('click', async () => {
+          // Clic en notificación individual con redirección contextual inmediata
+          const triggerNavigation = async () => {
             if (!notif.is_read) {
-              try {
-                await apiRequest({
-                  path: `/notifications/${notif.id}/mark_as_read/`,
-                  method: 'POST'
-                });
-                notif.is_read = true;
-                item.classList.remove('is-unread');
-                item.querySelector('.notif-unread-dot')?.remove();
-                loadUnreadCount();
-              } catch (e) {
-                console.warn('[TuEstante Navbar] Error marcando como leída:', e);
-              }
+              notif.is_read = true;
+              item.classList.remove('is-unread');
+              item.querySelector('.notif-unread-dot')?.remove();
+              loadUnreadCount();
+
+              apiRequest({
+                path: `/notifications/${notif.id}/mark_as_read/`,
+                method: 'POST'
+              }).catch(e => console.warn('[TuEstante Navbar] Error marcando como leída:', e));
             }
 
-            // Redirección contextual si tiene orden asociada
-            const prefix = getBasePathPrefix();
-            if (notif.order_id) {
-              window.location.href = `${prefix}modules/order/order-detail.html?id=${notif.order_id}`;
-            } else if (notif.internal_order_id) {
-              window.location.href = `${prefix}modules/employee_store/orders-history.html`;
+            if (dest && dest.url) {
+              togglePopover(false);
+              window.location.href = dest.url;
+            }
+          };
+
+          item.addEventListener('click', (e) => {
+            e.preventDefault();
+            triggerNavigation();
+          });
+
+          item.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              triggerNavigation();
             }
           });
 
