@@ -10,7 +10,7 @@
  * 5. Navegación activa para Catálogo, Mis Pedidos y Mi Perfil.
  */
 
-import { getAccessToken, clearTokens, clearCurrentUser, getCurrentUser } from '../../../cliente/js/storage.js';
+import { getAccessToken, clearTokens, clearCurrentUser, getCurrentUser } from '../../../js/storage.js';
 import { obtenerEstadoDeCuenta, obtenerPerfilEmpleado } from '../../modules/profile/profile.api.js';
 import { showConfirmModal } from '../dialog/dialog.js';
 import { obtenerNotificaciones, marcarNotificacionLeida, marcarTodasLeidas } from '../../js/service/notification.api.js';
@@ -20,7 +20,7 @@ import { obtenerNotificaciones, marcarNotificacionLeida, marcarTodasLeidas } fro
  * Garantiza que la redirección funcione tanto desde la raíz como desde /modules/...
  */
 export function getLoginUrl() {
-  const loginUrl = new URL('../../../cliente/modules/auth/login.html', import.meta.url);
+  const loginUrl = new URL('../../../modules/auth/login.html', import.meta.url);
   loginUrl.searchParams.set('redirect', window.location.href);
   return loginUrl.href;
 }
@@ -70,7 +70,7 @@ export function renderNavbar(placeholderId = 'navbar-placeholder') {
         <div class="navbar-brand-group">
           <a href="${prefix}index.html" class="navbar-brand" id="nav-brand-link" title="Ir al Catálogo de Empleados">
             <div class="navbar-logo-icon">
-              <img id="nav-brand-img" src="${prefix}../cliente/assets/images/logo.jpeg" alt="Logo TuEstante">
+              <img id="nav-brand-img" src="${prefix}../assets/images/logo.jpeg" alt="Logo TuEstante">
             </div>
             <div class="navbar-brand-text">
               <span class="brand-title">TuEstante</span>
@@ -241,7 +241,7 @@ function setupNavLinks(prefix) {
   const userNameEl = document.getElementById('navbar-user-name');
 
   if (brandLink) brandLink.href = `${prefix}index.html`;
-  if (brandImg) brandImg.src = `${prefix}../cliente/assets/images/logo.jpeg`;
+  if (brandImg) brandImg.src = `${prefix}../assets/images/logo.jpeg`;
   if (linkCatalogo) linkCatalogo.href = `${prefix}index.html`;
   if (linkPedidos) linkPedidos.href = `${prefix}modules/order/orders.html`;
   if (linkPerfil) linkPerfil.href = `${prefix}modules/profile/profile.html`;

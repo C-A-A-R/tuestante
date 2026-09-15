@@ -489,6 +489,15 @@ function setupEventListeners() {
   document.getElementById('select-filter-status')?.addEventListener('change', renderTable);
   document.getElementById('btn-reload-data')?.addEventListener('click', loadData);
 
+  // Limpiar Filtros
+  document.getElementById('btn-clear-filters')?.addEventListener('click', () => {
+    const searchInput = document.getElementById('input-search');
+    const statusSelect = document.getElementById('select-filter-status');
+    if (searchInput) searchInput.value = '';
+    if (statusSelect) statusSelect.value = 'all';
+    renderTable();
+  });
+
   // Modal Pago
   setupPayVoucherEvents();
   document.getElementById('btn-close-payment')?.addEventListener('click', closePaymentModal);

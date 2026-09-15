@@ -327,6 +327,57 @@ export const MOCK_ORDERS = [
  * ==========================================================================
  */
 
+const ORDER_STATUS_LABELS = {
+  pending_initial_payment: 'Pendiente de pago',
+  initial_payment_review: 'Pago inicial en revisión',
+  manufacturing: 'En fabricación',
+  waiting_final_payment: 'Esperando pago final',
+  final_payment_review: 'Pago final en revisión',
+  shipped: 'Enviado',
+  finalized: 'Finalizado',
+  returned_manufacturing: 'Devuelto / En refabricación',
+  cancelled: 'Cancelado'
+};
+
+function normalizeOrder(order = {}) {
+  const client = typeof order.user === 'string'
+    ? { name: order.user, email: '' }
+    : (order.client || order.user || {});
+  const details = order.details || [];
+  const items = details.flatMap(detail => (detail.order_products || []).length
+    ? detail.order_products.map(orderProduct => ({
+      id: orderProduct.id,
+      product_id: orderProduct.product?.id,
+      product_name: orderProduct.product?.product_name || 'Producto',
+      quantity: detail.quantity || 1,
+      unit_price: Number(detail.unit_price || orderProduct.price_at_order || 0),
+      total_price: Number(detail.final_price || 0),
+      notes: detail.notes || ''
+    }))
+    : [{
+      id: detail.id,
+      product_name: 'Producto',
+      quantity: detail.quantity || 1,
+      unit_price: Number(detail.unit_price || 0),
+      total_price: Number(detail.final_price || 0),
+      notes: detail.notes || ''
+    }]
+  );
+  const total = Number(order.total_price ?? order.total_amount ?? 0);
+
+  return {
+    ...order,
+    order_code: order.order_code || order.order_number || `#${String(order.id || '').padStart(5, '0')}`,
+    client,
+    items,
+    items_count: items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+    total_amount: total,
+    status_label: order.status_label || ORDER_STATUS_LABELS[order.status] || order.status,
+    formatted_date: order.created_at ? new Date(order.created_at).toLocaleDateString('es-ES') : '',
+    formatted_time: order.created_at ? new Date(order.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : ''
+  };
+}
+
 /**
  * Obtiene el listado de pedidos desde el backend con soporte para filtros y paginación.
  * En caso de no haber conexión o error de red, retorna los datos de respaldo (MOCK_ORDERS).
@@ -349,14 +400,20 @@ export async function getOrders(filters = {}) {
 
     if (list && list.length > 0) {
       return {
-        results: list,
+        results: list.map(normalizeOrder),
         total: response.count || list.length,
         page: filters.page || 1,
         total_pages: Math.ceil((response.count || list.length) / (filters.page_size || 8))
       };
     }
+    return {
+      results: [],
+      total: 0,
+      page: filters.page || 1,
+      total_pages: 1
+    };
   } catch (error) {
-    console.info('[TuEstante Order API] Modo sin backend activo o error de conexión. Utilizando datos locales mock:', error.message);
+    throw error;
   }
 
   // Fallback con filtro local sobre los datos Mock
@@ -407,12 +464,11 @@ export async function getOrders(filters = {}) {
 export async function getOrderById(orderId) {
   try {
     const data = await getRequest(`/orders/${orderId}/`, {}, { auth: true });
-    if (data) return data;
+    if (data) return normalizeOrder(data);
   } catch (error) {
-    console.warn(`[TuEstante Order API] Fallback a datos mock para el pedido #${orderId}:`, error.message);
+    throw error;
   }
-
-  return MOCK_ORDERS.find(o => o.id === parseInt(orderId, 10)) || MOCK_ORDERS[0];
+  return null;
 }
 
 /**
@@ -424,7 +480,7 @@ export async function createOrder(orderPayload) {
   try {
     return await postRequest('/orders/', orderPayload, { auth: true });
   } catch (error) {
-    console.warn('[TuEstante Order API] Simulación local de creación de pedido:', error.message);
+    throw error;
     
     // Simular nuevo pedido local con estructura compatible con Django model
     const newId = Date.now();
@@ -565,7 +621,7 @@ export async function updateOrderStatus(orderId, newStatus, notes = '') {
   try {
     return await patchRequest(`/orders/${orderId}/`, { status: newStatus, notes }, { auth: true });
   } catch (error) {
-    console.warn(`[TuEstante Order API] Simulación de actualización de estado para pedido #${orderId}`);
+    throw error;
     const order = MOCK_ORDERS.find(o => o.id === parseInt(orderId, 10));
     if (order) {
       order.status = newStatus;
@@ -583,7 +639,7 @@ export async function issueManufacturingOrder(orderId) {
   try {
     return await postRequest(`/orders/${orderId}/issue_manufacturing_order/`, {}, { auth: true });
   } catch (error) {
-    console.warn(`[TuEstante Order API] Simulación de emisión de Orden de Fabricación para pedido #${orderId}`);
+    throw error;
     return { success: true, message: `Orden de fabricación emitida para el pedido #${orderId}` };
   }
 }
@@ -602,7 +658,7 @@ export async function reviewPayment(paymentId, status, rejectionReason = '') {
       rejection_reason: rejectionReason
     }, { auth: true });
   } catch (error) {
-    console.warn(`[TuEstante Order API] Simulación de revisión de pago #${paymentId}`);
+    throw error;
     return { success: true, paymentId, status };
   }
 }
@@ -616,6 +672,7 @@ export async function getClientsList() {
     const data = await getRequest('/user/', { is_active: true }, { auth: true });
     return extractList(data);
   } catch (error) {
+    throw error;
     return [
       { 
         id: 1, 
@@ -680,6 +737,7 @@ export async function getProductsList() {
     const data = await getRequest('/products/products/', { is_active: true }, { auth: true });
     return extractList(data);
   } catch (error) {
+    throw error;
     return [
       { 
         id: 1, 

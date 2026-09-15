@@ -22,23 +22,31 @@ from apps.user.services.password_service import (
     is_valid_password_reset_token,
 )
 from apps.user.utils.email_tokens import check_activation_token
+from apps.user.utils.email_service import EmailDeliveryError
 
 
 class UserRegisterView(APIView):
-    """Vista para registrar usuarios (solo Administrador o Superusuario)."""
+    """Vista para registrar usuarios."""
 
-    permission_classes = [IsAdmin]
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
 
         username = data.get("username") or data.get("nombre_usuario")
         email = data.get("email") or data.get("correo")
-        is_staff = data.get("is_staff", False)
-        is_superuser = data.get("is_superuser", False)
+        
+        is_admin_requester = bool(
+            request.user
+            and request.user.is_authenticated
+            and (request.user.is_staff or request.user.is_superuser)
+        )
+        if not is_admin_requester:
+            data["is_staff"] = False
+            data["is_superuser"] = False
 
         # Cuando no se recibe username y no sea un administrador, reemplaza el username por el correo
-        if not username and not is_staff and not is_superuser and email:
+        if not username and email:
             data["username"] = email
 
         serializer = UserCreateSerializer(data=data)
@@ -88,7 +96,13 @@ class PasswordResetRequestView(APIView):
         except User.DoesNotExist:
             return Response({"error": "No existe una cuenta con ese correo."}, status=status.HTTP_404_NOT_FOUND)
 
-        send_password_reset_email(user, request)
+        try:
+            send_password_reset_email(user, request)
+        except EmailDeliveryError as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         return Response({"message": "Si el correo existe, se envió un enlace para restablecer la contraseña."})
 
 
@@ -153,12 +167,24 @@ class LoginView(APIView):
 
         refresh = RefreshToken.for_user(auth_user)
 
+        is_employee = False
+        try:
+            from apps.employee_store.models import EmployeeProfile
+            is_employee = EmployeeProfile.objects.filter(
+                user=auth_user,
+                is_deleted=False,
+                is_active=True
+            ).exists()
+        except Exception:
+            is_employee = False
+
         return Response(
             {
                 "message": "Inicio de sesión exitoso",
                 "user": UserSerializer(auth_user).data,
                 "is_staff": auth_user.is_staff,
                 "is_superuser": auth_user.is_superuser,
+                "is_employee": is_employee,
                 "tokens": {
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),

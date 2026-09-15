@@ -1,4 +1,6 @@
 from django.utils import timezone
+from django.db import models
+from django.db.models import Count, Sum
 from django.db import transaction
 from rest_framework import permissions, status, serializers
 from rest_framework.response import Response
@@ -85,6 +87,32 @@ class PaymentViewSet(BaseViewSet):
             else:
                 order.status = 'final_payment_review'
             order.save()
+
+    @action(detail=False, methods=['get'], url_path='statistics', permission_classes=[permissions.IsAdminUser])
+    def statistics(self, request, *args, **kwargs):
+        """Retorna los KPI agregados de pagos para el panel administrativo."""
+        queryset = Payment.objects.filter(is_deleted=False, order__is_deleted=False)
+        aggregates = queryset.aggregate(
+            total_vouchers=Count('id'),
+            total_revenue=Sum('amount', filter=models.Q(status='approved')),
+            in_review_count=Count('id', filter=models.Q(status='pending')),
+            initial_stage_count=Count('id', filter=models.Q(payment_stage='initial')),
+            final_stage_count=Count('id', filter=models.Q(payment_stage__in=['final', 'total'])),
+        )
+        total_revenue = float(aggregates['total_revenue'] or 0)
+        rate_ves = 36.50
+        return Response({
+            'totalRevenue': total_revenue,
+            'totalRevenueVes': round(total_revenue * rate_ves, 2),
+            'formattedTotalRevenue': f'${total_revenue:,.2f}',
+            'formattedTotalRevenueVes': f'Bs. {total_revenue * rate_ves:,.2f}',
+            'totalVouchers': aggregates['total_vouchers'],
+            'inReviewCount': aggregates['in_review_count'],
+            'approvedCount': queryset.filter(status='approved').count(),
+            'rejectedCount': queryset.filter(status='rejected').count(),
+            'initialStageCount': aggregates['initial_stage_count'],
+            'finalStageCount': aggregates['final_stage_count'],
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     @transaction.atomic

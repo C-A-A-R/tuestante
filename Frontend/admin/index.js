@@ -87,7 +87,7 @@ function renderKpiMetrics(metrics) {
     metrics.pendingPayment,
     metrics.inManufacturing,
     metrics.reviewPayment,
-    metrics.waitingFinalPayment,
+    metrics.totalOrdersYear,
     metrics.shippedOrders
   ];
 
@@ -123,7 +123,8 @@ function renderDonutChart(data) {
 
   if (!svgEl || !legendEl) return;
 
-  const total = data.total || 45;
+  const visibleItems = (data.items || []).filter(item => Number(item.count || 0) > 0);
+  const total = visibleItems.reduce((sum, item) => sum + Number(item.count || 0), 0);
   if (centerCountEl) {
     centerCountEl.textContent = total;
   }
@@ -134,8 +135,8 @@ function renderDonutChart(data) {
   let cumulativeOffset = 0;
 
   // Generar segmentos del Donut SVG
-  const segmentsHtml = data.items.map((item, index) => {
-    const fraction = item.count / total;
+  const segmentsHtml = visibleItems.map((item, index) => {
+    const fraction = total > 0 ? item.count / total : 0;
     const strokeDasharray = `${fraction * circumference} ${circumference}`;
     const strokeDashoffset = -cumulativeOffset;
     cumulativeOffset += fraction * circumference;
@@ -148,7 +149,7 @@ function renderDonutChart(data) {
         data-status-id="${item.id}"
         data-label="${item.label}"
         data-count="${item.count}"
-        data-percentage="${item.percentage || ((item.count / total) * 100).toFixed(1)}"
+        data-percentage="${item.percentage || (total ? ((item.count / total) * 100).toFixed(1) : 0)}"
         cx="95"
         cy="95"
         r="${radius}"
@@ -156,7 +157,7 @@ function renderDonutChart(data) {
         stroke-dasharray="${strokeDasharray}"
         stroke-dashoffset="${strokeDashoffset}"
       >
-        <title>${item.label}: ${item.count} pedidos (${((item.count / total) * 100).toFixed(1)}%)</title>
+        <title>${item.label}: ${item.count} pedidos (${total ? ((item.count / total) * 100).toFixed(1) : 0}%)</title>
       </circle>
     `;
   }).join('');
@@ -164,7 +165,7 @@ function renderDonutChart(data) {
   svgEl.innerHTML = segmentsHtml;
 
   // Generar la Leyenda Interactiva con los 8 estados
-  const legendHtml = data.items.map((item, index) => `
+  const legendHtml = visibleItems.map((item, index) => `
     <li class="legend-item" id="legend-item-${item.id}" data-status-id="${item.id}" data-index="${index}">
       <div class="legend-item-left">
         <span class="legend-dot" style="background-color: ${item.color};"></span>
@@ -177,7 +178,7 @@ function renderDonutChart(data) {
   legendEl.innerHTML = legendHtml;
 
   // Conectar interactividad cruzada Hover entre Leyenda y Donut
-  setupDonutInteractivity(data.items);
+  setupDonutInteractivity(visibleItems);
 }
 
 /**

@@ -347,8 +347,28 @@ html, body {
 }
 
 .btn-clear-filters {
-  height: 38px;
-  font-size: 0.82rem;
+  height: 42px;
+  padding: 0 16px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.865rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-clear-filters:hover {
+  background-color: var(--bg-secondary);
+  color: var(--primary);
+  border-color: var(--secondary);
 }
 
 /* ==========================================================================

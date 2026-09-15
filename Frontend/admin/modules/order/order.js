@@ -12,7 +12,9 @@ import {
   getOrderById, 
   createOrder, 
   updateOrderStatus, 
-  issueManufacturingOrder 
+  issueManufacturingOrder,
+  getClientsList,
+  getProductsList
 } from './order.api.js';
 
 /**
@@ -526,27 +528,15 @@ async function handleCreateOrderSubmit(e) {
   const qty = parseInt(qtyInput.value, 10) || 1;
   const totalPrice = unitPrice * qty;
 
-  const clientText = clientSelect.options[clientSelect.selectedIndex].text;
-  const clientName = clientText.split('(')[0].trim();
-  const clientEmail = clientText.includes('(') ? clientText.split('(')[1].replace(')', '').trim() : 'cliente@email.com';
-
   const orderPayload = {
-    client: {
-      name: clientName,
-      email: clientEmail,
-      phone: "+58 412 0000000"
-    },
+    user: parseInt(clientSelect.value, 10),
     items: [
       {
-        product_name: selectedProductOpt.text.split('(')[0].trim(),
+        product_id: parseInt(productSelect.value, 10),
         quantity: qty,
-        unit_price: unitPrice,
-        total_price: totalPrice,
         notes: notesInput.value.trim()
       }
     ],
-    items_count: qty,
-    total_amount: totalPrice,
     notes: notesInput.value.trim()
   };
 
@@ -642,13 +632,14 @@ function showToastNotification(message) {
 function getStatusBadgeClass(status) {
   switch (status) {
     case 'manufacturing': return 'badge-manufacturing';
-    case 'payment_review': return 'badge-payment-review';
+    case 'initial_payment_review':
+    case 'final_payment_review': return 'badge-payment-review';
     case 'waiting_final_payment': return 'badge-waiting-final';
     case 'shipped': return 'badge-shipped';
-    case 'pending_payment': return 'badge-pending-payment';
-    case 'initial_review': return 'badge-initial-review';
-    case 'completed': return 'badge-completed';
-    case 'refunded': return 'badge-refunded';
+    case 'pending_initial_payment': return 'badge-pending-payment';
+    case 'finalized': return 'badge-completed';
+    case 'returned_manufacturing':
+    case 'cancelled': return 'badge-refunded';
     default: return 'badge-manufacturing';
   }
 }
@@ -656,13 +647,14 @@ function getStatusBadgeClass(status) {
 function getStatusLabel(status) {
   switch (status) {
     case 'manufacturing': return 'En fabricación';
-    case 'payment_review': return 'Pago en revisión';
+    case 'initial_payment_review': return 'Pago inicial en revisión';
+    case 'final_payment_review': return 'Pago final en revisión';
     case 'waiting_final_payment': return 'Esperando pago final';
     case 'shipped': return 'Enviado';
-    case 'pending_payment': return 'Pendiente de pago';
-    case 'initial_review': return 'Pago inicial en revisión';
-    case 'completed': return 'Finalizado';
-    case 'refunded': return 'Devuelto';
+    case 'pending_initial_payment': return 'Pendiente de pago';
+    case 'finalized': return 'Finalizado';
+    case 'returned_manufacturing': return 'Devuelto / En refabricación';
+    case 'cancelled': return 'Cancelado';
     default: return status || 'En proceso';
   }
 }
@@ -848,6 +840,20 @@ async function initOrdersModule() {
 
     // 2. Configurar listeners de interacción
     setupEventListeners();
+
+    const [clients, products] = await Promise.all([getClientsList(), getProductsList()]);
+    const clientSelect = document.getElementById('create-client-select');
+    const productSelect = document.getElementById('create-product-select');
+    if (clientSelect) {
+      clientSelect.innerHTML = '<option value="">Seleccione un cliente...</option>' + clients.map(client =>
+        `<option value="${client.id}">${escapeHtml(client.name || `${client.first_name || ''} ${client.first_last_name || ''}`.trim())} (${escapeHtml(client.email || '')})</option>`
+      ).join('');
+    }
+    if (productSelect) {
+      productSelect.innerHTML = '<option value="">Seleccione un producto del catálogo...</option>' + products.map(product =>
+        `<option value="${product.id}" data-price="${product.price || 0}">${escapeHtml(product.product_name || product.name)} ($${Number(product.price || 0).toFixed(2)})</option>`
+      ).join('');
+    }
 
     // 3. Cargar listado inicial de pedidos
     await loadOrdersData();

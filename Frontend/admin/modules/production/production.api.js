@@ -279,7 +279,7 @@ export async function getProductionOrders(params = {}) {
     if (params.order_id) query.append('order_id', params.order_id);
 
     const queryString = query.toString() ? `?${query.toString()}` : '';
-    const res = await getRequest(`/production-orders/${queryString}`, { auth: true });
+    const res = await getRequest(`/production-orders/${queryString}`, {}, { auth: true });
     
     if (res && (Array.isArray(res) || Array.isArray(res.results))) {
       const data = Array.isArray(res) ? res : res.results;
@@ -365,7 +365,7 @@ export async function getProductionProducts(params = {}) {
  */
 export async function getProductionOrder(id) {
   try {
-    const res = await getRequest(`/production-orders/${id}/`, { auth: true });
+    const res = await getRequest(`/production-orders/${id}/`, {}, { auth: true });
     if (res && res.id) {
       return normalizeBackendProductionOrder(res);
     }
@@ -450,7 +450,7 @@ export async function updateProductionOrderStatus(id, data = {}) {
  */
 export async function getProductionMetrics() {
   try {
-    const res = await getRequest('/production-orders/metrics/', { auth: true });
+    const res = await getRequest('/production-orders/metrics/', {}, { auth: true });
     if (res && res.total_orders !== undefined) {
       return res;
     }

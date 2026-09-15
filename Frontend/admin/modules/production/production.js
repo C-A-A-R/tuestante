@@ -928,7 +928,7 @@ async function populateNewOrderSelect() {
   select.innerHTML = '<option value="" disabled selected>Consultando pedidos disponibles...</option>';
 
   try {
-    const ordersRes = await getRequest('/orders/?limit=50', { auth: true }).catch(() => null);
+    const ordersRes = await getRequest('/orders/', { limit: 50 }, { auth: true }).catch(() => null);
     const orders = ordersRes && Array.isArray(ordersRes) ? ordersRes : (ordersRes && Array.isArray(ordersRes.results) ? ordersRes.results : []);
 
     if (orders.length === 0) {

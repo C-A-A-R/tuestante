@@ -1,5 +1,6 @@
+from datetime import timedelta
 from django.db import transaction
-from django.db.models import Case, When, Value, IntegerField, Prefetch
+from django.db.models import Case, When, Value, IntegerField, Prefetch, Count
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
@@ -10,6 +11,9 @@ from apps.orders.models import Order, OrderDetail, OrderProduct, ManufacturingOr
 from apps.product.models import Product
 from apps.shipment.models import Shipment, Distributor
 from apps.orders.api.serializers import OrderSerializer, ManufacturingOrderSerializer
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class OrderViewSet(BaseViewSet):
@@ -111,6 +115,67 @@ class OrderViewSet(BaseViewSet):
             queryset = queryset.order_by('-created_at', '-id')
 
         return queryset
+
+    @action(detail=False, methods=['get'], url_path='dashboard', permission_classes=[permissions.IsAdminUser])
+    def dashboard(self, request, *args, **kwargs):
+        """Entrega en una sola consulta lógica los datos del dashboard administrativo."""
+        queryset = Order.objects.filter(is_deleted=False)
+        today = timezone.localdate()
+        yesterday = today - timedelta(days=1)
+
+        status_config = {
+            'pending_initial_payment': ('Pendiente de pago', '#f59e0b'),
+            'initial_payment_review': ('Pago inicial en revisión', '#f87171'),
+            'manufacturing': ('En fabricación', '#8b5cf6'),
+            'waiting_final_payment': ('Esperando pago final', '#0ea5e9'),
+            'final_payment_review': ('Pago final en revisión', '#10b981'),
+            'shipped': ('Enviados', '#4d82bc'),
+            'finalized': ('Finalizados', '#005187'),
+            'returned_manufacturing': ('Devueltos', '#ec4899'),
+            'cancelled': ('Cancelados', '#64748b'),
+        }
+        non_completed_queryset = queryset.exclude(status='finalized')
+        counts = {row['status']: row['total'] for row in non_completed_queryset.values('status').annotate(total=Count('id'))}
+        total = non_completed_queryset.count()
+
+        distribution = [
+            {
+                'id': status_key,
+                'label': label,
+                'count': counts.get(status_key, 0),
+                'color': color,
+                'percentage': round((counts.get(status_key, 0) / total) * 100, 2) if total else 0,
+            }
+            for status_key, (label, color) in status_config.items()
+        ]
+
+        recent_orders = []
+        for order in queryset.select_related('user').order_by('-created_at', '-id')[:5]:
+            recent_orders.append({
+                'id': order.id,
+                'orderCode': order.order_number or f'#{order.id:05d}',
+                'clientName': order.user.get_full_name() or order.user.email or order.user.username,
+                'clientEmail': order.user.email or '',
+                'total': float(order.total_price or 0),
+                'formattedTotal': f'${float(order.total_price or 0):,.2f}',
+                'status': order.status,
+                'statusLabel': order.get_status_display(),
+                'date': order.created_at.strftime('%d/%m/%Y'),
+            })
+
+        return Response({
+            'metrics': {
+                'todayOrders': queryset.filter(created_at=today).count(),
+                'yesterdayOrders': queryset.filter(created_at=yesterday).count(),
+                'totalOrdersYear': queryset.filter(created_at__year=today.year).count(),
+                'pendingPayment': counts.get('pending_initial_payment', 0),
+                'inManufacturing': counts.get('manufacturing', 0),
+                'reviewPayment': counts.get('initial_payment_review', 0) + counts.get('final_payment_review', 0),
+                'shippedOrders': counts.get('shipped', 0),
+            },
+            'distribution': {'total': total, 'items': distribution},
+            'recentOrders': recent_orders,
+        }, status=status.HTTP_200_OK)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -238,9 +303,20 @@ class OrderViewSet(BaseViewSet):
                         status=status.HTTP_404_NOT_FOUND
                     )
 
+        target_user = request.user
+        selected_user_id = data.get('user') or data.get('client_id') if isinstance(data, dict) else None
+        if request.user.is_staff and selected_user_id:
+            try:
+                target_user = User.objects.get(id=selected_user_id, is_deleted=False, is_staff=False)
+            except User.DoesNotExist:
+                return Response(
+                    {"error": "El cliente seleccionado no existe o no es un cliente válido."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
         # 3. Crear cabecera de la Orden
         order = Order.objects.create(
-            user=request.user,
+            user=target_user,
             status='pending_initial_payment',
             notes=order_notes,
             total_price=0
@@ -362,6 +438,27 @@ class OrderViewSet(BaseViewSet):
             return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        """Bloquea la actualización de pedidos."""
+        return Response(
+            {"error": "Los pedidos no pueden ser actualizados una vez creados."},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        """Bloquea la actualización parcial de pedidos."""
+        return Response(
+            {"error": "Los pedidos no pueden ser actualizados una vez creados."},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        """Bloquea la eliminación de pedidos."""
+        return Response(
+            {"error": "Los pedidos no pueden ser eliminados."},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
 
 
 class ManufacturingOrderViewSet(BaseViewSet):

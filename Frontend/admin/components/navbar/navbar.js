@@ -7,7 +7,7 @@
  */
 
 import { initDrawer, getBasePathPrefix } from '../drawer/drawer.js';
-import { getCurrentUser, clearTokens, clearCurrentUser } from '../../js/storage.js';
+import { getCurrentUser, getAccessToken, clearTokens, clearCurrentUser } from '../../js/storage.js';
 import { getOfficialRate } from '../../js/service/exchange-rate.service.js';
 import { loadComponent } from '../utils/component-loader.js';
 import { initFooter } from '../footer/footer.js';
@@ -1279,23 +1279,26 @@ export class AdminNavbar {
 
     // 6. Conexión WebSocket para notificaciones en tiempo real
     try {
-      let wsBase = backendOrigin || window.location.origin;
-      const originUrl = new URL(wsBase, window.location.href);
-      const wsProtocol = originUrl.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${originUrl.host}/ws/notifications/`;
+      const token = getAccessToken();
+      if (token) {
+        let wsBase = backendOrigin || window.location.origin;
+        const originUrl = new URL(wsBase, window.location.href);
+        const wsProtocol = originUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${originUrl.host}/ws/notifications/?token=${encodeURIComponent(token)}`;
 
-      const socket = new WebSocket(wsUrl);
+        const socket = new WebSocket(wsUrl);
 
-      socket.onmessage = () => {
-        loadUnreadCount();
-        if (!notifPopover.classList.contains('hidden')) {
-          loadNotificationsList();
-        }
-      };
+        socket.onmessage = () => {
+          loadUnreadCount();
+          if (!notifPopover.classList.contains('hidden')) {
+            loadNotificationsList();
+          }
+        };
 
-      socket.onerror = () => {
-        // Si no hay soporte WebSocket disponible en el entorno actual, el polling de respaldo se encarga
-      };
+        socket.onerror = () => {
+          // Si hay interrupción o caída de WebSocket, el polling de respaldo se encarga
+        };
+      }
     } catch (wsErr) {
       console.warn('[TuEstante Notif WS] WebSocket no disponible:', wsErr);
     }

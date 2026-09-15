@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyectos - TuEstante</title>
+    <meta name="description"
+        content="Explora el portafolio de proyectos ejecutados por TuEstante: Soluciones de almacenamiento metálico, estanterías industriales, lockers y mobiliario a la medida en Venezuela.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Estilos Globales y de Componentes -->
+    <link rel="stylesheet" href="../../index.css">
+    <link rel="stylesheet" href="../../components/navbar/navbar.css">
+    <link rel="stylesheet" href="../../components/footer/footer.css">
+    <link rel="stylesheet" href="projects.css">
+</head>
+
+<body>
+    <!-- Navbar Placeholder -->
+    <div id="navbar-placeholder"></div>
+
+    <main class="main-content">
+        <!-- Encabezado de Proyectos -->
+        <header class="projects-header">
+            <h1 class="projects-main-title">Proyectos</h1>
+            <div class="projects-header-line"></div>
+        </header>
+
+        <!-- Sección Principal de Contenido -->
+        <section class="projects-catalog-section">
+            <div class="projects-container">
+                <!-- Barra Superior con Buscador y Contador -->
+                <div class="projects-toolbar">
+                    <div class="search-box-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="project-search-input" class="project-search-input"
+                            placeholder="Buscar proyecto por nombre o descripción...">
+                    </div>
+                    <div class="projects-counter" id="projects-counter">
+                        Cargando proyectos...
+                    </div>
+                </div>
+
+                <!-- Grid de Tarjetas de Proyectos (3 Columnas x Máximo 9 Filas por Página) -->
+                <div class="projects-grid" id="projects-grid">
+                    <!-- Tarjetas inyectadas dinámicamente -->
+                </div>
+
+                <!-- Controles de Paginación -->
+                <div class="pagination-wrapper" id="pagination-wrapper">
+                    <!-- Controles inyectados dinámicamente -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Script Principal del Módulo de Proyectos -->
+    <script type="module" src="projects.js"></script>
+</body>
+
+</html>

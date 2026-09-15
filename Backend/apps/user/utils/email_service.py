@@ -1,6 +1,11 @@
 from django.core.mail import EmailMultiAlternatives
+from smtplib import SMTPAuthenticationError
 from django.template.loader import render_to_string
 from django.conf import settings
+
+
+class EmailDeliveryError(Exception):
+    """Indica que el proveedor SMTP no aceptó o no pudo enviar el correo."""
 
 
 def send_html_email(subject, to_email, template_name, context, from_email=None, text_content=None):
@@ -24,4 +29,13 @@ def send_html_email(subject, to_email, template_name, context, from_email=None, 
 
     msg = EmailMultiAlternatives(subject, text_content, from_email, [to_email] if isinstance(to_email, str) else to_email)
     msg.attach_alternative(html_content, "text/html")
-    msg.send()
+    try:
+        msg.send()
+    except SMTPAuthenticationError as exc:
+        raise EmailDeliveryError(
+            "El servidor de correo rechazó las credenciales SMTP configuradas."
+        ) from exc
+    except Exception as exc:
+        raise EmailDeliveryError(
+            "No fue posible conectar con el servidor de correo."
+        ) from exc

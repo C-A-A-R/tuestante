@@ -338,7 +338,7 @@ function normalizeBackendShipment(backendObj) {
  */
 export async function getShipments(params = {}) {
   try {
-    const res = await getRequest('/shipments/', { params, auth: true });
+    const res = await getRequest('/shipments/', params, { auth: true });
     if (Array.isArray(res)) {
       return res.map(normalizeBackendShipment);
     }
@@ -400,7 +400,7 @@ export async function getShipments(params = {}) {
  */
 export async function getShipment(id) {
   try {
-    const res = await getRequest(`/shipments/${id}/`, { auth: true });
+    const res = await getRequest(`/shipments/${id}/`, {}, { auth: true });
     if (res && res.id) {
       return normalizeBackendShipment(res);
     }
@@ -567,9 +567,20 @@ export async function updateShipment(id, data = {}) {
  */
 export async function getShipmentMetrics() {
   try {
-    const res = await getRequest('/shipments/metrics/', { auth: true });
-    if (res && res.pending_count !== undefined) {
-      return res;
+    const res = await getRequest('/shipments/metrics/', {}, { auth: true });
+    if (res) {
+      if (res.pending && res.in_transit && res.delivered_today) {
+        return res;
+      }
+      if (res.pending_count !== undefined) {
+        return {
+          pending: { count: res.pending_count, amount_usd: res.pending_amount || 0, amount_ves: (res.pending_amount || 0) * 36.5 },
+          in_transit: { count: res.in_transit_count, amount_usd: res.in_transit_amount || 0, amount_ves: (res.in_transit_amount || 0) * 36.5 },
+          delivered_today: { count: res.delivered_today_count, amount_usd: res.delivered_today_amount || 0, amount_ves: (res.delivered_today_amount || 0) * 36.5 },
+          delivered_month: { count: res.delivered_month_count, amount_usd: res.delivered_month_amount || 0, amount_ves: (res.delivered_month_amount || 0) * 36.5 },
+          returned: { count: res.returned_count, amount_usd: res.returned_amount || 0, amount_ves: (res.returned_amount || 0) * 36.5 }
+        };
+      }
     }
   } catch (err) {
     console.warn('[TuEstante Shipment API] Fallo al cargar métricas de backend, calculando en mock:', err);
@@ -607,11 +618,11 @@ export async function getShipmentMetrics() {
   });
 
   return {
-    pending: { count: 6, amount_usd: 1240.00, amount_ves: 45260.00 },
-    in_transit: { count: 9, amount_usd: 2810.00, amount_ves: 102565.00 },
-    delivered_today: { count: 5, amount_usd: 1020.00, amount_ves: 37230.00 },
-    delivered_month: { count: 28, amount_usd: 7350.00, amount_ves: 268275.00 },
-    returned: { count: 2, amount_usd: 320.00, amount_ves: 11680.00 }
+    pending: { count: pendingCount || 6, amount_usd: pendingAmount || 1240.00, amount_ves: (pendingAmount || 1240.00) * 36.5 },
+    in_transit: { count: transitCount || 9, amount_usd: transitAmount || 2810.00, amount_ves: (transitAmount || 2810.00) * 36.5 },
+    delivered_today: { count: deliveredTodayCount || 5, amount_usd: deliveredTodayAmount || 1020.00, amount_ves: (deliveredTodayAmount || 1020.00) * 36.5 },
+    delivered_month: { count: deliveredMonthCount || 28, amount_usd: deliveredMonthAmount || 7350.00, amount_ves: (deliveredMonthAmount || 7350.00) * 36.5 },
+    returned: { count: returnedCount || 2, amount_usd: returnedAmount || 320.00, amount_ves: (returnedAmount || 320.00) * 36.5 }
   };
 }
 
@@ -620,7 +631,7 @@ export async function getShipmentMetrics() {
  */
 export async function getDistributors() {
   try {
-    const res = await getRequest('/distributors/', { auth: true });
+    const res = await getRequest('/distributors/', {}, { auth: true });
     if (Array.isArray(res)) return res;
     if (res && Array.isArray(res.results)) return res.results;
   } catch (err) {
@@ -665,7 +676,7 @@ export async function createDistributor(data = {}) {
  */
 export async function getOrdersForShipmentSelect() {
   try {
-    const res = await getRequest('/orders/?status=waiting_final_payment,final_payment_review', { auth: true });
+    const res = await getRequest('/orders/', { status__in: 'waiting_final_payment,final_payment_review' }, { auth: true });
     if (Array.isArray(res) && res.length > 0) {
       return res.map(o => ({
         id: o.id,

@@ -6,7 +6,7 @@
  * saldo de deuda acumulada, amortizaciones y deducciones de nómina.
  */
 
-import { getRequest, postRequest } from '../../../cliente/js/api.js';
+import { getRequest, postRequest } from '../../../js/api.js';
 
 /**
  * Obtiene el perfil y estado de cuenta consolidado del colaborador autenticado.

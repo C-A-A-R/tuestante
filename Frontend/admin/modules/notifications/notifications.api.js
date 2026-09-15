@@ -57,7 +57,8 @@ export async function obtenerNotificacionesPorPedido(params = {}) {
 export async function obtenerDetalleNotificacion(id) {
   return await apiRequest({
     path: `/notifications/${id}/`,
-    method: 'GET'
+    method: 'GET',
+    params: { all: 'true' }
   });
 }
 
@@ -128,7 +129,7 @@ export async function obtenerPedidosSelector() {
 export async function obtenerClientesSelector() {
   try {
     const res = await apiRequest({
-      path: '/users/',
+      path: '/user/',
       method: 'GET',
       params: { role: 'client', limit: 100 }
     });

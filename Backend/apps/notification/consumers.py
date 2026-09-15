@@ -10,7 +10,22 @@ a ese grupo y el usuario los recibirá en tiempo real.
 """
 
 import json
+from urllib.parse import parse_qs
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+from rest_framework_simplejwt.tokens import AccessToken
+from django.contrib.auth import get_user_model
+
+
+@database_sync_to_async
+def get_user_from_jwt(token_str):
+    try:
+        access_token = AccessToken(token_str)
+        user_id = access_token['user_id']
+        User = get_user_model()
+        return User.objects.get(id=user_id, is_active=True)
+    except Exception:
+        return None
 
 
 class NotificationConsumer(AsyncWebsocketConsumer):
@@ -18,10 +33,21 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         """
-        Acepta la conexión solo si el usuario está autenticado.
+        Acepta la conexión solo si el usuario está autenticado (por sesión o por JWT).
         Lo une al grupo personal de notificaciones.
         """
         user = self.scope.get('user')
+
+        # Si no viene autenticado por sesión estándar de Django, intentar por JWT en query parameter ?token=...
+        if not user or not user.is_authenticated:
+            query_string = self.scope.get('query_string', b'').decode('utf-8')
+            params = parse_qs(query_string)
+            token = params.get('token', [None])[0]
+            if token:
+                jwt_user = await get_user_from_jwt(token)
+                if jwt_user:
+                    user = jwt_user
+                    self.scope['user'] = user
 
         if not user or not user.is_authenticated:
             await self.close(code=4001)

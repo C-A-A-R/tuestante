@@ -36,7 +36,27 @@
     <main class="app-main-content">
       <div class="orders-module-container">
         
-        <!-- 1. BARRA SUPERIOR DE FILTROS Y ACCIONES -->
+        <!-- 1. Encabezado de la Pantalla y Botones de Acción -->
+        <section class="screen-header-card">
+          <div class="screen-header-text">
+            <h2 class="screen-main-title">Pedidos</h2>
+            <p class="screen-main-desc">
+              Gestiona y da seguimiento a los pedidos de los clientes.
+            </p>
+          </div>
+          <div class="screen-header-actions">
+            <!-- Botón Crear Pedido -->
+            <a href="order-create.html" class="btn btn-primary" id="btn-create-order">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>+ Crear pedido</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- 2. BARRA DE FILTROS -->
         <section class="orders-toolbar" aria-label="Filtros de pedidos">
           <div class="toolbar-filters-group">
             
@@ -60,13 +80,13 @@
               <select id="order-status-select" class="filter-select" aria-label="Filtrar por estado del pedido">
                 <option value="all">Todos</option>
                 <option value="manufacturing">En fabricación</option>
-                <option value="payment_review">Pago en revisión</option>
+                <option value="initial_payment_review">Pago inicial en revisión</option>
                 <option value="waiting_final_payment">Esperando pago final</option>
                 <option value="shipped">Enviado</option>
-                <option value="pending_payment">Pendiente de pago</option>
-                <option value="initial_review">Pago inicial en revisión</option>
-                <option value="completed">Finalizado</option>
-                <option value="refunded">Devuelto</option>
+                <option value="pending_initial_payment">Pendiente de pago</option>
+                <option value="final_payment_review">Pago final en revisión</option>
+                <option value="finalized">Finalizado</option>
+                <option value="returned_manufacturing">Devuelto / En refabricación</option>
               </select>
               <svg class="select-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
@@ -106,20 +126,9 @@
             </div>
 
             <!-- Botón Limpiar Filtros -->
-            <button type="button" id="btn-clear-filters" class="btn btn-clear-filters" aria-label="Limpiar todos los filtros">
+            <button type="button" id="btn-clear-filters" class="btn-clear-filters" aria-label="Limpiar todos los filtros">
               Limpiar filtros
             </button>
-          </div>
-
-          <!-- Botón Crear Pedido (+ Crear pedido) -->
-          <div class="toolbar-actions-group">
-            <a href="order-create.html" id="btn-create-order" class="btn btn-create-order" aria-label="Crear nuevo pedido">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span>Crear pedido</span>
-            </a>
           </div>
         </section>
 
@@ -148,7 +157,7 @@
           <!-- 3. PAGINADOR Y RESUMEN INFERIOR -->
           <div class="orders-pagination-footer">
             <div class="pagination-summary">
-              <span id="pagination-info-text">Mostrando 1 a 8 de 45 pedidos</span>
+              <span id="pagination-info-text">Mostrando 0 pedidos</span>
             </div>
 
             <nav class="pagination-controls" aria-label="Paginación de pedidos">
@@ -204,20 +213,20 @@
         <div class="modal-meta-grid">
           <div class="meta-box">
             <span class="meta-box-label">Cliente</span>
-            <strong class="meta-box-val" id="modal-client-name">Juan Pérez</strong>
-            <span class="meta-box-sub" id="modal-client-email">juan@email.com</span>
-            <span class="meta-box-sub" id="modal-client-phone">+58 412 1234567</span>
+            <strong class="meta-box-val" id="modal-client-name"></strong>
+            <span class="meta-box-sub" id="modal-client-email"></span>
+            <span class="meta-box-sub" id="modal-client-phone"></span>
           </div>
           <div class="meta-box">
             <span class="meta-box-label">Estado de Fabricación</span>
             <div id="modal-status-badge-container">
-              <span class="status-badge badge-manufacturing">En fabricación</span>
+              <span class="status-badge"></span>
             </div>
           </div>
           <div class="meta-box">
             <span class="meta-box-label">Resumen de Pago</span>
-            <strong class="meta-box-val text-primary" id="modal-payment-summary">$175.00 / $350.00</strong>
-            <span class="meta-box-sub" id="modal-payment-stage">50% abonado y aprobado</span>
+            <strong class="meta-box-val text-primary" id="modal-payment-summary"></strong>
+            <span class="meta-box-sub" id="modal-payment-stage"></span>
           </div>
         </div>
 
@@ -240,7 +249,7 @@
               <tfoot>
                 <tr>
                   <td colspan="3" class="text-right font-bold">Total del Pedido:</td>
-                  <td class="text-right font-bold text-primary" id="modal-order-total-price">$350.00</td>
+                  <td class="text-right font-bold text-primary" id="modal-order-total-price"></td>
                 </tr>
               </tfoot>
             </table>

@@ -43,7 +43,7 @@
 
 body.admin-login-body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--admin-bg-dark);
+  background-color: #ffffff;
   color: var(--admin-text-main);
   min-height: 100vh;
   display: flex;
@@ -51,6 +51,14 @@ body.admin-login-body {
   justify-content: center;
   overflow-x: hidden;
   position: relative;
+}
+
+.admin-login-bg-split {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--admin-primary) 0 50%, #ffffff 50% 100%);
 }
 
 /* Luces Ambientales de Fondo */

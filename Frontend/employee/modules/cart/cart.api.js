@@ -6,7 +6,7 @@
  * y despacho atómico de órdenes con cargo a nómina.
  */
 
-import { getRequest, postRequest } from '../../../cliente/js/api.js';
+import { getRequest, postRequest } from '../../../js/api.js';
 
 /**
  * Consulta el perfil y estado de cuenta consolidado del colaborador en sesión.

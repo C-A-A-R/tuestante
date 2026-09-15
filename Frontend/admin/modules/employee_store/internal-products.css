@@ -348,6 +348,31 @@ input:checked + .switch-slider {
   background-color: var(--primary);
 }
 
+.btn-clear-filters {
+  height: 42px;
+  padding: 0 16px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.865rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-clear-filters:hover {
+  background-color: var(--bg-primary);
+  color: var(--primary);
+  border-color: var(--border-medium);
+}
+
 input:checked + .switch-slider:before {
   transform: translateX(18px);
 }

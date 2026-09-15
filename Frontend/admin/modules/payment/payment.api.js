@@ -842,39 +842,7 @@ export async function reviewPayment(paymentId, status, rejectionReason = '') {
  * @returns {Promise<Object>}
  */
 export async function getPaymentMetrics() {
-  try {
-    const data = await getRequest('/payments/statistics/', {}, { auth: true });
-    if (data) return data;
-  } catch (error) {
-    // Fallback con cálculo local
-  }
-
-  const inReviewCount = MOCK_PAYMENTS.filter(p => p.status === 'review').length;
-  const approvedCount = MOCK_PAYMENTS.filter(p => p.status === 'approved').length;
-  const rejectedCount = MOCK_PAYMENTS.filter(p => p.status === 'rejected').length;
-  const initialCount = MOCK_PAYMENTS.filter(p => p.payment_stage === 'initial').length;
-  const finalCount = MOCK_PAYMENTS.filter(p => p.payment_stage === 'final').length;
-  
-  const totalAmountApproved = MOCK_PAYMENTS
-    .filter(p => p.status === 'approved')
-    .reduce((sum, p) => sum + p.amount, 0);
-
-  const totalAmountVes = MOCK_PAYMENTS
-    .filter(p => p.status === 'approved')
-    .reduce((sum, p) => sum + (p.amount_ves || (p.amount * (p.exchange_rate || 36.50))), 0);
-
-  return {
-    totalRevenue: totalAmountApproved,
-    totalRevenueVes: totalAmountVes,
-    formattedTotalRevenue: `$${totalAmountApproved.toFixed(2)}`,
-    formattedTotalRevenueVes: formatVES(totalAmountVes),
-    inReviewCount,
-    approvedCount,
-    rejectedCount,
-    initialStageCount: initialCount,
-    finalStageCount: finalCount,
-    totalVouchers: MOCK_PAYMENTS.length
-  };
+  return await getRequest('/payments/statistics/', {}, { auth: true });
 }
 
 /**

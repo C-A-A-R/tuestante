@@ -65,3 +65,27 @@ class ShipmentModelAndAPITest(TestCase):
         self.assertEqual(response.data['municipality'], 'Páez')
         self.assertEqual(response.data['city'], 'Guasdualito')
         self.assertEqual(response.data['address'], 'Pueblo viejo alto de periquera')
+
+    def test_shipment_metrics_endpoint(self):
+        Shipment.objects.create(
+            order=self.order,
+            distributor=self.distributor,
+            status='pending',
+            price=15.00
+        )
+        Shipment.objects.create(
+            order=self.order,
+            distributor=self.distributor,
+            status='in_transit',
+            price=25.00
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=self.admin)
+        response = client.get('/api/shipments/metrics/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('pending', response.data)
+        self.assertEqual(response.data['pending']['count'], 1)
+        self.assertEqual(response.data['in_transit']['count'], 1)
+        self.assertIn('pending_count', response.data)
+

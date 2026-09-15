@@ -11,7 +11,6 @@ import { initFooter } from '../../components/footer/footer.js';
 import {
     obtenerFavoritosUsuario,
     alternarFavoritoProducto,
-    obtenerCategorias,
     obtenerTiposProducto
 } from './product.api.js';
 import { backendOrigin } from '../../js/config.js';
@@ -325,13 +324,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 3. Cargar datos del backend
     try {
-        const [favsRes, typesRes, catsRes] = await Promise.all([
+        const [favsRes, typesRes] = await Promise.all([
             obtenerFavoritosUsuario().catch(err => {
                 console.error('Error al obtener favoritos:', err);
                 return [];
             }),
-            obtenerTiposProducto().catch(() => []),
-            obtenerCategorias().catch(() => [])
+            obtenerTiposProducto().catch(() => [])
         ]);
 
         const rawFavs = extractList(favsRes);
@@ -342,10 +340,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             name: t.product_type_name || t.name || 'Tipo General'
         }));
 
-        allCategories = extractList(catsRes).map(c => ({
-            id: c.id,
-            name: c.category_name || c.name || 'Categoría General'
-        }));
+        allCategories = [];
 
         // 4. Inicializar Filtros y Renderizar
         initFilters();

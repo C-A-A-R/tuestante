@@ -237,6 +237,20 @@ class ProductViewSet(BaseViewSet):
         serializer = self.get_serializer(featured_products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'], url_path='metrics', permission_classes=[permissions.IsAdminUser])
+    def metrics(self, request, *args, **kwargs):
+        """Retorna los KPI agregados del catálogo sin cargar todos los productos."""
+        queryset = Product.objects.filter(is_deleted=False)
+        totals = queryset.aggregate(
+            total=Count('id'),
+            active=Count('id', filter=Q(is_active=True)),
+            inactive=Count('id', filter=Q(is_active=False)),
+            outlet=Count('id', filter=Q(is_outlet=True)),
+            featured=Count('id', filter=Q(is_feature_product=True)),
+            favorites=Count('favorites', filter=Q(favorites__is_deleted=False), distinct=True),
+        )
+        return Response(totals, status=status.HTTP_200_OK)
+
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
 

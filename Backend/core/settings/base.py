@@ -188,8 +188,9 @@ EMAIL_HOST = env('DJANGO_EMAIL_HOST')  # Servidor SMTP
 EMAIL_PORT = env.int('DJANGO_EMAIL_PORT')  # Puerto SMTP
 EMAIL_HOST_USER = env('DJANGO_EMAIL_HOST_USER')  # Cuenta de correo
 EMAIL_HOST_PASSWORD = env('DJANGO_EMAIL_HOST_PASSWORD')  # Contraseña de la cuenta de correo
-EMAIL_USE_SSL = env.bool('DJANGO_EMAIL_USE_SSL', default=True)  # Activar SSL
-EMAIL_USE_TLS = env.bool('DJANGO_EMAIL_USE_TLS', default=False)  # Desactivar TLS (solo uno debe estar activo)
+EMAIL_TIMEOUT = env.int('DJANGO_EMAIL_TIMEOUT', default=15)
+EMAIL_USE_SSL = env.bool('DJANGO_EMAIL_USE_SSL', default=False)  # Activar SSL
+EMAIL_USE_TLS = env.bool('DJANGO_EMAIL_USE_TLS', default=True)  # Desactivar TLS (solo uno debe estar activo)
 DEFAULT_FROM_EMAIL = env('DJANGO_EMAIL_HOST_USER')  # Email por defecto
 
 # Static files (CSS, JavaScript, Images)

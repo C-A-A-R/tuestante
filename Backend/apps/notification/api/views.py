@@ -56,9 +56,11 @@ class NotificationViewSet(BaseViewSet):
         # Filtro de usuario
         user_param = self.request.query_params.get('user_id')
         all_param = self.request.query_params.get('all')
-        if self.request.user and self.request.user.is_staff and (all_param == 'true' or user_param):
+        if self.request.user and self.request.user.is_staff:
             if user_param:
                 queryset = queryset.filter(user_id=user_param)
+            elif not (all_param == 'true' or self.action in ['retrieve', 'update', 'partial_update', 'destroy']):
+                queryset = queryset.filter(user=self.request.user)
         elif self.request.user and self.request.user.is_authenticated:
             queryset = queryset.filter(user=self.request.user)
 

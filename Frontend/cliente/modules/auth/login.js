@@ -7,7 +7,18 @@
  */
 
 import { loginUser } from "./auth.js";
-import { getAccessToken, getRefreshToken } from "../../js/storage.js";
+import { getAccessToken, getRefreshToken, getCurrentUser } from "../../js/storage.js";
+
+/**
+ * Determina la ruta relativa al catálogo / portal del trabajador
+ */
+function getEmployeeIndexPath() {
+	const pathname = window.location.pathname || "";
+	if (pathname.includes("/cliente/")) {
+		return "../../../employee/index.html";
+	}
+	return "../../employee/index.html";
+}
 
 function getFormField(form, name) {
 	return form.elements.namedItem(name);
@@ -184,12 +195,26 @@ async function handleLogin(event) {
 	setLoadingState(form, true);
 
 	try {
-		await loginUser({
+		const result = await loginUser({
 			username: usuario,
 			nombre_usuario: usuario,
 			password: password,
 			contrasena: password,
 		});
+
+		// Si es trabajador, redirigir al index de empleados
+		const user = result?.user || getCurrentUser();
+		const isEmployee = Boolean(result?.is_employee || user?.is_employee);
+
+		if (isEmployee) {
+			const redirectParam = new URLSearchParams(window.location.search).get("redirect");
+			if (redirectParam && redirectParam.includes("/employee/")) {
+				window.location.href = redirectParam;
+			} else {
+				window.location.href = getEmployeeIndexPath();
+			}
+			return;
+		}
 
 		const redirectParam = new URLSearchParams(window.location.search).get("redirect");
 		window.location.href = redirectParam || "../../index.html";
@@ -208,6 +233,17 @@ async function handleLogin(event) {
 document.addEventListener("DOMContentLoaded", () => {
 	// Si ya está autenticado, redirigir
 	if (getAccessToken() || getRefreshToken()) {
+		const user = getCurrentUser();
+		if (user?.is_employee) {
+			const redirectParam = new URLSearchParams(window.location.search).get("redirect");
+			if (redirectParam && redirectParam.includes("/employee/")) {
+				window.location.href = redirectParam;
+			} else {
+				window.location.href = getEmployeeIndexPath();
+			}
+			return;
+		}
+
 		const redirectParam = new URLSearchParams(window.location.search).get("redirect");
 		window.location.href = redirectParam || "../../index.html";
 		return;

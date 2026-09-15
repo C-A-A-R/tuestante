@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito de Compras - TuEstante</title>
+    <meta name="description"
+        content="Revisa y gestiona tu carrito de compras de soluciones de organización y mobiliario metálico en TuEstante.">
+
+    <!-- Fuentes de Google: Inter (cuerpo) y Outfit (encabezados) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Hoja de Estilos Global del Sistema y Componentes -->
+    <link rel="stylesheet" href="../../index.css">
+    <link rel="stylesheet" href="../../components/navbar/navbar.css">
+    <link rel="stylesheet" href="../../components/footer/footer.css">
+
+    <!-- Hoja de Estilos Específica del Carrito -->
+    <link rel="stylesheet" href="cart.css">
+</head>
+
+<body>
+    <!-- Placeholder para Inyección Dinámica de la Barra de Navegación (Navbar) -->
+    <div id="navbar-placeholder"></div>
+
+    <!-- Contenido Principal del Carrito de Compras -->
+    <main class="main-content">
+
+        <!-- Header / Encabezado Principal del Carrito -->
+        <header class="cart-header-section">
+            <div class="cart-header-container">
+                <span class="cart-tagline">MI SELECCIÓN</span>
+                <h1 class="cart-main-title">CARRITO DE COMPRAS</h1>
+                <div class="cart-header-divider"></div>
+                <p class="cart-header-description">
+                    Revisa los productos seleccionados, ajusta las cantidades o procede a solicitar tu cotización y
+                    pedido personalizado.
+                </p>
+            </div>
+        </header>
+
+        <!-- Sección Principal del Carrito -->
+        <section class="cart-section">
+            <div class="cart-container">
+                <div id="cart-content-wrapper" class="cart-content-wrapper">
+                    <!-- Columna 1: Lista de Productos -->
+                    <div class="cart-items-column">
+                        <div class="cart-table-header">
+                            <span class="header-col col-product">Producto</span>
+                            <span class="header-col col-price">Precio</span>
+                            <span class="header-col col-qty">Cantidad</span>
+                            <span class="header-col col-subtotal">Subtotal</span>
+                            <span class="header-col col-action"></span>
+                        </div>
+
+                        <div id="cart-items-list" class="cart-items-list">
+                            <!-- Los productos del carrito se inyectan dinámicamente desde cart.js -->
+                        </div>
+
+                        <div class="cart-actions-footer">
+                            <a href="../product/products.html" class="btn btn-secondary btn-continue-shopping">
+                                ← Seguir Comprando
+                            </a>
+
+                            <button id="btn-empty-cart" class="btn-clear-cart">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                    </path>
+                                </svg>
+                                Vaciar Carrito
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Columna 2: Resumen del Pedido -->
+                    <div class="cart-summary-column">
+                        <div class="cart-summary-card">
+                            <h2 class="summary-title">Resumen del Pedido</h2>
+                            <div class="summary-divider"></div>
+
+                            <div class="summary-row">
+                                <span>Subtotal</span>
+                                <span id="summary-subtotal" class="summary-val">$0.00</span>
+                            </div>
+
+                            <div class="summary-row">
+                                <span>Envío</span>
+                                <span id="summary-shipping" class="summary-val free-badge">Envío Gratis</span>
+                            </div>
+
+                            <div class="summary-divider"></div>
+
+                            <div class="summary-row total-row">
+                                <span>Total Estimado</span>
+                                <span id="summary-total" class="total-val">$0.00</span>
+                            </div>
+
+                            <div class="summary-buttons">
+                                <button id="btn-realizar-compra" class="btn btn-primary btn-checkout-action">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="9" cy="21" r="1"></circle>
+                                        <circle cx="20" cy="21" r="1"></circle>
+                                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                                    </svg>
+                                    Realizar Compra
+                                </button>
+                            </div>
+
+                            <div class="summary-security-badge">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                </svg>
+                                <span>Compra garantizada y atención personalizada</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Placeholder para Inyección Dinámica del Pie de Página (Footer) -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Módulo de JavaScript Específico del Carrito -->
+    <script type="module" src="cart.js"></script>
+</body>
+
+</html>

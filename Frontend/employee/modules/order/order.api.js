@@ -6,7 +6,7 @@
  * realizadas por el colaborador, detalle de ítems y comprobantes.
  */
 
-import { getRequest, postRequest, extractList } from '../../../cliente/js/api.js';
+import { getRequest, postRequest, extractList } from '../../../js/api.js';
 
 /**
  * Consulta el historial de órdenes del colaborador autenticado.

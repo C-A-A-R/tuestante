@@ -89,42 +89,49 @@
           <!-- Controles de Búsqueda y Filtros Rápidos -->
           <div class="notif-filters-group">
             <!-- Barra de Búsqueda en Vivo -->
-            <div class="search-input-wrapper">
-              <input type="text" id="input-search" class="search-input" placeholder="Buscar por pedido, cliente o mensaje..." aria-label="Buscar notificaciones">
-              <button type="button" class="search-icon-btn" id="btn-clear-search" title="Limpiar búsqueda" aria-label="Buscar">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-              </button>
+            <div class="notif-search-box">
+              <input 
+                type="text" 
+                id="input-search" 
+                class="search-box-input" 
+                placeholder="Buscar pedido, cliente, mensaje..." 
+                aria-label="Buscar notificaciones">
+              <svg class="search-box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
             </div>
 
             <!-- Selector de Tipo -->
-            <div class="filter-dropdown-wrapper">
-              <label for="select-type" class="filter-label">Tipo</label>
+            <div class="filter-select-wrapper">
+              <span class="filter-floating-label">Tipo</span>
               <select id="select-type" class="filter-select" aria-label="Filtrar por tipo">
                 <option value="all">Todos</option>
                 <option value="manual">Manual</option>
                 <option value="auto">Automática</option>
               </select>
+              <svg class="select-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
             </div>
 
             <!-- Selector de Estado -->
-            <div class="filter-dropdown-wrapper">
-              <label for="select-status" class="filter-label">Estado</label>
+            <div class="filter-select-wrapper">
+              <span class="filter-floating-label">Estado</span>
               <select id="select-status" class="filter-select" aria-label="Filtrar por estado">
                 <option value="all">Todos</option>
                 <option value="sent">Enviada</option>
                 <option value="pending">Pendiente</option>
                 <option value="read">Leída</option>
               </select>
+              <svg class="select-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
             </div>
 
-            <!-- Botón de Reiniciar Filtros -->
-            <button type="button" class="btn-icon-filter" id="btn-reset-filters" title="Restablecer filtros" aria-label="Restablecer filtros">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-              </svg>
+            <!-- Botón Limpiar Filtros Normalizado -->
+            <button type="button" id="btn-reset-filters" class="btn btn-clear-filters" aria-label="Limpiar todos los filtros">
+              Limpiar filtros
             </button>
           </div>
         </section>
@@ -340,6 +347,106 @@
   </div>
 
   <!-- ==========================================================================
+       4.1 MODAL DE PEDIDO CON NOTIFICACIONES: RESUMEN Y LISTADO
+       ========================================================================== -->
+  <div id="modal-order-notifications" class="quick-view-modal-backdrop order-notifs-modal-backdrop" aria-hidden="true">
+    <div class="floating-panel-card order-notifs-panel-card" role="dialog" aria-modal="true" aria-labelledby="order-notifs-modal-title">
+      <!-- Encabezado del Modal -->
+      <div class="floating-panel-header">
+        <div class="floating-title-wrapper">
+          <div class="floating-icon-circle order-icon-circle">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#005187" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+          </div>
+          <div>
+            <h3 class="floating-panel-title" id="order-notifs-modal-title">Notificaciones del Pedido</h3>
+            <p class="order-notifs-subtitle" id="order-notifs-modal-subtitle">Historial de comunicaciones y notificaciones</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close-floating" id="btn-close-order-notifs" title="Cerrar modal" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Contenido del Modal -->
+      <div class="floating-panel-body order-notifs-panel-body">
+        
+        <!-- RESUMEN COMPACTO DEL PEDIDO -->
+        <div class="order-summary-mini-card">
+          <div class="summary-mini-header">
+            <span class="summary-mini-badge-title">Resumen del pedido</span>
+            <span id="modal-order-status-badge" class="badge-order-status badge-status-manufacturing">En producción</span>
+          </div>
+          <div class="summary-mini-grid">
+            <div class="summary-mini-item">
+              <span class="summary-mini-label">Pedido</span>
+              <a href="#" class="summary-mini-order-link" id="modal-order-number">#00000</a>
+            </div>
+            <div class="summary-mini-item">
+              <span class="summary-mini-label">Cliente</span>
+              <span class="summary-mini-value" id="modal-order-client">-</span>
+            </div>
+            <div class="summary-mini-item">
+              <span class="summary-mini-label">Total</span>
+              <span class="summary-mini-value font-semibold" id="modal-order-total">$0.00</span>
+            </div>
+            <div class="summary-mini-item">
+              <span class="summary-mini-label">Notificaciones</span>
+              <span class="summary-mini-pill" id="modal-order-notifs-count">0 registradas</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- LISTADO DE NOTIFICACIONES DEL PEDIDO -->
+        <div class="order-notifs-list-section">
+          <div class="order-notifs-section-header">
+            <h4 class="order-notifs-section-title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Historial de notificaciones</span>
+            </h4>
+          </div>
+
+          <div class="order-notifs-cards-container" id="modal-order-notifs-container">
+            <!-- Renderizado dinámico de tarjetas de notificaciones -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pie del Modal -->
+      <div class="floating-panel-footer">
+        <button type="button" class="btn btn-modal-close" id="btn-close-order-notifs-footer">Cerrar</button>
+        <div class="modal-footer-actions-right">
+          <button type="button" class="btn btn-outline" id="btn-modal-order-new-notif">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Nueva notificación</span>
+          </button>
+          <a href="#" class="btn btn-modal-primary" id="btn-modal-order-detail-link">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            <span>Ver pedido completo</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
        5. MODAL FORMULARIO: NUEVA NOTIFICACIÓN (REDACTAR Y ENVIAR)
        ========================================================================== -->
   <div class="modal-backdrop" id="modal-create-notif-backdrop" aria-hidden="true" style="display: none;">
@@ -488,6 +595,50 @@
         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
       </svg>
       <span>Eliminar</span>
+    </button>
+  </div>
+
+  <!-- Menú Contextual Flotante de Acciones para Pedidos -->
+  <div class="floating-actions-dropdown" id="order-actions-dropdown" style="display: none;">
+    <button type="button" class="dropdown-item" id="order-action-view-modal">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+      <span>Ver resumen y notificaciones</span>
+    </button>
+    <button type="button" class="dropdown-item" id="order-action-new-notif">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+      <span>Nueva notificación</span>
+    </button>
+    <button type="button" class="dropdown-item" id="order-action-go-detail">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+        <polyline points="15 3 21 3 21 9"></polyline>
+        <line x1="10" y1="14" x2="21" y2="3"></line>
+      </svg>
+      <span>Ver detalle del pedido</span>
+    </button>
+    <button type="button" class="dropdown-item" id="order-action-toggle-expand">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </svg>
+      <span id="order-action-toggle-expand-text">Ver historial en tabla</span>
+    </button>
+    <button type="button" class="dropdown-item" id="order-action-copy-code">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+      <span>Copiar número de pedido</span>
     </button>
   </div>
 

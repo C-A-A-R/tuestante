@@ -80,7 +80,7 @@ export async function quickUpdateProduct(productId, { stock, price }) {
  * @param {number|string} productId
  */
 export async function deleteProduct(productId) {
-  return await deleteRequest(`api/employee-store/products/${productId}/`);
+  return await deleteRequest(`/employee-store/products/${productId}/`);
 }
 
 /* ==========================================================================

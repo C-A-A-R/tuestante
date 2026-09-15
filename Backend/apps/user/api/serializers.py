@@ -14,6 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
     last_order_date = serializers.DateField(read_only=True, default=None, allow_null=True)
     city = serializers.SerializerMethodField()
     state = serializers.SerializerMethodField()
+    is_employee = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -35,6 +36,7 @@ class UserSerializer(serializers.ModelSerializer):
             "is_active",
             "is_staff",
             "is_superuser",
+            "is_employee",
             "is_registered",
             "date_joined",
             "orders_count",
@@ -70,6 +72,17 @@ class UserSerializer(serializers.ModelSerializer):
             return sh.state if sh else ''
         except Exception:
             return ''
+
+    def get_is_employee(self, obj):
+        try:
+            from apps.employee_store.models import EmployeeProfile
+            return EmployeeProfile.objects.filter(
+                user=obj,
+                is_deleted=False,
+                is_active=True
+            ).exists()
+        except Exception:
+            return False
 
 
 class UserCreateSerializer(serializers.ModelSerializer):

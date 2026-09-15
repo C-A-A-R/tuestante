@@ -6,7 +6,7 @@
  * búsqueda por código de barras, filtros y categorías.
  */
 
-import { getRequest, extractList } from '../../../cliente/js/api.js';
+import { getRequest, extractList } from '../../../js/api.js';
 
 /**
  * Consulta el catálogo de productos internos con filtros opcionales.

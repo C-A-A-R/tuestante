@@ -393,24 +393,28 @@ input, button, select, textarea {
 }
 
 .btn-clear-filters {
+  height: 42px;
+  padding: 0 16px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.865rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  background: transparent;
-  border: 1px solid var(--border-light);
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 7px 12px;
-  border-radius: var(--radius-md);
-  transition: var(--transition);
 }
 
 .btn-clear-filters:hover {
-  color: var(--danger);
-  border-color: var(--danger-bg);
-  background-color: #fef2f2;
+  background-color: var(--bg-primary);
+  color: var(--primary);
+  border-color: var(--border-medium);
 }
 
 /* ==========================================================================

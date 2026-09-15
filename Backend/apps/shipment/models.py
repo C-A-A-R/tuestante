@@ -98,6 +98,13 @@ class Shipment(BaseModel):
         'Sector / Dirección exacta',
         help_text='Indica la calle, avenida, urbanización, edificio o punto de referencia'
     )
+    coverage = models.CharField(
+        'Cobertura',
+        max_length=150,
+        blank=True,
+        default='',
+        help_text='Zona o alcance de cobertura (ej. Nacional, Regional, Local, etc.)'
+    )
     status = models.CharField(
         'Estado',
         max_length=15,

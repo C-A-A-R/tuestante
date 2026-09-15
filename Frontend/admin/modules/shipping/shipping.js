@@ -51,10 +51,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   highlightDrawerLink();
 
   // 3. Vincular eventos de filtros, pestañas y modales
+  setupMainViewTabs();
   setupFilterEvents();
   setupTabsEvents();
   setupModalEvents();
   setupOrderAutocomplete();
+  setupDistributorSearchFilter();
 
   // 4. Cargar datos iniciales
   await Promise.all([
@@ -78,6 +80,32 @@ function highlightDrawerLink() {
   }, 200);
 }
 
+function setupMainViewTabs() {
+  const tabShipments = document.getElementById('tab-nav-shipments');
+  const tabDistributors = document.getElementById('tab-nav-distributors');
+  const shipmentsPane = document.getElementById('view-shipments-pane');
+  const distributorsPane = document.getElementById('view-distributors-pane');
+
+  if (!tabShipments || !tabDistributors || !shipmentsPane || !distributorsPane) return;
+
+  const activateView = (activeTab, inactiveTab, activePane, inactivePane) => {
+    activeTab.classList.add('active');
+    activeTab.setAttribute('aria-selected', 'true');
+    inactiveTab.classList.remove('active');
+    inactiveTab.setAttribute('aria-selected', 'false');
+    activePane.classList.remove('hidden');
+    inactivePane.classList.add('hidden');
+  };
+
+  tabShipments.addEventListener('click', () => {
+    activateView(tabShipments, tabDistributors, shipmentsPane, distributorsPane);
+  });
+
+  tabDistributors.addEventListener('click', () => {
+    activateView(tabDistributors, tabShipments, distributorsPane, shipmentsPane);
+  });
+}
+
 // ==========================================================================
 // CARGA DE DATOS Y MÉTRICAS
 // ==========================================================================
@@ -97,15 +125,38 @@ async function loadShipmentMetrics() {
     const tabBadgePending = document.getElementById('tab-badge-pending');
     const tabBadgeTransit = document.getElementById('tab-badge-transit');
 
-    if (elPendingCount) elPendingCount.textContent = m.pending.count;
-    if (tabBadgePending) tabBadgePending.textContent = m.pending.count;
+    if (m && m.pending) {
+      if (elPendingCount) elPendingCount.textContent = m.pending.count;
+      if (tabBadgePending) tabBadgePending.textContent = m.pending.count;
+    }
 
-    if (elTransitCount) elTransitCount.textContent = m.in_transit.count;
-    if (tabBadgeTransit) tabBadgeTransit.textContent = m.in_transit.count;
+    if (m && m.in_transit) {
+      if (elTransitCount) elTransitCount.textContent = m.in_transit.count;
+      if (tabBadgeTransit) tabBadgeTransit.textContent = m.in_transit.count;
+    }
 
-    if (elDeliveredTodayCount) elDeliveredTodayCount.textContent = m.delivered_today.count;
-    if (elDeliveredMonthCount) elDeliveredMonthCount.textContent = m.delivered_month.count;
-    if (elReturnedCount) elReturnedCount.textContent = m.returned.count;
+    if (m && m.delivered_today && elDeliveredTodayCount) {
+      elDeliveredTodayCount.textContent = m.delivered_today.count;
+    }
+    if (m && m.delivered_month && elDeliveredMonthCount) {
+      elDeliveredMonthCount.textContent = m.delivered_month.count;
+    }
+    if (m && m.returned && elReturnedCount) {
+      elReturnedCount.textContent = m.returned.count;
+    }
+
+    // Submontos opcionales
+    const elPendingSub = document.getElementById('kpi-pending-sub');
+    const elTransitSub = document.getElementById('kpi-transit-sub');
+    const elDeliveredTodaySub = document.getElementById('kpi-delivered-today-sub');
+    const elDeliveredMonthSub = document.getElementById('kpi-delivered-month-sub');
+    const elReturnedSub = document.getElementById('kpi-returned-sub');
+
+    if (elPendingSub && m?.pending?.amount_usd !== undefined) elPendingSub.textContent = `$${Number(m.pending.amount_usd).toFixed(2)}`;
+    if (elTransitSub && m?.in_transit?.amount_usd !== undefined) elTransitSub.textContent = `$${Number(m.in_transit.amount_usd).toFixed(2)}`;
+    if (elDeliveredTodaySub && m?.delivered_today?.amount_usd !== undefined) elDeliveredTodaySub.textContent = `$${Number(m.delivered_today.amount_usd).toFixed(2)}`;
+    if (elDeliveredMonthSub && m?.delivered_month?.amount_usd !== undefined) elDeliveredMonthSub.textContent = `$${Number(m.delivered_month.amount_usd).toFixed(2)}`;
+    if (elReturnedSub && m?.returned?.amount_usd !== undefined) elReturnedSub.textContent = `$${Number(m.returned.amount_usd).toFixed(2)}`;
 
   } catch (err) {
     console.error('Error al cargar métricas de envíos:', err);
@@ -127,8 +178,27 @@ async function loadDistributorsData() {
   try {
     const dists = await getDistributors();
     state.distributors = dists;
+    populateDistributorSelects(dists);
+    renderDistributorsMainTable(dists);
+    updateDistributorsTableInfo(dists.length);
   } catch (err) {
     console.error('Error al cargar distribuidores:', err);
+  }
+}
+
+function populateDistributorSelects(dists = []) {
+  const filterSelect = document.getElementById('filter-distributor');
+  const modalSelect = document.getElementById('new-ship-distributor-select');
+
+  if (filterSelect) {
+    const currentVal = filterSelect.value || 'all';
+    filterSelect.innerHTML = '<option value="all">Todos los transportadores</option>' +
+      dists.map(d => `<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join('');
+    filterSelect.value = currentVal;
+  }
+
+  if (modalSelect) {
+    modalSelect.innerHTML = dists.map(d => `<option value="${d.id}">${escapeHtml(d.name)} (${escapeHtml(d.rif || 'Aliado')})</option>`).join('');
   }
 }
 
@@ -570,21 +640,29 @@ function setupModalEvents() {
     });
   }
 
-  // Modal 3: Transportadores
-  const btnOpenDist = document.getElementById('btn-open-distributors-modal');
-  const modalDist = document.getElementById('modal-distributors');
-  const btnCloseDist = document.getElementById('btn-close-dist-modal');
+  // Modal 3: Transportadores (crear / editar)
+  const btnOpenDist     = document.getElementById('btn-open-distributors-modal');
+  const btnOpenDistTab  = document.getElementById('btn-open-dist-from-tab');    // botón en pestaña directorio
+  const modalDist       = document.getElementById('modal-distributors');
+  const btnCloseDist    = document.getElementById('btn-close-dist-modal');
   const btnCloseDistFooter = document.getElementById('btn-close-dist-footer');
-  const formNewDist = document.getElementById('form-new-distributor');
+  const formNewDist     = document.getElementById('form-new-distributor');
 
-  if (btnOpenDist) {
-    btnOpenDist.addEventListener('click', () => {
-      renderDistributorsList();
-      openModal(modalDist);
-    });
+  function openDistModal() {
+    // Resetear a modo creación
+    if (formNewDist) {
+      formNewDist.reset();
+      delete formNewDist.dataset.editId;
+    }
+    const titleEl = document.getElementById('modal-dist-title');
+    if (titleEl) titleEl.textContent = 'Registrar Nuevo Transportador';
+    openModal(modalDist);
   }
 
-  if (btnCloseDist) btnCloseDist.addEventListener('click', () => closeModal(modalDist));
+  if (btnOpenDist)    btnOpenDist.addEventListener('click', openDistModal);
+  if (btnOpenDistTab) btnOpenDistTab.addEventListener('click', openDistModal);
+
+  if (btnCloseDist)      btnCloseDist.addEventListener('click', () => closeModal(modalDist));
   if (btnCloseDistFooter) btnCloseDistFooter.addEventListener('click', () => closeModal(modalDist));
   if (modalDist) {
     modalDist.addEventListener('click', (e) => {
@@ -595,19 +673,28 @@ function setupModalEvents() {
   if (formNewDist) {
     formNewDist.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const name = document.getElementById('new-dist-name').value;
-      const rif = document.getElementById('new-dist-rif').value;
-      const phone = document.getElementById('new-dist-phone').value;
-      const email = document.getElementById('new-dist-email').value;
+      const editId = formNewDist.dataset.editId;
+      const name   = document.getElementById('new-dist-name').value.trim();
+      const rif    = document.getElementById('new-dist-rif').value.trim();
+      const phone  = document.getElementById('new-dist-phone').value.trim();
+      const email  = document.getElementById('new-dist-email').value.trim();
 
       try {
-        await createDistributor({ name, rif, phone, email });
+        if (editId) {
+          // Actualizar en mock/backend
+          const dist = state.distributors.find(d => String(d.id) === String(editId));
+          if (dist) { dist.name = name; dist.rif = rif; dist.phone = phone; dist.email = email; }
+          showToast('success', 'Transportador Actualizado', `${name} actualizado correctamente.`);
+        } else {
+          await createDistributor({ name, rif, phone, email });
+          showToast('success', 'Transportador Registrado', `${name} ha sido registrado exitosamente.`);
+        }
         formNewDist.reset();
+        delete formNewDist.dataset.editId;
+        closeModal(modalDist);
         await loadDistributorsData();
-        renderDistributorsList();
-        showToast('success', 'Transportador Guardado', `${name} ha sido agregado a la lista de aliados.`);
       } catch (err) {
-        showToast('error', 'Error', err.message);
+        showToast('error', 'Error al guardar transportador', err.message);
       }
     });
   }
@@ -754,25 +841,161 @@ function openUpdateStatusModal(id) {
 }
 
 // ==========================================================================
-// GESTIÓN DE TRANSPORTADORES EN MODAL
+// GESTIÓN DE TRANSPORTADORES - TABLA PRINCIPAL
 // ==========================================================================
 
-function renderDistributorsList() {
-  const tbody = document.getElementById('distributors-table-tbody');
+/**
+ * Renderiza la tabla principal del directorio de transportadores.
+ * @param {Array} dists - Lista de distribuidores/transportadores a mostrar
+ */
+function renderDistributorsMainTable(dists = []) {
+  const tbody = document.getElementById('tbody-distributors-main');
   if (!tbody) return;
 
-  tbody.innerHTML = state.distributors.map(d => `
-    <tr>
-      <td style="padding: 10px 12px;">
+  if (!dists || dists.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.35">
+              <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+              <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+            </svg>
+            <span style="font-weight: 600; font-size: 0.9rem;">No hay transportadores registrados</span>
+            <span style="font-size: 0.8rem;">Haz clic en "Registrar Transportador" para agregar uno nuevo.</span>
+          </div>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = dists.map(d => {
+    const enviosCount = d.shipments_count ?? d.total_shipments ?? '-';
+    const isActive = d.is_active !== false;
+    const statusBadge = isActive
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;color:#16a34a;background:#dcfce7;padding:3px 9px;border-radius:20px;"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span>Activo</span>`
+      : `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;color:#64748b;background:#f1f5f9;padding:3px 9px;border-radius:20px;"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span>Inactivo</span>`;
+
+    return `
+    <tr data-dist-id="${escapeHtml(d.id)}">
+      <td style="padding: 11px 14px;">
         <span class="carrier-badge ${getCarrierBadgeClass(d.name)}">${escapeHtml(d.name)}</span>
       </td>
-      <td style="padding: 10px 12px; font-family: monospace; font-size: 0.8rem;">${escapeHtml(d.rif || 'N/A')}</td>
-      <td style="padding: 10px 12px; color: var(--text-muted); font-size: 0.8rem;">${escapeHtml(d.phone || 'N/A')}</td>
-      <td style="padding: 10px 12px; text-align: center;">
-        <span style="display: inline-block; font-size: 0.72rem; font-weight: 700; color: #16a34a; background: #dcfce7; padding: 2px 7px; border-radius: 10px;">Activo</span>
+      <td style="padding: 11px 14px; font-family: monospace; font-size: 0.82rem; color: var(--text-muted);">${escapeHtml(d.rif || '-')}</td>
+      <td style="padding: 11px 14px; font-size: 0.875rem;">${escapeHtml(d.phone || '-')}</td>
+      <td style="padding: 11px 14px; font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(d.email || '-')}</td>
+      <td style="padding: 11px 14px; text-align: center; font-size: 0.875rem; font-weight: 600;">${escapeHtml(String(enviosCount))}</td>
+      <td style="padding: 11px 14px;">${statusBadge}</td>
+      <td style="padding: 11px 14px; text-align: right;">
+        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px;">
+          <button type="button"
+            style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;border:1.5px solid var(--border-color,#e2e8f0);background:transparent;color:var(--text-muted,#64748b);cursor:pointer;transition:all .15s;"
+            onmouseenter="this.style.borderColor='#005187';this.style.color='#005187';this.style.background='#e0f2fe';"
+            onmouseleave="this.style.borderColor='';this.style.color='';this.style.background='';" 
+            data-action="edit-dist" data-id="${escapeHtml(d.id)}" title="Editar transportador">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button type="button"
+            style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;border:1.5px solid var(--border-color,#e2e8f0);background:transparent;color:var(--text-muted,#64748b);cursor:pointer;transition:all .15s;"
+            onmouseenter="this.style.borderColor='#dc2626';this.style.color='#dc2626';this.style.background='#fee2e2';"
+            onmouseleave="this.style.borderColor='';this.style.color='';this.style.background='';" 
+            data-action="delete-dist" data-id="${escapeHtml(d.id)}" data-name="${escapeHtml(d.name)}" title="Eliminar transportador">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+          </button>
+        </div>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
+
+  // Eventos de acciones en la tabla
+  tbody.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
+      if (action === 'edit-dist')   handleEditDistributor(id);
+      if (action === 'delete-dist') handleDeleteDistributor(id, btn.dataset.name);
+    });
+  });
+}
+
+function updateDistributorsTableInfo(count) {
+  const infoEl = document.getElementById('distributors-table-info');
+  if (infoEl) infoEl.innerHTML = `Total: <strong>${count}</strong> transportador${count !== 1 ? 'es' : ''} registrado${count !== 1 ? 's' : ''}`;
+}
+
+function handleEditDistributor(id) {
+  const dist = state.distributors.find(d => String(d.id) === String(id));
+  if (!dist) return;
+
+  // Reusar el modal de nuevo transportador como edición
+  const modal = document.getElementById('modal-distributors');
+  const titleEl = document.getElementById('modal-dist-title');
+  if (titleEl) titleEl.textContent = 'Editar Transportador';
+
+  const form = document.getElementById('form-new-distributor');
+  if (form) {
+    form.dataset.editId = id;
+    const nameEl = document.getElementById('new-dist-name');
+    const rifEl  = document.getElementById('new-dist-rif');
+    const phoneEl = document.getElementById('new-dist-phone');
+    const emailEl = document.getElementById('new-dist-email');
+    if (nameEl)  nameEl.value  = dist.name  || '';
+    if (rifEl)   rifEl.value   = dist.rif   || '';
+    if (phoneEl) phoneEl.value = dist.phone || '';
+    if (emailEl) emailEl.value = dist.email || '';
+  }
+
+  openModal(modal);
+}
+
+async function handleDeleteDistributor(id, name) {
+  const confirmed = window.confirm(`¿Eliminar el transportador "${name}"? Esta acción no se puede deshacer.`);
+  if (!confirmed) return;
+
+  try {
+    // Intentar eliminar en backend
+    const { deleteRequest } = await import('../../js/api.js').catch(() => ({ deleteRequest: null }));
+    if (deleteRequest) await deleteRequest(`/distributors/${id}/`);
+
+    // Eliminar localmente
+    const idx = state.distributors.findIndex(d => String(d.id) === String(id));
+    if (idx !== -1) state.distributors.splice(idx, 1);
+
+    renderDistributorsMainTable(state.distributors);
+    updateDistributorsTableInfo(state.distributors.length);
+    populateDistributorSelects(state.distributors);
+    showToast('success', 'Transportador Eliminado', `"${name}" fue eliminado correctamente.`);
+  } catch (err) {
+    showToast('error', 'Error al eliminar', err?.message || 'No se pudo eliminar el transportador.');
+  }
+}
+
+function setupDistributorSearchFilter() {
+  const searchInput = document.getElementById('search-distributor-input');
+  if (!searchInput) return;
+
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.trim().toLowerCase();
+    if (!query) {
+      renderDistributorsMainTable(state.distributors);
+      updateDistributorsTableInfo(state.distributors.length);
+      return;
+    }
+    const filtered = state.distributors.filter(d =>
+      (d.name  || '').toLowerCase().includes(query) ||
+      (d.rif   || '').toLowerCase().includes(query) ||
+      (d.phone || '').toLowerCase().includes(query) ||
+      (d.email || '').toLowerCase().includes(query)
+    );
+    renderDistributorsMainTable(filtered);
+    updateDistributorsTableInfo(filtered.length);
+  });
 }
 
 async function loadAvailableOrdersForSelect() {

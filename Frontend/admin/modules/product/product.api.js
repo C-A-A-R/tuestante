@@ -263,61 +263,17 @@ function normalizeBackendProduct(p) {
  */
 export async function getProducts(params = {}) {
   try {
-    const res = await getRequest('/products/', { params, auth: true });
+    const res = await getRequest('/products/products/', params, { auth: true });
     if (Array.isArray(res)) {
       return res.map(normalizeBackendProduct);
     }
     if (res && Array.isArray(res.results)) {
       return res.results.map(normalizeBackendProduct);
     }
+    return [];
   } catch (err) {
-    console.warn('[TuEstante Product API] Fallo al consultar backend, usando banco mock de productos:', err);
+    throw err;
   }
-
-  let result = [...mockProducts];
-
-  // Filtro por término de búsqueda (nombre, tipo, descripción)
-  if (params.search) {
-    const term = params.search.toLowerCase().trim();
-    result = result.filter(p => 
-      p.product_name.toLowerCase().includes(term) ||
-      p.description.toLowerCase().includes(term) ||
-      p.product_type.toLowerCase().includes(term)
-    );
-  }
-
-  // Filtro por tipo de producto
-  if (params.type && params.type !== 'all') {
-    const typeId = parseInt(params.type, 10);
-    const typeTerm = params.type.toString().toLowerCase().trim();
-    result = result.filter(p => p.product_type_id === typeId || p.product_type.toLowerCase() === typeTerm);
-  }
-
-  // Filtro por outlet
-  if (params.outlet !== undefined && params.outlet !== 'all') {
-    const isOutlet = params.outlet === 'true' || params.outlet === true;
-    result = result.filter(p => p.is_outlet === isOutlet);
-  }
-
-  // Filtro por destacados / favoritos
-  if (params.featured && params.featured !== 'all') {
-    if (params.featured === 'featured') {
-      result = result.filter(p => p.is_feature_product);
-    } else if (params.featured === 'favorites') {
-      result = result.filter(p => p.favorites_count && p.favorites_count > 0);
-    }
-  }
-
-  // Filtro por estado (activo / inactivo)
-  if (params.status && params.status !== 'all') {
-    if (params.status === 'active') {
-      result = result.filter(p => p.is_active);
-    } else if (params.status === 'inactive') {
-      result = result.filter(p => !p.is_active);
-    }
-  }
-
-  return result;
 }
 
 /**
@@ -325,16 +281,13 @@ export async function getProducts(params = {}) {
  */
 export async function getProduct(id) {
   try {
-    const res = await getRequest(`/products/${id}/`, { auth: true });
+    const res = await getRequest(`/products/products/${id}/`, {}, { auth: true });
     if (res && res.id) {
       return normalizeBackendProduct(res);
     }
   } catch (err) {
-    console.warn(`[TuEstante Product API] Error al obtener producto #${id}, usando mock:`, err);
+    throw err;
   }
-
-  const found = mockProducts.find(p => p.id === parseInt(id, 10));
-  if (found) return found;
   throw new Error(`Producto #${id} no encontrado.`);
 }
 
@@ -343,48 +296,13 @@ export async function getProduct(id) {
  */
 export async function createProduct(data = {}) {
   try {
-    const res = await postRequest('/products/', data, { auth: true });
+    const res = await postRequest('/products/products/', data, { auth: true });
     if (res && res.id) {
       return normalizeBackendProduct(res);
     }
   } catch (err) {
-    console.warn('[TuEstante Product API] Fallo al crear en backend, creando en mock:', err);
+    throw err;
   }
-
-  const newId = mockProducts.length > 0 
-    ? Math.max(...mockProducts.map(p => p.id)) + 1 
-    : 1;
-
-  const typeObj = mockProductTypes.find(t => t.id === parseInt(data.product_type || data.product_type_id, 10));
-  const typeName = typeObj ? typeObj.product_type_name : (data.product_type_name || 'Mobiliario Modular');
-
-  const newProduct = {
-    id: newId,
-    product_name: data.product_name || 'Nuevo Producto',
-    description: data.description || '',
-    product_type: typeName,
-    product_type_id: parseInt(data.product_type || data.product_type_id, 10) || 1,
-    price: parseFloat(data.price) || 100.00,
-    price_ves: (parseFloat(data.price) || 100.00) * 36.50,
-    is_active: data.is_active !== undefined ? Boolean(data.is_active) : true,
-    is_outlet: Boolean(data.is_outlet),
-    is_feature_product: Boolean(data.is_feature_product),
-    height_cm: parseFloat(data.height_cm) || 0,
-    width_cm: parseFloat(data.width_cm) || 0,
-    depth_cm: parseFloat(data.depth_cm) || 0,
-    security: data.security || '',
-    product_image: data.product_image || '../../assets/images/products/tipo-producto-estante.png',
-    product_video: data.product_video || '',
-    angle_images: Array.isArray(data.angle_images) && data.angle_images.length > 0 
-      ? data.angle_images.map((a, idx) => ({ id: newId * 100 + idx + 1, angle: a.angle || `Ángulo ${idx + 1}`, image: a.image || data.product_image }))
-      : [{ id: newId * 100 + 1, angle: 'Vista Frontal', image: data.product_image || '../../assets/images/products/tipo-producto-estante.png' }],
-    color_images: Array.isArray(data.color_images) && data.color_images.length > 0
-      ? data.color_images.map((c, idx) => ({ id: newId * 200 + idx + 1, color_name: c.color_name || `Color ${idx + 1}`, color_hex: c.color_hex || '#101010', color_image: c.color_image || c.image || data.product_image }))
-      : [{ id: newId * 200 + 1, color_name: 'Estándar', color_hex: '#101010', color_image: data.product_image || '../../assets/images/products/tipo-producto-estante.png' }]
-  };
-
-  mockProducts.unshift(newProduct);
-  return newProduct;
 }
 
 /**
@@ -392,60 +310,29 @@ export async function createProduct(data = {}) {
  */
 export async function updateProduct(id, data = {}) {
   try {
-    const res = await patchRequest(`/products/${id}/`, data, { auth: true });
+    const res = await patchRequest(`/products/products/${id}/`, data, { auth: true });
     if (res && res.id) {
       return normalizeBackendProduct(res);
     }
   } catch (err) {
-    console.warn(`[TuEstante Product API] Error al actualizar #${id}, aplicando en mock:`, err);
+    throw err;
   }
-
-  const product = mockProducts.find(p => p.id === parseInt(id, 10));
-  if (!product) throw new Error(`Producto #${id} no encontrado.`);
-
-  Object.assign(product, data);
-  if (data.price !== undefined) {
-    product.price_ves = product.price * 36.50;
-  }
-  return product;
 }
 
 /**
  * Alterna el estado activo/inactivo de un producto
  */
 export async function toggleProductActive(id) {
-  const product = mockProducts.find(p => p.id === parseInt(id, 10));
-  if (!product) throw new Error(`Producto #${id} no encontrado.`);
-
-  const newStatus = !product.is_active;
-
-  try {
-    await patchRequest(`/products/${id}/`, { is_active: newStatus }, { auth: true });
-  } catch (err) {
-    console.warn(`[TuEstante Product API] Toggle en backend falló, aplicando en mock:`, err);
-  }
-
-  product.is_active = newStatus;
-  return product;
+  const product = await getProduct(id);
+  return updateProduct(id, { is_active: !product.is_active });
 }
 
 /**
  * Alterna el estado de outlet de un producto
  */
 export async function toggleProductOutlet(id) {
-  const product = mockProducts.find(p => p.id === parseInt(id, 10));
-  if (!product) throw new Error(`Producto #${id} no encontrado.`);
-
-  const newStatus = !product.is_outlet;
-
-  try {
-    await patchRequest(`/products/${id}/`, { is_outlet: newStatus }, { auth: true });
-  } catch (err) {
-    console.warn(`[TuEstante Product API] Toggle outlet falló, aplicando en mock:`, err);
-  }
-
-  product.is_outlet = newStatus;
-  return product;
+  const product = await getProduct(id);
+  return updateProduct(id, { is_outlet: !product.is_outlet });
 }
 
 /**
@@ -453,45 +340,18 @@ export async function toggleProductOutlet(id) {
  */
 export async function deleteProduct(id) {
   try {
-    await deleteRequest(`/products/${id}/`, { auth: true });
+    await deleteRequest(`/products/products/${id}/`, { auth: true });
   } catch (err) {
-    console.warn(`[TuEstante Product API] Fallo al eliminar en backend, eliminando en mock:`, err);
+    throw err;
   }
-
-  const idx = mockProducts.findIndex(p => p.id === parseInt(id, 10));
-  if (idx !== -1) {
-    mockProducts.splice(idx, 1);
-    return true;
-  }
-  return false;
+  return true;
 }
 
 /**
  * Obtiene métricas superiores de resumen de productos (KPI cards: Total, Destacados, Favoritos, Activos, Inactivos, Outlet)
  */
 export async function getProductMetrics() {
-  let active = 0;
-  let inactive = 0;
-  let outlet = 0;
-  let featured = 0;
-  let favorites = 0;
-
-  mockProducts.forEach(p => {
-    if (!p.is_active) inactive++;
-    else active++;
-    if (p.is_outlet) outlet++;
-    if (p.is_feature_product) featured++;
-    if (p.favorites_count && p.favorites_count > 0) favorites += p.favorites_count;
-  });
-
-  return {
-    total: mockProducts.length,
-    active,
-    inactive,
-    outlet,
-    featured,
-    favorites
-  };
+  return await getRequest('/products/products/metrics/', {}, { auth: true });
 }
 
 /**
@@ -499,7 +359,7 @@ export async function getProductMetrics() {
  */
 export async function getProductTypes() {
   try {
-    const res = await getRequest('/products/product-types/', { auth: true });
+    const res = await getRequest('/products/product-types/', {}, { auth: true });
     let items = [];
     if (Array.isArray(res)) items = res;
     else if (res && Array.isArray(res.results)) items = res.results;
@@ -514,10 +374,10 @@ export async function getProductTypes() {
         is_active: t.is_active !== undefined ? t.is_active : true
       }));
     }
+    return [];
   } catch (err) {
-    console.warn('[TuEstante Product API] Usando tipos mock:', err);
+    throw err;
   }
-  return mockProductTypes;
 }
 
 /**
@@ -525,12 +385,12 @@ export async function getProductTypes() {
  */
 export async function getProductType(id) {
   try {
-    const res = await getRequest(`/products/product-types/${id}/`, { auth: true });
+    const res = await getRequest(`/products/product-types/${id}/`, {}, { auth: true });
     if (res && res.id) return res;
   } catch (err) {
-    console.warn(`[TuEstante Product API] Fallo al obtener tipo ${id} de backend, buscando en mock:`, err);
+    throw err;
   }
-  return mockProductTypes.find(t => String(t.id) === String(id)) || null;
+  return null;
 }
 
 /**

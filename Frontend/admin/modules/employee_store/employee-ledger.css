@@ -309,6 +309,33 @@ body {
   border-color: var(--primary);
 }
 
+.btn-clear-filters {
+  height: 38px;
+  padding: 0 16px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.865rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-clear-filters:hover {
+  background-color: #f1f5f9;
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+
+
 /* 4. Table Card */
 .table-card {
   background: var(--bg-card);

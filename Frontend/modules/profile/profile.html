@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil — TuEstante</title>
+
+    <!-- Fuentes Google: Outfit e Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Estilos Base y Componentes -->
+    <link rel="stylesheet" href="../../css/base.css">
+    <link rel="stylesheet" href="../../components/navbar/navbar.css">
+    <link rel="stylesheet" href="../../components/footer/footer.css">
+    <link rel="stylesheet" href="../../components/toast/toast.css">
+    <link rel="stylesheet" href="./profile.css">
+</head>
+<body class="profile-body">
+    <!-- Navbar Dinámica -->
+    <div id="navbar-container"></div>
+
+    <main class="profile-main">
+        <div class="profile-page-container">
+
+            <!-- Breadcrumbs -->
+            <nav class="profile-breadcrumbs" aria-label="Navegación de migas de pan">
+                <a href="../../index.html">Inicio</a>
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-current">Mi Perfil</span>
+            </nav>
+
+            <!-- Encabezado / Hero del Usuario -->
+            <section class="profile-hero-card">
+                <div class="profile-hero-avatar-wrapper">
+                    <div class="profile-avatar-circle" id="profile-avatar-circle">
+                        <span id="profile-avatar-initials">--</span>
+                    </div>
+                </div>
+                <div class="profile-hero-info">
+                    <div class="profile-hero-name-row">
+                        <h1 class="profile-user-name" id="hero-user-name">Cargando usuario...</h1>
+                    </div>
+                    <p class="profile-user-email" id="hero-user-email">--</p>
+                    <div class="profile-hero-meta">
+                        <span class="profile-meta-item">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            <span id="hero-member-since">Miembro desde 2026</span>
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pestañas de Navegación del Perfil -->
+            <div class="profile-tabs-wrapper">
+                <div class="profile-tabs" role="tablist" aria-label="Secciones del perfil">
+                    <button type="button" class="profile-tab-btn active" data-target="tab-personal" role="tab" aria-selected="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <span>Datos Personales</span>
+                    </button>
+                    <button type="button" class="profile-tab-btn" data-target="tab-activity" role="tab" aria-selected="false">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                        <span>Accesos Rápidos</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contenido de las Pestañas -->
+            <div class="profile-content-area">
+
+                <!-- 1. PESTAÑA: DATOS PERSONALES -->
+                <section id="tab-personal" class="profile-tab-pane active" role="tabpanel">
+                    <div class="profile-card">
+                        <!-- Cabecera de la sección con botón de bloqueo/edición -->
+                        <div class="card-header-box flex-header">
+                            <div>
+                                <h2 class="card-section-title">Información Personal</h2>
+                                <p class="card-section-subtitle">Tus datos personales están protegidos contra modificaciones accidentales.</p>
+                            </div>
+                            <button type="button" id="btn-toggle-edit" class="btn btn-outline-edit" title="Habilitar o bloquear la edición de datos">
+                                <span id="toggle-edit-icon">🔒</span>
+                                <span id="toggle-edit-text">Habilitar Edición</span>
+                            </button>
+                        </div>
+
+                        <!-- Formulario de Datos Personales (Bloqueado por defecto) -->
+                        <form id="profile-info-form" class="profile-form" novalidate>
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label for="input-first-name" class="form-label">Primer Nombre <span class="required">*</span></label>
+                                    <input type="text" id="input-first-name" class="form-input" placeholder="Tu primer nombre" required disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label for="input-second-name" class="form-label">Segundo Nombre</label>
+                                    <input type="text" id="input-second-name" class="form-input" placeholder="Opcional" disabled>
+                                </div>
+                            </div>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label for="input-first-last-name" class="form-label">Primer Apellido <span class="required">*</span></label>
+                                    <input type="text" id="input-first-last-name" class="form-input" placeholder="Tu primer apellido" required disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label for="input-second-last-name" class="form-label">Segundo Apellido</label>
+                                    <input type="text" id="input-second-last-name" class="form-input" placeholder="Opcional" disabled>
+                                </div>
+                            </div>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label for="input-identity-document" class="form-label">Cédula / Documento de Identidad</label>
+                                    <input type="text" id="input-identity-document" class="form-input" placeholder="V-12345678 o J-12345678-0" disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label for="input-phone" class="form-label">Teléfono de Contacto</label>
+                                    <input type="tel" id="input-phone" class="form-input" placeholder="0412-1234567" disabled>
+                                </div>
+                            </div>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label for="input-email" class="form-label">Correo Electrónico</label>
+                                    <input type="email" id="input-email" class="form-input" readonly disabled title="El correo electrónico está vinculado a tu cuenta">
+                                    <small class="form-help-text">El correo está vinculado permanentemente a tu cuenta.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="input-birth-date" class="form-label">Fecha de Nacimiento</label>
+                                    <input type="date" id="input-birth-date" class="form-input" disabled>
+                                </div>
+                            </div>
+
+                            <!-- Botones de Guardado (visibles únicamente al habilitar edición) -->
+                            <div class="form-actions-row" id="profile-edit-actions" style="display: none;">
+                                <button type="button" id="btn-cancel-edit" class="btn btn-secondary btn-cancel-edit">
+                                    <span>Cancelar</span>
+                                </button>
+                                <button type="submit" id="btn-save-profile" class="btn btn-primary btn-save">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                    <span>Guardar Cambios</span>
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Caja de Seguridad y Actualización de Contraseña por Correo -->
+                        <div class="profile-password-reset-box">
+                            <div class="reset-box-info">
+                                <div class="reset-icon-badge">🔑</div>
+                                <div class="reset-text-content">
+                                    <h3 class="reset-title">Seguridad y Contraseña</h3>
+                                    <p class="reset-desc">Para actualizar tu contraseña, te enviaremos un enlace seguro a tu correo electrónico registrado.</p>
+                                </div>
+                            </div>
+                            <button type="button" id="btn-request-password-reset" class="btn btn-outline-password">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                                <span>Actualizar Contraseña</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. PESTAÑA: ACCESOS RÁPIDOS Y SESIÓN -->
+                <section id="tab-activity" class="profile-tab-pane" role="tabpanel">
+                    <div class="profile-card">
+                        <div class="card-header-box">
+                            <h2 class="card-section-title">Accesos Rápidos y Cuenta</h2>
+                            <p class="card-section-subtitle">Navega a tus pedidos, productos deseados, carrito o finaliza tu sesión.</p>
+                        </div>
+
+                        <div class="quick-access-grid">
+                            <!-- 1. Mis Compras -->
+                            <a href="../order/my-orders.html" class="quick-card" id="quick-orders-card">
+                                <div class="quick-icon" id="quick-orders-icon"><img src="../../assets/images/icons/bolsa-de-compra.png" alt="mis compras"></div>
+                                <div class="quick-info">
+                                    <h3>Mis Compras</h3>
+                                    <p id="quick-orders-desc">Consulta el historial y seguimiento de fabricación de tus pedidos.</p>
+                                </div>
+                                <span class="quick-arrow">&rarr;</span>
+                            </a>
+
+                            <!-- 2. Productos Deseados -->
+                            <a href="../product/wishlist.html" class="quick-card highlight-wishlist">
+                                <div class="quick-icon"><img src="../../assets/images/icons/corazon.png" alt="productos deseados"></div>
+                                <div class="quick-info">
+                                    <h3>Productos Deseados</h3>
+                                    <p>Tus muebles favoritos guardados en tu lista de deseos.</p>
+                                </div>
+                                <span class="quick-arrow">&rarr;</span>
+                            </a>
+
+                            <!-- 3. Mi Carrito -->
+                            <a href="../cart/cart.html" class="quick-card">
+                                <div class="quick-icon">
+                                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="9" cy="21" r="1"></circle>
+                                        <circle cx="20" cy="21" r="1"></circle>
+                                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                                    </svg>
+                                </div>
+                                <div class="quick-info">
+                                    <h3>Mi Carrito</h3>
+                                    <p>Revisa los artículos listos para procesar compra.</p>
+                                </div>
+                                <span class="quick-arrow">&rarr;</span>
+                            </a>
+
+                            <!-- 4. Catálogo -->
+                            <a href="../product/products.html" class="quick-card">
+                                <div class="quick-icon"><img src="../../assets/images/icons/caja-de-entrega.png" alt="catalogo de productos"></div>
+                                <div class="quick-info">
+                                    <h3>Catálogo de Productos</h3>
+                                    <p>Explora todos los modelos y categorías en TuEstante.</p>
+                                </div>
+                                <span class="quick-arrow">&rarr;</span>
+                            </a>
+                        </div>
+
+                        <!-- Zona de Cierre de Sesión -->
+                        <div class="danger-zone-box">
+                            <div class="danger-zone-info">
+                                <h4>Cerrar Sesión Activa</h4>
+                                <p>Finaliza la sesión actual en este dispositivo de forma segura.</p>
+                            </div>
+                            <button type="button" id="btn-profile-logout" class="btn btn-danger-logout">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                <span>Cerrar Sesión</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal de Confirmación para Actualizar Contraseña -->
+    <div id="reset-password-modal" class="custom-modal-overlay" style="display: none;">
+        <div class="custom-modal-box">
+            <div class="modal-icon-badge">📩</div>
+            <h3 class="modal-title">¿Actualizar Contraseña?</h3>
+            <p class="modal-desc">
+                Enviaremos un correo electrónico con un enlace seguro a <strong id="modal-user-email">tu correo</strong> para que puedas crear tu nueva contraseña.
+            </p>
+            <div class="modal-actions-row">
+                <button type="button" id="btn-modal-cancel-reset" class="btn btn-secondary">Cancelar</button>
+                <button type="button" id="btn-modal-confirm-reset" class="btn btn-primary">Sí, enviar enlace</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Dinámico -->
+    <div id="footer-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="./profile.js"></script>
+</body>
+</html>

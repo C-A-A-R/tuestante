@@ -1,0 +1,606 @@
+/**
+ * ==========================================================================
+ * ESTILOS DE LA PANTALLA 'MIS COMPRAS' - TUESTANTE
+ * Diseño limpio y simplificado con tarjeta compacta, imagen principal,
+ * productos separados por comas, filtros por fecha y paginación.
+ * ==========================================================================
+ */
+
+:root {
+    --primary: #005187;
+    --primary-hover: #003d66;
+    --primary-light: #e0f2fe;
+    --accent: #f59e0b;
+    --success: #16a34a;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --dark-text: #0f172a;
+    --body-text: #334155;
+    --muted-text: #64748b;
+    --bg-page: #f8fafc;
+    --bg-card: #ffffff;
+    --border-color: #e2e8f0;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --shadow-hover: 0 6px 20px rgba(0, 81, 135, 0.10);
+}
+
+.my-orders-body {
+    background-color: var(--bg-page);
+    color: var(--body-text);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding-top: var(--total-header-height-desktop, 130px) !important;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 991px) {
+    .my-orders-body {
+        padding-top: var(--total-header-height-mobile, 70px) !important;
+    }
+}
+
+.my-orders-main {
+    flex: 1;
+    padding: 32px 16px 60px;
+}
+
+.orders-page-container {
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+/* =============================================================
+   1. BREADCRUMBS
+   ============================================================= */
+.orders-breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--muted-text);
+    margin-bottom: 20px;
+}
+
+.orders-breadcrumbs a {
+    color: var(--muted-text);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.orders-breadcrumbs a:hover {
+    color: var(--primary);
+}
+
+.breadcrumb-separator {
+    color: #cbd5e1;
+}
+
+.breadcrumb-current {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* =============================================================
+   2. ENCABEZADO
+   ============================================================= */
+.orders-page-header {
+    margin-bottom: 24px;
+}
+
+.header-titles .orders-main-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: var(--dark-text);
+    margin: 0 0 4px 0;
+    letter-spacing: -0.02em;
+}
+
+.header-titles .orders-main-subtitle {
+    font-size: 0.92rem;
+    color: var(--muted-text);
+    margin: 0;
+}
+
+/* =============================================================
+   3. BARRA DE FILTROS POR FECHA Y BUSCADOR
+   ============================================================= */
+.orders-controls-bar {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: var(--shadow-sm);
+}
+
+@media (min-width: 860px) {
+    .orders-controls-bar {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+/* Botones de Filtro por Fecha */
+.orders-date-filters {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+}
+
+.orders-date-filters::-webkit-scrollbar {
+    display: none;
+}
+
+.date-filter-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted-text);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.date-filter-btn:hover {
+    color: var(--primary);
+    background-color: var(--bg-page);
+}
+
+.date-filter-btn.active {
+    background-color: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 81, 135, 0.2);
+}
+
+/* Buscador */
+.orders-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 280px;
+}
+
+.orders-search-wrapper .search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--muted-text);
+    pointer-events: none;
+}
+
+.orders-search-input {
+    width: 100%;
+    padding: 8px 34px 8px 36px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    color: var(--dark-text);
+    background-color: var(--bg-page);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.orders-search-input:focus {
+    outline: none;
+    background-color: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 81, 135, 0.1);
+}
+
+.btn-clear-search {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--muted-text);
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.btn-clear-search:hover {
+    color: var(--dark-text);
+}
+
+/* =============================================================
+   4. TARJETA SIMPLIFICADA DE COMPRA
+   ============================================================= */
+.orders-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.simplified-order-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.simplified-order-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+}
+
+/* Cabecera de la Tarjeta (Fecha a la izquierda, Estado a la derecha) */
+.simplified-card-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.simplified-card-date {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+.simplified-card-date svg {
+    color: var(--muted-text);
+}
+
+/* Badges de Estado */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.status-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.status-review {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.status-manufacturing {
+    background-color: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #e9d5ff;
+}
+
+.status-shipped {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.status-finalized {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.status-cancelled {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Cuerpo de la Tarjeta */
+.simplified-card-body {
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Columna de Imagen */
+.simplified-image-col {
+    flex-shrink: 0;
+}
+
+.simplified-product-img {
+    width: 68px;
+    height: 68px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    display: block;
+}
+
+.simplified-img-placeholder {
+    width: 68px;
+    height: 68px;
+    border-radius: var(--radius-sm);
+    background-color: #f1f5f9;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+}
+
+/* Columna de Productos y Precio */
+.simplified-info-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.simplified-products-text {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--dark-text);
+    margin: 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.simplified-pricing-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.simplified-price-label {
+    font-size: 0.82rem;
+    color: var(--muted-text);
+    font-weight: 500;
+}
+
+.simplified-price-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+/* Columna de Acción */
+.simplified-action-col {
+    flex-shrink: 0;
+}
+
+.btn-view-simplified {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background-color: #f0f9ff;
+    color: var(--primary);
+    border: 1px solid #bae6fd;
+    border-radius: var(--radius-sm);
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-view-simplified:hover {
+    background-color: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0, 81, 135, 0.2);
+}
+
+@media (max-width: 640px) {
+    .simplified-card-body {
+        flex-wrap: wrap;
+    }
+    .simplified-action-col {
+        width: 100%;
+        margin-top: 4px;
+    }
+    .btn-view-simplified {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* =============================================================
+   5. PAGINACIÓN
+   ============================================================= */
+.orders-pagination-container {
+    margin-top: 28px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+@media (min-width: 640px) {
+    .orders-pagination-container {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
+.pagination-info {
+    font-size: 0.86rem;
+    color: var(--muted-text);
+    font-weight: 500;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--body-text);
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
+    background-color: #f0f9ff;
+}
+
+.page-btn.active {
+    background-color: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 2px 6px rgba(0, 81, 135, 0.2);
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.page-ellipsis {
+    padding: 0 6px;
+    color: var(--muted-text);
+}
+
+/* =============================================================
+   6. ESTADOS DE CARGA Y VACÍO
+   ============================================================= */
+.orders-empty-state {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 50px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.empty-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #eff6ff;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.empty-icon-wrapper.search-empty {
+    background-color: #f1f5f9;
+    color: var(--muted-text);
+}
+
+.empty-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--dark-text);
+    margin: 0 0 6px 0;
+}
+
+.empty-subtitle {
+    font-size: 0.9rem;
+    color: var(--muted-text);
+    max-width: 440px;
+    margin: 0 0 20px 0;
+    line-height: 1.5;
+}
+
+.btn-explore-products {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--primary);
+    color: #ffffff;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0, 81, 135, 0.2);
+    transition: all 0.2s ease;
+}
+
+.btn-explore-products:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.btn-reset-filters {
+    padding: 9px 18px;
+    background-color: #f1f5f9;
+    color: var(--dark-text);
+    border: 1px solid #cbd5e1;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-reset-filters:hover {
+    background-color: #e2e8f0;
+}
+
+/* Skeletons */
+.order-skeleton-card {
+    height: 120px;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}

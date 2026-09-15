@@ -55,6 +55,7 @@ const state = {
   
   // Menú contextual flotante
   contextMenuTarget: null,
+  orderContextMenuTarget: null,
   
   // Archivos seleccionados para creación
   selectedFiles: []
@@ -188,10 +189,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 6. Configurar Lightbox de medios
   setupMediaLightbox();
 
-  // 7. Configurar menú contextual de acciones
+  // 7. Configurar menú contextual de acciones para notificaciones y pedidos
   setupContextMenu();
+  setupOrderContextMenu();
 
-  // 8. Cargar datos iniciales
+  // 8. Configurar modal dedicado de pedido con notificaciones
+  setupOrderNotificationsModal();
+
+  // 9. Cargar datos iniciales
   cargarDatosVistaActual();
 });
 
@@ -718,15 +723,13 @@ function renderTablaPedidos(orders) {
         <!-- Acciones -->
         <td>
           <div class="cell-actions">
-            ${lastNotif ? `
-              <button type="button" class="btn-table-action btn-view-quick" data-notif-id="${lastNotif.id}" title="Ver última notificación">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-              </button>
-            ` : ''}
-            <button type="button" class="btn-table-action btn-more-order-actions" data-order-id="${ord.order_id}" title="Opciones de orden">
+            <button type="button" class="btn-table-action btn-view-order-modal" data-order-id="${ord.order_id}" title="Ver resumen y notificaciones" aria-label="Ver resumen">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+            <button type="button" class="btn-table-action btn-more-order-actions" data-order-id="${ord.order_id}" title="Opciones de pedido" aria-label="Opciones">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="1"></circle>
                 <circle cx="12" cy="5" r="1"></circle>
@@ -771,12 +774,35 @@ function renderTablaPedidos(orders) {
     });
   });
 
-  // Vincular eventos de vista rápida en botones de la subtabla
-  tbody.querySelectorAll('.btn-view-quick').forEach((btn) => {
+  // Vincular eventos para ver resumen y notificaciones del pedido
+  tbody.querySelectorAll('.btn-view-order-modal').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const orderId = btn.getAttribute('data-order-id');
+      const order = state.ordersWithNotifs.find(o => String(o.order_id) === String(orderId));
+      if (order) {
+        abrirModalPedidoNotificaciones(order);
+      }
+    });
+  });
+
+  // Vincular eventos de 3 puntos (menú contextual de opciones para pedidos)
+  tbody.querySelectorAll('.btn-more-order-actions').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const orderId = btn.getAttribute('data-order-id');
+      const order = state.ordersWithNotifs.find(o => String(o.order_id) === String(orderId));
+      if (order) {
+        mostrarMenuContextualOrden(btn, order);
+      }
+    });
+  });
+
+  // Vincular eventos de vista rápida en botones de la subtabla anidada
+  tbody.querySelectorAll('.nested-table .btn-view-quick').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const notifId = btn.getAttribute('data-notif-id');
-      // Buscar notificación en la lista global o en las sublistas
       let found = null;
       for (const ord of state.ordersWithNotifs) {
         found = (ord.notifications || []).find(n => String(n.id) === String(notifId));
@@ -1060,6 +1086,63 @@ function abrirLightbox(url, mediaType) {
   lightbox.setAttribute('aria-hidden', 'false');
 }
 
+/**
+ * Abre el modal para componer y enviar una nueva notificación manual
+ * Permite preseleccionar un pedido específico si se pasa su ID
+ */
+async function abrirModalNuevaNotificacion(preselectedOrderId = null) {
+  const backdrop = document.getElementById('modal-create-notif-backdrop');
+  const form = document.getElementById('form-create-notification');
+  const radioOrder = document.getElementById('radio-order');
+  const radioClient = document.getElementById('radio-client');
+  const groupOrder = document.getElementById('group-select-order');
+  const groupClient = document.getElementById('group-select-client');
+  const selectOrder = document.getElementById('compose-select-order');
+  const selectClient = document.getElementById('compose-select-client');
+  const selectedFilesList = document.getElementById('selected-files-list');
+
+  form.reset();
+  state.selectedFiles = [];
+  selectedFilesList.innerHTML = '';
+  limpiarErroresFormulario();
+
+  radioOrder.checked = true;
+  groupOrder.style.display = 'block';
+  groupClient.style.display = 'none';
+  selectOrder.required = true;
+  selectClient.required = false;
+
+  backdrop.style.display = 'flex';
+  backdrop.setAttribute('aria-hidden', 'false');
+
+  try {
+    const [orders, clients] = await Promise.all([
+      obtenerPedidosSelector(),
+      obtenerClientesSelector()
+    ]);
+
+    selectOrder.innerHTML = '<option value="">Selecciona un pedido...</option>' + orders.map(o => {
+      const num = o.order_number || `#${o.id}`;
+      const clientName = o.user?.first_name ? `${o.user.first_name} ${o.user.first_last_name || ''}` : (o.user?.username || 'Cliente');
+      return `<option value="${o.id}">${num} - ${clientName}</option>`;
+    }).join('');
+
+    selectClient.innerHTML = '<option value="">Selecciona un cliente...</option>' + clients.map(c => {
+      const name = c.first_name ? `${c.first_name} ${c.first_last_name || ''}` : (c.username || c.email);
+      return `<option value="${c.id}">${name} (${c.email || c.identity_document || 'Cliente'})</option>`;
+    }).join('');
+
+    if (preselectedOrderId) {
+      selectOrder.value = String(preselectedOrderId);
+      setTimeout(() => {
+        document.getElementById('compose-input-subject')?.focus();
+      }, 100);
+    }
+  } catch (e) {
+    console.warn('[Notificaciones] Error cargando selectores de orden/cliente:', e);
+  }
+}
+
 // ==========================================================================
 // 6. MODAL FORMULARIO: COMPONER NUEVA NOTIFICACIÓN
 // ==========================================================================
@@ -1097,35 +1180,8 @@ function setupCreateNotificationModal() {
   });
 
   // Abrir modal y cargar pedidos/clientes
-  btnOpen.addEventListener('click', async () => {
-    form.reset();
-    state.selectedFiles = [];
-    selectedFilesList.innerHTML = '';
-    limpiarErroresFormulario();
-
-    backdrop.style.display = 'flex';
-    backdrop.setAttribute('aria-hidden', 'false');
-
-    // Cargar listas para selectores
-    try {
-      const [orders, clients] = await Promise.all([
-        obtenerPedidosSelector(),
-        obtenerClientesSelector()
-      ]);
-
-      selectOrder.innerHTML = '<option value="">Selecciona un pedido...</option>' + orders.map(o => {
-        const num = o.order_number || `#${o.id}`;
-        const clientName = o.user?.first_name ? `${o.user.first_name} ${o.user.first_last_name || ''}` : (o.user?.username || 'Cliente');
-        return `<option value="${o.id}">${num} - ${clientName}</option>`;
-      }).join('');
-
-      selectClient.innerHTML = '<option value="">Selecciona un cliente...</option>' + clients.map(c => {
-        const name = c.first_name ? `${c.first_name} ${c.first_last_name || ''}` : (c.username || c.email);
-        return `<option value="${c.id}">${name} (${c.email || c.identity_document || 'Cliente'})</option>`;
-      }).join('');
-    } catch (e) {
-      console.warn('[Notificaciones] Error cargando selectores de orden/cliente:', e);
-    }
+  btnOpen.addEventListener('click', () => {
+    abrirModalNuevaNotificacion();
   });
 
   const closeModal = () => {
@@ -1346,12 +1402,277 @@ function setupContextMenu() {
 function mostrarMenuContextual(triggerBtn, notif) {
   state.contextMenuTarget = notif;
   const menu = document.getElementById('actions-dropdown');
-  const rect = triggerBtn.getBoundingClientRect();
+  const orderMenu = document.getElementById('order-actions-dropdown');
+  if (orderMenu) orderMenu.style.display = 'none';
 
+  const rect = triggerBtn.getBoundingClientRect();
   menu.style.top = `${rect.bottom + window.scrollY + 4}px`;
   menu.style.left = `${Math.max(10, rect.left + window.scrollX - 120)}px`;
   menu.style.display = 'flex';
 }
 
+// ==========================================================================
+// 8. MENÚ CONTEXTUAL FLOTANTE PARA PEDIDOS (TABLA 2)
+// ==========================================================================
+function setupOrderContextMenu() {
+  const orderMenu = document.getElementById('order-actions-dropdown');
+  if (!orderMenu) return;
+
+  document.addEventListener('click', (e) => {
+    if (!orderMenu.contains(e.target)) {
+      orderMenu.style.display = 'none';
+      state.orderContextMenuTarget = null;
+    }
+  });
+
+  // Opción 1: Ver resumen y notificaciones (Modal dedicado)
+  document.getElementById('order-action-view-modal')?.addEventListener('click', () => {
+    const ord = state.orderContextMenuTarget;
+    orderMenu.style.display = 'none';
+    if (ord) {
+      abrirModalPedidoNotificaciones(ord);
+    }
+  });
+
+  // Opción 2: Nueva notificación para este pedido
+  document.getElementById('order-action-new-notif')?.addEventListener('click', () => {
+    const ord = state.orderContextMenuTarget;
+    orderMenu.style.display = 'none';
+    if (ord?.order_id) {
+      abrirModalNuevaNotificacion(ord.order_id);
+    }
+  });
+
+  // Opción 3: Ver detalle del pedido
+  document.getElementById('order-action-go-detail')?.addEventListener('click', () => {
+    const ord = state.orderContextMenuTarget;
+    orderMenu.style.display = 'none';
+    if (ord?.order_id) {
+      window.location.href = `../order/order-detail.html?id=${ord.order_id}`;
+    }
+  });
+
+  // Opción 4: Expandir o contraer historial en tabla
+  document.getElementById('order-action-toggle-expand')?.addEventListener('click', () => {
+    const ord = state.orderContextMenuTarget;
+    orderMenu.style.display = 'none';
+    if (ord?.order_id) {
+      toggleExpandirPedido(ord.order_id);
+    }
+  });
+
+  // Opción 5: Copiar número de pedido
+  document.getElementById('order-action-copy-code')?.addEventListener('click', async () => {
+    const ord = state.orderContextMenuTarget;
+    orderMenu.style.display = 'none';
+    if (!ord) return;
+
+    const orderCode = ord.order_number || `#${String(ord.order_id).padStart(5, '0')}`;
+    try {
+      await navigator.clipboard.writeText(orderCode);
+      showToast('success', 'Copiado al Portapapeles', `Pedido ${orderCode} copiado exitosamente.`);
+    } catch {
+      showToast('info', 'Número de Pedido', orderCode);
+    }
+  });
+}
+
+function mostrarMenuContextualOrden(triggerBtn, order) {
+  state.orderContextMenuTarget = order;
+  const menu = document.getElementById('order-actions-dropdown');
+  const notifMenu = document.getElementById('actions-dropdown');
+  if (notifMenu) notifMenu.style.display = 'none';
+  if (!menu) return;
+
+  // Actualizar etiqueta según el estado de expansión de la fila
+  const expandLabel = document.getElementById('order-action-toggle-expand-text');
+  if (expandLabel) {
+    const isExpanded = state.expandedOrders.has(order.order_id);
+    expandLabel.textContent = isExpanded ? 'Contraer historial' : 'Ver historial en tabla';
+  }
+
+  const rect = triggerBtn.getBoundingClientRect();
+  menu.style.top = `${rect.bottom + window.scrollY + 4}px`;
+  menu.style.left = `${Math.max(10, rect.left + window.scrollX - 180)}px`;
+  menu.style.display = 'flex';
+}
+
+// ==========================================================================
+// 9. MODAL DEDICADO DE PEDIDO CON NOTIFICACIONES (RESUMEN + LISTADO)
+// ==========================================================================
+function setupOrderNotificationsModal() {
+  const modal = document.getElementById('modal-order-notifications');
+  const btnClose = document.getElementById('btn-close-order-notifs');
+  const btnCloseFooter = document.getElementById('btn-close-order-notifs-footer');
+
+  if (btnClose) btnClose.addEventListener('click', cerrarModalPedidoNotificaciones);
+  if (btnCloseFooter) btnCloseFooter.addEventListener('click', cerrarModalPedidoNotificaciones);
+
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        cerrarModalPedidoNotificaciones();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('is-open')) {
+      cerrarModalPedidoNotificaciones();
+    }
+  });
+}
+
+function abrirModalPedidoNotificaciones(order) {
+  const modal = document.getElementById('modal-order-notifications');
+  if (!modal || !order) return;
+
+  const orderNum = order.order_number || `#${String(order.order_id).padStart(5, '0')}`;
+  const clientName = order.client_name || 'Cliente';
+  const totalFormatted = formatCurrency(order.total_price);
+  const statusDisplay = order.order_status_display || order.order_status || 'Registrado';
+  const notifsList = order.notifications || [];
+
+  // Encabezado
+  document.getElementById('order-notifs-modal-title').textContent = `Notificaciones: ${orderNum}`;
+  document.getElementById('order-notifs-modal-subtitle').textContent = `Cliente: ${clientName} • Total: ${totalFormatted}`;
+
+  // Mini Resumen
+  const linkNum = document.getElementById('modal-order-number');
+  linkNum.textContent = orderNum;
+  linkNum.href = `../order/order-detail.html?id=${order.order_id}`;
+
+  document.getElementById('modal-order-client').textContent = clientName;
+  document.getElementById('modal-order-total').textContent = totalFormatted;
+  document.getElementById('modal-order-notifs-count').textContent = `${notifsList.length} ${notifsList.length === 1 ? 'notificación' : 'notificaciones'}`;
+
+  // Badge de Estado de Orden
+  const statusBadge = document.getElementById('modal-order-status-badge');
+  statusBadge.textContent = statusDisplay;
+  statusBadge.className = 'badge-order-status';
+  if (order.order_status === 'shipped') statusBadge.classList.add('badge-status-shipped');
+  else if (order.order_status === 'finalized') statusBadge.classList.add('badge-status-finalized');
+  else if (order.order_status?.includes('pending')) statusBadge.classList.add('badge-status-pending');
+  else statusBadge.classList.add('badge-status-manufacturing');
+
+  // Enlace ver completo en footer
+  const btnDetail = document.getElementById('btn-modal-order-detail-link');
+  if (btnDetail) {
+    btnDetail.href = `../order/order-detail.html?id=${order.order_id}`;
+  }
+
+  // Botón nueva notificación en footer
+  const btnNewNotif = document.getElementById('btn-modal-order-new-notif');
+  if (btnNewNotif) {
+    btnNewNotif.onclick = () => {
+      cerrarModalPedidoNotificaciones();
+      abrirModalNuevaNotificacion(order.order_id);
+    };
+  }
+
+  // Renderizar listado de notificaciones de este pedido
+  const container = document.getElementById('modal-order-notifs-container');
+  if (!notifsList.length) {
+    container.innerHTML = `
+      <div class="order-notif-empty-state">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#94a3b8" stroke-width="1.5">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <p style="margin: 0;">Este pedido no tiene notificaciones registradas.</p>
+      </div>
+    `;
+  } else {
+    container.innerHTML = notifsList.map((n, idx) => {
+      const dt = formatDateTime(n.created_at);
+      const typeBadge = n.is_manual
+        ? '<span class="badge badge-manual">Manual</span>'
+        : '<span class="badge badge-auto">Automática</span>';
+
+      let statusBadgeHtml = '<span class="badge badge-sent">Enviada</span>';
+      if (n.status === 'pending') statusBadgeHtml = '<span class="badge badge-pending">Pendiente</span>';
+      else if (n.status === 'read' || n.is_read) statusBadgeHtml = '<span class="badge badge-read">Leída</span>';
+
+      // Miniaturas o chips de adjuntos
+      let attachmentsHtml = '';
+      if (n.media_files && n.media_files.length) {
+        const attachThumbs = n.media_files.map(m => {
+          if (m.media_type === 'video') {
+            return `
+              <span class="attachment-chip" data-media-url="${escapeHtml(m.file)}" data-media-type="video" style="cursor: pointer; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-size: 11.5px; border: 1px solid #e2e8f0;" title="Ver video">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> Video adjunto
+              </span>
+            `;
+          } else {
+            return `
+              <img src="${escapeHtml(m.file)}" alt="Adjunto" class="order-notif-attach-thumb" data-media-url="${escapeHtml(m.file)}" data-media-type="image" title="Clic para ampliar">
+            `;
+          }
+        }).join('');
+        attachmentsHtml = `<div class="order-notif-item-attachments">${attachThumbs}</div>`;
+      }
+
+      return `
+        <div class="order-notif-item-card">
+          <div class="order-notif-item-top">
+            <div class="order-notif-item-meta">
+              <span class="order-notif-item-date">${dt.date} ${dt.time}</span>
+              <div class="order-notif-item-badges">
+                ${typeBadge}
+                ${statusBadgeHtml}
+              </div>
+            </div>
+            <button type="button" class="btn-table-action btn-item-quick-view" data-notif-idx="${idx}" title="Ver vista detallada">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+          <h5 class="order-notif-item-title">${escapeHtml(n.title || 'Notificación')}</h5>
+          ${n.message ? `<div class="order-notif-item-msg">${escapeHtml(n.message)}</div>` : ''}
+          ${attachmentsHtml}
+        </div>
+      `;
+    }).join('');
+
+    // Listeners para abrir adjuntos en Lightbox
+    container.querySelectorAll('[data-media-url]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const url = el.getAttribute('data-media-url');
+        const type = el.getAttribute('data-media-type');
+        abrirLightbox(url, type);
+      });
+    });
+
+    // Listeners para abrir vista rápida individual de una notificación específica
+    container.querySelectorAll('.btn-item-quick-view').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.getAttribute('data-notif-idx'), 10);
+        const notif = notifsList[idx];
+        if (notif) {
+          cerrarModalPedidoNotificaciones();
+          abrirQuickViewFlotante(notif);
+        }
+      });
+    });
+  }
+
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function cerrarModalPedidoNotificaciones() {
+  const modal = document.getElementById('modal-order-notifications');
+  if (modal) {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+}
+
 // Exponer para interoperabilidad y pruebas
 window.abrirQuickViewFlotante = abrirQuickViewFlotante;
+window.abrirModalPedidoNotificaciones = abrirModalPedidoNotificaciones;
+window.abrirModalNuevaNotificacion = abrirModalNuevaNotificacion;

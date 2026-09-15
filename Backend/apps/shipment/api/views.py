@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Count, Sum
 
 from apps.base.api import BaseViewSet
 from apps.shipment.models import Distributor, Shipment
@@ -52,7 +53,7 @@ class ShipmentViewSet(BaseViewSet):
     ordering_fields = ['created_at', 'status', 'id']
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve', 'metrics']:
             return [permissions.IsAuthenticated()]
         return [permissions.IsAdminUser()]
 
@@ -119,3 +120,75 @@ class ShipmentViewSet(BaseViewSet):
 
         serializer = self.get_serializer(shipment)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def metrics(self, request):
+        """
+        Retorna estadísticas y KPIs generales de envíos para el panel administrativo.
+        """
+        queryset = self.get_queryset()
+
+        counts_by_status = queryset.values('status').annotate(
+            total=Count('id'),
+            total_amount=Sum('price')
+        )
+        status_dict = {item['status']: item['total'] for item in counts_by_status}
+        status_amount_dict = {item['status']: float(item['total_amount'] or 0) for item in counts_by_status}
+
+        now = timezone.now()
+        today = now.date()
+        month_start = today.replace(day=1)
+
+        delivered_today_qs = queryset.filter(status='delivered', delivered_at__date=today)
+        delivered_month_qs = queryset.filter(status='delivered', delivered_at__date__gte=month_start)
+
+        delivered_today_count = delivered_today_qs.count()
+        delivered_today_amount = float(delivered_today_qs.aggregate(total=Sum('price'))['total'] or 0)
+
+        delivered_month_count = delivered_month_qs.count()
+        delivered_month_amount = float(delivered_month_qs.aggregate(total=Sum('price'))['total'] or 0)
+
+        rate_ves = 36.50
+
+        pending_count = status_dict.get('pending', 0)
+        pending_amount = status_amount_dict.get('pending', 0.0)
+
+        transit_count = status_dict.get('in_transit', 0)
+        transit_amount = status_amount_dict.get('in_transit', 0.0)
+
+        returned_count = status_dict.get('returned', 0)
+        returned_amount = status_amount_dict.get('returned', 0.0)
+
+        data = {
+            "pending": {
+                "count": pending_count,
+                "amount_usd": pending_amount,
+                "amount_ves": round(pending_amount * rate_ves, 2)
+            },
+            "in_transit": {
+                "count": transit_count,
+                "amount_usd": transit_amount,
+                "amount_ves": round(transit_amount * rate_ves, 2)
+            },
+            "delivered_today": {
+                "count": delivered_today_count,
+                "amount_usd": delivered_today_amount,
+                "amount_ves": round(delivered_today_amount * rate_ves, 2)
+            },
+            "delivered_month": {
+                "count": delivered_month_count,
+                "amount_usd": delivered_month_amount,
+                "amount_ves": round(delivered_month_amount * rate_ves, 2)
+            },
+            "returned": {
+                "count": returned_count,
+                "amount_usd": returned_amount,
+                "amount_ves": round(returned_amount * rate_ves, 2)
+            },
+            "pending_count": pending_count,
+            "in_transit_count": transit_count,
+            "delivered_today_count": delivered_today_count,
+            "delivered_month_count": delivered_month_count,
+            "returned_count": returned_count,
+        }
+        return Response(data, status=status.HTTP_200_OK)

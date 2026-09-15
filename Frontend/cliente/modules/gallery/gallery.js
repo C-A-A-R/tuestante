@@ -1,40 +1,41 @@
 /**
  * ==========================================================================
  * MÓDULO DE GALERÍA DE INSPIRACIÓN "ESPACIOS REALES" - TUESTANTE
- * Manejo de la carga de imágenes desde el backend Django y respaldos provisionales,
- * filtros dinámicos basados en Categorías y Tipos de Productos de la Base de Datos,
+ * Manejo de la carga de imágenes desde el backend Django (apps/gallery) y proyectos,
+ * filtros dinámicos basados en Redes Sociales y Tipos de Productos de la BD,
  * ordenamiento según el patrón de 4 columnas iguales (Bloque 1 -> Bloque 2 Inverso -> Bloque 3 Fila de 4),
- * tarjeta CTA "Añadir nueva imagen", paginación "Mostrar más" y visor modal (Lightbox).
+ * tarjeta CTA "Añadir nueva imagen", paginación "Mostrar más", estado vacío (Empty State) y visor modal (Lightbox).
  * ==========================================================================
  */
 
 import { initNavbar } from '../../components/navbar/navbar.js';
 import { initFooter } from '../../components/footer/footer.js';
 import { obtenerProyectos } from '../project/project.api.js';
-import { obtenerProductos, obtenerCategorias, obtenerTiposProducto } from '../product/product.api.js';
+import { obtenerProductos, obtenerTiposProducto } from '../product/product.api.js';
+import { obtenerGaleria } from './gallery.api.js';
 import { backendOrigin } from '../../js/config.js';
 
 /**
  * Lista provisional de fotografías de Espacios Reales con productos TuEstante.
- * Garantiza visualización inmediata de la grilla en el patrón de 4 columnas.
+ * Garantiza visualización inmediata de la grilla en el patrón de 4 columnas si el backend no cuenta con imágenes.
  */
 const PROVISIONAL_GALLERY_ITEMS = [
-    { id: 1, title: 'Estudio Creativo & Mueble Archivador', description: 'Organización moderna con gabinete rosado pastel.', author: '@tuestante.ve', category: 'hogar', categoryId: 2, categoryName: 'Muebles para Hogar', typeName: 'Gabinetes', mediaType: 'image', image: '../../assets/images/gallery/real_space_1.jpg' },
-    { id: 2, title: 'Mueble Consola en Sala de Estar', description: 'Gabinete amarillo mostaza como consola de audio.', author: '@bisley_fan', category: 'hogar', categoryId: 2, categoryName: 'Muebles para Hogar', typeName: 'Armarios', mediaType: 'image', image: '../../assets/images/gallery/real_space_2.jpg' },
-    { id: 3, title: 'Locker Armario en Habitación Infantil', description: 'Armario locker metálico azul cielo.', author: '@espacio_infantil', category: 'lockers', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_3.jpg' },
-    { id: 4, title: 'Taller & Loft Industrial', description: 'Estantería metálica industrial de alta resistencia.', author: '@loft_design', category: 'estantes', categoryId: 3, categoryName: 'Racks de Almacenamiento', typeName: 'Racks', mediaType: 'image', image: '../../assets/images/gallery/real_space_4.jpg' },
-    { id: 5, title: 'Oficina Ejecutiva Corporativa', description: 'Batería de lockers metálicos ejecutivos.', author: '@oficinas_ve', category: 'oficina', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_5.jpg' },
-    { id: 6, title: 'Divisor de Ambientes con Plantas', description: 'Estantería metálica azul noche.', author: '@green_spaces', category: 'estantes', categoryId: 2, categoryName: 'Muebles para Hogar', typeName: 'Estanterías', mediaType: 'image', image: '../../assets/images/gallery/real_space_6.jpg' },
-    { id: 7, title: 'Locker Ejecutivo Gris 4 Casillas', description: 'Locker metálico de alta durabilidad.', author: '@tuestante.ve', category: 'lockers', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/carrusel-index/LocekrL4Gris.jpg' },
-    { id: 8, title: 'Lockers Para Gimnasios', description: 'Estilo contemporáneo para ambientes de trabajo.', author: '', category: 'lockers', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'video', videoUrl: '../../assets/videos/gym_mujer.mp4' },
-    { id: 9, title: 'Lockers de Puertas Amarillas y Cuerpo Negro', description: 'Estante metálico refinado con accesorios.', author: '@C4_BOXX', category: 'lockers', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'video', videoUrl: '../../assets/videos/c4_boxx.mp4' },
-    { id: 10, title: 'Estantería de Gran Capacidad', description: 'Diseño robusto para optimizar depósitos.', author: '@logistica_ve', category: 'oficina', categoryId: 3, categoryName: 'Racks de Almacenamiento', typeName: 'Racks', mediaType: 'image', image: '../../assets/images/carrusel-index/Carrousel.png' },
-    { id: 11, title: 'Conjunto de Lockers Ejecutivos', description: 'Almacenamiento metálico de seguridad.', author: '', category: 'oficina', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'video', videoUrl: '../../assets/videos/elt.mp4' },
-    { id: 12, title: 'Locker Amarillo Mostaza en Sala de Estar', description: 'Mueble metálico modular de 6 casillas en tono cálido con plantas tropicales.', author: '@tuestante.ve', category: 'lockers', categoryId: 2, categoryName: 'Muebles para Hogar', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_7.jpg' },
-    { id: 13, title: 'Estantería Industrial de Alta Carga', description: 'Estructura metálica gris oscuro organizando estudio de arquitectura.', author: '@tuestante.ve', category: 'estantes', categoryId: 3, categoryName: 'Racks de Almacenamiento', typeName: 'Estanterías Industriales', mediaType: 'image', image: '../../assets/images/gallery/real_space_8.jpg' },
-    { id: 14, title: 'Archivador Metálico Turquesa', description: 'Gabinete organizador de 4 gavetas para oficina iluminada.', author: '@tuestante.ve', category: 'oficina', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Archivadores', mediaType: 'image', image: '../../assets/images/gallery/real_space_9.jpg' },
-    { id: 15, title: 'Lockers Combinados Naranja & Azul', description: 'Mobiliario metálico de alta resistencia para áreas corporativas.', author: '@tuestante.ve', category: 'oficina', categoryId: 1, categoryName: 'Estantería Industrial', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_10.jpg' },
-    { id: 16, title: 'Estante & Armario Verde Menta', description: 'Línea de almacenamiento metálico para cocinas y comedores modernos.', author: '@tuestante.ve', category: 'hogar', categoryId: 2, categoryName: 'Muebles para Hogar', typeName: 'Armarios', mediaType: 'image', image: '../../assets/images/gallery/real_space_11.jpg' },
+    { id: 1, title: 'Estudio Creativo & Mueble Archivador', description: 'Organización moderna con gabinete rosado pastel.', author: '@tuestante.ve', socialNetwork: 'instagram', typeName: 'Gabinetes', mediaType: 'image', image: '../../assets/images/gallery/real_space_1.jpg' },
+    { id: 2, title: 'Mueble Consola en Sala de Estar', description: 'Gabinete amarillo mostaza como consola de audio.', author: '@bisley_fan', socialNetwork: 'instagram', typeName: 'Armarios', mediaType: 'image', image: '../../assets/images/gallery/real_space_2.jpg' },
+    { id: 3, title: 'Locker Armario en Habitación Infantil', description: 'Armario locker metálico azul cielo.', author: '@espacio_infantil', socialNetwork: 'instagram', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_3.jpg' },
+    { id: 4, title: 'Taller & Loft Industrial', description: 'Estantería metálica industrial de alta resistencia.', author: '@loft_design', socialNetwork: 'tiktok', typeName: 'Racks', mediaType: 'image', image: '../../assets/images/gallery/real_space_4.jpg' },
+    { id: 5, title: 'Oficina Ejecutiva Corporativa', description: 'Batería de lockers metálicos ejecutivos.', author: '@oficinas_ve', socialNetwork: 'instagram', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_5.jpg' },
+    { id: 6, title: 'Divisor de Ambientes con Plantas', description: 'Estantería metálica azul noche.', author: '@green_spaces', socialNetwork: 'instagram', typeName: 'Estanterías', mediaType: 'image', image: '../../assets/images/gallery/real_space_6.jpg' },
+    { id: 7, title: 'Locker Ejecutivo Gris 4 Casillas', description: 'Locker metálico de alta durabilidad.', author: '@tuestante.ve', socialNetwork: 'tiktok', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/carrusel-index/LocekrL4Gris.jpg' },
+    { id: 8, title: 'Lockers Para Gimnasios', description: 'Estilo contemporáneo para ambientes de trabajo.', author: '@tuestante.ve', socialNetwork: 'tiktok', typeName: 'Lockers', mediaType: 'video', videoUrl: '../../assets/videos/gym_mujer.mp4' },
+    { id: 9, title: 'Lockers de Puertas Amarillas y Cuerpo Negro', description: 'Estante metálico refinado con accesorios.', author: '@C4_BOXX', socialNetwork: 'tiktok', typeName: 'Lockers', mediaType: 'video', videoUrl: '../../assets/videos/c4_boxx.mp4' },
+    { id: 10, title: 'Estantería de Gran Capacidad', description: 'Diseño robusto para optimizar depósitos.', author: '@logistica_ve', socialNetwork: 'instagram', typeName: 'Racks', mediaType: 'image', image: '../../assets/images/carrusel-index/Carrousel.png' },
+    { id: 11, title: 'Conjunto de Lockers Ejecutivos', description: 'Almacenamiento metálico de seguridad.', author: '@tuestante.ve', socialNetwork: 'tiktok', typeName: 'Lockers', mediaType: 'video', videoUrl: '../../assets/videos/elt.mp4' },
+    { id: 12, title: 'Locker Amarillo Mostaza en Sala de Estar', description: 'Mueble metálico modular de 6 casillas en tono cálido con plantas tropicales.', author: '@tuestante.ve', socialNetwork: 'instagram', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_7.jpg' },
+    { id: 13, title: 'Estantería Industrial de Alta Carga', description: 'Estructura metálica gris oscuro organizando estudio de arquitectura.', author: '@tuestante.ve', socialNetwork: 'instagram', typeName: 'Estanterías', mediaType: 'image', image: '../../assets/images/gallery/real_space_8.jpg' },
+    { id: 14, title: 'Archivador Metálico Turquesa', description: 'Gabinete organizador de 4 gavetas para oficina iluminada.', author: '@tuestante.ve', socialNetwork: 'instagram', typeName: 'Archivadores', mediaType: 'image', image: '../../assets/images/gallery/real_space_9.jpg' },
+    { id: 15, title: 'Lockers Combinados Naranja & Azul', description: 'Mobiliario metálico de alta resistencia para áreas corporativas.', author: '@tuestante.ve', socialNetwork: 'tiktok', typeName: 'Lockers', mediaType: 'image', image: '../../assets/images/gallery/real_space_10.jpg' },
+    { id: 16, title: 'Estante & Armario Verde Menta', description: 'Línea de almacenamiento metálico para cocinas y comedores modernos.', author: '@tuestante.ve', socialNetwork: 'instagram', typeName: 'Armarios', mediaType: 'image', image: '../../assets/images/gallery/real_space_11.jpg' },
 ];
 
 // Estado global de la galería
@@ -83,40 +84,39 @@ async function loadComponent(placeholderId, filePath) {
 }
 
 /**
- * Consulta las categorías y tipos de productos del backend Django para generar
- * dinámicamente los botones de filtrado de la galería.
+ * Consulta los tipos de producto del backend Django para generar dinámicamente
+ * los botones de filtrado de la galería, sin depender de categorías.
  */
 async function loadDynamicFilters() {
     const filterBar = document.getElementById('gallery-filter-bar');
     if (!filterBar) return;
 
     try {
-        const [catResp, typeResp] = await Promise.allSettled([
-            obtenerCategorias(),
-            obtenerTiposProducto()
-        ]);
-
-        const categories = catResp.status === 'fulfilled' ? extractList(catResp.value) : [];
-        const productTypes = typeResp.status === 'fulfilled' ? extractList(typeResp.value) : [];
+        const typeResp = await obtenerTiposProducto().catch(() => []);
+        const productTypes = extractList(typeResp);
 
         let filterButtonsHtml = `<button class="gallery-filter-btn active" data-filter="all">Todos</button>`;
 
-        // Categorías reales de la BD
-        if (Array.isArray(categories) && categories.length > 0) {
-            categories.forEach((cat) => {
-                const catName = cat.category_name || cat.name || 'Categoría';
-                filterButtonsHtml += `
-                    <button class="gallery-filter-btn" data-filter="cat_${cat.id}" data-category-id="${cat.id}" data-category-name="${catName}">
-                        ${catName}
-                    </button>
-                `;
-            });
-        }
+        // Filtro Instagram
+        filterButtonsHtml += `
+            <button class="gallery-filter-btn" data-filter="instagram" data-network="instagram">
+                <svg class="filter-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                Instagram
+            </button>
+        `;
+
+        // Filtro TikTok
+        filterButtonsHtml += `
+            <button class="gallery-filter-btn" data-filter="tiktok" data-network="tiktok">
+                <svg class="filter-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .58.04.85.12V9.4a6.33 6.33 0 0 0-.85-.06A6.34 6.34 0 0 0 3 15.68a6.34 6.34 0 0 0 6.34 6.34c3.48 0 6.32-2.82 6.34-6.3V8.85a8.28 8.28 0 0 0 4.91 1.59V7a4.81 4.81 0 0 1-1-.31z"/></svg>
+                TikTok
+            </button>
+        `;
 
         // Tipos de Producto reales de la BD
         if (Array.isArray(productTypes) && productTypes.length > 0) {
             productTypes.forEach((type) => {
-                const typeName = type.type_name || type.name || 'Tipo';
+                const typeName = type.product_type_name || type.type_name || type.name || 'Tipo';
                 filterButtonsHtml += `
                     <button class="gallery-filter-btn" data-filter="type_${type.id}" data-type-id="${type.id}" data-type-name="${typeName}">
                         ${typeName}
@@ -128,18 +128,28 @@ async function loadDynamicFilters() {
         filterBar.innerHTML = filterButtonsHtml;
         initFilterBar();
     } catch (e) {
-        console.warn('Aviso cargando filtros dinámicos de la galería:', e);
+        console.warn('Aviso cargando filtros de la galería:', e);
     }
 }
 
 /**
- * Consulta la API del backend Django para obtener proyectos y productos real-time.
- * Si retorna imágenes, las combina con el catálogo provisional.
+ * Consulta la API del backend Django (apps/gallery, proyectos y productos) en tiempo real.
+ * Conecta directamente a la aplicación de Galería.
  */
 async function fetchGalleryFromBackend() {
+    let rawGallery = [];
     let rawProjects = [];
     let rawProducts = [];
 
+    // 1. Conexión a la aplicación de galería del backend (apps/gallery)
+    try {
+        const galResp = await obtenerGaleria();
+        rawGallery = extractList(galResp);
+    } catch (e) {
+        console.warn('Backend API de galería no disponible:', e);
+    }
+
+    // 2. Conexión a proyectos del backend
     try {
         const projResp = await obtenerProyectos();
         rawProjects = extractList(projResp);
@@ -147,6 +157,7 @@ async function fetchGalleryFromBackend() {
         console.warn('Backend API de proyectos no disponible:', e);
     }
 
+    // 3. Conexión a productos del backend
     try {
         const prodResp = await obtenerProductos();
         rawProducts = extractList(prodResp);
@@ -156,7 +167,28 @@ async function fetchGalleryFromBackend() {
 
     const backendItems = [];
 
-    // 1. Mapear Proyectos
+    // Mapear fotos desde la aplicación de Galería (apps/gallery)
+    rawGallery.forEach((item, idx) => {
+        const title = item.caption || `Espacio Real ${idx + 1}`;
+        const description = item.caption || 'Fotografía de la comunidad TuEstante.';
+        const author = item.social_media_handle || (item.social_network ? `@${item.social_network}` : '@tuestante.ve');
+        const imgPath = item.image;
+        if (imgPath) {
+            backendItems.push({
+                id: `gal_${item.id || idx}`,
+                title,
+                description,
+                author,
+                socialNetwork: (item.social_network || '').toLowerCase(),
+                socialUrl: item.social_media_url || '',
+                socialHandle: item.social_media_handle || '',
+                mediaType: 'image',
+                image: resolveImageUrl(imgPath)
+            });
+        }
+    });
+
+    // Mapear Proyectos
     rawProjects.forEach((item, idx) => {
         const title = item.project_name || item.title || `Proyecto Real ${idx + 1}`;
         const description = item.description || 'Proyecto realizado con mobiliario metálico TuEstante.';
@@ -168,24 +200,20 @@ async function fetchGalleryFromBackend() {
                 title,
                 description,
                 author,
-                category: 'Proyectos',
-                categoryId: item.category_id || item.category?.id || null,
-                categoryName: item.category_detail?.category_name || item.category?.name || 'Proyectos',
+                socialNetwork: 'proyectos',
                 image: resolveImageUrl(imgPath)
             });
         }
     });
 
-    // 2. Mapear Productos reales
+    // Mapear Productos reales con imágenes
     rawProducts.forEach((item, idx) => {
         const title = item.product_name || item.name || `Producto TuEstante ${idx + 1}`;
         const description = item.description || 'Mobiliario metálico resistente de alta calidad.';
         const author = '@tuestante.ve';
         const imgPath = item.product_image || item.image || (Array.isArray(item.images) && item.images[0]?.image);
-        const categoryId = item.category?.id || item.category_id || item.categoryId || (typeof item.category === 'number' ? item.category : null);
-        const categoryName = item.category_detail?.category_name || item.category?.category_name || item.categoryName || (typeof item.category === 'string' ? item.category : '');
         const typeId = item.product_type?.id || item.product_type_id || item.typeId || (typeof item.product_type === 'number' ? item.product_type : null);
-        const typeName = item.product_type_detail?.type_name || item.product_type?.type_name || item.typeName || '';
+        const typeName = item.product_type_detail?.type_name || item.product_type?.product_type_name || item.product_type?.type_name || item.typeName || '';
 
         if (imgPath) {
             backendItems.push({
@@ -193,9 +221,7 @@ async function fetchGalleryFromBackend() {
                 title,
                 description,
                 author,
-                category: categoryName || 'Productos',
-                categoryId,
-                categoryName,
+                socialNetwork: 'catalogo',
                 typeId,
                 typeName,
                 image: resolveImageUrl(imgPath)
@@ -203,12 +229,13 @@ async function fetchGalleryFromBackend() {
         }
     });
 
+    // Si se obtuvieron fotos del backend, enriquecer la galería
     if (backendItems.length > 0) {
-        // Combinar elementos reales del backend con los provisionales
         allGalleryItems = [...backendItems, ...PROVISIONAL_GALLERY_ITEMS];
-        filteredGalleryItems = [...allGalleryItems];
-        renderGalleryPattern();
     }
+
+    filteredGalleryItems = [...allGalleryItems];
+    renderGalleryPattern();
 }
 
 /**
@@ -270,6 +297,47 @@ function createCardHtml(item, sizeClass) {
 }
 
 /**
+ * Renderiza el estado vacío (Empty State) cuando no hay imágenes disponibles o el filtro no tiene resultados.
+ */
+function renderEmptyState(container, loadMoreBtn) {
+    container.innerHTML = `
+        <div class="gallery-empty-state fade-in">
+            <div class="gallery-empty-card">
+                <div class="gallery-empty-icon-wrap">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                </div>
+                <h3 class="gallery-empty-title">Aún no hay fotos en esta sección</h3>
+                <p class="gallery-empty-desc">
+                    Sé parte de nuestra comunidad compartiendo una foto de tu espacio real organizado con mobiliario y estanterías metálicas de <strong>TuEstante</strong>.
+                </p>
+                <div class="gallery-empty-actions">
+                    <a href="https://www.instagram.com/tuestante.ve/" target="_blank" rel="noopener" class="gallery-empty-btn gallery-empty-btn-instagram">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                        <span>Etiquétanos en Instagram</span>
+                    </a>
+                    <a href="https://www.tiktok.com/@tuestante.ve" target="_blank" rel="noopener" class="gallery-empty-btn gallery-empty-btn-tiktok">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .58.04.85.12V9.4a6.33 6.33 0 0 0-.85-.06A6.34 6.34 0 0 0 3 15.68a6.34 6.34 0 0 0 6.34 6.34c3.48 0 6.32-2.82 6.34-6.3V8.85a8.28 8.28 0 0 0 4.91 1.59V7a4.81 4.81 0 0 1-1-.31z"/></svg>
+                        <span>Síguenos en TikTok</span>
+                    </a>
+                    <a href="https://wa.link/lpe0md" target="_blank" rel="noopener" class="gallery-empty-btn gallery-empty-btn-upload">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 3 21 3 21 8"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        <span>Subir mi foto</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
+
+    if (loadMoreBtn) {
+        loadMoreBtn.style.display = 'none';
+    }
+}
+
+/**
  * Renderiza la galería aplicando el patrón secuencial exigido:
  * 1. Imagen Grande (izq 2x2) + 4 Pequeñas (der 2x2, donde la 1ª es la tarjeta CTA 'Añadir nueva imagen').
  * 2. Orden Inverso: 4 Pequeñas (izq 2x2) + Imagen Grande (der 2x2).
@@ -280,6 +348,16 @@ function renderGalleryPattern() {
     const container = document.getElementById('gallery-grid-container');
     const loadMoreBtn = document.getElementById('load-more-btn');
     if (!container) return;
+
+    // Si la lista está vacía, renderizar el estado vacío
+    if (!filteredGalleryItems || filteredGalleryItems.length === 0) {
+        renderEmptyState(container, loadMoreBtn);
+        return;
+    }
+
+    if (loadMoreBtn) {
+        loadMoreBtn.style.display = '';
+    }
 
     const visibleItems = filteredGalleryItems.slice(0, visibleCount);
 
@@ -360,39 +438,32 @@ function attachLightboxEvents() {
         card.dataset.lightboxBound = 'true';
 
         card.addEventListener('click', () => {
-            const rawId = card.getAttribute('data-id');
-            const item = allGalleryItems.find(i => String(i.id) === String(rawId));
+            const id = card.getAttribute('data-id');
+            const item = allGalleryItems.find(i => String(i.id) === String(id));
             if (item) {
                 openLightbox(item);
             }
         });
-    });
 
-    // Enforzar silenciamiento estricto a los videos de la grilla
-    const cardVideos = document.querySelectorAll('.gallery-card-video');
-    cardVideos.forEach(v => {
-        v.muted = true;
-        v.volume = 0;
-        v.addEventListener('volumechange', () => {
-            v.muted = true;
-            v.volume = 0;
-        });
-        v.addEventListener('play', () => {
-            v.muted = true;
-            v.volume = 0;
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                card.click();
+            }
         });
     });
 }
 
 /**
- * Abre el modal Lightbox con la foto o video ampliado a pantalla completa y detalles del espacio.
+ * Abre el visor modal Lightbox con la imagen o video en alta calidad.
+ * @param {Object} item Objeto de la galería
  */
 function openLightbox(item) {
     const lightbox = document.getElementById('gallery-lightbox');
     const mediaWrapper = document.getElementById('lightbox-media-wrapper');
-    const title = document.getElementById('lightbox-title');
-    const desc = document.getElementById('lightbox-desc');
-    const tag = document.getElementById('lightbox-tag');
+    const titleEl = document.getElementById('lightbox-title');
+    const descEl = document.getElementById('lightbox-desc');
+    const tagEl = document.getElementById('lightbox-tag');
 
     if (!lightbox || !mediaWrapper) return;
 
@@ -401,31 +472,22 @@ function openLightbox(item) {
     if (isVideo) {
         const videoSrc = item.videoUrl || item.video;
         mediaWrapper.innerHTML = `
-            <video id="lightbox-video" src="${videoSrc}" poster="${item.image || ''}" autoplay loop muted playsinline disableRemotePlayback class="lightbox-fullscreen-media"></video>
+            <video src="${videoSrc}" class="lightbox-video" controls autoplay playsinline></video>
         `;
-
-        const lbVideo = document.getElementById('lightbox-video');
-        if (lbVideo) {
-            lbVideo.muted = true;
-            lbVideo.volume = 0;
-            lbVideo.addEventListener('volumechange', () => {
-                lbVideo.muted = true;
-                lbVideo.volume = 0;
-            });
-            lbVideo.addEventListener('play', () => {
-                lbVideo.muted = true;
-                lbVideo.volume = 0;
-            });
-        }
     } else {
         mediaWrapper.innerHTML = `
-            <img id="lightbox-img" src="${item.image}" alt="${item.title}" class="lightbox-fullscreen-media">
+            <img id="lightbox-img" src="${item.image}" alt="${item.title}" class="lightbox-img" onerror="this.src='../../assets/images/categoria/estante.png'">
         `;
     }
 
-    if (title) title.textContent = item.title;
-    if (desc) desc.textContent = item.description;
-    if (tag) tag.textContent = item.author;
+    if (titleEl) titleEl.textContent = item.title;
+    if (descEl) descEl.textContent = item.description;
+    if (tagEl) {
+        tagEl.textContent = item.author || '@tuestante.ve';
+        if (item.socialUrl) {
+            tagEl.innerHTML = `<a href="${item.socialUrl}" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">${item.author || '@tuestante.ve'}</a>`;
+        }
+    }
 
     lightbox.classList.add('active');
     lightbox.setAttribute('aria-hidden', 'false');
@@ -433,16 +495,15 @@ function openLightbox(item) {
 }
 
 /**
- * Cierra el modal Lightbox y detiene cualquier video en reproducción.
+ * Cierra el visor modal Lightbox y detiene cualquier reproducción de video activa.
  */
 function closeLightbox() {
     const lightbox = document.getElementById('gallery-lightbox');
     if (!lightbox) return;
 
-    const lbVideo = document.getElementById('lightbox-video');
-    if (lbVideo) {
-        lbVideo.pause();
-        lbVideo.src = '';
+    const activeVideo = lightbox.querySelector('video');
+    if (activeVideo) {
+        activeVideo.pause();
     }
 
     lightbox.classList.remove('active');
@@ -451,7 +512,7 @@ function closeLightbox() {
 }
 
 /**
- * Inicializa los eventos de la barra de filtrado de categorías y tipos de productos.
+ * Inicializa los eventos de la barra de filtrado de redes sociales y tipos de productos.
  */
 function initFilterBar() {
     const filterBtns = document.querySelectorAll('.gallery-filter-btn');
@@ -461,8 +522,7 @@ function initFilterBar() {
             btn.classList.add('active');
 
             const filterKey = btn.getAttribute('data-filter') || 'all';
-            const catId = btn.getAttribute('data-category-id');
-            const catName = (btn.getAttribute('data-category-name') || '').toLowerCase().trim();
+            const network = btn.getAttribute('data-network');
             const typeId = btn.getAttribute('data-type-id');
             const typeName = (btn.getAttribute('data-type-name') || '').toLowerCase().trim();
 
@@ -471,16 +531,13 @@ function initFilterBar() {
 
             if (filterKey === 'all') {
                 filteredGalleryItems = [...allGalleryItems];
-            } else if (catId || catName) {
-                // Filtrar por categoría
+            } else if (network) {
+                // Filtrar por red social (Instagram, TikTok, etc.)
                 filteredGalleryItems = allGalleryItems.filter(item => {
-                    const itemCatId = String(item.categoryId || item.category_id || item.category || '');
-                    const itemCatName = String(item.categoryName || item.category || '').toLowerCase();
-                    const itemTitle = String(item.title || '').toLowerCase();
-                    const itemDesc = String(item.description || '').toLowerCase();
-
-                    return (catId && itemCatId === String(catId)) ||
-                           (catName && (itemCatName.includes(catName) || itemTitle.includes(catName) || itemDesc.includes(catName)));
+                    const itemNet = String(item.socialNetwork || '').toLowerCase();
+                    const itemAuthor = String(item.author || '').toLowerCase();
+                    const itemUrl = String(item.socialUrl || '').toLowerCase();
+                    return itemNet.includes(network) || itemAuthor.includes(network) || itemUrl.includes(network);
                 });
             } else if (typeId || typeName) {
                 // Filtrar por tipo de producto
@@ -495,21 +552,9 @@ function initFilterBar() {
                 });
             } else {
                 filteredGalleryItems = allGalleryItems.filter(item =>
-                    String(item.category || '').toLowerCase().includes(filterKey.toLowerCase())
+                    String(item.title || '').toLowerCase().includes(filterKey.toLowerCase()) ||
+                    String(item.description || '').toLowerCase().includes(filterKey.toLowerCase())
                 );
-            }
-
-            // Fallback para evitar dejar la grilla vacía si no hay coincidencias exactas
-            if (filteredGalleryItems.length === 0 && allGalleryItems.length > 0) {
-                const term = (catName || typeName || filterKey).toLowerCase();
-                filteredGalleryItems = allGalleryItems.filter(item => {
-                    return String(item.title).toLowerCase().includes(term) ||
-                           String(item.description).toLowerCase().includes(term) ||
-                           String(item.category).toLowerCase().includes(term);
-                });
-                if (filteredGalleryItems.length === 0) {
-                    filteredGalleryItems = [...allGalleryItems];
-                }
             }
 
             renderGalleryPattern();
@@ -563,9 +608,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     initLightboxEvents();
     renderGalleryPattern();
 
-    // 4. Cargar filtros dinámicos de Categorías y Tipos de Productos desde la BD
+    // 4. Cargar filtros dinámicos (Tipos de Productos y Redes Sociales) desde el backend
     loadDynamicFilters();
 
-    // 5. Consultar en segundo plano al backend Django para enriquecer la galería con proyectos/productos
+    // 5. Consultar en segundo plano al backend Django (apps/gallery) para enriquecer la galería
     fetchGalleryFromBackend();
 });

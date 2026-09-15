@@ -6,7 +6,7 @@
  * de pedidos y nómina para el colaborador autenticado.
  */
 
-import { getRequest, postRequest, extractList } from '../../../cliente/js/api.js';
+import { getRequest, postRequest, extractList } from '../../../js/api.js';
 
 /**
  * Consulta la lista de notificaciones del colaborador autenticado.

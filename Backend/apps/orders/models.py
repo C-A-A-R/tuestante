@@ -75,6 +75,11 @@ class Order(BaseModel):
             self.order_number = generate_order_number()
         super().save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        """Impide la eliminación lógica o física de un pedido."""
+        from django.core.exceptions import ValidationError
+        raise ValidationError("Un pedido no puede ser eliminado.")
+
     def __str__(self):
         number = self.order_number or f"#{self.id}"
         return f"Pedido {number} — {self.user.username} [{self.get_status_display()}]"
