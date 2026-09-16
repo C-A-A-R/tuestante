@@ -27,29 +27,50 @@
     <div id="navbar-placeholder"></div>
 
     <main class="main-content">
-        <!-- Encabezado de Proyectos -->
-        <header class="projects-header">
-            <h1 class="projects-main-title">Proyectos</h1>
-            <div class="projects-header-line"></div>
+        <!-- Encabezado de Proyectos con Color y Diseño Premium -->
+        <header class="projects-header-section">
+            <div class="projects-header-overlay"></div>
+            <div class="projects-header-glow-circle circle-1"></div>
+            <div class="projects-header-glow-circle circle-2"></div>
+            <div class="projects-header-container">
+                <div class="projects-badge-wrapper">
+                    <span class="projects-tagline">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                        PORTAFOLIO & OBRAS
+                    </span>
+                    <span class="projects-badge-highlight">Casos de Éxito</span>
+                </div>
+                <h1 class="projects-main-title">PROYECTOS Y SOLUCIONES</h1>
+                <div class="projects-header-divider"></div>
+                <p class="projects-header-description">
+                    Explora nuestras instalaciones de almacenamiento metálico, estanterías industriales de alta carga, lockers corporativos y soluciones modulares ejecutadas a la medida en empresas, industrias y hogares.
+                </p>
+                <div class="projects-header-features">
+                    <span class="projects-feature-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Diseño a Medida
+                    </span>
+                    <span class="projects-feature-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Acero de Alta Resistencia
+                    </span>
+                    <span class="projects-feature-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Garantía de Calidad
+                    </span>
+                </div>
+            </div>
+            <!-- Transición decorativa inferior hacia el catálogo -->
+            <div class="projects-header-wave">
+                <svg viewBox="0 0 1440 40" fill="none" preserveAspectRatio="none">
+                    <path d="M0,0 C480,40 960,40 1440,0 L1440,40 L0,40 Z" fill="var(--bg-secondary)"></path>
+                </svg>
+            </div>
         </header>
 
         <!-- Sección Principal de Contenido -->
         <section class="projects-catalog-section">
             <div class="projects-container">
-                <!-- Barra Superior con Buscador y Contador -->
-                <div class="projects-toolbar">
-                    <div class="search-box-wrapper">
-                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                        <input type="text" id="project-search-input" class="project-search-input"
-                            placeholder="Buscar proyecto por nombre o descripción...">
-                    </div>
-                    <div class="projects-counter" id="projects-counter">
-                        Cargando proyectos...
-                    </div>
-                </div>
 
                 <!-- Grid de Tarjetas de Proyectos (3 Columnas x Máximo 9 Filas por Página) -->
                 <div class="projects-grid" id="projects-grid">

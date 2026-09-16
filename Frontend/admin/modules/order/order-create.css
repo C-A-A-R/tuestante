@@ -887,6 +887,15 @@ html, body {
   color: var(--text-main);
 }
 
+.required-mark,
+.required-star,
+.required {
+  color: #ef4444 !important;
+  font-weight: 700;
+  margin-left: 3px;
+  display: inline-block;
+}
+
 .form-input,
 .form-select,
 .form-textarea {

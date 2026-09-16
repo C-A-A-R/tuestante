@@ -48,8 +48,23 @@ class Product(BaseModel):
     width_cm = models.DecimalField('Ancho (cm)', max_digits=10, decimal_places=2, default=0)
     security = models.CharField('Seguridad', max_length=255, default='', blank=True)
     price = models.DecimalField('Precio', max_digits=12, decimal_places=2, default=0)
+    main_color = models.CharField(
+        'Color Principal',
+        max_length=100,
+        blank=True,
+        default='',
+        help_text='Nombre o código hexadecimal del color principal del producto (ej. Blanco, #FFFFFF, Roble)'
+    )
     product_image = models.ImageField('Imagen del Producto', upload_to=rename_image_upload_to, null=True, blank=True)
     product_video = models.FileField('Video del Producto', upload_to=rename_video_upload_to, null=True, blank=True)
+
+    @property
+    def stock(self):
+        return self.quantity
+
+    @property
+    def color_principal(self):
+        return self.main_color
 
     class Meta:
         verbose_name = 'Producto'

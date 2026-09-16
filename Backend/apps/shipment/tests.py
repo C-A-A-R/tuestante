@@ -89,3 +89,55 @@ class ShipmentModelAndAPITest(TestCase):
         self.assertEqual(response.data['in_transit']['count'], 1)
         self.assertIn('pending_count', response.data)
 
+    def test_distributor_coverage_and_available_endpoint(self):
+        """Verifica que los distribuidores nacionales cubran todo y los regionales solo sus zonas."""
+        from apps.shipment.models import DistributorCoverage
+
+        # 1. Distribuidor Nacional
+        dist_nacional = Distributor.objects.create(
+            name='Zoom Envíos',
+            rif='J-99999999-1',
+            coverage_type='national',
+            is_active=True
+        )
+        self.assertTrue(dist_nacional.covers_location('Zulia', 'Maracaibo'))
+        self.assertTrue(dist_nacional.covers_location('Amazonas', 'Atures'))
+
+        # 2. Distribuidor Regional
+        dist_regional = Distributor.objects.create(
+            name='Flete Carabobo Express',
+            rif='J-88888888-2',
+            coverage_type='regional',
+            is_active=True
+        )
+        DistributorCoverage.objects.create(
+            distributor=dist_regional,
+            state='Carabobo',
+            municipality='Valencia',
+            city='Valencia',
+            base_shipping_cost=7.50,
+            estimated_days_min=1,
+            estimated_days_max=2
+        )
+        # Cubre Carabobo - Valencia
+        self.assertTrue(dist_regional.covers_location('Carabobo', 'Valencia'))
+        # NO cubre Zulia
+        self.assertFalse(dist_regional.covers_location('Zulia', 'Maracaibo'))
+
+        # 3. Probar endpoint /api/shipments/distributors/available/?state=Carabobo&municipality=Valencia
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+        response = client.get('/api/shipments/distributors/available/?state=Carabobo&municipality=Valencia')
+        self.assertEqual(response.status_code, 200)
+        ids = [d['id'] for d in response.data['distributors']]
+        self.assertIn(dist_nacional.id, ids)
+        self.assertIn(dist_regional.id, ids)
+
+        # 4. Probar en ubicación donde solo el nacional llega
+        res_zulia = client.get('/api/shipments/distributors/available/?state=Zulia&municipality=Maracaibo')
+        self.assertEqual(res_zulia.status_code, 200)
+        zulia_ids = [d['id'] for d in res_zulia.data['distributors']]
+        self.assertIn(dist_nacional.id, zulia_ids)
+        self.assertNotIn(dist_regional.id, zulia_ids)
+
+

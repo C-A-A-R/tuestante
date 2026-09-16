@@ -14,10 +14,10 @@ def send_account_activation_email(user, request):
     activation_link = f"{request.scheme}://{request.get_host()}/api/usuarios/activar/{uid}/{token}/"
     text_content = (
         f"Hola {user.username},\n\n"
-        "Gracias por registrarte. Para activar tu cuenta, haz clic en el siguiente enlace:\n"
+        "Gracias por registrarte en TuEstante. Para activar tu cuenta, haz clic en el siguiente enlace:\n"
         f"{activation_link}\n\n"
-        "Si no creaste esta cuenta, puedes ignorar este correo.\n\n"
-        "Gracias,\nEl equipo de Diegos Grill"
+        "Si no creaste esta cuenta, puedes ignorar este correo de forma segura.\n\n"
+        "Gracias,\nEl equipo de TuEstante"
     )
     send_html_email(
         subject='Activa tu cuenta',

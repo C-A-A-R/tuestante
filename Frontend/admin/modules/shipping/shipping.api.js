@@ -671,6 +671,89 @@ export async function createDistributor(data = {}) {
 }
 
 /**
+ * Catálogo geográfico de Estados y Municipios principales de Venezuela
+ * para autocompletado y selección en formularios de envío.
+ */
+export const VENEZUELA_GEO_DATA = {
+  "Carabobo": ["Valencia", "Naguanagua", "San Diego", "Guacara", "Puerto Cabello", "Los Guayos", "Bejuma", "Montalbán", "Libertador", "Carlos Arvelo"],
+  "Distrito Capital": ["Libertador"],
+  "Miranda": ["Chacao", "Baruta", "Sucre", "El Hatillo", "Los Salias", "Guaicaipuro", "Plaza", "Zamora", "Carrizal", "Independencia"],
+  "Aragua": ["Girardot", "Santiago Mariño", "José Félix Ribas", "Mario Briceño Iragorry", "Sucre", "Zamora", "Linares Alcántara"],
+  "Zulia": ["Maracaibo", "San Francisco", "Cabimas", "Lagunillas", "Machiques de Perijá", "Mara", "Rosario de Perijá"],
+  "Lara": ["Iribarren", "Palavecino", "Torres", "Morán", "Jiménez", "Crespo"],
+  "Anzoátegui": ["Bolívar", "Sotillo", "Diego Bautista Urbaneja", "Anaco", "Simón Rodríguez", "Guanta"],
+  "Bolívar": ["Caroní", "Angostura del Orinoco", "Piar", "Roscio", "Gran Sabana"],
+  "Táchira": ["San Cristóbal", "Cárdenas", "Junín", "Bolívar", "Jáuregui", "Ayacucho"],
+  "Mérida": ["Libertador", "Alberto Adriani", "Campo Elías", "Sucre", "Tovar"],
+  "Yaracuy": ["San Felipe", "Independencia", "Peña", "Nirgua", "Bruzual"],
+  "Falcón": ["Miranda", "Carirubana", "Silva", "Los Taques", "Monseñor Iturriza"],
+  "Monagas": ["Maturín", "Ezequiel Zamora", "Bolívar", "Piar", "Caripe"],
+  "Nueva Esparta": ["Mariño", "Maneiro", "Arismendi", "García", "Antolín del Campo"],
+  "Barinas": ["Barinas", "Bolívar", "Pedraza", "Alberto Arvelo Torrealba", "Antonio José de Sucre"],
+  "Portuguesa": ["Páez", "Araure", "Guanare", "Turén", "Esteller"],
+  "Sucre": ["Sucre", "Bermúdez", "Montes", "Ribero", "Valdez"],
+  "Trujillo": ["Trujillo", "Valera", "Boconó", "Rafael Rangel", "Carache"],
+  "Guárico": ["Juan Germán Roscio", "Francisco de Miranda", "Leonardo Infante", "Zaraza", "Monagas"],
+  "Apure": ["San Fernando", "Páez", "Biruaca", "Achaguas"],
+  "Cojedes": ["Ezequiel Zamora", "Tinaquillo", "Lima Blanco", "Tinaco"],
+  "Delta Amacuro": ["Tucupita", "Casacoima"],
+  "Amazonas": ["Atures", "Autana", "Manapiare"],
+  "La Guaira": ["Vargas"]
+};
+
+/**
+ * Consulta distribuidores disponibles según ubicación geográfica (Estado y Municipio)
+ * Conecta con el backend Django /distributors/available/?state=...&municipality=...
+ */
+export async function getAvailableDistributors(params = {}) {
+  try {
+    const res = await getRequest('/distributors/available/', params, { auth: true });
+    if (res && Array.isArray(res.distributors)) {
+      return res.distributors;
+    }
+  } catch (err) {
+    console.warn('[TuEstante Shipment API] Fallo al consultar distribuidores disponibles en backend, calculando localmente:', err);
+  }
+
+  // Lógica de cálculo en base al directorio actual
+  const cleanState = (params.state || params.estado || '').trim().toLowerCase();
+  const cleanMuni = (params.municipality || params.municipio || '').trim().toLowerCase();
+  const allDist = await getDistributors();
+
+  return allDist.map(d => {
+    const isNational = d.coverage_type === 'national' || !d.coverage_type;
+    return {
+      id: d.id,
+      name: d.name,
+      rif: d.rif,
+      phone: d.phone,
+      email: d.email,
+      coverage_type: d.coverage_type || (isNational ? 'national' : 'regional'),
+      coverage_type_display: isNational ? 'Nacional (Todo el país)' : 'Regional / Eje Central',
+      estimated_days_min: isNational ? 2 : 1,
+      estimated_days_max: isNational ? 5 : 2,
+      base_shipping_cost: isNational ? 15.00 : 5.00,
+      matched_coverage: isNational ? 'Nacional (Cubre todo el país)' : `${params.state || 'Región Central'} - ${params.municipality || 'Cobertura Local'}`
+    };
+  });
+}
+
+/**
+ * Registra una nueva zona de cobertura para un distribuidor
+ */
+export async function createDistributorCoverage(data = {}) {
+  return postRequest('/distributor-coverages/', data, { auth: true });
+}
+
+/**
+ * Elimina una zona de cobertura por su ID
+ */
+export async function deleteDistributorCoverage(id) {
+  return postRequest(`/distributor-coverages/${id}/`, {}, { auth: true, method: 'DELETE' });
+}
+
+
+/**
  * Obtiene pedidos listos para despacho para el selector y autocompletado
  * Permite buscar por cliente, código de pedido y productos incluidos
  */

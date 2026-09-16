@@ -3,11 +3,11 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, Prefetch
 
 from apps.base.api import BaseViewSet
-from apps.shipment.models import Distributor, Shipment
-from apps.shipment.api.serializers import DistributorSerializer, ShipmentSerializer
+from apps.shipment.models import Distributor, DistributorCoverage, Shipment
+from apps.shipment.api.serializers import DistributorSerializer, DistributorCoverageSerializer, ShipmentSerializer
 
 
 class DistributorViewSet(BaseViewSet):
@@ -18,8 +18,113 @@ class DistributorViewSet(BaseViewSet):
     """
 
     serializer_class = DistributorSerializer
-    search_fields = ['name', 'phone', 'email']
+    search_fields = ['name', 'phone', 'email', 'rif']
     ordering_fields = ['name', 'created_at', 'id']
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve', 'available']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAdminUser()]
+
+    def get_queryset(self):
+        queryset = Distributor.objects.filter(is_deleted=False).prefetch_related(
+            Prefetch('coverages', queryset=DistributorCoverage.objects.filter(is_deleted=False, is_active=True))
+        )
+        # Los clientes normales solo ven distribuidores activos
+        if not (self.request.user and self.request.user.is_staff):
+            queryset = queryset.filter(is_active=True)
+
+        coverage_type = self.request.query_params.get('coverage_type')
+        if coverage_type:
+            queryset = queryset.filter(coverage_type=coverage_type)
+
+        return queryset
+
+    @action(detail=False, methods=['get'], url_path='available')
+    def available(self, request):
+        """
+        Retorna los distribuidores que tienen cobertura para un estado y municipio dados.
+        Query params:
+        - state: Estado de entrega (obligatorio)
+        - municipality: Municipio de entrega (opcional)
+        """
+        state = request.query_params.get('state') or request.query_params.get('estado')
+        municipality = request.query_params.get('municipality') or request.query_params.get('municipio')
+
+        if not state:
+            return Response(
+                {"error": "El parámetro 'state' o 'estado' es requerido para consultar distribuidores disponibles."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        clean_state = state.strip()
+        clean_muni = municipality.strip() if municipality else ''
+
+        distributors = Distributor.objects.filter(is_deleted=False, is_active=True).prefetch_related(
+            Prefetch('coverages', queryset=DistributorCoverage.objects.filter(is_deleted=False, is_active=True))
+        )
+
+        available_list = []
+        for dist in distributors:
+            if dist.coverage_type == 'national':
+                available_list.append({
+                    'id': dist.id,
+                    'name': dist.name,
+                    'rif': dist.rif,
+                    'phone': dist.phone,
+                    'email': dist.email,
+                    'coverage_type': dist.coverage_type,
+                    'coverage_type_display': dist.get_coverage_type_display(),
+                    'estimated_days_min': 2,
+                    'estimated_days_max': 5,
+                    'base_shipping_cost': 0.00,
+                    'matched_coverage': 'Nacional (Cubre todo el país)',
+                })
+            else:
+                matching_cov = None
+                for cov in dist.coverages.all():
+                    if cov.state.strip().lower() == clean_state.lower():
+                        # Si coincide municipio exacto, prioridad máxima
+                        if clean_muni and cov.municipality and cov.municipality.strip().lower() == clean_muni.lower():
+                            matching_cov = cov
+                            break
+                        # Si cubre todo el estado (sin municipio)
+                        elif not cov.municipality or not cov.municipality.strip():
+                            matching_cov = cov
+
+                if matching_cov:
+                    available_list.append({
+                        'id': dist.id,
+                        'name': dist.name,
+                        'rif': dist.rif,
+                        'phone': dist.phone,
+                        'email': dist.email,
+                        'coverage_type': dist.coverage_type,
+                        'coverage_type_display': dist.get_coverage_type_display(),
+                        'estimated_days_min': matching_cov.estimated_days_min,
+                        'estimated_days_max': matching_cov.estimated_days_max,
+                        'base_shipping_cost': float(matching_cov.base_shipping_cost),
+                        'matched_coverage': f"{matching_cov.state}" + (f" - {matching_cov.municipality}" if matching_cov.municipality else " (Todo el estado)"),
+                    })
+
+        return Response({
+            'state': clean_state,
+            'municipality': clean_muni,
+            'count': len(available_list),
+            'distributors': available_list
+        }, status=status.HTTP_200_OK)
+
+
+class DistributorCoverageViewSet(BaseViewSet):
+    """
+    ViewSet para la gestión de Coberturas de Distribuidores.
+    - Lectura: Autenticados.
+    - Escritura: Administradores.
+    """
+
+    serializer_class = DistributorCoverageSerializer
+    search_fields = ['state', 'municipality', 'city', 'distributor__name']
+    ordering_fields = ['state', 'municipality', 'base_shipping_cost', 'created_at']
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -27,10 +132,13 @@ class DistributorViewSet(BaseViewSet):
         return [permissions.IsAdminUser()]
 
     def get_queryset(self):
-        queryset = Distributor.objects.filter(is_deleted=False)
-        # Los clientes normales solo ven distribuidores activos
-        if not (self.request.user and self.request.user.is_staff):
-            queryset = queryset.filter(is_active=True)
+        queryset = DistributorCoverage.objects.filter(is_deleted=False).select_related('distributor')
+        distributor_id = self.request.query_params.get('distributor_id') or self.request.query_params.get('distributor')
+        if distributor_id:
+            queryset = queryset.filter(distributor_id=distributor_id)
+        state = self.request.query_params.get('state')
+        if state:
+            queryset = queryset.filter(state__iexact=state)
         return queryset
 
 

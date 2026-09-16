@@ -287,6 +287,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 product = mapProduct(localMatch);
             }
         }
+
+        // Regla: Los clientes no pueden ver productos outlet sin stock
+        if (product && product.is_outlet && (!product.quantity || product.quantity <= 0)) {
+            product = null;
+        }
     }
 
     // Intentar obtener listado de productos para relacionales
@@ -306,6 +311,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!allProducts || allProducts.length === 0) {
         allProducts = LOCAL_5_PRODUCTS.map(mapProduct).filter(Boolean);
     }
+
+    // Filtrar para no mostrar outlets sin stock en carruseles ni relacionados
+    allProducts = allProducts.filter(p => !p.is_outlet || (p.quantity && p.quantity > 0));
 
     if (product) {
         // Poblar datos en la pantalla de detalle

@@ -16,6 +16,64 @@ import { apiRequest, resolveImageUrl } from '../../js/api.js';
 import { backendOrigin } from '../../js/config.js';
 
 /**
+ * DETERMINA LA RUTA AL LOGIN ADMINISTRATIVO USANDO import.meta.url
+ * Garantiza que la redirección funcione tanto desde la raíz de admin como desde /modules/...
+ */
+export function getLoginUrl() {
+  const loginUrl = new URL('../../login.html', import.meta.url);
+  if (typeof window !== 'undefined' && window.location && window.location.href) {
+    const pathname = window.location.pathname || '';
+    if (!pathname.endsWith('login.html')) {
+      loginUrl.searchParams.set('redirect', window.location.href);
+    }
+  }
+  return loginUrl.href;
+}
+
+/**
+ * AUTH GUARD: Valida si existe un token de sesión válido y permisos de administrador en localStorage.
+ * Si no está logueado o no es administrador, redirige de inmediato a la pantalla de login administrativo.
+ */
+export function checkAdminAuth() {
+  if (typeof window === 'undefined') return true;
+
+  // Evitar bucle de redirección si ya estamos en la pantalla de login
+  const currentPath = window.location.pathname || '';
+  if (currentPath.endsWith('login.html') || currentPath.endsWith('/login.html')) {
+    return true;
+  }
+
+  const token = getAccessToken();
+  const user = getCurrentUser();
+
+  const hasValidToken = Boolean(token && token !== 'null' && token !== 'undefined' && String(token).trim() !== '');
+  const isAdmin = Boolean(
+    user && (
+      user.is_superuser === true ||
+      user.is_staff === true ||
+      user.is_superuser === 'true' ||
+      user.is_staff === 'true' ||
+      user.is_superuser === 1 ||
+      user.is_staff === 1 ||
+      user.role === 'admin' ||
+      user.role === 'administrator'
+    )
+  );
+
+  if (!hasValidToken || !isAdmin) {
+    console.warn('[TuEstante Admin AuthGuard] Acceso no autorizado o sesión inactiva. Redirigiendo al login...');
+    window.location.replace(getLoginUrl());
+    return false;
+  }
+
+  return true;
+}
+
+// 🚀 EJECUCIÓN INMEDIATA AL IMPORTAR EL MÓDULO:
+// Toda pantalla que importe navbar.js queda automáticamente protegida.
+checkAdminAuth();
+
+/**
  * Inyecta automáticamente el logotipo como icono de pestaña (Favicon) en el <head>
  */
 export function setAutoFavicon() {
@@ -1374,5 +1432,7 @@ if (typeof window !== 'undefined') {
   window.loadAdminComponents = loadAdminComponents;
   window.setNavbarTitle = setNavbarTitle;
   window.setAutoFavicon = setAutoFavicon;
+  window.checkAdminAuth = checkAdminAuth;
+  window.getLoginUrl = getLoginUrl;
 }
 

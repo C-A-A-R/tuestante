@@ -43,6 +43,26 @@ class ProductSerializer(serializers.ModelSerializer):
     angle_images = ProductAngleImageSerializer(many=True, read_only=True)
     is_favorite = serializers.SerializerMethodField()
     favorites_count = serializers.SerializerMethodField()
+    stock = serializers.IntegerField(source='quantity', required=False)
+    color_principal = serializers.CharField(source='main_color', required=False, allow_blank=True)
+    product_image = serializers.ImageField(required=False, allow_null=True)
+    product_video = serializers.FileField(required=False, allow_null=True)
+
+    def to_internal_value(self, data):
+        # Asegurar copia mutable para sanitizar campos
+        if hasattr(data, '_mutable'):
+            data = data.copy()
+        elif isinstance(data, dict):
+            data = data.copy()
+
+        for field in ['product_image', 'product_video']:
+            val = data.get(field)
+            if val == '' or (isinstance(val, str) and not val.strip()):
+                data.pop(field, None)
+            elif isinstance(val, str) and (val.startswith('blob:') or val.startswith('http://') or val.startswith('https://')):
+                data.pop(field, None)
+
+        return super().to_internal_value(data)
 
     class Meta:
         model = Product
@@ -56,6 +76,9 @@ class ProductSerializer(serializers.ModelSerializer):
             'is_outlet',
             'is_feature_product',
             'quantity',
+            'stock',
+            'main_color',
+            'color_principal',
             'is_favorite',
             'favorites_count',
             'height_cm',

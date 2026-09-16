@@ -167,6 +167,12 @@ function initFilters(types, products) {
         const isFeaturedOnly = filterFeaturedSelect ? (filterFeaturedSelect.value === 'featured') : false;
 
         let filtered = products.filter(p => {
+            // Regla de negocio: Los clientes pueden visualizar todos los productos que tengan o no stock,
+            // con excepción de los que son outlet y no tienen stock disponible (quantity <= 0).
+            if (p.is_outlet && (!p.quantity || p.quantity <= 0)) {
+                return false;
+            }
+
             const matchesSearch = !query || 
                 (p.name && p.name.toLowerCase().includes(query)) || 
                 (p.description && p.description.toLowerCase().includes(query));

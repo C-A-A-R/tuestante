@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proyectos | TuEstante Admin</title>
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes Compartidos (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="../../assets/images/logo.jpeg">
+
+  <!-- Estilos del Módulo de Proyectos -->
+  <link rel="stylesheet" href="./projects.css">
+</head>
+<body data-page-title="Proyectos">
+
+  <!-- Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Estructura Principal del Panel Administrativo -->
+  <div class="app-layout" id="app-layout">
+
+    <!-- Placeholders para componentes compartidos -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- ======================================================================
+         CONTENIDO PRINCIPAL: GESTIÓN DE PROYECTOS Y DOCUMENTOS
+         ====================================================================== -->
+    <main class="app-main-content">
+      <div class="projects-module-container">
+
+        <!-- 1. Encabezado de la Pantalla (Sin icono, según instrucción del usuario) -->
+        <section class="screen-header-card" aria-label="Encabezado de Proyectos">
+          <div class="screen-header-text">
+            <h2 class="screen-main-title">Proyectos</h2>
+            <p class="screen-main-desc">
+              Gestiona los proyectos de la empresa y sus documentos asociados.
+            </p>
+          </div>
+
+          <div class="screen-header-actions">
+            <!-- Botón Registrar Proyecto (Abre modal de creación) -->
+            <button type="button" class="btn btn-primary" id="btn-open-create-modal" title="Registrar nuevo proyecto">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Registrar proyecto</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 2. Barra de Búsqueda y Filtros -->
+        <section class="projects-filters-card" aria-label="Filtros de proyectos">
+          <!-- Campo de búsqueda -->
+          <div class="filter-search-box">
+            <svg class="filter-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+              type="text" 
+              id="filter-search" 
+              class="filter-search-input" 
+              placeholder="Buscar por nombre de proyecto..." 
+              autocomplete="off">
+          </div>
+
+          <!-- Dropdowns de filtros -->
+          <div class="filters-dropdowns-group">
+            <!-- Filtro Estado -->
+            <div class="filter-select-wrapper">
+              <label for="filter-status" class="filter-select-label">Estado:</label>
+              <select id="filter-status" class="filter-select">
+                <option value="all" selected>Todos</option>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+
+            <!-- Ordenar por -->
+            <div class="filter-select-wrapper">
+              <label for="filter-sort" class="filter-select-label">Ordenar por:</label>
+              <select id="filter-sort" class="filter-select">
+                <option value="newest" selected>Más recientes</option>
+                <option value="oldest">Más antiguos</option>
+                <option value="name-asc">Nombre A-Z</option>
+                <option value="name-desc">Nombre Z-A</option>
+              </select>
+            </div>
+
+            <!-- Botón Limpiar Filtros -->
+            <button type="button" class="btn btn-outline" id="btn-clear-filters" title="Restablecer filtros" style="height: 40px; padding: 0 14px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
+              <span>Limpiar filtros</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             3. SECCIÓN PRINCIPAL: TABLA DE LISTA DE PROYECTOS
+             (Nota: La sección inferior "Proyectos destacados" fue expresamente omitida)
+             ================================================================== -->
+        <section class="projects-table-card" id="section-projects-list">
+          <div class="table-card-header">
+            <div class="table-card-title-box">
+              <svg class="table-card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              <h3 class="table-card-title">Lista de proyectos</h3>
+              <span class="table-card-count" id="projects-count-tag">0 proyectos</span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="projects-table" id="projects-table">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">Imagen</th>
+                  <th style="min-width: 220px;">Nombre del proyecto</th>
+                  <th style="min-width: 240px;">Descripción</th>
+                  <th style="min-width: 180px;">Documento</th>
+                  <th style="white-space: nowrap;">Fecha de creación</th>
+                  <th style="text-align: center;">Estado</th>
+                  <th style="text-align: right; min-width: 110px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="projects-table-body">
+                <!-- Se inyecta dinámicamente con JavaScript -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginación de la Tabla -->
+          <div class="table-pagination-bar">
+            <span class="pagination-info-text" id="projects-pagination-info">
+              Mostrando 1 a 5 de 5 proyectos
+            </span>
+            <div class="pagination-controls-box" id="projects-pagination-controls">
+              <!-- Botones dinámicos -->
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 1: REGISTRAR PROYECTO
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-create" role="dialog" aria-modal="true" aria-labelledby="create-modal-title">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <h3 class="modal-header-title" id="create-modal-title">Registrar proyecto</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-create" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-create-project">
+        <div class="modal-body">
+          <!-- Campo: Nombre del proyecto -->
+          <div class="form-group">
+            <label for="create-name" class="form-label">
+              <span>Nombre del proyecto</span>
+              <span class="required-mark">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="create-name" 
+              class="form-input" 
+              placeholder="Ingrese el nombre del proyecto" 
+              required>
+          </div>
+
+          <!-- Campo: Descripción -->
+          <div class="form-group">
+            <label for="create-description" class="form-label">Descripción</label>
+            <textarea 
+              id="create-description" 
+              class="form-textarea" 
+              placeholder="Ingrese una descripción del proyecto..."></textarea>
+          </div>
+
+          <!-- Campo: Documento del proyecto (PDF) -->
+          <div class="form-group">
+            <label class="form-label">Documento del proyecto (PDF)</label>
+            <input type="file" id="create-doc-input" style="display: none;" accept="application/pdf">
+            
+            <div class="file-upload-card" id="create-doc-upload-box">
+              <div class="file-upload-placeholder">
+                <button type="button" class="btn-select-file-trigger" id="btn-trigger-create-doc">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>Seleccionar archivo</span>
+                </button>
+                <span class="file-upload-hint">PDF, hasta 10 MB</span>
+              </div>
+
+              <!-- Preview del archivo seleccionado -->
+              <div class="file-selected-preview-card" id="create-doc-preview">
+                <div class="file-info-left">
+                  <div class="file-icon-badge pdf">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                  </div>
+                  <div class="file-meta-texts">
+                    <span class="file-name-text" id="create-doc-name-text">archivo.pdf</span>
+                    <span class="file-size-text" id="create-doc-size-text">1.8 MB</span>
+                  </div>
+                </div>
+                <button type="button" class="btn-remove-file" id="btn-remove-create-doc" title="Eliminar archivo">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Campo: Imagen del proyecto -->
+          <div class="form-group">
+            <label class="form-label">Imagen del proyecto</label>
+            <input type="file" id="create-img-input" style="display: none;" accept="image/jpeg,image/png,image/webp">
+            
+            <div class="file-upload-card" id="create-img-upload-box">
+              <div class="file-upload-placeholder">
+                <button type="button" class="btn-select-file-trigger" id="btn-trigger-create-img">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                  <span>Seleccionar imagen</span>
+                </button>
+                <span class="file-upload-hint">JPG, PNG, WEBP, hasta 5 MB</span>
+              </div>
+
+              <!-- Preview de la imagen seleccionada -->
+              <div class="file-selected-preview-card" id="create-img-preview">
+                <div class="file-info-left">
+                  <img src="" alt="Previsualización" class="delete-preview-thumb" id="create-img-thumb" style="width: 36px; height: 36px; border-radius: 4px;">
+                  <div class="file-meta-texts">
+                    <span class="file-name-text" id="create-img-name-text">imagen.jpg</span>
+                    <span class="file-size-text" id="create-img-size-text">1.2 MB</span>
+                  </div>
+                </div>
+                <button type="button" class="btn-remove-file" id="btn-remove-create-img" title="Eliminar imagen">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-create">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-create">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Guardar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 2: VER PROYECTO (DETALLE CON VISOR DE IMAGEN)
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-view" role="dialog" aria-modal="true" aria-labelledby="view-modal-title">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <h3 class="modal-header-title" id="view-modal-title">Ver proyecto</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-view" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Visor de Imagen Ampliable -->
+        <div class="view-project-carousel" id="view-carousel-container" title="Haz clic para ver imagen a pantalla completa">
+          <img src="" alt="Imagen del proyecto" class="view-project-img" id="view-img">
+          <div class="view-zoom-badge">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="11" y1="8" x2="11" y2="14"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+            <span>Ampliar</span>
+          </div>
+        </div>
+
+        <!-- Ficha de Datos del Proyecto -->
+        <div class="view-details-list">
+          <div class="view-detail-item">
+            <span class="view-detail-label">Nombre del proyecto</span>
+            <span class="view-detail-value title-bold" id="view-name">Oficinas Corporativas Alpha</span>
+          </div>
+
+          <div class="view-detail-item">
+            <span class="view-detail-label">Descripción</span>
+            <p class="view-detail-value" id="view-description">
+              Mobiliario de oficina a medida para el área administrativa.
+            </p>
+          </div>
+
+          <div class="view-detail-item">
+            <span class="view-detail-label">Documento</span>
+            <div id="view-doc-container">
+              <a href="#" target="_blank" class="doc-pdf-pill" id="view-doc-link">
+                <svg class="doc-pdf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <span id="view-doc-name">Proyecto_Alpha.pdf</span>
+                <span class="doc-pdf-size" id="view-doc-size">(1.8 MB)</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="view-detail-item">
+            <span class="view-detail-label">Fecha de creación</span>
+            <span class="view-detail-value" id="view-date">08/09/2026 - 03:45 PM</span>
+          </div>
+
+          <div class="view-detail-item">
+            <span class="view-detail-label">Estado</span>
+            <div>
+              <span class="badge-status badge-status-active" id="view-status-badge">Activo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-close-view-footer">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 3: EDITAR PROYECTO
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-edit" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          <h3 class="modal-header-title" id="edit-modal-title">Editar proyecto</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-edit" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-edit-project">
+        <input type="hidden" id="edit-project-id">
+        <div class="modal-body">
+          <!-- Campo: Nombre del proyecto -->
+          <div class="form-group">
+            <label for="edit-name" class="form-label">
+              <span>Nombre del proyecto</span>
+              <span class="required-mark">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="edit-name" 
+              class="form-input" 
+              required>
+          </div>
+
+          <!-- Campo: Descripción -->
+          <div class="form-group">
+            <label for="edit-description" class="form-label">Descripción</label>
+            <textarea 
+              id="edit-description" 
+              class="form-textarea"></textarea>
+          </div>
+
+          <!-- Documento actual y opción cambiar -->
+          <div class="form-group">
+            <label class="form-label">Documento del proyecto (PDF)</label>
+            <input type="file" id="edit-doc-input" style="display: none;" accept="application/pdf">
+
+            <div class="file-selected-preview-card has-file" id="edit-doc-current-box">
+              <div class="file-info-left">
+                <div class="file-icon-badge pdf">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                </div>
+                <div class="file-meta-texts">
+                  <span class="file-name-text" id="edit-doc-name">Proyecto_Alpha.pdf</span>
+                  <span class="file-size-text" id="edit-doc-size">1.8 MB</span>
+                </div>
+              </div>
+              <div class="file-actions-right">
+                <button type="button" class="btn-select-file-trigger" id="btn-trigger-edit-doc" style="padding: 5px 10px; font-size: 0.775rem;">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>Cambiar archivo</span>
+                </button>
+                <button type="button" class="btn-remove-file" id="btn-remove-edit-doc" title="Remover archivo">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Imagen actual y opción cambiar -->
+          <div class="form-group">
+            <label class="form-label">Imagen del proyecto</label>
+            <input type="file" id="edit-img-input" style="display: none;" accept="image/jpeg,image/png,image/webp">
+
+            <div class="file-selected-preview-card has-file" id="edit-img-current-box">
+              <div class="file-info-left">
+                <img src="" alt="Miniatura" class="delete-preview-thumb" id="edit-img-thumb" style="width: 44px; height: 44px; border-radius: 4px;">
+                <div class="file-meta-texts">
+                  <span class="file-name-text" id="edit-img-name">oficina.jpg</span>
+                  <span class="file-size-text" id="edit-img-size">1.2 MB</span>
+                </div>
+              </div>
+              <div class="file-actions-right">
+                <button type="button" class="btn-select-file-trigger" id="btn-trigger-edit-img" style="padding: 5px 10px; font-size: 0.775rem;">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                  <span>Cambiar imagen</span>
+                </button>
+                <button type="button" class="btn-remove-file" id="btn-remove-edit-img" title="Remover imagen">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-edit">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-edit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Guardar cambios</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 4: CONFIRMAR CAMBIO DE ESTADO (ACTIVO / INACTIVO)
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-status" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
+    <div class="modal-window" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" id="status-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <h3 class="modal-header-title" id="status-modal-title">Cambiar estado del proyecto</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-status" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-change-status">
+        <input type="hidden" id="status-project-id">
+        <input type="hidden" id="status-target-value">
+
+        <div class="modal-body">
+          <!-- Alerta Dinámica de Confirmación -->
+          <div class="status-confirm-banner to-inactive" id="status-confirm-banner">
+            <div class="status-confirm-icon-box" id="status-confirm-icon-box">
+              <svg id="status-confirm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <div class="status-confirm-text">
+              <strong id="status-confirm-title">¿Estás seguro de poner inactivo este proyecto?</strong>
+              <p id="status-confirm-desc">El proyecto pasará a estado Inactivo y no se mostrará a los clientes en la plataforma.</p>
+            </div>
+          </div>
+
+          <!-- Preview del Proyecto a Modificar -->
+          <div class="status-project-preview-card">
+            <img src="" alt="Miniatura" class="status-preview-thumb" id="status-preview-thumb">
+            <div class="status-preview-info">
+              <span class="status-preview-name" id="status-preview-name">Nombre del Proyecto</span>
+              <div class="status-preview-meta">
+                <span class="status-preview-label">Estado actual:</span>
+                <span class="badge-status badge-status-active" id="status-current-badge">Activo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-status">Cancelar</button>
+          <button type="submit" class="btn btn-warning" id="btn-submit-status">Poner Inactivo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 5: ELIMINAR PROYECTO
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-delete" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="modal-window" style="max-width: 520px;">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" style="color: #dc2626;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <h3 class="modal-header-title" id="delete-modal-title">Eliminar proyecto</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-delete" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-delete-project">
+        <input type="hidden" id="delete-project-id">
+        <div class="modal-body">
+          <!-- Alerta de Advertencia -->
+          <div class="delete-alert-banner">
+            <svg class="delete-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <div class="delete-alert-text">
+              <strong>¿Estás seguro de eliminar este proyecto?</strong>
+              <p>Esta acción no se puede deshacer. Se eliminará el proyecto y todos sus archivos asociados.</p>
+            </div>
+          </div>
+
+          <!-- Preview del Proyecto a Eliminar -->
+          <div class="delete-project-preview-card">
+            <img src="" alt="Miniatura" class="delete-preview-thumb" id="delete-preview-thumb">
+            <span class="delete-preview-name" id="delete-preview-name">Oficinas Corporativas Alpha</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-delete">Cancelar</button>
+          <button type="submit" class="btn btn-danger" id="btn-confirm-delete">Eliminar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 6: LIGHTBOX / AMPLIAR IMAGEN A PANTALLA COMPLETA
+       ====================================================================== -->
+  <div class="lightbox-backdrop" id="lightbox-modal" role="dialog" aria-modal="true" aria-label="Ampliación de imagen">
+    <button type="button" class="lightbox-close-btn" id="btn-close-lightbox" aria-label="Cerrar imagen ampliada">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <div class="lightbox-content-box">
+      <img src="" alt="Imagen ampliada" class="lightbox-img" id="lightbox-img">
+      <span class="lightbox-caption-text" id="lightbox-caption">Descripción de la imagen</span>
+    </div>
+  </div>
+
+  <!-- Scripts del Módulo -->
+  <script type="module" src="./projects.js"></script>
+</body>
+</html>

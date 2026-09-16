@@ -61,13 +61,13 @@
               </svg>
               <span>Nuevo Transportador</span>
             </button>
-            <button type="button" class="btn btn-primary" id="btn-open-new-shipment-modal">
+            <a href="./shipping-create.html" class="btn btn-primary" id="btn-open-new-shipment-page" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
               <span>Registrar envío</span>
-            </button>
+            </a>
           </div>
         </section>
 
@@ -329,17 +329,19 @@
                 <thead>
                   <tr>
                     <th>Empresa / Transportador</th>
+                    <th>Cobertura</th>
+                    <th>Zonas Asignadas</th>
                     <th>RIF / Identificación</th>
-                    <th>Teléfono de Contacto</th>
-                    <th>Correo Electrónico</th>
-                    <th>Envíos Asignados</th>
+                    <th>Teléfono</th>
+                    <th>Correo</th>
+                    <th>Envíos</th>
                     <th>Estado</th>
                     <th style="text-align: right;">Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="tbody-distributors-main">
                   <tr>
-                    <td colspan="7" style="text-align:center; padding: 40px; color: var(--text-muted);">
+                    <td colspan="9" style="text-align:center; padding: 40px; color: var(--text-muted);">
                       Cargando transportadores...
                     </td>
                   </tr>
@@ -592,6 +594,15 @@
           <div class="form-group">
             <label class="form-label" for="new-dist-rif">RIF / Identificación Fiscal *</label>
             <input type="text" class="form-input" id="new-dist-rif" placeholder="Ej. J-12345678-9" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="new-dist-coverage-type">Tipo de Cobertura *</label>
+            <select class="form-select" id="new-dist-coverage-type" required>
+              <option value="national">Nacional (Todo el territorio venezolano)</option>
+              <option value="regional" selected>Regional / Rutas específicas</option>
+              <option value="local">Local (Ciudad o municipio específico)</option>
+            </select>
           </div>
 
           <div class="form-grid-2">

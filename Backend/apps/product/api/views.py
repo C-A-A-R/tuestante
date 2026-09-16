@@ -1,3 +1,4 @@
+import json
 from django.utils import timezone
 from django.db.models import Count, Q, Prefetch
 from rest_framework import status, generics, permissions
@@ -66,6 +67,9 @@ class FeaturedProductsAPIView(generics.ListAPIView):
             favorites_count=Count('favorites', filter=Q(favorites__is_deleted=False), distinct=True)
         )
 
+        if not (self.request.user and self.request.user.is_staff):
+            queryset = queryset.exclude(is_outlet=True, quantity__lte=0)
+
         sort_fav_param = (
             self.request.query_params.get('sort_by_favorites') or
             self.request.query_params.get('order_by_favorites') or
@@ -113,7 +117,7 @@ class FeaturedProductsLeastFavoritesAPIView(generics.ListAPIView):
         return context
 
     def get_queryset(self):
-        return Product.objects.filter(
+        queryset = Product.objects.filter(
             is_deleted=False,
             is_active=True,
             is_feature_product=True
@@ -122,7 +126,10 @@ class FeaturedProductsLeastFavoritesAPIView(generics.ListAPIView):
             'angle_images'
         ).select_related('product_type').annotate(
             favorites_count=Count('favorites', filter=Q(favorites__is_deleted=False), distinct=True)
-        ).order_by('favorites_count', '-created_at', '-id')
+        )
+        if not (self.request.user and self.request.user.is_staff):
+            queryset = queryset.exclude(is_outlet=True, quantity__lte=0)
+        return queryset.order_by('favorites_count', '-created_at', '-id')
 
 
 class ProductViewSet(BaseViewSet):
@@ -162,15 +169,22 @@ class ProductViewSet(BaseViewSet):
             favorites_count=Count('favorites', filter=Q(favorites__is_deleted=False), distinct=True)
         )
 
-        # Filtro de activación: Por defecto solo activos para clientes públicos
+        # Filtro de activación y disponibilidad:
+        # - Para clientes públicos: solo productos activos (is_active=True).
+        # - Los productos outlet que no tengan cantidad (quantity <= 0) NO pueden verse para los clientes.
+        # - Los productos regulares sí pueden verse con stock 0 (se fabrican bajo pedido).
         if not (self.request.user and self.request.user.is_staff):
-            queryset = queryset.filter(is_active=True)
+            queryset = queryset.filter(is_active=True).exclude(is_outlet=True, quantity__lte=0)
         else:
-            is_active_param = self.request.query_params.get('is_active')
+            is_active_param = (
+                self.request.query_params.get('is_active') or
+                self.request.query_params.get('es_activo') or
+                self.request.query_params.get('activo')
+            )
             if is_active_param is not None:
-                if is_active_param.lower() in ['true', '1', 'yes']:
+                if is_active_param.strip().lower() in ['true', '1', 'yes', 'si']:
                     queryset = queryset.filter(is_active=True)
-                elif is_active_param.lower() in ['false', '0', 'no']:
+                elif is_active_param.strip().lower() in ['false', '0', 'no']:
                     queryset = queryset.filter(is_active=False)
 
         # Filtro por tipo de producto
@@ -296,6 +310,86 @@ class ProductViewSet(BaseViewSet):
 
         return response
 
+    def create(self, request, *args, **kwargs):
+        """Crea el producto y registra las variantes de color y ángulos enviadas."""
+        response = super().create(request, *args, **kwargs)
+        if response.status_code == status.HTTP_201_CREATED:
+            product_id = response.data.get('id')
+            if product_id:
+                product = Product.objects.filter(id=product_id).first()
+                if product:
+                    self._handle_color_and_angle_images(product, request)
+                    serializer = self.get_serializer(product)
+                    response.data = serializer.data
+        return response
+
+    def update(self, request, *args, **kwargs):
+        """Actualiza el producto y sus variantes de color y ángulos si fueron enviadas."""
+        response = super().update(request, *args, **kwargs)
+        if response.status_code in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
+            product = self.get_object()
+            if 'colors_data' in request.data or 'color_images' in request.data:
+                ProductColorImage.objects.filter(product=product).update(is_deleted=True)
+            if 'angles_data' in request.data or 'angle_images' in request.data:
+                ProductAngleImage.objects.filter(product=product).update(is_deleted=True)
+            self._handle_color_and_angle_images(product, request)
+            response.data = self.get_serializer(product).data
+        return response
+
+    def _handle_color_and_angle_images(self, product, request):
+        """Procesa y guarda registros de ProductColorImage y ProductAngleImage."""
+        # 1. Variantes de color
+        colors_raw = request.data.get('colors_data')
+        colors_data = []
+        if isinstance(colors_raw, str):
+            try:
+                colors_data = json.loads(colors_raw)
+            except Exception:
+                colors_data = []
+        elif isinstance(colors_raw, list):
+            colors_data = colors_raw
+        elif not colors_raw:
+            colors_data = request.data.get('color_images', [])
+
+        if isinstance(colors_data, list):
+            for idx, item in enumerate(colors_data):
+                if not isinstance(item, dict):
+                    continue
+                c_name = item.get('color_name') or f"Color {idx + 1}"
+                c_hex = item.get('color_hex') or "#000000"
+                c_file = request.FILES.get(f'color_file_{idx}') or request.FILES.get(f'color_image_{idx}')
+                ProductColorImage.objects.create(
+                    product=product,
+                    color_name=c_name,
+                    color_hex=c_hex,
+                    color_image=c_file
+                )
+
+        # 2. Variantes de ángulos
+        angles_raw = request.data.get('angles_data')
+        angles_data = []
+        if isinstance(angles_raw, str):
+            try:
+                angles_data = json.loads(angles_raw)
+            except Exception:
+                angles_data = []
+        elif isinstance(angles_raw, list):
+            angles_data = angles_raw
+        elif not angles_raw:
+            angles_data = request.data.get('angle_images', [])
+
+        if isinstance(angles_data, list):
+            for idx, item in enumerate(angles_data):
+                if not isinstance(item, dict):
+                    continue
+                a_angle = item.get('angle') or f"Vista {idx + 1}"
+                a_file = request.FILES.get(f'angle_file_{idx}') or request.FILES.get(f'angle_image_{idx}')
+                ProductAngleImage.objects.create(
+                    product=product,
+                    angle=a_angle,
+                    image=a_file
+                )
+
 
 # =========================================================================
 # APIViews DEDICADAS PARA PRODUCTOS FAVORITOS / WISHLIST
@@ -330,6 +424,9 @@ class UserFavoritesAPIView(generics.ListAPIView):
         ).select_related('product_type').annotate(
             favorites_count=Count('favorites', filter=Q(favorites__is_deleted=False), distinct=True)
         ).distinct()
+
+        if not (self.request.user and self.request.user.is_staff):
+            queryset = queryset.filter(is_active=True).exclude(is_outlet=True, quantity__lte=0)
 
         sort_fav_param = (
             self.request.query_params.get('sort_by_favorites') or

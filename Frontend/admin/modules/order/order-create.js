@@ -355,7 +355,7 @@ function renderOrderItems() {
           
           <!-- Selector de Producto (OrderProduct) -->
           <div class="item-product-col">
-            <label class="form-label">Producto #${index + 1} *</label>
+            <label class="form-label">Producto #${index + 1} <span class="required-mark">*</span></label>
             <div class="item-product-select-wrapper">
               <img 
                 src="${escapeHtml(item.image)}" 
@@ -377,7 +377,7 @@ function renderOrderItems() {
 
           <!-- Cantidad (OrderDetail.quantity) -->
           <div class="item-qty-col">
-            <label class="form-label">Cantidad *</label>
+            <label class="form-label">Cantidad <span class="required-mark">*</span></label>
             <input 
               type="number" 
               class="form-input text-center font-bold item-qty-input" 
@@ -390,7 +390,7 @@ function renderOrderItems() {
 
           <!-- Precio Unitario (OrderDetail.unit_price / snapshot price_at_order) -->
           <div class="item-price-col">
-            <label class="form-label">Precio Unit. ($) *</label>
+            <label class="form-label">Precio Unit. ($) <span class="required-mark">*</span></label>
             <input 
               type="number" 
               class="form-input text-right item-price-input" 

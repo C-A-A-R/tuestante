@@ -71,7 +71,8 @@ async function loadHomeOutlet() {
 
   try {
     const response = await obtenerProductosOutlet();
-    const outletProducts = extractList(response);
+    const rawOutlet = extractList(response);
+    const outletProducts = (rawOutlet || []).filter(p => p && (!p.is_outlet || p.quantity === undefined || p.quantity > 0));
     if (!outletProducts || outletProducts.length === 0) {
       container.innerHTML = createApiEmptyFeedback('No hay productos en liquidación outlet por el momento.', 'Explora nuestro catálogo para conocer todos los productos disponibles.');
       return;

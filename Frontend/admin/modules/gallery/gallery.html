@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galería | TuEstante Admin</title>
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes Compartidos (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="../../assets/images/logo.jpeg">
+
+  <!-- Estilos del Módulo de Galería -->
+  <link rel="stylesheet" href="./gallery.css">
+</head>
+<body data-page-title="Galería">
+
+  <!-- Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Estructura Principal del Panel Administrativo -->
+  <div class="app-layout" id="app-layout">
+
+    <!-- Placeholders para componentes compartidos -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- ======================================================================
+         CONTENIDO PRINCIPAL: GESTIÓN DE GALERÍA Y SOLICITUDES
+         ====================================================================== -->
+    <main class="app-main-content">
+      <div class="gallery-module-container">
+
+        <!-- 1. Encabezado Estándar de la Pantalla (Sin imagen decorativa al inicio) -->
+        <section class="screen-header-card" aria-label="Encabezado del módulo">
+          <div class="screen-header-left">
+            <div class="screen-header-text">
+              <h2 class="screen-main-title">Galería</h2>
+              <p class="screen-main-desc">
+                Gestiona las imágenes publicadas y las solicitudes de galería de los usuarios.
+              </p>
+            </div>
+          </div>
+
+          <div class="screen-header-actions">
+            <!-- Botón Registrar Imagen (Abre modal de creación) -->
+            <button type="button" class="btn btn-primary" id="btn-open-create-modal" title="Registrar nueva imagen en galería">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Registrar imagen</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 2. Barra de Pestañas y Controles de Filtros (Estilo Notificaciones) -->
+        <section class="gallery-controls-bar">
+          <!-- Pestañas de Navegación entre Tablas -->
+          <div class="gallery-tabs" role="tablist" aria-label="Vistas de galería">
+            <button type="button" class="tab-btn active" id="tab-btn-published" role="tab" aria-selected="true" aria-controls="section-published">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <span>Galería publicada</span>
+              <span class="tab-badge" id="badge-count-published">0</span>
+            </button>
+            <button type="button" class="tab-btn" id="tab-btn-requests" role="tab" aria-selected="false" aria-controls="section-requests">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Solicitudes de galería</span>
+              <span class="tab-badge" id="badge-count-requests">0</span>
+            </button>
+          </div>
+
+          <!-- Controles de Búsqueda y Filtros Rápidos -->
+          <div class="gallery-filters-group">
+            <!-- Campo de búsqueda en vivo -->
+            <div class="gallery-search-box">
+              <input 
+                type="text" 
+                id="filter-search" 
+                class="search-box-input" 
+                placeholder="Buscar por usuario, descripción..." 
+                aria-label="Buscar en galería"
+                autocomplete="off">
+              <svg class="search-box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+
+            <!-- Filtro Red Social -->
+            <div class="filter-select-wrapper">
+              <span class="filter-floating-label">Red social</span>
+              <select id="filter-social" class="filter-select" aria-label="Filtrar por red social">
+                <option value="all" selected>Todas</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Facebook">Facebook</option>
+                <option value="TikTok">TikTok</option>
+                <option value="Pinterest">Pinterest</option>
+                <option value="Twitter">X (Twitter)</option>
+                <option value="Otra">Otra</option>
+              </select>
+              <svg class="select-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+
+            <!-- Filtro Estado -->
+            <div class="filter-select-wrapper">
+              <span class="filter-floating-label">Estado</span>
+              <select id="filter-status" class="filter-select" aria-label="Filtrar por estado">
+                <option value="all" selected>Todas</option>
+                <option value="Activa">Activa</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Aprobada">Aprobada</option>
+                <option value="Rechazada">Rechazada</option>
+                <option value="Inactiva">Inactiva</option>
+              </select>
+              <svg class="select-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+
+            <!-- Botón Limpiar Filtros Normalizado -->
+            <button type="button" class="btn btn-clear-filters" id="btn-clear-filters" title="Restablecer filtros">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
+              <span>Limpiar filtros</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 3. ÁREA DE CONTENIDO: TABLAS INTERCAMBIABLES (UNA A LA VEZ) -->
+        <div class="tables-view-wrapper">
+
+          <!-- SECCIÓN 1: TABLA DE GALERÍA PUBLICADA -->
+          <section class="gallery-section-card active" id="section-published" role="tabpanel" aria-labelledby="tab-btn-published">
+            <div class="section-card-header">
+              <div class="section-card-title-box">
+                <h3 class="section-card-title">Galería publicada</h3>
+                <span class="section-card-count" id="count-published-tag">0 imágenes</span>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="gallery-table" id="table-published">
+                <thead>
+                  <tr>
+                    <th style="width: 80px;">Imagen</th>
+                    <th style="min-width: 200px;">Usuario</th>
+                    <th style="min-width: 220px;">Descripción</th>
+                    <th>Red social</th>
+                    <th>Usuario de red social</th>
+                    <th>Enlace</th>
+                    <th style="text-align: center;">Estado</th>
+                    <th>Fecha de publicación</th>
+                    <th style="text-align: right; min-width: 110px;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="table-published-body">
+                  <!-- Se inyecta dinámicamente con JavaScript -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Paginación de Galería Publicada -->
+            <div class="section-pagination-bar">
+              <span class="pagination-info-text" id="published-pagination-info">
+                Mostrando 1 a 4 de 4 imágenes
+              </span>
+              <div class="pagination-controls-box" id="published-pagination-controls">
+                <!-- Botones dinámicos -->
+              </div>
+            </div>
+          </section>
+
+          <!-- SECCIÓN 2: TABLA DE SOLICITUDES DE GALERÍA (OCULTA POR DEFECTO) -->
+          <section class="gallery-section-card" id="section-requests" role="tabpanel" aria-labelledby="tab-btn-requests" style="display: none;">
+            <div class="section-card-header">
+              <div class="section-card-title-box">
+                <h3 class="section-card-title">Solicitudes de galería</h3>
+                <span class="section-card-count" id="count-requests-tag">0 solicitudes</span>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="gallery-table" id="table-requests">
+                <thead>
+                  <tr>
+                    <th style="width: 80px;">Imagen</th>
+                    <th style="min-width: 200px;">Usuario</th>
+                    <th style="min-width: 220px;">Descripción</th>
+                    <th>Red social</th>
+                    <th>Usuario de red social</th>
+                    <th>Fecha de solicitud</th>
+                    <th style="text-align: center;">Estado</th>
+                    <th style="text-align: right; min-width: 140px;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="table-requests-body">
+                  <!-- Se inyecta dinámicamente con JavaScript -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Paginación de Solicitudes -->
+            <div class="section-pagination-bar">
+              <span class="pagination-info-text" id="requests-pagination-info">
+                Mostrando 1 a 4 de 4 solicitudes
+              </span>
+              <div class="pagination-controls-box" id="requests-pagination-controls">
+                <!-- Botones dinámicos -->
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+      </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 1: VISTA RÁPIDA DE IMAGEN
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-quickview" role="dialog" aria-modal="true" aria-labelledby="quickview-modal-title">
+    <div class="modal-window modal-window-lg">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <h3 class="modal-header-title" id="quickview-modal-title">Vista rápida de imagen</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-quickview" aria-label="Cerrar vista rápida">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="quickview-split-layout">
+          <!-- Columna Izquierda: Imagen Ampliada (Interactiva para abrir pantalla completa) -->
+          <div class="quickview-media-col" id="quickview-media-container" title="Haz clic para ver en pantalla completa">
+            <img src="" alt="Vista previa de galería" class="quickview-large-img" id="quickview-img">
+            <div class="quickview-zoom-hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="11" y1="8" x2="11" y2="14"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+              </svg>
+              <span>Ampliar</span>
+            </div>
+          </div>
+
+          <!-- Columna Derecha: Información Detallada -->
+          <div class="quickview-info-col">
+            <h4 class="quickview-title" id="quickview-title">Estante metálico</h4>
+
+            <div class="quickview-desc-box">
+              <span class="quickview-section-label">Descripción</span>
+              <p class="quickview-desc-text" id="quickview-description">
+                Mi estante favorito. Muy resistente y funcional.
+              </p>
+            </div>
+
+            <!-- Usuario: Nombre Completo y Documento de Identidad -->
+            <div class="quickview-item-row">
+              <span class="quickview-section-label">Usuario</span>
+              <div class="user-cell-box">
+                <div class="user-avatar-circle" id="quickview-user-avatar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div class="user-meta-info">
+                  <span class="user-full-name" id="quickview-user-name">Pedro Díaz</span>
+                  <span class="user-identity-doc" id="quickview-user-doc">CI: V-19.876.543</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Red Social -->
+            <div class="quickview-item-row">
+              <span class="quickview-section-label">Red social</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="quickview-social-pill" class="social-pill social-pill-instagram">Instagram</span>
+                <span class="social-handle-text" id="quickview-social-handle">@pedrodiaz</span>
+              </div>
+            </div>
+
+            <!-- Enlace -->
+            <div class="quickview-item-row">
+              <span class="quickview-section-label">Enlace</span>
+              <a href="#" target="_blank" rel="noopener noreferrer" class="external-link-btn" id="quickview-social-link">
+                <span>Ver enlace</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+              </a>
+            </div>
+
+            <!-- Estado -->
+            <div class="quickview-item-row">
+              <span class="quickview-section-label">Estado</span>
+              <div>
+                <span class="badge-status badge-status-active" id="quickview-status-badge">Activa</span>
+              </div>
+            </div>
+
+            <!-- Fecha -->
+            <div class="quickview-item-row">
+              <span class="quickview-section-label" id="quickview-date-label">Fecha de publicación</span>
+              <span style="font-size: 0.865rem; color: var(--text-main); font-weight: 500;" id="quickview-date-val">08/09/2026 16:30</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-close-quickview-footer">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 2: REGISTRAR IMAGEN EN GALERÍA
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-create" role="dialog" aria-modal="true" aria-labelledby="create-modal-title">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <h3 class="modal-header-title" id="create-modal-title">Registrar imagen en galería</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-create" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-create-gallery">
+        <div class="modal-body">
+          <!-- Campo: Imagen (Dropzone con drag & drop) -->
+          <div class="form-group">
+            <label class="form-label">
+              <span>Imagen</span>
+              <span class="required-mark">*</span>
+            </label>
+            
+            <div class="dropzone-upload-area" id="create-dropzone">
+              <input type="file" id="create-file-input" class="dropzone-file-input" accept="image/jpeg,image/png,image/webp">
+              <div class="dropzone-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </div>
+              <span class="dropzone-instruction-main">Arrastra la imagen aquí o haz clic para seleccionar</span>
+              <span class="dropzone-formats-hint">Formatos permitidos: JPG, PNG, WEBP. Tamaño máximo: 5 MB.</span>
+            </div>
+
+            <!-- Preview cuando se selecciona archivo -->
+            <div class="dropzone-preview-box" id="create-preview-container">
+              <img src="" alt="Previsualización" class="dropzone-preview-thumb" id="create-preview-img">
+              <div class="dropzone-preview-meta">
+                <span class="dropzone-preview-name" id="create-preview-name">foto.jpg</span>
+                <span class="dropzone-preview-size" id="create-preview-size">1.2 MB</span>
+              </div>
+              <button type="button" class="btn-remove-preview" id="btn-remove-create-img" title="Eliminar archivo">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Campo: Descripción -->
+          <div class="form-group">
+            <label for="create-caption" class="form-label">
+              <span>Descripción</span>
+              <span class="required-mark">*</span>
+            </label>
+            <textarea 
+              id="create-caption" 
+              class="form-textarea" 
+              maxlength="255" 
+              placeholder="Escribe una breve descripción de la imagen..." 
+              required></textarea>
+            <span class="char-counter" id="create-char-counter">0/255</span>
+          </div>
+
+          <!-- Fila 2 Columnas: Usuario y Red Social -->
+          <div class="form-row-2col">
+            <!-- Selector de Usuario buscable (Combobox) -->
+            <div class="form-group">
+              <label class="form-label">
+                <span>Usuario</span>
+                <span class="required-mark">*</span>
+              </label>
+              <!-- Campo oculto que guarda el valor seleccionado -->
+              <input type="hidden" id="create-user-id" name="create-user-id">
+              <div class="combobox-wrapper" id="create-user-combobox">
+                <div class="combobox-input-box">
+                  <svg class="combobox-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <input
+                    type="text"
+                    id="create-user-search"
+                    class="combobox-input"
+                    placeholder="Buscar usuario..."
+                    autocomplete="off"
+                    aria-autocomplete="list"
+                    aria-expanded="false"
+                    aria-haspopup="listbox"
+                    role="combobox">
+                  <svg class="combobox-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+                <ul class="combobox-dropdown" id="create-user-dropdown" role="listbox" aria-label="Usuarios disponibles">
+                  <!-- Opciones inyectadas dinámicamente -->
+                </ul>
+              </div>
+            </div>
+
+            <!-- Selector de Red Social -->
+            <div class="form-group">
+              <label for="create-social-network" class="form-label">
+                <span>Red social</span>
+                <span class="required-mark">*</span>
+              </label>
+              <select id="create-social-network" class="form-select" required>
+                <option value="" disabled selected>Selecciona una red social</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Facebook">Facebook</option>
+                <option value="TikTok">TikTok</option>
+                <option value="Pinterest">Pinterest</option>
+                <option value="Twitter">X (Twitter)</option>
+                <option value="Otra">Otra</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Fila 2 Columnas: Usuario Red Social y Enlace -->
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label for="create-social-handle" class="form-label">Usuario de red social</label>
+              <input type="text" id="create-social-handle" class="form-input" placeholder="Ej. @usuario">
+            </div>
+
+            <div class="form-group">
+              <label for="create-social-url" class="form-label">Enlace de la red social</label>
+              <input type="url" id="create-social-url" class="form-input" placeholder="https://...">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-create">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-create">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Guardar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 3: EDITAR IMAGEN EN GALERÍA
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-edit" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          <h3 class="modal-header-title" id="edit-modal-title">Editar imagen en galería</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-edit" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-edit-gallery">
+        <input type="hidden" id="edit-item-id">
+        <div class="modal-body">
+          <!-- Banner de Imagen Actual y Opción de Cambiar -->
+          <div class="form-group">
+            <label class="form-label">Imagen</label>
+            <div class="edit-image-banner-card">
+              <img src="" alt="Imagen actual" class="edit-current-image-thumb" id="edit-current-thumb">
+              <div class="edit-image-meta-info">
+                <input type="file" id="edit-file-input" style="display: none;" accept="image/jpeg,image/png,image/webp">
+                <button type="button" class="btn btn-outline" id="btn-trigger-edit-file" style="width: fit-content; padding: 6px 12px; font-size: 0.815rem;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  <span>Cambiar imagen</span>
+                </button>
+                <span class="edit-image-formats-note">Formatos permitidos: JPG, PNG, WEBP. Tamaño máximo: 5 MB.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Campo: Descripción -->
+          <div class="form-group">
+            <label for="edit-caption" class="form-label">
+              <span>Descripción</span>
+              <span class="required-mark">*</span>
+            </label>
+            <textarea 
+              id="edit-caption" 
+              class="form-textarea" 
+              maxlength="255" 
+              placeholder="Escribe una breve descripción de la imagen..." 
+              required></textarea>
+            <span class="char-counter" id="edit-char-counter">0/255</span>
+          </div>
+
+          <!-- Fila 2 Columnas: Usuario y Red Social -->
+          <div class="form-row-2col">
+            <!-- Selector de Usuario buscable (Combobox) -->
+            <div class="form-group">
+              <label class="form-label">
+                <span>Usuario</span>
+                <span class="required-mark">*</span>
+              </label>
+              <input type="hidden" id="edit-user-id" name="edit-user-id">
+              <div class="combobox-wrapper" id="edit-user-combobox">
+                <div class="combobox-input-box">
+                  <svg class="combobox-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <input
+                    type="text"
+                    id="edit-user-search"
+                    class="combobox-input"
+                    placeholder="Buscar usuario..."
+                    autocomplete="off"
+                    aria-autocomplete="list"
+                    aria-expanded="false"
+                    aria-haspopup="listbox"
+                    role="combobox">
+                  <svg class="combobox-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+                <ul class="combobox-dropdown" id="edit-user-dropdown" role="listbox" aria-label="Usuarios disponibles">
+                  <!-- Opciones inyectadas dinámicamente -->
+                </ul>
+              </div>
+            </div>
+
+            <!-- Selector de Red Social -->
+            <div class="form-group">
+              <label for="edit-social-network" class="form-label">
+                <span>Red social</span>
+                <span class="required-mark">*</span>
+              </label>
+              <select id="edit-social-network" class="form-select" required>
+                <option value="Instagram">Instagram</option>
+                <option value="Facebook">Facebook</option>
+                <option value="TikTok">TikTok</option>
+                <option value="Pinterest">Pinterest</option>
+                <option value="Twitter">X (Twitter)</option>
+                <option value="Otra">Otra</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Fila 2 Columnas: Usuario Red Social y Enlace -->
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label for="edit-social-handle" class="form-label">Usuario de red social</label>
+              <input type="text" id="edit-social-handle" class="form-input" placeholder="@usuario">
+            </div>
+
+            <div class="form-group">
+              <label for="edit-social-url" class="form-label">Enlace de la red social</label>
+              <input type="url" id="edit-social-url" class="form-input" placeholder="https://...">
+            </div>
+          </div>
+
+          <!-- Sección Estado de la Imagen (Moderación y Switch Activo) -->
+          <div style="border-top: 1px solid var(--border-light); padding-top: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <span style="font-size: 0.815rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em;">Estado de la imagen</span>
+
+            <div class="form-row-2col">
+              <!-- Moderación -->
+              <div class="form-group">
+                <label for="edit-moderation-status" class="form-label">Moderación</label>
+                <select id="edit-moderation-status" class="form-select">
+                  <option value="Aprobada">Aprobada</option>
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="Rechazada">Rechazada</option>
+                </select>
+              </div>
+
+              <!-- Switch ¿Está activa en la galería? -->
+              <div class="form-group">
+                <label class="form-label">¿Está activa en la galería?</label>
+                <div class="toggle-switch-wrapper" style="margin-top: 6px;">
+                  <label class="switch-label-container">
+                    <input type="checkbox" id="edit-is-active-toggle" checked>
+                    <span class="switch-slider"></span>
+                  </label>
+                  <span class="switch-status-text" id="edit-active-toggle-label">Sí</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-edit">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-edit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Guardar cambios</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 5: CONFIRMAR CAMBIO DE ESTADO (ACTIVA / INACTIVA)
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-status" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
+    <div class="modal-window" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" id="status-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <h3 class="modal-header-title" id="status-modal-title">Cambiar estado de la imagen</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-status" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-change-status">
+        <input type="hidden" id="status-item-id">
+        <input type="hidden" id="status-target-value">
+
+        <div class="modal-body">
+          <!-- Alerta Dinámica de Confirmación -->
+          <div class="status-confirm-banner to-inactive" id="status-confirm-banner">
+            <div class="status-confirm-icon-box" id="status-confirm-icon-box">
+              <svg id="status-confirm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <div class="status-confirm-text">
+              <strong id="status-confirm-title">¿Estás seguro de poner inactiva esta imagen?</strong>
+              <p id="status-confirm-desc">La imagen pasará a estado Inactivo y no se mostrará a los clientes en la galería.</p>
+            </div>
+          </div>
+
+          <!-- Preview de la Imagen a Modificar -->
+          <div class="status-project-preview-card">
+            <img src="" alt="Miniatura" class="status-preview-thumb" id="status-preview-thumb">
+            <div class="status-preview-info">
+              <span class="status-preview-name" id="status-preview-name">Descripción de la imagen</span>
+              <div class="status-preview-meta">
+                <span class="status-preview-label">Estado actual:</span>
+                <span class="badge-status badge-status-active" id="status-current-badge">Activa</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-status">Cancelar</button>
+          <button type="submit" class="btn btn-warning" id="btn-submit-status">Poner Inactiva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 4: LIGHTBOX / AMPLIACIÓN DE IMAGEN A PANTALLA COMPLETA
+       (Al hacer clic en cualquier miniatura multimedia de la tabla)
+       ====================================================================== -->
+  <div class="lightbox-backdrop" id="lightbox-modal" role="dialog" aria-modal="true" aria-label="Ampliación de imagen">
+    <button type="button" class="lightbox-close-btn" id="btn-close-lightbox" aria-label="Cerrar imagen ampliada">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <div class="lightbox-content-box">
+      <img src="" alt="Imagen ampliada" class="lightbox-img" id="lightbox-img">
+      <span class="lightbox-caption-text" id="lightbox-caption">Descripción de la imagen</span>
+    </div>
+  </div>
+
+  <!-- Scripts del Módulo -->
+  <script type="module" src="./gallery.js"></script>
+</body>
+</html>

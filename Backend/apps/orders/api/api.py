@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 
 from apps.base.api import BaseViewSet
 from apps.orders.models import Order, OrderDetail, OrderProduct, ManufacturingOrder
+from apps.production.models import ProductionOrder
 from apps.product.models import Product
 from apps.shipment.models import Shipment, Distributor
 from apps.orders.api.serializers import OrderSerializer, ManufacturingOrderSerializer
@@ -56,6 +57,10 @@ class OrderViewSet(BaseViewSet):
             Prefetch(
                 'manufacturing_orders',
                 queryset=ManufacturingOrder.objects.filter(is_deleted=False).select_related('issued_by')
+            ),
+            Prefetch(
+                'production_orders',
+                queryset=ProductionOrder.objects.filter(is_deleted=False)
             ),
             Prefetch(
                 'shipments',
@@ -219,7 +224,7 @@ class OrderViewSet(BaseViewSet):
         elif isinstance(data, dict):
             items = data.get('items', [])
             order_notes = data.get('notes', '')
-            shipment_data = data.get('shipment') or data.get('shipping') or data.get('envio')
+            shipment_data = data.get('shipment') or data.get('shipping') or data.get('envio') or data.get('direccion') or data.get('address')
         else:
             items = []
             order_notes = ''
@@ -285,15 +290,18 @@ class OrderViewSet(BaseViewSet):
 
         # 2. Validar datos de envío si fueron proporcionados (opcional)
         distributor = None
-        if shipment_data and isinstance(shipment_data, dict):
-            address = shipment_data.get('address')
+        normalized_shipment = None
+        if shipment_data:
+            from apps.shipment.services import AddressNormalizationService
+            normalized_shipment = AddressNormalizationService.normalize(shipment_data)
+            address = normalized_shipment.get('address')
             if not address:
                 return Response(
                     {"error": "El campo 'address' es obligatorio para los datos de envío."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            distributor_id = shipment_data.get('distributor_id') or shipment_data.get('distributor')
+            distributor_id = normalized_shipment.get('distributor_id')
             if distributor_id:
                 try:
                     distributor = Distributor.objects.get(id=distributor_id, is_deleted=False)
@@ -356,17 +364,17 @@ class OrderViewSet(BaseViewSet):
         order.save()
 
         # 5. Crear registro de envío si fue provisto
-        if shipment_data and isinstance(shipment_data, dict):
+        if normalized_shipment:
             Shipment.objects.create(
                 order=order,
                 distributor=distributor,
-                state=shipment_data.get('state', ''),
-                municipality=shipment_data.get('municipality', ''),
-                city=shipment_data.get('city', ''),
-                address=shipment_data.get('address'),
-                notes=shipment_data.get('notes', ''),
-                price=shipment_data.get('price', None),
-                estimated_date=shipment_data.get('estimated_date', None)
+                state=normalized_shipment.get('state', ''),
+                municipality=normalized_shipment.get('municipality', ''),
+                city=normalized_shipment.get('city', ''),
+                address=normalized_shipment.get('address'),
+                notes=normalized_shipment.get('notes', ''),
+                price=normalized_shipment.get('price', None),
+                estimated_date=normalized_shipment.get('estimated_date', None)
             )
 
         serializer = self.get_serializer(order)
@@ -388,6 +396,16 @@ class OrderViewSet(BaseViewSet):
             issued_by=request.user,
             notes=request.data.get('notes', 'Generada desde el panel API por administración')
         )
+
+        try:
+            ProductionOrder.objects.create(
+                order=order,
+                status='queued',
+                iteration=last_iteration + 1,
+                technical_notes=request.data.get('notes', 'Generada desde el panel API por administración')
+            )
+        except Exception:
+            pass
 
         serializer = ManufacturingOrderSerializer(mo)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

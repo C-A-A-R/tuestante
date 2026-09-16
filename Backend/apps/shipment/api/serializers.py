@@ -1,9 +1,34 @@
 from rest_framework import serializers
-from apps.shipment.models import Distributor, Shipment
+from apps.shipment.models import Distributor, DistributorCoverage, Shipment
+
+
+class DistributorCoverageSerializer(serializers.ModelSerializer):
+    """Serializer para Coberturas de Distribuidores."""
+
+    class Meta:
+        model = DistributorCoverage
+        fields = [
+            'id',
+            'distributor',
+            'state',
+            'municipality',
+            'city',
+            'estimated_days_min',
+            'estimated_days_max',
+            'base_shipping_cost',
+            'is_active',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class DistributorSerializer(serializers.ModelSerializer):
-    """Serializer para Distribuidores."""
+    """Serializer para Distribuidores con información de coberturas."""
+
+    coverage_type_display = serializers.CharField(source='get_coverage_type_display', read_only=True)
+    cobertura_resumen = serializers.CharField(read_only=True)
+    coverages = DistributorCoverageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Distributor
@@ -13,6 +38,10 @@ class DistributorSerializer(serializers.ModelSerializer):
             'phone',
             'email',
             'rif',
+            'coverage_type',
+            'coverage_type_display',
+            'cobertura_resumen',
+            'coverages',
             'is_active',
             'created_at',
             'updated_at',
@@ -25,6 +54,7 @@ class ShipmentSerializer(serializers.ModelSerializer):
 
     distributor_name = serializers.CharField(source='distributor.name', read_only=True, default='Flete Propio')
     distributor_rif = serializers.CharField(source='distributor.rif', read_only=True, default='')
+    distributor_coverage_type = serializers.CharField(source='distributor.get_coverage_type_display', read_only=True, default='')
     order_number = serializers.CharField(source='order.order_number', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     client_name = serializers.SerializerMethodField()
@@ -44,6 +74,7 @@ class ShipmentSerializer(serializers.ModelSerializer):
             'distributor',
             'distributor_name',
             'distributor_rif',
+            'distributor_coverage_type',
             'state',
             'municipality',
             'city',
@@ -95,6 +126,27 @@ class ShipmentSerializer(serializers.ModelSerializer):
         except Exception:
             pass
         return items
+
+    def to_internal_value(self, data):
+        if isinstance(data, dict):
+            mutable_data = data.copy()
+            # Descartar coverage si viene de clientes antiguos para evitar errores
+            mutable_data.pop('coverage', None)
+            mutable_data.pop('cobertura', None)
+
+            address_val = mutable_data.get('address') or mutable_data.get('direccion')
+            if address_val and not isinstance(address_val, str):
+                from apps.shipment.services import AddressNormalizationService
+                norm = AddressNormalizationService.normalize(address_val)
+                mutable_data['address'] = norm['address']
+                if norm.get('state') and not mutable_data.get('state'):
+                    mutable_data['state'] = norm['state']
+                if norm.get('municipality') and not mutable_data.get('municipality'):
+                    mutable_data['municipality'] = norm['municipality']
+                if norm.get('city') and not mutable_data.get('city'):
+                    mutable_data['city'] = norm['city']
+            return super().to_internal_value(mutable_data)
+        return super().to_internal_value(data)
 
     def validate(self, attrs):
         """Validar permisos sobre el pedido si no es administrador."""

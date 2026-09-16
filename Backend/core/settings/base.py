@@ -191,7 +191,7 @@ EMAIL_HOST_PASSWORD = env('DJANGO_EMAIL_HOST_PASSWORD')  # Contraseña de la cue
 EMAIL_TIMEOUT = env.int('DJANGO_EMAIL_TIMEOUT', default=15)
 EMAIL_USE_SSL = env.bool('DJANGO_EMAIL_USE_SSL', default=False)  # Activar SSL
 EMAIL_USE_TLS = env.bool('DJANGO_EMAIL_USE_TLS', default=True)  # Desactivar TLS (solo uno debe estar activo)
-DEFAULT_FROM_EMAIL = env('DJANGO_EMAIL_HOST_USER')  # Email por defecto
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=f"TuEstante <{env('DJANGO_EMAIL_HOST_USER')}>")  # Email por defecto
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/

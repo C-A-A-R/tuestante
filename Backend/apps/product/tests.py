@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
+from django.core.files.uploadedfile import SimpleUploadedFile
 from apps.product.models import Product, ProductType, FavoriteProduct
 
 User = get_user_model()
@@ -297,7 +298,7 @@ class OutletModelAndAPITest(TestCase):
         self.client = APIClient()
 
     def test_outlet_product_auto_deactivation_on_zero_quantity(self):
-        """Verifica que al guardar un producto outlet con cantidad 0, se inactive automáticamente."""
+        """Verifica que al guardar un producto outlet con cantidad 0, se inactive automáticamente para clientes."""
         self.assertTrue(self.product.is_active)
         self.assertEqual(self.product.quantity, 5)
 
@@ -309,18 +310,172 @@ class OutletModelAndAPITest(TestCase):
         self.assertFalse(self.product.is_active)
         self.assertEqual(self.product.quantity, 0)
 
-    def test_outlet_filter_in_products_list(self):
-        """Verifica el filtro ?outlet=true en el listado de productos."""
-        regular_prod = Product.objects.create(
-            product_name='Producto Regular sin Outlet',
+    def test_outlet_filter_excludes_zero_quantity_for_clients(self):
+        """Verifica que productos outlet sin stock (cantidad <= 0) NO puedan verse para los clientes."""
+        # Producto outlet con cantidad 0
+        self.product.quantity = 0
+        self.product.save()
+
+        # Producto outlet con stock disponible
+        available_outlet = Product.objects.create(
+            product_name='Mueble Outlet Disponible',
+            product_type=self.product_type,
+            price=120.00,
+            is_active=True,
+            is_outlet=True,
+            quantity=3
+        )
+
+        # Producto regular sin stock (se fabrica bajo pedido -> SÍ visible para clientes)
+        regular_prod_zero_stock = Product.objects.create(
+            product_name='Producto Regular Bajo Pedido',
             product_type=self.product_type,
             price=150.00,
             is_active=True,
-            is_outlet=False
+            is_outlet=False,
+            quantity=0
         )
 
-        response = self.client.get('/api/products/products/?outlet=true')
+        response = self.client.get('/api/products/products/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         ids = [p['id'] for p in response.data]
-        self.assertIn(self.product.id, ids)
-        self.assertNotIn(regular_prod.id, ids)
+        self.assertNotIn(self.product.id, ids)  # Outlet sin stock NO se muestra a clientes
+        self.assertIn(available_outlet.id, ids)  # Outlet con stock SÍ se muestra
+        self.assertIn(regular_prod_zero_stock.id, ids)  # Producto regular con stock 0 SÍ se muestra
+
+    def test_product_main_color_and_stock_fields(self):
+        """Verifica los campos main_color, color_principal y el alias stock."""
+        prod = Product.objects.create(
+            product_name='Mueble Color Nogal',
+            product_type=self.product_type,
+            price=180.00,
+            quantity=12,
+            main_color='Nogal Oscuro'
+        )
+        self.assertEqual(prod.stock, 12)
+        self.assertEqual(prod.color_principal, 'Nogal Oscuro')
+
+        response = self.client.get(f'/api/products/products/{prod.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['stock'], 12)
+        self.assertEqual(response.data['quantity'], 12)
+        self.assertEqual(response.data['main_color'], 'Nogal Oscuro')
+        self.assertEqual(response.data['color_principal'], 'Nogal Oscuro')
+
+    def test_outlet_zero_stock_retrieve_404_for_clients_200_for_staff(self):
+        """Verifica que un cliente reciba 404 al intentar ver el detalle de un outlet sin stock, mientras que el admin lo puede ver."""
+        self.product.quantity = 0
+        self.product.save()
+
+        # Cliente intenta ver detalle
+        res_client = self.client.get(f'/api/products/products/{self.product.id}/')
+        self.assertEqual(res_client.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Admin intenta ver detalle
+        self.client.force_authenticate(user=self.admin_user)
+        res_admin = self.client.get(f'/api/products/products/{self.product.id}/')
+        self.assertEqual(res_admin.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_admin.data['id'], self.product.id)
+
+    def test_featured_and_favorites_exclude_zero_stock_outlet_for_clients(self):
+        """Verifica que productos outlet sin stock no se muestren en destacados ni en favoritos para clientes."""
+        outlet_destacado_sin_stock = Product.objects.create(
+            product_name='Outlet Destacado Agotado',
+            product_type=self.product_type,
+            price=70.00,
+            is_active=True,
+            is_outlet=True,
+            is_feature_product=True,
+            quantity=0
+        )
+        regular_destacado_sin_stock = Product.objects.create(
+            product_name='Regular Destacado Sin Stock',
+            product_type=self.product_type,
+            price=200.00,
+            is_active=True,
+            is_outlet=False,
+            is_feature_product=True,
+            quantity=0
+        )
+
+        # Endpoint destacados
+        res_featured = self.client.get('/api/products/featured-products/')
+        self.assertEqual(res_featured.status_code, status.HTTP_200_OK)
+        ids = [p['id'] for p in res_featured.data]
+        self.assertNotIn(outlet_destacado_sin_stock.id, ids)
+        self.assertIn(regular_destacado_sin_stock.id, ids)
+
+        # Endpoint favoritos
+        FavoriteProduct.objects.create(user=self.client_user, product=outlet_destacado_sin_stock)
+        FavoriteProduct.objects.create(user=self.client_user, product=regular_destacado_sin_stock)
+
+        self.client.force_authenticate(user=self.client_user)
+        res_favs = self.client.get('/api/products/favorites/')
+        self.assertEqual(res_favs.status_code, status.HTTP_200_OK)
+        fav_ids = [p['id'] for p in res_favs.data]
+        self.assertNotIn(outlet_destacado_sin_stock.id, fav_ids)
+        self.assertIn(regular_destacado_sin_stock.id, fav_ids)
+
+
+class ProductCreationAPITest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username='adminuser',
+            email='admin@example.com',
+            password='adminpassword'
+        )
+        self.product_type = ProductType.objects.create(product_type_name='Estanterías Modulares')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.admin)
+
+    def test_create_product_with_empty_and_blob_media_strings(self):
+        """Verifica que strings vacíos o URLs blob en product_image y product_video se saniticen sin generar 400 Bad Request."""
+        payload = {
+            'product_name': 'Estante Escandinavo',
+            'product_type': self.product_type.id,
+            'price': '199.99',
+            'description': 'Estante de pino natural',
+            'product_image': 'blob:http://localhost:8000/some-blob-uuid',
+            'product_video': '',
+            'colors_data': '[{"color_name": "Azul Rey", "color_hex": "#0272bc"}]',
+            'angles_data': '[{"angle": "Vista Frontal"}, {"angle": "Perspectiva 3/4"}]'
+        }
+        response = self.client.post('/api/products/products/', payload)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = response.data
+        self.assertEqual(data['product_name'], 'Estante Escandinavo')
+        self.assertEqual(len(data['color_images']), 1)
+        self.assertEqual(data['color_images'][0]['color_name'], 'Azul Rey')
+        self.assertEqual(data['color_images'][0]['color_hex'], '#0272bc')
+        self.assertEqual(len(data['angle_images']), 2)
+        self.assertEqual(data['angle_images'][0]['angle'], 'Vista Frontal')
+        self.assertEqual(data['angle_images'][1]['angle'], 'Perspectiva 3/4')
+
+    def test_create_product_with_uploaded_files(self):
+        """Verifica la subida de archivos multipart con portada, variante de color y ángulo."""
+        small_gif = b'GIF89a\x01\x00\x01\x00\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
+        main_img = SimpleUploadedFile('portada.gif', small_gif, content_type='image/gif')
+        color_img = SimpleUploadedFile('color.gif', small_gif, content_type='image/gif')
+        angle_img = SimpleUploadedFile('angle.gif', small_gif, content_type='image/gif')
+
+        payload = {
+            'product_name': 'Estante Roble Nórdico',
+            'product_type': self.product_type.id,
+            'price': '250.00',
+            'product_image': main_img,
+            'colors_data': '[{"color_name": "Roble Natural", "color_hex": "#D2B48C"}]',
+            'color_file_0': color_img,
+            'angles_data': '[{"angle": "Vista Lateral"}]',
+            'angle_file_0': angle_img
+        }
+        response = self.client.post('/api/products/products/', payload, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = response.data
+        self.assertTrue(data['product_image'])
+        self.assertEqual(len(data['color_images']), 1)
+        self.assertTrue(data['color_images'][0]['color_image'])
+        self.assertEqual(len(data['angle_images']), 1)
+        self.assertTrue(data['angle_images'][0]['image'])
+
+
+

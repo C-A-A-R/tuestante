@@ -297,23 +297,6 @@ function initScrollAnimations() {
     }
 }
 
-/**
- * Inicializa la búsqueda y filtrado dinámico.
- */
-function initProjectsFilter() {
-    const searchInput = document.getElementById('project-search-input');
-    if (!searchInput) return;
-
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.trim().toLowerCase();
-        filteredProjects = allProjects.filter(p => {
-            return p.title.toLowerCase().includes(query) || p.description.toLowerCase().includes(query);
-        });
-        currentPage = 1;
-        renderCurrentPageProjects();
-    });
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Cargar Navbar y Footer
     await Promise.all([
@@ -341,7 +324,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     filteredProjects = [...allProjects];
 
-    // 4. Inicializar vista y filtros
-    initProjectsFilter();
+    // 4. Renderizar proyectos en la cuadrícula
     renderCurrentPageProjects();
 });

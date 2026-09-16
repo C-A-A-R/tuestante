@@ -6,7 +6,7 @@ import { getRequest, apiRequest } from '../../js/api.js';
  * @returns {Promise<Object>} Lista o respuesta paginada de proyectos.
  */
 export async function obtenerProyectos(params = {}) {
-  return getRequest('/projects/projects/', params, { auth: false });
+  return getRequest('/projects/', params, { auth: false });
 }
 
 /**
@@ -16,5 +16,5 @@ export async function obtenerProyectos(params = {}) {
  * @returns {Promise<Object>} Detalle del proyecto.
  */
 export async function obtenerProyectoPorId(id, params = {}) {
-  return getRequest(`/projects/projects/${id}/`, params, { auth: false });
+  return getRequest(`/projects/${id}/`, params, { auth: false });
 }

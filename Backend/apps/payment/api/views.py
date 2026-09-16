@@ -148,6 +148,16 @@ class PaymentViewSet(BaseViewSet):
                 create_invoice_for_order(order)
             elif payment.payment_stage == 'initial':
                 order.status = 'manufacturing'
+                try:
+                    from apps.production.models import ProductionOrder
+                    if not ProductionOrder.objects.filter(order=order, is_deleted=False).exists():
+                        ProductionOrder.objects.create(
+                            order=order,
+                            status='queued',
+                            technical_notes=order.notes or 'Iniciada por aprobación de pago inicial'
+                        )
+                except Exception:
+                    pass
             else:
                 order.status = 'shipped'
                 create_invoice_for_order(order)

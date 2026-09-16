@@ -76,7 +76,7 @@
                       </svg>
                     </div>
                     <div>
-                      <h3 class="form-section-title" id="heading-client-selection">1. Cliente del Pedido *</h3>
+                      <h3 class="form-section-title" id="heading-client-selection">1. Cliente del Pedido <span class="required-mark">*</span></h3>
                       <p class="form-section-subtitle">Seleccione el cliente registrado o cree uno nuevo rápidamente</p>
                     </div>
                   </div>
@@ -85,7 +85,7 @@
                       <line x1="12" y1="5" x2="12" y2="19"></line>
                       <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>
-                    <span>+ Nuevo cliente rápido</span>
+                    <span>Nuevo cliente rápido</span>
                   </button>
                 </div>
 
@@ -148,7 +148,7 @@
                       </svg>
                     </div>
                     <div>
-                      <h3 class="form-section-title" id="heading-shipping-address">2. Dirección de Entrega / Envío *</h3>
+                      <h3 class="form-section-title" id="heading-shipping-address">2. Dirección de Entrega / Envío <span class="required-mark">*</span></h3>
                       <p class="form-section-subtitle">Indique la ubicación y punto de entrega donde se despachará el pedido</p>
                     </div>
                   </div>
@@ -158,7 +158,7 @@
                   <div class="form-row">
                     <!-- Estado (state) -->
                     <div class="form-group col-third">
-                      <label for="shipping-state" class="form-label">Estado *</label>
+                      <label for="shipping-state" class="form-label">Estado <span class="required-mark">*</span></label>
                       <select id="shipping-state" class="form-select font-bold" required>
                         <option value="" disabled>Seleccionar estado...</option>
                       </select>
@@ -166,7 +166,7 @@
 
                     <!-- Municipio (municipality) -->
                     <div class="form-group col-third">
-                      <label for="shipping-municipality" class="form-label">Municipio *</label>
+                      <label for="shipping-municipality" class="form-label">Municipio <span class="required-mark">*</span></label>
                       <select id="shipping-municipality" class="form-select font-bold" required>
                         <option value="" disabled selected>Seleccione un estado primero...</option>
                       </select>
@@ -174,7 +174,7 @@
 
                     <!-- Ciudad / Localidad (city) -->
                     <div class="form-group col-third">
-                      <label for="shipping-city" class="form-label">Ciudad / Localidad *</label>
+                      <label for="shipping-city" class="form-label">Ciudad / Localidad <span class="required-mark">*</span></label>
                       <select id="shipping-city" class="form-select font-bold" required>
                         <option value="" disabled selected>Seleccione un municipio primero...</option>
                       </select>
@@ -183,7 +183,7 @@
 
                   <!-- Sector / Dirección Exacta (address) -->
                   <div class="form-group">
-                    <label for="shipping-address" class="form-label">Sector / Dirección Exacta (address) *</label>
+                    <label for="shipping-address" class="form-label">Sector / Dirección Exacta (address) <span class="required-mark">*</span></label>
                     <textarea 
                       id="shipping-address" 
                       class="form-textarea" 
@@ -206,7 +206,7 @@
                       </svg>
                     </div>
                     <div>
-                      <h3 class="form-section-title" id="heading-order-items">3. Productos y Especificaciones *</h3>
+                      <h3 class="form-section-title" id="heading-order-items">3. Productos y Especificaciones <span class="required-mark">*</span></h3>
                       <p class="form-section-subtitle">Agregue los ítems requeridos, ajuste cantidades y defina especificaciones personalizadas</p>
                     </div>
                   </div>
@@ -224,7 +224,7 @@
                       <line x1="12" y1="5" x2="12" y2="19"></line>
                       <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>
-                    <span>+ Agregar otro producto al pedido</span>
+                    <span>Agregar otro producto al pedido</span>
                   </button>
                 </div>
               </section>
@@ -323,7 +323,7 @@
 
                 <!-- TARJETA: ESTADO INICIAL DEL PEDIDO -->
                 <div class="order-status-selector-box">
-                  <label for="order-initial-status" class="form-label">Fase / Estado Inicial *</label>
+                  <label for="order-initial-status" class="form-label">Fase / Estado Inicial <span class="required-mark">*</span></label>
                   <select id="order-initial-status" class="form-select font-bold">
                     <option value="pending_initial_payment" selected>1. Pendiente de pago inicial</option>
                     <option value="initial_payment_review">2. Pago inicial en revisión</option>
@@ -387,22 +387,22 @@
         <div class="modal-body">
           <div class="form-row">
             <div class="form-group col-half">
-              <label for="quick-client-name" class="form-label">Nombre y Apellido *</label>
+              <label for="quick-client-name" class="form-label">Nombre y Apellido <span class="required-mark">*</span></label>
               <input type="text" id="quick-client-name" class="form-input" placeholder="Ej: Roberto Blanco" required>
             </div>
             <div class="form-group col-half">
-              <label for="quick-client-username" class="form-label">Usuario / RIF *</label>
+              <label for="quick-client-username" class="form-label">Usuario / RIF <span class="required-mark">*</span></label>
               <input type="text" id="quick-client-username" class="form-input" placeholder="Ej: rblanco / V-18920111" required>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group col-half">
-              <label for="quick-client-email" class="form-label">Correo Electrónico *</label>
+              <label for="quick-client-email" class="form-label">Correo Electrónico <span class="required-mark">*</span></label>
               <input type="email" id="quick-client-email" class="form-input" placeholder="cliente@correo.com" required>
             </div>
             <div class="form-group col-half">
-              <label for="quick-client-phone" class="form-label">Teléfono / WhatsApp *</label>
+              <label for="quick-client-phone" class="form-label">Teléfono / WhatsApp <span class="required-mark">*</span></label>
               <input type="tel" id="quick-client-phone" class="form-input" placeholder="+58 412 123 4567" required>
             </div>
           </div>

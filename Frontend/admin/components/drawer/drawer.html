@@ -242,6 +242,41 @@
           <span class="drawer-badge" id="drawer-notif-badge" aria-label="5 notificaciones pendientes">5</span>
         </a>
       </li>
+
+      <!-- 10. Galería y Proyectos (Desplegable) -->
+      <li class="drawer-item drawer-item-has-submenu" role="none">
+        <button type="button" class="drawer-link drawer-submenu-toggle" aria-expanded="false" aria-controls="submenu-galeria-proyectos" data-nav-id="galeria-proyectos-parent" role="menuitem">
+          <span class="drawer-link-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          </span>
+          <span class="drawer-link-text">Portafolio</span>
+          <span class="drawer-arrow-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+        </button>
+
+        <!-- Submenú de Galería y Proyectos -->
+        <ul id="submenu-galeria-proyectos" class="drawer-submenu" role="menu" aria-label="Submenú de Galería y Proyectos">
+          <li class="drawer-submenu-item" role="none">
+            <a href="modules/gallery/gallery.html" class="drawer-submenu-link" data-nav-id="galeria-listado" role="menuitem">
+              <span class="drawer-submenu-dot"></span>
+              <span class="drawer-submenu-text">Galería de Imágenes</span>
+            </a>
+          </li>
+          <li class="drawer-submenu-item" role="none">
+            <a href="modules/project/projects.html" class="drawer-submenu-link" data-nav-id="proyectos-listado" role="menuitem">
+              <span class="drawer-submenu-dot"></span>
+              <span class="drawer-submenu-text">Proyectos</span>
+            </a>
+          </li>
+        </ul>
+      </li>
     </ul>
   </nav>
 

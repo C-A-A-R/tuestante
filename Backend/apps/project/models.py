@@ -8,6 +8,7 @@ class Project(BaseModel):
 
     project_name = models.CharField('Nombre del Proyecto', max_length=255)
     description = models.TextField('Descripción', null=True, blank=True)
+    is_active = models.BooleanField('Está activo', default=True)
     project_document = models.FileField(
         'Documento del Proyecto (PDF)',
         upload_to=rename_document_upload_to,

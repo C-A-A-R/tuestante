@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupMainImageEvents();
   setupVideoDropzone();
   setupColorPresetButtons();
+  setupAngleEvents();
   setupLivePreviewSync();
 
   // 6. Actualizar Vista Previa inicial
@@ -135,6 +136,7 @@ function setupMainImageEvents() {
   // Clic en dropzone -> trigger file input
   dropzone.addEventListener('click', (e) => {
     if (e.target.closest('#btn-remove-main-img')) return;
+    if (e.target === fileInput) return;
     fileInput.click();
   });
 
@@ -219,6 +221,7 @@ function setupVideoDropzone() {
     if (e.target.closest('#btn-change-video') || e.target.closest('#btn-remove-video') || e.target.closest('video')) {
       return;
     }
+    if (e.target === fileInput) return;
     if (!state.videoFile && !state.videoUrl) {
       fileInput.click();
     }
@@ -439,7 +442,16 @@ function setupColorRowListeners() {
     });
   });
 
-  // 4. Carga de archivo para foto de color
+  // 4. Click en dropzone de color para abrir selector de archivo
+  container.querySelectorAll('.btn-upload-color-thumb').forEach(thumb => {
+    thumb.addEventListener('click', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      const fileInput = thumb.querySelector('.input-file-color');
+      if (fileInput) fileInput.click();
+    });
+  });
+
+  // 5. Carga de archivo para foto de color
   container.querySelectorAll('.input-file-color').forEach(fileInput => {
     fileInput.addEventListener('change', (e) => {
       const idx = parseInt(e.target.getAttribute('data-index'), 10);
@@ -452,7 +464,7 @@ function setupColorRowListeners() {
     });
   });
 
-  // 5. Eliminar color
+  // 6. Eliminar color
   container.querySelectorAll('.btn-delete-color').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const idx = parseInt(e.currentTarget.getAttribute('data-index'), 10);
@@ -619,7 +631,16 @@ function setupAngleRowListeners() {
     });
   });
 
-  // 3. Subida de Archivo para Ángulo
+  // 3. Click en dropzone de ángulo para abrir selector de archivo
+  container.querySelectorAll('.btn-upload-angle-thumb').forEach(thumb => {
+    thumb.addEventListener('click', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      const fileInput = thumb.querySelector('.input-file-angle');
+      if (fileInput) fileInput.click();
+    });
+  });
+
+  // 4. Subida de Archivo para Ángulo
   container.querySelectorAll('.input-file-angle').forEach(fileInput => {
     fileInput.addEventListener('change', (e) => {
       const idx = parseInt(e.target.getAttribute('data-index'), 10);
@@ -632,7 +653,7 @@ function setupAngleRowListeners() {
     });
   });
 
-  // 4. Eliminar Ángulo
+  // 5. Eliminar Ángulo
   container.querySelectorAll('.btn-delete-angle').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const idx = parseInt(e.currentTarget.getAttribute('data-index'), 10);
@@ -640,12 +661,22 @@ function setupAngleRowListeners() {
       renderAngleVariants();
     });
   });
+}
 
-  // Botón "+ Agregar Ángulo"
+function setupAngleEvents() {
   const btnAddAngle = document.getElementById('btn-add-angle-variant');
   if (btnAddAngle) {
-    btnAddAngle.onclick = () => {
-      const defaultOptions = ['Perspectiva 3/4', 'Vista Lateral', 'Vista Superior', 'Detalle de Ensamblaje'];
+    btnAddAngle.addEventListener('click', () => {
+      const defaultOptions = [
+        'Vista Frontal',
+        'Vista Lateral Izquierda',
+        'Vista Lateral Derecha',
+        'Perspectiva 3/4',
+        'Vista Superior',
+        'Vista Posterior',
+        'Detalle de Ensamblaje',
+        'Foto Ambiental / Decorativa'
+      ];
       const nextAngle = defaultOptions[state.angles.length % defaultOptions.length] || `Ángulo ${state.angles.length + 1}`;
       state.angles.push({
         id: Date.now(),
@@ -654,7 +685,7 @@ function setupAngleRowListeners() {
         file: null
       });
       renderAngleVariants();
-    };
+    });
   }
 }
 
@@ -720,13 +751,6 @@ function updateChecklist(itemId, isValid) {
   }
 }
 
-function formatVES(amount) {
-  return new Intl.NumberFormat('es-VE', {
-    style: 'currency',
-    currency: 'VES',
-    minimumFractionDigits: 2
-  }).format(amount).replace('VES', 'Bs.');
-}
 
 // ==========================================================================
 // PANTALLA DE CARGA Y PROGRESO DE SUBIDA (0% - 100%)
@@ -789,7 +813,7 @@ function setupFormEvents() {
       return;
     }
 
-    // 2. Armar Payload
+    // 2. Armar FormData para multipart/form-data
     const height_cm = parseFloat(document.getElementById('input-product-height')?.value) || 0;
     const width_cm = parseFloat(document.getElementById('input-product-width')?.value) || 0;
     const depth_cm = parseFloat(document.getElementById('input-product-depth')?.value) || 0;
@@ -800,44 +824,61 @@ function setupFormEvents() {
     const is_outlet = document.getElementById('switch-is-outlet')?.checked ?? false;
     const is_feature_product = document.getElementById('switch-is-featured')?.checked ?? false;
 
-    // Portada principal
-    let product_image = state.mainImage || '';
-    if (!product_image && state.colors.length > 0 && state.colors[0].image) {
-      product_image = state.colors[0].image;
+    const formData = new FormData();
+    formData.append('product_name', name);
+    formData.append('product_type', typeId);
+    formData.append('price', price.toFixed(2));
+    formData.append('description', description);
+    formData.append('height_cm', height_cm);
+    formData.append('width_cm', width_cm);
+    formData.append('depth_cm', depth_cm);
+    formData.append('security', security);
+    formData.append('is_active', is_active);
+    formData.append('is_outlet', is_outlet);
+    formData.append('is_feature_product', is_feature_product);
+
+    // Color principal
+    const mainColor = state.colors.length > 0 ? (state.colors[0].color_name || state.colors[0].color_hex) : '';
+    if (mainColor) {
+      formData.append('main_color', mainColor);
     }
 
-    // Variantes de color preparadas
-    const color_images = state.colors.map(c => ({
-      color_name: c.color_name || 'Color Estándar',
-      color_hex: c.color_hex || '#0272bc',
-      image: c.image || product_image,
-      color_image: c.image || product_image
-    }));
+    // Imagen de portada: Enviar solo archivo File real si existe
+    if (state.mainImageFile instanceof File) {
+      formData.append('product_image', state.mainImageFile);
+    } else if (state.colors.length > 0 && state.colors[0].file instanceof File) {
+      formData.append('product_image', state.colors[0].file);
+    }
 
-    // Variantes de ángulos preparadas
-    const angle_images = state.angles.map(a => ({
-      angle: a.angle || 'Vista',
-      image: a.image || product_image
-    }));
+    // Video demostrativo: Enviar solo archivo File real si existe
+    if (state.videoFile instanceof File) {
+      formData.append('product_video', state.videoFile);
+    }
 
-    const payload = {
-      product_name: name,
-      product_type: parseInt(typeId, 10),
-      product_type_id: parseInt(typeId, 10),
-      price: price,
-      description: description,
-      height_cm: height_cm,
-      width_cm: width_cm,
-      depth_cm: depth_cm,
-      security: security,
-      is_active: is_active,
-      is_outlet: is_outlet,
-      is_feature_product: is_feature_product,
-      product_image: product_image,
-      product_video: state.videoUrl || '',
-      color_images: color_images,
-      angle_images: angle_images
-    };
+    // Variantes de color
+    const colorsMeta = [];
+    state.colors.forEach((c, idx) => {
+      colorsMeta.push({
+        color_name: c.color_name || 'Color Estándar',
+        color_hex: c.color_hex || '#0272bc'
+      });
+      if (c.file instanceof File) {
+        formData.append(`color_file_${idx}`, c.file);
+      }
+    });
+    formData.append('colors_data', JSON.stringify(colorsMeta));
+
+    // Variantes de ángulos
+    const anglesMeta = [];
+    state.angles.forEach((a, idx) => {
+      anglesMeta.push({
+        angle: a.angle || 'Vista'
+      });
+      if (a.file instanceof File) {
+        formData.append(`angle_file_${idx}`, a.file);
+      }
+    });
+    formData.append('angles_data', JSON.stringify(anglesMeta));
 
     // 3. Ejecutar Creación con Pantalla de Carga y Progreso
     setSubmittingState(true);
@@ -858,7 +899,7 @@ function setupFormEvents() {
       }
 
       showUploadProgress(85, 'Registrando producto en la base de datos...');
-      const created = await createProduct(payload);
+      const created = await createProduct(formData);
 
       showUploadProgress(100, '¡Producto registrado y publicado exitosamente!');
       await new Promise(r => setTimeout(r, 500));
@@ -878,7 +919,16 @@ function setupFormEvents() {
     } catch (err) {
       console.error('Error al registrar producto:', err);
       hideUploadProgress();
-      showToast('error', 'Error al guardar', err.message || 'No se pudo registrar el producto en el servidor.');
+      let errorMsg = err.message || 'No se pudo registrar el producto en el servidor.';
+      if (err.data && typeof err.data === 'object') {
+        const errorDetails = Object.entries(err.data)
+          .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+          .join('\n');
+        if (errorDetails) {
+          errorMsg = errorDetails;
+        }
+      }
+      showToast('error', 'Error al guardar', errorMsg);
       setSubmittingState(false);
     }
   });

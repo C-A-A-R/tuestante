@@ -302,9 +302,9 @@ class OrderAPITest(TestCase):
 
         outlet_prod.refresh_from_db()
         self.assertEqual(outlet_prod.quantity, 0)
-        self.assertFalse(outlet_prod.is_active)
+        self.assertFalse(outlet_prod.is_active)  # Inactivo al agotarse para que no se muestre a clientes
 
-        # 3. Intentar comprar nuevamente el producto ahora inactivo/agotado -> Debe ser rechazado
+        # 3. Intentar comprar nuevamente el producto ahora agotado -> Debe ser rechazado
         response_again = self.client.post('/api/orders/', payload_exact, format='json')
         self.assertEqual(response_again.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -328,5 +328,79 @@ class OrderAPITest(TestCase):
         response = self.client.post('/api/orders/', payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("no se encuentra disponible", response.data['error'])
+
+    def test_order_cannot_be_updated_or_deleted(self):
+        """Valida que un pedido no pueda ser modificado (PUT/PATCH) ni eliminado (DELETE)."""
+        admin = User.objects.create_superuser(username='admin_test_imm', email='admin_imm@example.com', password='adminpassword')
+        self.client.force_authenticate(user=admin)
+        order = Order.objects.create(
+            user=self.user,
+            status='pending_initial_payment',
+            total_price=100.00
+        )
+
+        # 1. Intentar PUT
+        put_response = self.client.put(f'/api/orders/{order.id}/', {'notes': 'Nueva nota'}, format='json')
+        self.assertEqual(put_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertIn("no pueden ser actualizados", put_response.data['error'])
+
+        # 2. Intentar PATCH
+        patch_response = self.client.patch(f'/api/orders/{order.id}/', {'notes': 'Nueva nota'}, format='json')
+        self.assertEqual(patch_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertIn("no pueden ser actualizados", patch_response.data['error'])
+
+        # 3. Intentar DELETE
+        delete_response = self.client.delete(f'/api/orders/{order.id}/')
+        self.assertEqual(delete_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertIn("no pueden ser eliminados", delete_response.data['error'])
+
+    def test_create_order_with_address_as_string(self):
+        """Valida que el servicio normalice la dirección recibida como string."""
+        payload = {
+            "items": [{"product_id": self.product.id, "quantity": 1}],
+            "shipment": "Calle Comercio, Guasdualito, Páez, Apure"
+        }
+        response = self.client.post('/api/orders/', payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        shipment = Shipment.objects.filter(order_id=response.data['id']).first()
+        self.assertIsNotNone(shipment)
+        self.assertEqual(shipment.address, "Calle Comercio")
+        self.assertEqual(shipment.city, "Guasdualito")
+        self.assertEqual(shipment.municipality, "Páez")
+        self.assertEqual(shipment.state, "Apure")
+
+    def test_create_order_with_address_as_list(self):
+        """Valida que el servicio normalice la dirección recibida como lista."""
+        payload = {
+            "items": [{"product_id": self.product.id, "quantity": 1}],
+            "shipment": ["Barinas", "Barinas", "Ciudad Barinas", "Calle 15 con Av. Industrial"]
+        }
+        response = self.client.post('/api/orders/', payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        shipment = Shipment.objects.filter(order_id=response.data['id']).first()
+        self.assertIsNotNone(shipment)
+        self.assertEqual(shipment.state, "Barinas")
+        self.assertEqual(shipment.municipality, "Barinas")
+        self.assertEqual(shipment.city, "Ciudad Barinas")
+        self.assertEqual(shipment.address, "Calle 15 con Av. Industrial")
+
+    def test_create_order_with_shipment_data(self):
+        """Valida que la orden se cree con su envío correctamente normalizado."""
+        payload = {
+            "items": [{"product_id": self.product.id, "quantity": 1}],
+            "shipment": {
+                "address": "Av. Los Próceres #10",
+                "state": "Carabobo",
+                "city": "Valencia"
+            }
+        }
+        response = self.client.post('/api/orders/', payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        shipment = Shipment.objects.filter(order_id=response.data['id']).first()
+        self.assertIsNotNone(shipment)
+        self.assertEqual(shipment.address, "Av. Los Próceres #10")
+        self.assertEqual(shipment.state, "Carabobo")
+        self.assertEqual(shipment.city, "Valencia")
+
 
 

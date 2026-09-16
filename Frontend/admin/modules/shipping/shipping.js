@@ -678,15 +678,22 @@ function setupModalEvents() {
       const rif    = document.getElementById('new-dist-rif').value.trim();
       const phone  = document.getElementById('new-dist-phone').value.trim();
       const email  = document.getElementById('new-dist-email').value.trim();
+      const coverageType = document.getElementById('new-dist-coverage-type')?.value || 'regional';
 
       try {
         if (editId) {
           // Actualizar en mock/backend
           const dist = state.distributors.find(d => String(d.id) === String(editId));
-          if (dist) { dist.name = name; dist.rif = rif; dist.phone = phone; dist.email = email; }
+          if (dist) {
+            dist.name = name;
+            dist.rif = rif;
+            dist.phone = phone;
+            dist.email = email;
+            dist.coverage_type = coverageType;
+          }
           showToast('success', 'Transportador Actualizado', `${name} actualizado correctamente.`);
         } else {
-          await createDistributor({ name, rif, phone, email });
+          await createDistributor({ name, rif, phone, email, coverage_type: coverageType });
           showToast('success', 'Transportador Registrado', `${name} ha sido registrado exitosamente.`);
         }
         formNewDist.reset();
@@ -876,10 +883,23 @@ function renderDistributorsMainTable(dists = []) {
       ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;color:#16a34a;background:#dcfce7;padding:3px 9px;border-radius:20px;"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span>Activo</span>`
       : `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;color:#64748b;background:#f1f5f9;padding:3px 9px;border-radius:20px;"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span>Inactivo</span>`;
 
+    const coverageType = d.coverage_type || 'regional';
+    const coverageBadge = coverageType === 'national'
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;color:#0284c7;background:#e0f2fe;padding:3px 9px;border-radius:20px;">Nacional</span>`
+      : coverageType === 'local'
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;color:#e11d48;background:#ffe4e6;padding:3px 9px;border-radius:20px;">Local</span>`
+      : `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;color:#0d9488;background:#ccfbf1;padding:3px 9px;border-radius:20px;">Regional</span>`;
+
+    const coverageSummary = d.cobertura_resumen || (coverageType === 'national' ? 'Todo el territorio nacional' : 'Sin zonas configuradas');
+
     return `
     <tr data-dist-id="${escapeHtml(d.id)}">
       <td style="padding: 11px 14px;">
         <span class="carrier-badge ${getCarrierBadgeClass(d.name)}">${escapeHtml(d.name)}</span>
+      </td>
+      <td style="padding: 11px 14px;">${coverageBadge}</td>
+      <td style="padding: 11px 14px; font-size: 0.82rem; color: var(--text-muted); max-width: 240px; white-space: normal; line-height: 1.35;">
+        ${escapeHtml(coverageSummary)}
       </td>
       <td style="padding: 11px 14px; font-family: monospace; font-size: 0.82rem; color: var(--text-muted);">${escapeHtml(d.rif || '-')}</td>
       <td style="padding: 11px 14px; font-size: 0.875rem;">${escapeHtml(d.phone || '-')}</td>
@@ -945,10 +965,12 @@ function handleEditDistributor(id) {
     const rifEl  = document.getElementById('new-dist-rif');
     const phoneEl = document.getElementById('new-dist-phone');
     const emailEl = document.getElementById('new-dist-email');
+    const covEl   = document.getElementById('new-dist-coverage-type');
     if (nameEl)  nameEl.value  = dist.name  || '';
     if (rifEl)   rifEl.value   = dist.rif   || '';
     if (phoneEl) phoneEl.value = dist.phone || '';
     if (emailEl) emailEl.value = dist.email || '';
+    if (covEl)   covEl.value   = dist.coverage_type || 'regional';
   }
 
   openModal(modal);

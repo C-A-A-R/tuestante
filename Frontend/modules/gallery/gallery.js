@@ -83,54 +83,7 @@ async function loadComponent(placeholderId, filePath) {
     }
 }
 
-/**
- * Consulta los tipos de producto del backend Django para generar dinámicamente
- * los botones de filtrado de la galería, sin depender de categorías.
- */
-async function loadDynamicFilters() {
-    const filterBar = document.getElementById('gallery-filter-bar');
-    if (!filterBar) return;
 
-    try {
-        const typeResp = await obtenerTiposProducto().catch(() => []);
-        const productTypes = extractList(typeResp);
-
-        let filterButtonsHtml = `<button class="gallery-filter-btn active" data-filter="all">Todos</button>`;
-
-        // Filtro Instagram
-        filterButtonsHtml += `
-            <button class="gallery-filter-btn" data-filter="instagram" data-network="instagram">
-                <svg class="filter-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-                Instagram
-            </button>
-        `;
-
-        // Filtro TikTok
-        filterButtonsHtml += `
-            <button class="gallery-filter-btn" data-filter="tiktok" data-network="tiktok">
-                <svg class="filter-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .58.04.85.12V9.4a6.33 6.33 0 0 0-.85-.06A6.34 6.34 0 0 0 3 15.68a6.34 6.34 0 0 0 6.34 6.34c3.48 0 6.32-2.82 6.34-6.3V8.85a8.28 8.28 0 0 0 4.91 1.59V7a4.81 4.81 0 0 1-1-.31z"/></svg>
-                TikTok
-            </button>
-        `;
-
-        // Tipos de Producto reales de la BD
-        if (Array.isArray(productTypes) && productTypes.length > 0) {
-            productTypes.forEach((type) => {
-                const typeName = type.product_type_name || type.type_name || type.name || 'Tipo';
-                filterButtonsHtml += `
-                    <button class="gallery-filter-btn" data-filter="type_${type.id}" data-type-id="${type.id}" data-type-name="${typeName}">
-                        ${typeName}
-                    </button>
-                `;
-            });
-        }
-
-        filterBar.innerHTML = filterButtonsHtml;
-        initFilterBar();
-    } catch (e) {
-        console.warn('Aviso cargando filtros de la galería:', e);
-    }
-}
 
 /**
  * Consulta la API del backend Django (apps/gallery, proyectos y productos) en tiempo real.
@@ -512,57 +465,6 @@ function closeLightbox() {
 }
 
 /**
- * Inicializa los eventos de la barra de filtrado de redes sociales y tipos de productos.
- */
-function initFilterBar() {
-    const filterBtns = document.querySelectorAll('.gallery-filter-btn');
-    filterBtns.forEach(btn => {
-        btn.onclick = () => {
-            filterBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            const filterKey = btn.getAttribute('data-filter') || 'all';
-            const network = btn.getAttribute('data-network');
-            const typeId = btn.getAttribute('data-type-id');
-            const typeName = (btn.getAttribute('data-type-name') || '').toLowerCase().trim();
-
-            currentFilter = filterKey;
-            visibleCount = 13;
-
-            if (filterKey === 'all') {
-                filteredGalleryItems = [...allGalleryItems];
-            } else if (network) {
-                // Filtrar por red social (Instagram, TikTok, etc.)
-                filteredGalleryItems = allGalleryItems.filter(item => {
-                    const itemNet = String(item.socialNetwork || '').toLowerCase();
-                    const itemAuthor = String(item.author || '').toLowerCase();
-                    const itemUrl = String(item.socialUrl || '').toLowerCase();
-                    return itemNet.includes(network) || itemAuthor.includes(network) || itemUrl.includes(network);
-                });
-            } else if (typeId || typeName) {
-                // Filtrar por tipo de producto
-                filteredGalleryItems = allGalleryItems.filter(item => {
-                    const itemTypeId = String(item.typeId || item.product_type || item.productType || '');
-                    const itemTypeName = String(item.typeName || '').toLowerCase();
-                    const itemTitle = String(item.title || '').toLowerCase();
-                    const itemDesc = String(item.description || '').toLowerCase();
-
-                    return (typeId && itemTypeId === String(typeId)) ||
-                           (typeName && (itemTypeName.includes(typeName) || itemTitle.includes(typeName) || itemDesc.includes(typeName)));
-                });
-            } else {
-                filteredGalleryItems = allGalleryItems.filter(item =>
-                    String(item.title || '').toLowerCase().includes(filterKey.toLowerCase()) ||
-                    String(item.description || '').toLowerCase().includes(filterKey.toLowerCase())
-                );
-            }
-
-            renderGalleryPattern();
-        };
-    });
-}
-
-/**
  * Inicializa la acción del botón "Mostrar más" para cargar el siguiente lote de imágenes.
  */
 function initLoadMore() {
@@ -603,14 +505,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     initFooter();
 
     // 3. Inicializar eventos base y renderizar inmediatamente las imágenes iniciales
-    initFilterBar();
     initLoadMore();
     initLightboxEvents();
     renderGalleryPattern();
 
-    // 4. Cargar filtros dinámicos (Tipos de Productos y Redes Sociales) desde el backend
-    loadDynamicFilters();
-
-    // 5. Consultar en segundo plano al backend Django (apps/gallery) para enriquecer la galería
+    // 4. Consultar en segundo plano al backend Django (apps/gallery) para enriquecer la galería
     fetchGalleryFromBackend();
 });

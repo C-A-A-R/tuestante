@@ -17,7 +17,9 @@ def send_html_email(subject, to_email, template_name, context, from_email=None, 
     - context: Diccionario de contexto para la plantilla
     - from_email: Remitente (opcional, usa DEFAULT_FROM_EMAIL si no se especifica)
     """
-    from_email = from_email or settings.DEFAULT_FROM_EMAIL
+    from_email = from_email or getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'TuEstante <tienda@tuestante.com>'
+    if from_email and '<' not in str(from_email):
+        from_email = f"TuEstante <{from_email}>"
     html_content = render_to_string(template_name, context)
     if not text_content:
         try:

@@ -16,10 +16,10 @@ def send_password_reset_email(user, request):
     reset_link = f"{request.scheme}://{request.get_host()}/api/user/password/reset/confirm/{uid}/{token}/"
     text_content = (
         f"Hola {user.username},\n\n"
-        "Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace para cambiarla:\n"
+        "Has solicitado restablecer tu contraseña en TuEstante. Haz clic en el siguiente enlace para cambiarla:\n"
         f"{reset_link}\n\n"
-        "Si no solicitaste este cambio, puedes ignorar este correo.\n\n"
-        "Gracias,\nEl equipo"
+        "Si no solicitaste este cambio, puedes ignorar este correo de forma segura.\n\n"
+        "Atentamente,\nEl equipo de TuEstante"
     )
     send_html_email(
         subject='Restablecimiento de Contraseña',
