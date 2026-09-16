@@ -1,110 +1,24 @@
-/**
- * ==========================================================================
- * LÓGICA DE LA PANTALLA 'PRODUCTOS DESEADOS' (WISHLIST) - TUESTANTE
- * Conexión completa al backend para listar únicamente los favoritos del usuario,
- * estados vacíos informativos, filtros reactivos y desmarcado en tiempo real.
- * ==========================================================================
- */
-
 import { initNavbar } from '../../components/navbar/navbar.js';
 import { initFooter } from '../../components/footer/footer.js';
+import { resolveImageUrl } from '../../js/api.js';
 import {
     obtenerFavoritosUsuario,
     alternarFavoritoProducto,
     obtenerTiposProducto
 } from './product.api.js';
-import { backendOrigin } from '../../js/config.js';
 import { getAccessToken } from '../../js/storage.js';
 import { showCartModal } from '../../components/cart-modal/cart-modal.js';
 import { showInfoToast, showSuccessToast, showErrorToast } from '../../components/toast/toast.js';
 
 let userFavoriteProducts = [];
 let allTypes = [];
-let allCategories = [];
-
-function resolveImageUrl(imagePath, fallback = '../../assets/images/categoria/estante.png') {
-    if (!imagePath) return fallback;
-
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        if (imagePath.includes('/media/')) {
-            const mediaPath = imagePath.substring(imagePath.indexOf('/media/'));
-            return `${backendOrigin}${mediaPath}`;
-        }
-        return imagePath;
-    }
-
-    if (imagePath.startsWith('/media/') || imagePath.startsWith('media/')) {
-        const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-        return `${backendOrigin}${cleanPath}`;
-    }
-
-    if (imagePath.includes('assets/')) {
-        if (!imagePath.startsWith('../') && !imagePath.startsWith('/')) {
-            return `../../${imagePath}`;
-        }
-        return imagePath;
-    }
-
-    if (imagePath.startsWith('/')) {
-        return `${backendOrigin}${imagePath}`;
-    }
-
-    return `${backendOrigin}/${imagePath}`;
-}
-
-function extractList(apiResult) {
-    if (!apiResult) return [];
-    if (Array.isArray(apiResult)) return apiResult;
-    if (Array.isArray(apiResult.results)) return apiResult.results;
-    return [];
-}
-
-function mapProduct(p) {
-    if (!p) return null;
-
-    let categoryIds = [];
-    if (Array.isArray(p.categories) && p.categories.length > 0) {
-        categoryIds = p.categories.map(c => (typeof c === 'object' && c !== null ? c.id : c));
-    } else if (Array.isArray(p.categories_detail) && p.categories_detail.length > 0) {
-        categoryIds = p.categories_detail.map(c => c.id);
-    } else if (p.category || p.category_detail?.id || p.categoryId) {
-        categoryIds = [p.category || p.category_detail?.id || p.categoryId];
-    }
-
-    let categoryNames = [];
-    if (Array.isArray(p.categories_detail) && p.categories_detail.length > 0) {
-        categoryNames = p.categories_detail.map(c => c.category_name || c.name);
-    } else if (p.category_detail?.category_name || p.categoryName) {
-        categoryNames = [p.category_detail?.category_name || p.categoryName];
-    } else {
-        categoryNames = ['General'];
-    }
-
-    return {
-        id: p.id,
-        typeId: p.product_type || p.product_type_detail?.id || p.typeId || 1,
-        typeName: p.product_type_detail?.product_type_name || p.typeName || 'General',
-        categoryIds: categoryIds,
-        categoryId: categoryIds[0] || 1,
-        categoryNames: categoryNames,
-        categoryName: categoryNames[0] || 'General',
-        name: p.product_name || p.name || 'Producto sin nombre',
-        description: p.description || '',
-        price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
-        rating: p.rating !== undefined ? parseFloat(p.rating) : (p.badge === 'Destacado' ? 5.0 : 4.5),
-        image: resolveImageUrl(p.product_image || p.image, '../../assets/images/productos/estante-blanco.jpeg'),
-        badge: (p.rating === 5.0 || p.badge === 'Destacado' || p.is_feature_product) ? 'Destacado' : '',
-        favorites_count: p.favorites_count || 0
-    };
-}
 
 /* ==========================================================================
    RENDERIZADO DE TARJETAS DE PRODUCTOS DESEADOS
    ========================================================================== */
 
 function createUnifiedCardHTML(p) {
-    const isFeatured = !!(p.rating === 5.0 || p.badge === 'Destacado' || p.is_feature_product);
-    const starBadgeHTML = isFeatured ? `
+    const starBadgeHTML = p.is_feature_product ? `
         <div class="badge-destacado-star" title="Producto Destacado">
             <svg class="star-icon" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="1.5">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
@@ -113,13 +27,35 @@ function createUnifiedCardHTML(p) {
         </div>
     ` : '';
 
+    const outletBadgeHTML = p.is_outlet ? `
+        <div class="badge-outlet-flag" style="position: absolute; top: 12px; left: 12px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35); z-index: 3; display: flex; align-items: center; gap: 4px;">
+            <span>⚡ OUTLET</span>
+            ${p.quantity > 0 ? `<span style="background: rgba(0,0,0,0.25); padding: 1px 6px; border-radius: 10px; font-size: 0.68rem;">${p.quantity} disp.</span>` : ''}
+        </div>
+    ` : '';
+
+    const prodImg = resolveImageUrl(p.product_image, '../../assets/images/productos/estante-blanco.jpeg');
+    const formattedPrice = parseFloat(p.price || 0).toFixed(2);
+
+    let swatchesHTML = '';
+    if (Array.isArray(p.color_images) && p.color_images.length > 0) {
+        const visibleColors = p.color_images.slice(0, 4);
+        const remaining = p.color_images.length - 4;
+        const dots = visibleColors.map(c => `
+            <span class="swatch-dot" style="background-color: ${c.color_hex || '#cbd5e1'};" title="${c.color_name || 'Color'}"></span>
+        `).join('');
+        const more = remaining > 0 ? `<span class="swatch-more">+${remaining}</span>` : '';
+        swatchesHTML = `<div class="unified-card-swatches">${dots}${more}</div>`;
+    }
+
     return `
         <div class="unified-product-card" id="wishlist-card-${p.id}">
-            <div class="unified-card-media">
+            <div class="unified-card-media" style="position: relative;">
                 <a href="product-details.html?id=${p.id}" class="unified-card-img-link">
-                    <img src="${p.image}" alt="${p.name}" class="unified-card-img" loading="lazy">
+                    <img src="${prodImg}" alt="${p.product_name}" class="unified-card-img" loading="lazy">
                 </a>
                 
+                ${outletBadgeHTML}
                 ${starBadgeHTML}
                 
                 <button class="unified-wishlist-btn active" data-id="${p.id}" title="Quitar de lista de deseos" aria-label="Quitar de favoritos">
@@ -133,25 +69,19 @@ function createUnifiedCardHTML(p) {
                 <div>
                     <div class="unified-card-header">
                         <h3 class="unified-card-title">
-                            <a href="product-details.html?id=${p.id}">${p.name}</a>
+                            <a href="product-details.html?id=${p.id}">${p.product_name}</a>
                         </h3>
-                        <span class="unified-card-price">$${p.price.toFixed(2)}</span>
+                        <span class="unified-card-price">$${formattedPrice}</span>
                     </div>
 
-                    <p class="unified-card-desc">${p.description}</p>
+                    <p class="unified-card-desc">${p.description || ''}</p>
 
-                    <div class="unified-card-swatches">
-                        <span class="swatch-dot" style="background-color: #ea580c;" title="Naranja"></span>
-                        <span class="swatch-dot" style="background-color: #0f172a;" title="Gris Oscuro"></span>
-                        <span class="swatch-dot" style="background-color: #15803d;" title="Verde Sabana"></span>
-                        <span class="swatch-dot" style="background-color: #005187;" title="Azul"></span>
-                        <span class="swatch-more">+4</span>
-                    </div>
+                    ${swatchesHTML}
                 </div>
 
                 <div class="unified-card-actions">
                     <a href="product-details.html?id=${p.id}" class="unified-btn btn-details">Ver Detalle</a>
-                    <button class="unified-btn btn-card-add-cart" data-id="${p.id}" data-name="${p.name}" data-price="${p.price}" data-image="${p.image}">
+                    <button class="unified-btn btn-card-add-cart" data-id="${p.id}" data-name="${p.product_name}" data-price="${p.price}" data-image="${prodImg}">
                         + Carrito
                     </button>
                 </div>
@@ -223,49 +153,30 @@ function renderUnauthenticatedState() {
 function initFilters() {
     const searchInput = document.getElementById('search-input');
     const filterTypeSelect = document.getElementById('filter-type');
-    const filterCategorySelect = document.getElementById('filter-category');
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
 
-    // 1. Popular tipos
     if (filterTypeSelect) {
         filterTypeSelect.innerHTML = '<option value="all">Todos los Tipos</option>';
         allTypes.forEach(t => {
             const opt = document.createElement('option');
-            opt.value = t.id;
-            opt.textContent = t.name;
+            opt.value = String(t.id);
+            opt.textContent = t.product_type_name;
             filterTypeSelect.appendChild(opt);
-        });
-    }
-
-    // 2. Popular categorías
-    if (filterCategorySelect) {
-        filterCategorySelect.innerHTML = '<option value="all">Todas las Categorías</option>';
-        allCategories.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = c.name;
-            filterCategorySelect.appendChild(opt);
         });
     }
 
     function applyFilters() {
         const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
         const selectedType = filterTypeSelect ? filterTypeSelect.value : 'all';
-        const selectedCat = filterCategorySelect ? filterCategorySelect.value : 'all';
 
         const filtered = userFavoriteProducts.filter(p => {
             const matchesSearch = !query ||
-                (p.name && p.name.toLowerCase().includes(query)) ||
+                (p.product_name && p.product_name.toLowerCase().includes(query)) ||
                 (p.description && p.description.toLowerCase().includes(query));
 
-            const matchesType = selectedType === 'all' ||
-                (p.typeId !== undefined && p.typeId.toString() === selectedType.toString());
+            const matchesType = selectedType === 'all' || String(p.product_type) === selectedType;
 
-            const pCatIds = Array.isArray(p.categoryIds) ? p.categoryIds : (p.categoryId !== undefined ? [p.categoryId] : [1]);
-            const matchesCat = selectedCat === 'all' ||
-                pCatIds.some(id => id !== undefined && id.toString() === selectedCat.toString());
-
-            return matchesSearch && matchesType && matchesCat;
+            return matchesSearch && matchesType;
         });
 
         renderWishlistProducts(filtered);
@@ -273,13 +184,11 @@ function initFilters() {
 
     if (searchInput) searchInput.addEventListener('input', applyFilters);
     if (filterTypeSelect) filterTypeSelect.addEventListener('change', applyFilters);
-    if (filterCategorySelect) filterCategorySelect.addEventListener('change', applyFilters);
 
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', () => {
             if (searchInput) searchInput.value = '';
             if (filterTypeSelect) filterTypeSelect.value = 'all';
-            if (filterCategorySelect) filterCategorySelect.value = 'all';
             applyFilters();
         });
     }
@@ -293,8 +202,7 @@ function initFilters() {
 
 async function loadComponent(placeholderId, filePath) {
     try {
-        const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
-        const response = await fetch(url, { cache: 'no-store' });
+        const response = await fetch(filePath);
         if (!response.ok) throw new Error(`Error al cargar ${filePath}`);
         const html = await response.text();
         const container = document.getElementById(placeholderId);
@@ -305,7 +213,6 @@ async function loadComponent(placeholderId, filePath) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Cargar Navbar y Footer
     await Promise.all([
         loadComponent('navbar-placeholder', '../../components/navbar/navbar.html'),
         loadComponent('footer-placeholder', '../../components/footer/footer.html')
@@ -315,44 +222,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     initFooter();
     document.body.classList.add('drawer-collapsed');
 
-    // 2. Verificar autenticación
-    const token = getAccessToken();
-    if (!token) {
+    if (!getAccessToken()) {
         renderUnauthenticatedState();
         return;
     }
 
-    // 3. Cargar datos del backend
     try {
         const [favsRes, typesRes] = await Promise.all([
-            obtenerFavoritosUsuario().catch(err => {
-                console.error('Error al obtener favoritos:', err);
-                return [];
-            }),
-            obtenerTiposProducto().catch(() => [])
+            obtenerFavoritosUsuario(),
+            obtenerTiposProducto()
         ]);
 
-        const rawFavs = extractList(favsRes);
-        userFavoriteProducts = rawFavs.map(mapProduct).filter(Boolean);
+        userFavoriteProducts = Array.isArray(favsRes) ? favsRes : [];
+        allTypes = Array.isArray(typesRes) ? typesRes : [];
 
-        allTypes = extractList(typesRes).map(t => ({
-            id: t.id,
-            name: t.product_type_name || t.name || 'Tipo General'
-        }));
-
-        allCategories = [];
-
-        // 4. Inicializar Filtros y Renderizar
         initFilters();
-
     } catch (err) {
         console.error('Error al inicializar favoritos:', err);
         showErrorToast('Error', 'No se pudieron cargar tus productos deseados.');
     }
 
-    // 5. Delegación de eventos para Wishlist (Toggle Real) y Carrito
     document.addEventListener('click', async (e) => {
-        // A. Desmarcar de lista de deseos
         const wishlistBtn = e.target.closest('.unified-wishlist-btn');
         if (wishlistBtn) {
             const id = wishlistBtn.getAttribute('data-id');
@@ -365,31 +255,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const isNowFavorite = res && typeof res.is_favorite === 'boolean' ? res.is_favorite : false;
 
                 if (!isNowFavorite) {
-                    // Remover de la lista local en memoria
                     userFavoriteProducts = userFavoriteProducts.filter(p => String(p.id) !== String(id));
                     
-                    // Aplicar filtros de nuevo para refrescar la vista
                     const searchInput = document.getElementById('search-input');
                     const filterTypeSelect = document.getElementById('filter-type');
-                    const filterCategorySelect = document.getElementById('filter-category');
 
                     const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
                     const selectedType = filterTypeSelect ? filterTypeSelect.value : 'all';
-                    const selectedCat = filterCategorySelect ? filterCategorySelect.value : 'all';
 
                     const filtered = userFavoriteProducts.filter(p => {
                         const matchesSearch = !query ||
-                            (p.name && p.name.toLowerCase().includes(query)) ||
+                            (p.product_name && p.product_name.toLowerCase().includes(query)) ||
                             (p.description && p.description.toLowerCase().includes(query));
 
-                        const matchesType = selectedType === 'all' ||
-                            (p.typeId !== undefined && p.typeId.toString() === selectedType.toString());
+                        const matchesType = selectedType === 'all' || String(p.product_type) === selectedType;
 
-                        const pCatIds = Array.isArray(p.categoryIds) ? p.categoryIds : (p.categoryId !== undefined ? [p.categoryId] : [1]);
-                        const matchesCat = selectedCat === 'all' ||
-                            pCatIds.some(catId => catId !== undefined && catId.toString() === selectedCat.toString());
-
-                        return matchesSearch && matchesType && matchesCat;
+                        return matchesSearch && matchesType;
                     });
 
                     renderWishlistProducts(filtered);
@@ -403,7 +284,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // B. Agregar al carrito
         const btnCart = e.target.closest('.btn-card-add-cart');
         if (btnCart) {
             const id = parseInt(btnCart.getAttribute('data-id'), 10);

@@ -17,6 +17,15 @@ export async function obtenerDistribuidores(params = {}) {
 }
 
 /**
+ * Obtiene los transportistas con cobertura confirmada para un estado y municipio determinados.
+ * @param {Object} params { state: string, municipality?: string }
+ * @returns {Promise<Object>} Lista de transportistas con cobertura en la zona.
+ */
+export async function obtenerDistribuidoresDisponibles(params = {}) {
+    return getRequest('/distributors/available/', params, { auth: true });
+}
+
+/**
  * Registra un nuevo envío asociado a un pedido.
  * @param {Object} shipmentData Datos del envío (order, address, phone, notes, price, distributor, status).
  * @returns {Promise<Object>} Envío creado.

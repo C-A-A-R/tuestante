@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupColorPresetButtons();
   setupAngleEvents();
   setupLivePreviewSync();
+  setupOutletQuantityHint();
 
   // 6. Actualizar Vista Previa inicial
   updateLivePreview();
@@ -814,6 +815,7 @@ function setupFormEvents() {
     }
 
     // 2. Armar FormData para multipart/form-data
+    const quantity = parseInt(document.getElementById('input-product-quantity')?.value, 10) || 0;
     const height_cm = parseFloat(document.getElementById('input-product-height')?.value) || 0;
     const width_cm = parseFloat(document.getElementById('input-product-width')?.value) || 0;
     const depth_cm = parseFloat(document.getElementById('input-product-depth')?.value) || 0;
@@ -829,6 +831,7 @@ function setupFormEvents() {
     formData.append('product_type', typeId);
     formData.append('price', price.toFixed(2));
     formData.append('description', description);
+    formData.append('quantity', quantity);
     formData.append('height_cm', height_cm);
     formData.append('width_cm', width_cm);
     formData.append('depth_cm', depth_cm);
@@ -982,4 +985,26 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+// ==========================================================================
+// HINT REACTIVO: OUTLET + CANTIDAD
+// ==========================================================================
+
+function setupOutletQuantityHint() {
+  const outletSwitch = document.getElementById('switch-is-outlet');
+  const outletHint = document.getElementById('quantity-outlet-hint');
+
+  if (!outletSwitch || !outletHint) return;
+
+  const syncHint = () => {
+    if (outletSwitch.checked) {
+      outletHint.classList.remove('hidden');
+    } else {
+      outletHint.classList.add('hidden');
+    }
+  };
+
+  outletSwitch.addEventListener('change', syncHint);
+  syncHint(); // estado inicial
 }

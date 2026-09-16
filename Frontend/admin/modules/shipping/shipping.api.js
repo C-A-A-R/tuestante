@@ -6,7 +6,7 @@
  * ==========================================================================
  */
 
-import { getRequest, postRequest, patchRequest, putRequest } from '../../js/api.js';
+import { getRequest, postRequest, patchRequest, putRequest, deleteRequest } from '../../js/api.js';
 
 /**
  * Mapeo oficial de estados de envío conforme a Backend/apps/shipment/models.py
@@ -670,6 +670,14 @@ export async function createDistributor(data = {}) {
   return newDist;
 }
 
+export async function getDistributor(id) {
+  return getRequest(`/distributors/${id}/`, {}, { auth: true });
+}
+
+export async function updateDistributor(id, data = {}) {
+  return patchRequest(`/distributors/${id}/`, data, { auth: true });
+}
+
 /**
  * Catálogo geográfico de Estados y Municipios principales de Venezuela
  * para autocompletado y selección en formularios de envío.
@@ -745,11 +753,15 @@ export async function createDistributorCoverage(data = {}) {
   return postRequest('/distributor-coverages/', data, { auth: true });
 }
 
+export async function updateDistributorCoverage(id, data = {}) {
+  return patchRequest(`/distributor-coverages/${id}/`, data, { auth: true });
+}
+
 /**
  * Elimina una zona de cobertura por su ID
  */
 export async function deleteDistributorCoverage(id) {
-  return postRequest(`/distributor-coverages/${id}/`, {}, { auth: true, method: 'DELETE' });
+  return deleteRequest(`/distributor-coverages/${id}/`, { auth: true });
 }
 
 

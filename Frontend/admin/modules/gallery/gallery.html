@@ -430,7 +430,7 @@
             <div class="form-group">
               <label class="form-label">
                 <span>Usuario</span>
-                <span class="required-mark">*</span>
+                <span style="font-size: 0.8rem; color: #94a3b8; font-weight: normal; margin-left: 4px;">(Opcional)</span>
               </label>
               <!-- Campo oculto que guarda el valor seleccionado -->
               <input type="hidden" id="create-user-id" name="create-user-id">
@@ -444,7 +444,7 @@
                     type="text"
                     id="create-user-search"
                     class="combobox-input"
-                    placeholder="Buscar usuario..."
+                    placeholder="Buscar usuario (opcional)..."
                     autocomplete="off"
                     aria-autocomplete="list"
                     aria-expanded="false"
@@ -482,12 +482,12 @@
           <div class="form-row-2col">
             <div class="form-group">
               <label for="create-social-handle" class="form-label">Usuario de red social</label>
-              <input type="text" id="create-social-handle" class="form-input" placeholder="Ej. @usuario">
+              <input type="text" id="create-social-handle" class="form-input" placeholder="Ej. @usuario" maxlength="100">
             </div>
 
             <div class="form-group">
               <label for="create-social-url" class="form-label">Enlace de la red social</label>
-              <input type="url" id="create-social-url" class="form-input" placeholder="https://...">
+              <input type="url" id="create-social-url" class="form-input" placeholder="https://..." maxlength="200">
             </div>
           </div>
         </div>
@@ -572,7 +572,7 @@
             <div class="form-group">
               <label class="form-label">
                 <span>Usuario</span>
-                <span class="required-mark">*</span>
+                <span style="font-size: 0.8rem; color: #94a3b8; font-weight: normal; margin-left: 4px;">(Opcional)</span>
               </label>
               <input type="hidden" id="edit-user-id" name="edit-user-id">
               <div class="combobox-wrapper" id="edit-user-combobox">
@@ -585,7 +585,7 @@
                     type="text"
                     id="edit-user-search"
                     class="combobox-input"
-                    placeholder="Buscar usuario..."
+                    placeholder="Buscar usuario (opcional)..."
                     autocomplete="off"
                     aria-autocomplete="list"
                     aria-expanded="false"
@@ -622,12 +622,12 @@
           <div class="form-row-2col">
             <div class="form-group">
               <label for="edit-social-handle" class="form-label">Usuario de red social</label>
-              <input type="text" id="edit-social-handle" class="form-input" placeholder="@usuario">
+              <input type="text" id="edit-social-handle" class="form-input" placeholder="@usuario" maxlength="100">
             </div>
 
             <div class="form-group">
               <label for="edit-social-url" class="form-label">Enlace de la red social</label>
-              <input type="url" id="edit-social-url" class="form-input" placeholder="https://...">
+              <input type="url" id="edit-social-url" class="form-input" placeholder="https://..." maxlength="200">
             </div>
           </div>
 

@@ -6,7 +6,7 @@
  * ==========================================================================
  */
 
-import { obtenerPedidoPorId } from './orders.api.js';
+import { obtenerPedidoPorId, confirmarRecepcionPedido } from './orders.api.js';
 import { obtenerPagos, registrarPago } from './payment.api.js';
 import { obtenerFacturaPorOrden } from './invoice.api.js';
 import { getAccessToken, getCurrentUser } from '../../js/storage.js';
@@ -161,6 +161,9 @@ async function loadOrderData(orderId) {
         // 7. Configurar Botón WhatsApp con conversiones
         setupWhatsappButton(order, paymentBreakdown);
 
+        // 8. Configurar Flujo de Recepción de Productos
+        setupReceptionFlow(order);
+
     } catch (err) {
         console.error('Error al cargar la información de la orden:', err);
         showErrorToast('Error al cargar pedido', 'Ocurrió un error al obtener los detalles del pedido.');
@@ -196,6 +199,9 @@ function renderShipping(order) {
     const addressEl = document.getElementById('shipping-address');
     const providerEl = document.getElementById('shipping-provider');
     const statusBadgeEl = document.getElementById('shipping-status-badge');
+    const receptionRowEl = document.getElementById('shipping-reception-row');
+    const receptionNotesEl = document.getElementById('shipping-reception-notes');
+    const receptionBoxEl = document.getElementById('order-reception-box');
 
     const shipment = (order.shipments && order.shipments.length > 0) ? order.shipments[0] : null;
 
@@ -233,6 +239,22 @@ function renderShipping(order) {
         if (addressEl) addressEl.textContent = order.notes || 'Dirección no especificada';
         if (providerEl) providerEl.textContent = 'Transporte TuEstante / Empresa de Envíos';
         if (statusBadgeEl) statusBadgeEl.textContent = 'Pendiente de fabricación';
+    }
+
+    // Mostrar notas de recepción si existen
+    if (order.reception_notes && receptionRowEl && receptionNotesEl) {
+        receptionRowEl.style.display = 'block';
+        const recDate = order.reception_date ? new Date(order.reception_date).toLocaleDateString('es-VE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+        receptionNotesEl.innerHTML = `"${escapeHtml(order.reception_notes)}"${recDate ? `<br><small style="color:#059669; font-weight:600;">Confirmado el ${recDate}</small>` : ''}`;
+    } else if (receptionRowEl) {
+        receptionRowEl.style.display = 'none';
+    }
+
+    // Mostrar u ocultar el botón/bloque de confirmar recepción
+    // Disponible cuando la orden esté en camino ('shipped') o envío en tránsito y no esté ya finalizada
+    const canReceive = (order.status === 'shipped' || (shipment && shipment.status === 'in_transit')) && order.status !== 'finalized';
+    if (receptionBoxEl) {
+        receptionBoxEl.style.display = canReceive ? 'block' : 'none';
     }
 }
 
@@ -841,6 +863,77 @@ function setupCopyableFields() {
             }
         });
     });
+}
+
+/**
+ * Configura la apertura y el envío del modal para confirmar recepción de productos con observaciones.
+ */
+function setupReceptionFlow(order) {
+    const modalOverlay = document.getElementById('reception-modal-overlay');
+    const btnOpen = document.getElementById('btn-open-reception-modal');
+    const btnClose = document.getElementById('btn-close-reception-modal');
+    const btnCancel = document.getElementById('btn-cancel-reception');
+    const btnSubmit = document.getElementById('btn-submit-reception');
+    const notesInput = document.getElementById('reception-notes-input');
+    const orderNumEl = document.getElementById('reception-order-number');
+
+    if (!modalOverlay) return;
+
+    if (orderNumEl) {
+        orderNumEl.textContent = order.order_number || `#PED-${order.id}`;
+    }
+
+    const openModal = () => {
+        if (notesInput) notesInput.value = '';
+        modalOverlay.classList.add('active');
+        modalOverlay.setAttribute('aria-hidden', 'false');
+        if (notesInput) notesInput.focus();
+    };
+
+    const closeModal = () => {
+        modalOverlay.classList.remove('active');
+        modalOverlay.setAttribute('aria-hidden', 'true');
+    };
+
+    if (btnOpen) {
+        btnOpen.onclick = openModal;
+    }
+    if (btnClose) {
+        btnClose.onclick = closeModal;
+    }
+    if (btnCancel) {
+        btnCancel.onclick = closeModal;
+    }
+
+    modalOverlay.onclick = (e) => {
+        if (e.target === modalOverlay) closeModal();
+    };
+
+    if (btnSubmit) {
+        btnSubmit.onclick = async () => {
+            const notes = notesInput ? notesInput.value.trim() : '';
+            const originalHtml = btnSubmit.innerHTML;
+
+            try {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<span>Confirmando recepción...</span>';
+
+                await confirmarRecepcionPedido(order.id, notes);
+                showSuccessToast('¡Recepción Confirmada!', 'Muchas gracias por confirmar la recepción de tus productos.');
+                closeModal();
+
+                // Recargar los datos de la orden en pantalla
+                await loadOrderData(order.id);
+            } catch (err) {
+                console.error('Error al confirmar recepción:', err);
+                const errMsg = err?.response?.data?.error || err?.message || 'No se pudo confirmar la recepción del pedido.';
+                showErrorToast('Error al confirmar', errMsg);
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = originalHtml;
+            }
+        };
+    }
 }
 
 // ============================================================================

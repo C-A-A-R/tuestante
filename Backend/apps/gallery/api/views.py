@@ -33,15 +33,16 @@ class GalleryViewSet(BaseViewSet):
     def perform_create(self, serializer):
         """Asigna el usuario que subió la multimedia y el estado correspondiente."""
         user = self.request.user if self.request.user and self.request.user.is_authenticated else None
-        user_from_data = serializer.validated_data.get('user')
-        assigned_user = user_from_data if (user and user.is_staff and user_from_data) else user
 
         if user and user.is_staff:
+            # Para administradores: respeta la asignación (puede ser None si no se seleccionó usuario)
+            assigned_user = serializer.validated_data.get('user', None)
             status_val = serializer.validated_data.get('status', Gallery.STATUS_APPROVED)
             is_active_val = serializer.validated_data.get('is_active')
             if is_active_val is None:
                 is_active_val = True
         else:
+            assigned_user = user
             status_val = Gallery.STATUS_PENDING
             is_active_val = False
 

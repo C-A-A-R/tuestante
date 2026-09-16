@@ -1048,6 +1048,46 @@ body {
     margin-top: 40px;
 }
 
+/* Grilla Unificada de Zona Outlet en Inicio */
+.home-outlet-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+@media (max-width: 1024px) {
+    .home-outlet-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+@media (max-width: 640px) {
+    .home-outlet-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+/* Badge de Descuento / Stock de Outlet */
+.badge-outlet-tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 25;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+    letter-spacing: 0.02em;
+}
+
 /* Carta de Producto Unificada (Idéntica al Catálogo de Productos) */
 .unified-product-card {
     background-color: #ffffff;

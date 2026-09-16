@@ -649,6 +649,8 @@ function setupModalEvents() {
   const formNewDist     = document.getElementById('form-new-distributor');
 
   function openDistModal() {
+    window.location.href = 'distributor-create.html';
+    return;
     // Resetear a modo creación
     if (formNewDist) {
       formNewDist.reset();
@@ -911,6 +913,13 @@ function renderDistributorsMainTable(dists = []) {
           <button type="button"
             style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;border:1.5px solid var(--border-color,#e2e8f0);background:transparent;color:var(--text-muted,#64748b);cursor:pointer;transition:all .15s;"
             onmouseenter="this.style.borderColor='#005187';this.style.color='#005187';this.style.background='#e0f2fe';"
+            onmouseleave="this.style.borderColor='';this.style.color='';this.style.background='';"
+            data-action="view-dist" data-id="${escapeHtml(d.id)}" title="Ver distribuidor" aria-label="Ver distribuidor">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+          <button type="button"
+            style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;border:1.5px solid var(--border-color,#e2e8f0);background:transparent;color:var(--text-muted,#64748b);cursor:pointer;transition:all .15s;"
+            onmouseenter="this.style.borderColor='#005187';this.style.color='#005187';this.style.background='#e0f2fe';"
             onmouseleave="this.style.borderColor='';this.style.color='';this.style.background='';" 
             data-action="edit-dist" data-id="${escapeHtml(d.id)}" title="Editar transportador">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -938,6 +947,7 @@ function renderDistributorsMainTable(dists = []) {
     btn.addEventListener('click', (e) => {
       const action = btn.dataset.action;
       const id = btn.dataset.id;
+      if (action === 'view-dist')   window.location.href = `distributor-detail.html?id=${encodeURIComponent(id)}`;
       if (action === 'edit-dist')   handleEditDistributor(id);
       if (action === 'delete-dist') handleDeleteDistributor(id, btn.dataset.name);
     });
@@ -950,6 +960,8 @@ function updateDistributorsTableInfo(count) {
 }
 
 function handleEditDistributor(id) {
+  window.location.href = `distributor-detail.html?id=${encodeURIComponent(id)}`;
+  return;
   const dist = state.distributors.find(d => String(d.id) === String(id));
   if (!dist) return;
 

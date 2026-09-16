@@ -145,6 +145,29 @@
                   </div>
                 </div>
 
+                <!-- Cantidad / Stock -->
+                <div class="form-group" id="group-product-quantity">
+                  <label for="input-product-quantity" class="form-label">
+                    Cantidad en Stock
+                  </label>
+                  <div class="input-unit-wrapper">
+                    <input
+                      type="number"
+                      id="input-product-quantity"
+                      name="quantity"
+                      class="form-input"
+                      step="1"
+                      min="0"
+                      value="0"
+                      placeholder="0">
+                    <span class="unit-label">uds.</span>
+                  </div>
+                  <span class="form-hint" id="quantity-hint" style="font-size:0.78rem; color:#64748b;">
+                    Deja en 0 si el producto se fabrica bajo pedido.
+                    <span id="quantity-outlet-hint" class="hidden" style="color: #d97706; font-weight:600;"> · Outlet: si queda en 0 el producto se desactiva automáticamente.</span>
+                  </span>
+                </div>
+
                 <!-- Descripción del Producto -->
                 <div class="form-group">
                   <label for="textarea-product-desc" class="form-label">Descripción Detallada</label>
@@ -171,14 +194,14 @@
                     </label>
                   </div>
 
-                  <!-- ⭐ Switch: Producto Outlet (NUEVO CAMPO REQUERIDO) -->
+                  <!-- ⭐ Switch: Producto Outlet -->
                   <div class="toggle-card toggle-card-outlet">
                     <div class="toggle-info">
                       <div class="toggle-badge-row">
                         <strong class="toggle-title">Producto Outlet</strong>
                         <span class="outlet-badge-tag">OUTLET</span>
                       </div>
-                      <span class="toggle-desc">Marca el producto en liquidación o descuento especial de taller.</span>
+                      <span class="toggle-desc">Marca el producto en liquidación o descuento especial de taller. Requiere cantidad mayor a 0.</span>
                     </div>
                     <label class="switch-toggle switch-toggle-warning" for="switch-is-outlet">
                       <input type="checkbox" id="switch-is-outlet" name="is_outlet">

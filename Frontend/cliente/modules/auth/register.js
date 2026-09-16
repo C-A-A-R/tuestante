@@ -7,6 +7,7 @@
  */
 
 import { registerUser } from "./auth.js";
+import { initGoogleAuth } from "./google-auth.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("registerForm");
@@ -16,6 +17,13 @@ document.addEventListener("DOMContentLoaded", () => {
     setupLivePasswordValidation();
     setupNumericInputs();
     setupFormSubmission(form);
+
+    // Inicializar Google Sign-In / Registro
+    initGoogleAuth({
+        btnContainerId: "googleBtn",
+        customBtnId: "customGoogleBtn",
+        onError: (msg) => showErrorNotification(msg),
+    });
 });
 
 /**

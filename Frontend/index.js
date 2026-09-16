@@ -64,41 +64,89 @@ async function loadComponent(placeholderId, filePath) {
 
 /**
  * Carga dinámicamente los productos en Zona Outlet desde la API de Django.
+ * Solo muestra la sección si existen productos outlet con stock disponible.
+ * Renderiza tarjetas de producto unificadas con las mismas acciones y diseño que los productos corrientes.
  */
 async function loadHomeOutlet() {
   const container = document.getElementById('home-outlet-container');
-  if (!container) return;
+  const outletSection = document.getElementById('outlet');
+  if (!container || !outletSection) return;
 
   try {
     const response = await obtenerProductosOutlet();
-    const rawOutlet = extractList(response);
-    const outletProducts = (rawOutlet || []).filter(p => p && (!p.is_outlet || p.quantity === undefined || p.quantity > 0));
+    const rawProducts = extractList(response);
+
+    // Filtrar estrictamente productos que sean outlet, activos y con cantidad mayor a 0
+    const outletProducts = (rawProducts || []).filter(p => {
+      const isOutlet = !!(p.is_outlet === true || p.outlet === true);
+      const isActive = p.is_active !== false;
+      const hasStock = p.quantity === undefined || p.quantity > 0;
+      return isOutlet && isActive && hasStock;
+    });
+
     if (!outletProducts || outletProducts.length === 0) {
-      container.innerHTML = createApiEmptyFeedback('No hay productos en liquidación outlet por el momento.', 'Explora nuestro catálogo para conocer todos los productos disponibles.');
+      outletSection.style.display = 'none';
+      container.innerHTML = '';
       return;
     }
 
-    container.innerHTML = outletProducts.slice(0, 4).map(p => {
-      const name = p.product_name || p.name || 'Producto Outlet';
-      const desc = p.description || 'Oportunidad única en mobiliario metálico con entrega inmediata.';
-      const img = resolveImageUrl(p.product_image || p.image, 'assets/images/categoria/estante.png');
-      const qty = p.quantity !== undefined ? p.quantity : 1;
+    // Mostrar sección ya que hay disponibilidad
+    outletSection.style.display = 'block';
+
+    container.innerHTML = outletProducts.slice(0, 4).map((prod, idx) => {
+      const id = prod.id;
+      const name = prod.product_name || prod.name || 'Producto Outlet';
+      const desc = prod.description || 'Oportunidad única en mobiliario metálico con entrega inmediata.';
+      const price = typeof prod.price === 'number' ? prod.price : parseFloat(prod.price) || 0;
+      const img = resolveImageUrl(prod.product_image || prod.image, 'assets/images/productos/estante-blanco.jpeg');
+      const qty = prod.quantity !== undefined ? prod.quantity : 1;
+      const link = `modules/product/product-details.html?id=${id}`;
+
       return `
-        <a href="modules/product/product-details.html?id=${p.id}" class="category-card">
-          <div class="category-bg" style="background-image: url('${img}');"></div>
-          <div class="category-overlay"></div>
-          <div class="category-content">
-            <span style="background:#ef4444;color:#fff;padding:3px 8px;border-radius:12px;font-size:0.75rem;font-weight:700;display:inline-block;margin-bottom:6px;">⚡ OUTLET (${qty} disp.)</span>
-            <h3 class="category-title">${name}</h3>
-            <p class="category-desc">${desc}</p>
-            <span class="category-btn">Ver Oferta</span>
+        <div class="unified-product-card" data-index="${idx}">
+          <div class="unified-card-media">
+            <a href="${link}" class="unified-card-img-link">
+              <img src="${img}" alt="${name}" class="unified-card-img" loading="lazy">
+            </a>
+            
+            <div class="badge-outlet-tag" title="Stock disponible para entrega inmediata">
+              <span>⚡ OUTLET (${qty} disp.)</span>
+            </div>
+            
+            <button class="unified-wishlist-btn ${prod.is_favorite ? 'active' : ''}" data-id="${id}" title="${prod.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos'}" aria-label="Añadir a favoritos">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </button>
           </div>
-        </a>
+
+          <div class="unified-card-body">
+            <div>
+              <div class="unified-card-header">
+                <h3 class="unified-card-title">
+                  <a href="${link}">${name}</a>
+                </h3>
+                <span class="unified-card-price">$${price.toFixed(2)}</span>
+              </div>
+
+              <p class="unified-card-desc">${desc}</p>
+            </div>
+
+            <div class="unified-card-actions">
+              <a href="${link}" class="unified-btn btn-details">Ver Detalle</a>
+              <button class="unified-btn btn-card-add-cart" data-id="${id}" data-name="${name}" data-price="${price}" data-image="${img}">
+                + Carrito
+              </button>
+            </div>
+          </div>
+        </div>
       `;
     }).join('');
+
   } catch (error) {
-    console.error('Error al cargar productos outlet en el home:', error);
-    container.innerHTML = createApiErrorFeedback('No se pudieron cargar las ofertas de Outlet.', 'Verifica la conexión con el servidor backend o recarga la página.');
+    console.warn('Error al consultar productos outlet o no disponibles:', error);
+    outletSection.style.display = 'none';
+    container.innerHTML = '';
   }
 }
 
@@ -602,4 +650,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 });
-

@@ -62,9 +62,17 @@ class Product(BaseModel):
     def stock(self):
         return self.quantity
 
+    @stock.setter
+    def stock(self, value):
+        self.quantity = value
+
     @property
     def color_principal(self):
         return self.main_color
+
+    @color_principal.setter
+    def color_principal(self, value):
+        self.main_color = value
 
     class Meta:
         verbose_name = 'Producto'
@@ -77,9 +85,9 @@ class Product(BaseModel):
             self.is_active = False
         if self.product_image:
             compress_and_save_image(self.product_image)
+        super().save(*args, **kwargs)
         if self.product_video:
             compress_and_save_video(self.product_video)
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.product_name

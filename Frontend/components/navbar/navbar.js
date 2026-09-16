@@ -40,7 +40,7 @@ function ensureNavbarElementsExist() {
     if (!catNav) {
       catNav = document.createElement('nav');
       catNav.className = 'navbar-categories';
-      catNav.setAttribute('aria-label', 'Categorías de productos');
+      catNav.setAttribute('aria-label', 'Tipos de productos');
       catNav.innerHTML = `
         <div class="header-container">
           <ul class="categories-container" id="nav-categories-container"></ul>
@@ -640,8 +640,91 @@ function syncUserAuthState() {
     }
   }
 
+/**
+ * Muestra un modal estilizado y moderno para confirmar el cierre de sesión en TuEstante.
+ * @param {Object} [options]
+ * @returns {Promise<boolean>}
+ */
+function showLogoutConfirmModal({
+  title = '¿Cerrar Sesión?',
+  message = '¿Estás seguro de que deseas salir de tu cuenta? Tendrás que iniciar sesión nuevamente para acceder a tus compras y carrito.',
+  confirmText = 'Sí, Cerrar Sesión',
+  cancelText = 'Permanecer conectado'
+} = {}) {
+  return new Promise((resolve) => {
+    let container = document.getElementById('tuestante-logout-modal-root');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'tuestante-logout-modal-root';
+      document.body.appendChild(container);
+    }
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'tu-logout-modal-backdrop';
+    backdrop.setAttribute('role', 'dialog');
+    backdrop.setAttribute('aria-modal', 'true');
+
+    backdrop.innerHTML = `
+      <div class="tu-logout-modal-card">
+        <button type="button" class="tu-logout-modal-close" aria-label="Cerrar modal">&times;</button>
+        <div class="tu-logout-icon-wrap" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </div>
+        <h3 class="tu-logout-title">${title}</h3>
+        <p class="tu-logout-desc">${message}</p>
+        <div class="tu-logout-actions">
+          <button type="button" class="tu-logout-btn tu-logout-btn-cancel">${cancelText}</button>
+          <button type="button" class="tu-logout-btn tu-logout-btn-confirm">${confirmText}</button>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(backdrop);
+
+    requestAnimationFrame(() => {
+      backdrop.classList.add('is-visible');
+    });
+
+    const close = (confirmed) => {
+      backdrop.classList.remove('is-visible');
+      setTimeout(() => {
+        backdrop.remove();
+        resolve(confirmed);
+      }, 220);
+    };
+
+    const confirmBtn = backdrop.querySelector('.tu-logout-btn-confirm');
+    const cancelBtn = backdrop.querySelector('.tu-logout-btn-cancel');
+    const closeBtn = backdrop.querySelector('.tu-logout-modal-close');
+
+    confirmBtn?.addEventListener('click', () => close(true));
+    cancelBtn?.addEventListener('click', () => close(false));
+    closeBtn?.addEventListener('click', () => close(false));
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) close(false);
+    });
+
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        document.removeEventListener('keydown', handleKey);
+        close(false);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.showLogoutConfirmModal = showLogoutConfirmModal;
+}
+
   const handleLogout = async () => {
-    if (!confirm('¿Estás seguro de que deseas cerrar sesión en TuEstante?')) return;
+    const confirmed = await showLogoutConfirmModal();
+    if (!confirmed) return;
     try {
       const refreshToken = getRefreshToken();
       if (refreshToken) {
@@ -743,26 +826,26 @@ function renderCategoriesNavbar(categoriesData) {
 
   // Renderizado Desktop: Categorías con Mega-Menús desplegables al hover
   desktopContainer.innerHTML = categoriesData.map((cat) => {
-    const catId = cat.id;
-    const catName = cat.name || cat.category_name || 'Categoría';
-    const catLink = `${prefix}modules/product/products.html?cat=${catId}`;
+    const typeId = cat.id;
+    const typeName = cat.name || cat.product_type_name || 'Tipo de producto';
+    const typeLink = `${prefix}modules/product/products.html?type=${typeId}`;
     const items = Array.isArray(cat.items) ? cat.items : [];
 
     let productsContentHtml = '';
 
     if (items.length > 0) {
-      const productsCards = items.map((prod) => {
+      const featuredProduct = items.find((product) => product.is_featured) || items[items.length - 1];
+      const regularProducts = items.filter((product) => product !== featuredProduct).slice(0, 3);
+      const productsCards = regularProducts.map((prod) => {
         const prodId = prod.id;
         const prodName = prod.name || prod.product_name || 'Producto TuEstante';
         const rawImg = prod.image || prod.product_image || `${prefix}assets/images/categoria/estante.png`;
         const prodImg = (rawImg.startsWith('http') || rawImg.startsWith('/') || rawImg.startsWith('.')) ? rawImg : `${prefix}${rawImg}`;
         const prodLink = `${prefix}modules/product/product-details.html?id=${prodId}`;
-        const isFeatured = Boolean(prod.is_featured || prod.is_feature_product || prod.is_featured_product || prod.badge === 'Destacado');
 
         return `
-          <a href="${prodLink}" class="catalog-card ${isFeatured ? 'is-featured' : ''}">
+          <a href="${prodLink}" class="catalog-card">
             <div class="catalog-img-wrapper">
-              ${isFeatured ? '<span class="catalog-badge-featured">Destacado</span>' : ''}
               <img src="${prodImg}" alt="${prodName}" class="catalog-img" loading="lazy" onerror="this.src='${prefix}assets/images/categoria/estante.png'">
             </div>
             <span class="catalog-title">${prodName}</span>
@@ -770,28 +853,55 @@ function renderCategoriesNavbar(categoriesData) {
         `;
       }).join('');
 
+      const featuredImg = featuredProduct.image || featuredProduct.product_image || `${prefix}assets/images/categoria/estante.png`;
+      const featuredImgUrl = (featuredImg.startsWith('http') || featuredImg.startsWith('/') || featuredImg.startsWith('.')) ? featuredImg : `${prefix}${featuredImg}`;
+      const featuredLink = `${prefix}modules/product/product-details.html?id=${featuredProduct.id}`;
+      const featuredName = featuredProduct.name || featuredProduct.product_name || 'Producto destacado';
+      const featuredDescriptionSource = featuredProduct.description || 'Descubre este modelo destacado de TuEstante.';
+      const featuredDescription = featuredDescriptionSource.length > 110
+        ? `${featuredDescriptionSource.slice(0, 110).trimEnd()}...`
+        : featuredDescriptionSource;
+      const featuredPrice = featuredProduct.price !== undefined && featuredProduct.price !== null
+        ? `$${Number(featuredProduct.price).toFixed(2)}`
+        : 'Consultar precio';
+
       productsContentHtml = `
-        <div class="catalog-grid">
-          ${productsCards}
+        <div class="catalog-products-row">
+          <div class="catalog-grid">
+            ${productsCards}
+          </div>
+          <a href="${featuredLink}" class="catalog-featured-product">
+            <div class="catalog-featured-heading">Popular</div>
+            <div class="catalog-featured-body">
+              <div class="catalog-featured-img-wrapper">
+                <img src="${featuredImgUrl}" alt="${featuredName}" class="catalog-featured-img" loading="lazy" onerror="this.src='${prefix}assets/images/categoria/estante.png'">
+              </div>
+              <div class="catalog-featured-info">
+                <div class="catalog-featured-name">${featuredName}</div>
+                <p class="catalog-featured-description">${featuredDescription}</p>
+                <strong class="catalog-featured-price">${featuredPrice}</strong>
+              </div>
+            </div>
+          </a>
         </div>
         <div class="catalog-bottom-row">
-          <a href="${catLink}" class="catalog-shop-all-btn">VER TODO EN ${catName.toUpperCase()}</a>
+          <a href="${typeLink}" class="catalog-shop-all-btn">VER TODO EN ${typeName.toUpperCase()}</a>
         </div>
       `;
     } else {
       productsContentHtml = `
         <div class="catalog-empty-category" style="text-align: left; padding: 1.5rem 0;">
-          <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1rem;">Explora todos los modelos y opciones disponibles en esta categoría.</p>
-          <a href="${catLink}" class="catalog-shop-all-btn" style="display: inline-block;">VER CATÁLOGO DE ${catName.toUpperCase()}</a>
+          <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1rem;">Explora todos los modelos y opciones disponibles en este tipo de producto.</p>
+          <a href="${typeLink}" class="catalog-shop-all-btn" style="display: inline-block;">VER CATÁLOGO DE ${typeName.toUpperCase()}</a>
         </div>
       `;
     }
 
     return `
       <li class="category-item">
-        <a href="${catLink}" class="category-link">${catName}</a>
+        <a href="${typeLink}" class="category-link">${typeName}</a>
         
-        <div class="category-catalog-menu" role="region" aria-label="Catálogo ${catName}">
+        <div class="category-catalog-menu" role="region" aria-label="Productos de ${typeName}">
           <div class="catalog-inner">
             ${productsContentHtml}
           </div>
@@ -810,11 +920,10 @@ function renderCategoriesNavbar(categoriesData) {
 async function loadDynamicCategoriesFromApi() {
   const prefix = getBasePathPrefix();
   try {
-    console.log(LOG_TAG, '📡 Consultando categorías y productos del backend con { auth: false }...');
+    console.log(LOG_TAG, '📡 Consultando tipos de producto y productos del backend con { auth: false }...');
     
-    // Consulta pública sin token para evitar 401 Unauthorized
     const [catResponse, prodResponse] = await Promise.allSettled([
-      getRequest('/products/categories/', {}, { auth: false }),
+      getRequest('/products/product-types/', {}, { auth: false }),
       getRequest('/products/products/', {}, { auth: false })
     ]);
 
@@ -834,24 +943,22 @@ async function loadDynamicCategoriesFromApi() {
     });
 
     if (categories && categories.length > 0) {
-      // Mapear cada categoría real de la BD con sus productos correspondientes
-      const realCategoriesWithProducts = categories.map((cat) => {
-        const catId = cat.id;
-        const catName = cat.category_name || cat.name || 'Categoría';
+      // Mapear cada tipo real con sus productos correspondientes
+      const realCategoriesWithProducts = categories.map((type) => {
+        const typeId = type.id;
+        const typeName = type.product_type_name || type.name || 'Tipo de producto';
 
-        // Filtrar productos reales asociados a esta categoría
-        let matchingProducts = products.filter((p) => isProductInCategory(p, cat));
-
-        // Si la categoría específica aún no tiene productos asignados, pero hay productos en la tienda:
-        if (matchingProducts.length === 0 && products.length > 0) {
-          matchingProducts = products;
-        }
+        const matchingProducts = products.filter((product) => {
+          const productTypeId = product.product_type_detail?.id ?? product.product_type_id ?? product.product_type;
+          return String(productTypeId) === String(typeId);
+        });
 
         const items = matchingProducts.slice(0, 5).map((prod) => {
           const rawImg = prod.product_image || prod.image || (Array.isArray(prod.images) && prod.images[0]?.image) || '';
           return {
             id: prod.id,
             name: prod.product_name || prod.name || 'Producto',
+            description: prod.description || '',
             image: resolveImageUrl(rawImg, `${prefix}assets/images/categoria/estante.png`),
             is_featured: Boolean(prod.is_featured || prod.is_feature_product || prod.is_featured_product || prod.badge === 'Destacado'),
             price: prod.price || prod.base_price
@@ -859,9 +966,9 @@ async function loadDynamicCategoriesFromApi() {
         });
 
         return {
-          id: catId,
-          name: catName,
-          slug: cat.slug || 'categoria',
+          id: typeId,
+          name: typeName,
+          slug: type.slug || 'tipo-producto',
           items: items
         };
       });

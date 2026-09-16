@@ -27,8 +27,12 @@ class DistributorViewSet(BaseViewSet):
         return [permissions.IsAdminUser()]
 
     def get_queryset(self):
+        coverage_queryset = DistributorCoverage.objects.filter(is_deleted=False)
+        if not (self.request.user and self.request.user.is_staff):
+            coverage_queryset = coverage_queryset.filter(is_active=True)
+
         queryset = Distributor.objects.filter(is_deleted=False).prefetch_related(
-            Prefetch('coverages', queryset=DistributorCoverage.objects.filter(is_deleted=False, is_active=True))
+            Prefetch('coverages', queryset=coverage_queryset)
         )
         # Los clientes normales solo ven distribuidores activos
         if not (self.request.user and self.request.user.is_staff):

@@ -256,18 +256,18 @@ function renderPublishedTable() {
       <td>
         <div class="user-cell-box">
           <div class="user-avatar-circle">
-            ${escapeHtml(item.client_name ? item.client_name.slice(0, 2).toUpperCase() : 'US')}
+            ${item.client_name ? escapeHtml(item.client_name.slice(0, 2).toUpperCase()) : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`}
           </div>
           <div class="user-meta-info">
-            <span class="user-full-name">${escapeHtml(item.client_name || 'Usuario')}</span>
-            <span class="user-identity-doc" title="Documento de Identidad">
+            <span class="user-full-name">${escapeHtml(item.client_name || 'Sin usuario')}</span>
+            ${item.identity_document ? `<span class="user-identity-doc" title="Documento de Identidad">
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="4" width="18" height="16" rx="2"></rect>
                 <line x1="7" y1="8" x2="17" y2="8"></line>
                 <line x1="7" y1="12" x2="13" y2="12"></line>
               </svg>
-              ${escapeHtml(item.identity_document || 'V-18.452.369')}
-            </span>
+              ${escapeHtml(item.identity_document)}
+            </span>` : ''}
           </div>
         </div>
       </td>
@@ -497,18 +497,18 @@ function renderRequestsTable() {
       <td>
         <div class="user-cell-box">
           <div class="user-avatar-circle">
-            ${escapeHtml(item.client_name ? item.client_name.slice(0, 2).toUpperCase() : 'US')}
+            ${item.client_name ? escapeHtml(item.client_name.slice(0, 2).toUpperCase()) : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`}
           </div>
           <div class="user-meta-info">
-            <span class="user-full-name">${escapeHtml(item.client_name || 'Usuario')}</span>
-            <span class="user-identity-doc" title="Documento de Identidad">
+            <span class="user-full-name">${escapeHtml(item.client_name || 'Sin usuario')}</span>
+            ${item.identity_document ? `<span class="user-identity-doc" title="Documento de Identidad">
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="4" width="18" height="16" rx="2"></rect>
                 <line x1="7" y1="8" x2="17" y2="8"></line>
                 <line x1="7" y1="12" x2="13" y2="12"></line>
               </svg>
-              ${escapeHtml(item.identity_document || 'V-18.452.369')}
-            </span>
+              ${escapeHtml(item.identity_document)}
+            </span>` : ''}
           </div>
         </div>
       </td>
@@ -714,11 +714,18 @@ function openQuickViewModal(item) {
 
   if (imgEl) imgEl.src = item.image || '../../assets/images/logo.jpeg';
   if (titleEl) titleEl.textContent = item.title || 'Detalle de imagen';
-  if (descEl) descEl.textContent = item.caption || 'Sin descripción';
-  if (userNameEl) userNameEl.textContent = item.client_name || 'Usuario';
-  if (userDocEl) userDocEl.textContent = `CI: ${item.identity_document || 'V-18.452.369'}`;
+  if (descEl) descEl.textContent = item.caption || '-';
+  if (userNameEl) userNameEl.textContent = item.client_name || 'Sin usuario asignado';
+  if (userDocEl) {
+    userDocEl.textContent = item.identity_document ? `CI: ${item.identity_document}` : '';
+    userDocEl.style.display = item.identity_document ? '' : 'none';
+  }
   if (userAvatarEl) {
-    userAvatarEl.textContent = item.client_name ? item.client_name.slice(0, 2).toUpperCase() : 'US';
+    if (item.client_name) {
+      userAvatarEl.textContent = item.client_name.slice(0, 2).toUpperCase();
+    } else {
+      userAvatarEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+    }
   }
 
   if (socialPillEl) {
@@ -1485,12 +1492,14 @@ async function handleCreateSubmit() {
   const caption = document.getElementById('create-caption').value.trim();
   const clientName = document.getElementById('create-user-id')?.value || '';
   const selectedClient = state.clients.find(c => c.name === clientName);
-  const clientDoc = selectedClient?.identity_document || 'V-18.452.369';
+  const clientDoc = selectedClient?.identity_document || '';
   const socialNetwork = document.getElementById('create-social-network').value;
-  const socialHandle = document.getElementById('create-social-handle').value.trim() || '@usuario';
-  const socialUrl = document.getElementById('create-social-url').value.trim() || '#';
+  const socialHandle = document.getElementById('create-social-handle').value.trim();
+  const rawSocialUrl = document.getElementById('create-social-url').value.trim();
+  // No enviar '#' como URL — dejar vacío si no hay enlace real
+  const socialUrl = (rawSocialUrl && rawSocialUrl !== '#') ? rawSocialUrl : '';
 
-  if (!caption || !clientName || !socialNetwork) {
+  if (!caption || !socialNetwork) {
     showNotificationToast('Por favor completa todos los campos obligatorios', 'danger');
     return;
   }
@@ -1498,11 +1507,14 @@ async function handleCreateSubmit() {
   const formData = new FormData();
   formData.append('image', state.createSelectedFile);
   formData.append('caption', caption);
-  formData.append('client_name', clientName);
-  formData.append('identity_document', clientDoc);
+  // Solo incluir usuario si se seleccionó uno
+  if (clientName) {
+    formData.append('client_name', clientName);
+    if (clientDoc) formData.append('identity_document', clientDoc);
+  }
   formData.append('social_network', socialNetwork);
-  formData.append('social_media_handle', socialHandle);
-  formData.append('social_media_url', socialUrl);
+  if (socialHandle) formData.append('social_media_handle', socialHandle);
+  if (socialUrl) formData.append('social_media_url', socialUrl);
   formData.append('is_active', 'true');
 
   try {
@@ -1527,10 +1539,12 @@ async function handleEditSubmit() {
   const caption = document.getElementById('edit-caption').value.trim();
   const clientName = document.getElementById('edit-user-id')?.value || '';
   const selectedClient = state.clients.find(c => c.name === clientName);
-  const clientDoc = selectedClient?.identity_document || 'V-18.452.369';
+  const clientDoc = selectedClient?.identity_document || '';
   const socialNetwork = document.getElementById('edit-social-network').value;
   const socialHandle = document.getElementById('edit-social-handle').value.trim();
-  const socialUrl = document.getElementById('edit-social-url').value.trim();
+  const rawSocialUrl = document.getElementById('edit-social-url').value.trim();
+  // No enviar '#' como URL — si no hay enlace, dejar vacío
+  const socialUrl = (rawSocialUrl && rawSocialUrl !== '#') ? rawSocialUrl : '';
   const moderationStatus = document.getElementById('edit-moderation-status').value;
   const isActive = document.getElementById('edit-is-active-toggle').checked;
 
@@ -1539,8 +1553,11 @@ async function handleEditSubmit() {
     formData.append('image', state.editSelectedFile);
   }
   formData.append('caption', caption);
-  formData.append('client_name', clientName);
-  formData.append('identity_document', clientDoc);
+  // Solo incluir usuario si se seleccionó uno
+  if (clientName) {
+    formData.append('client_name', clientName);
+    if (clientDoc) formData.append('identity_document', clientDoc);
+  }
   formData.append('social_network', socialNetwork);
   formData.append('social_media_handle', socialHandle);
   formData.append('social_media_url', socialUrl);

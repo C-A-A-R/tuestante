@@ -346,8 +346,10 @@ function setupLogoutAction() {
     if (!btnLogout) return;
 
     btnLogout.addEventListener('click', async () => {
-        const confirmLogout = confirm('¿Estás seguro de que deseas cerrar sesión en TuEstante?');
-        if (!confirmLogout) return;
+        const confirmed = typeof window.showLogoutConfirmModal === 'function'
+            ? await window.showLogoutConfirmModal()
+            : confirm('¿Estás seguro de que deseas cerrar sesión en TuEstante?');
+        if (!confirmed) return;
 
         try {
             const refreshToken = getRefreshToken();

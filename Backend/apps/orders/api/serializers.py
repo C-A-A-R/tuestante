@@ -90,6 +90,8 @@ class OrderSerializer(serializers.ModelSerializer):
             'status',
             'total_price',
             'notes',
+            'reception_notes',
+            'reception_date',
             'details',
             'manufacturing_orders',
             'production_orders',
@@ -97,4 +99,4 @@ class OrderSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'order_number', 'user', 'total_price', 'details', 'manufacturing_orders', 'production_orders', 'shipments', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'order_number', 'user', 'total_price', 'reception_date', 'details', 'manufacturing_orders', 'production_orders', 'shipments', 'created_at', 'updated_at']

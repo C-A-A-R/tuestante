@@ -85,9 +85,21 @@ export async function obtenerOrdenesFabricacion(params = {}) {
     return getRequest('/manufacturing-orders/', params, { auth: true });
 }
 
+/**
+ * Confirma la recepción de los productos de un pedido, permitiendo registrar observaciones o notas.
+ * @param {number|string} orderId ID del pedido.
+ * @param {string} [notes] Observaciones o notas del cliente sobre lo recibido.
+ * @returns {Promise<Object>} Pedido actualizado a finalizado.
+ */
+export async function confirmarRecepcionPedido(orderId, notes = '') {
+    return postRequest(`/orders/${orderId}/receive/`, { notes }, { auth: true });
+}
+
 // Alias en inglés para mayor versatilidad
 export const getOrders = obtenerPedidos;
 export const getOrderById = obtenerPedidoPorId;
 export const createOrder = crearPedido;
 export const updateOrder = actualizarPedido;
 export const deleteOrder = eliminarPedido;
+export const confirmOrderReception = confirmarRecepcionPedido;
+

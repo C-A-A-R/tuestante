@@ -1,3 +1,5 @@
+import re
+from datetime import date
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
@@ -32,6 +34,8 @@ class UserSerializer(serializers.ModelSerializer):
             "full_name",
             "birth_date",
             "phone",
+            "google_id",
+            "avatar_url",
             "last_login",
             "is_active",
             "is_staff",
@@ -379,4 +383,112 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         if attrs["new_password"] != attrs["confirm_new_password"]:
             raise serializers.ValidationError({"new_password": "Las contraseñas no coinciden."})
         return attrs
+
+
+class GoogleAuthSerializer(serializers.Serializer):
+    """Serializador para autenticación y registro con Google."""
+
+    credential = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        help_text="Token de ID / Credencial JWT emitido por Google Identity Services"
+    )
+
+
+class CompleteProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializador para culminar el registro de usuarios (ej. tras registrarse con Google).
+    Exige documento de identidad, teléfono (+ y números) y fecha de nacimiento obligatoria.
+    """
+
+    document_type = serializers.ChoiceField(
+        choices=User.DOCUMENT_TYPE_CHOICES,
+        default=User.DocumentType.VENEZOLANO,
+        required=False
+    )
+    identity_document = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        max_length=30
+    )
+    phone = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        max_length=20
+    )
+    birth_date = serializers.DateField(
+        required=True,
+        allow_null=False
+    )
+    first_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
+    second_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
+    first_last_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
+    second_last_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
+    city = serializers.CharField(required=False, allow_blank=True, max_length=100)
+    state = serializers.CharField(required=False, allow_blank=True, max_length=100)
+
+    class Meta:
+        model = User
+        fields = [
+            "document_type",
+            "identity_document",
+            "phone",
+            "birth_date",
+            "first_name",
+            "second_name",
+            "first_last_name",
+            "second_last_name",
+            "city",
+            "state",
+        ]
+
+    def validate_phone(self, value):
+        val = str(value).strip()
+        # Solo permitir números y el signo +, sin letras ni caracteres especiales
+        if not re.match(r'^\+?[0-9]{7,18}$', val):
+            raise serializers.ValidationError(
+                "El número de teléfono solo debe contener números y opcionalmente el signo + (mínimo 7 dígitos)."
+            )
+        return val
+
+    def validate_birth_date(self, value):
+        if not value:
+            raise serializers.ValidationError("La fecha de nacimiento es obligatoria.")
+        today = date.today()
+        if value > today:
+            raise serializers.ValidationError("La fecha de nacimiento no puede ser una fecha futura.")
+        if (today.year - value.year) > 120:
+            raise serializers.ValidationError("Por favor ingresa una fecha de nacimiento válida.")
+        return value
+
+    def validate_identity_document(self, value):
+        val = str(value).strip().upper()
+        if not val:
+            raise serializers.ValidationError("El documento de identidad es obligatorio.")
+
+        user = self.instance
+        qs = User.objects.filter(identity_document__iexact=val, is_deleted=False)
+        if user and user.pk:
+            qs = qs.exclude(pk=user.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Este documento de identidad ya está registrado en otra cuenta.")
+        return val
+
+    def update(self, instance, validated_data):
+        identity_doc = validated_data.get('identity_document', instance.identity_document)
+        doc_type = validated_data.get('document_type', instance.document_type)
+
+        if identity_doc and not doc_type:
+            doc_str = str(identity_doc).strip().upper()
+            if len(doc_str) >= 2 and doc_str[1] == '-' and doc_str[0] in dict(User.DocumentType.choices):
+                validated_data['document_type'] = doc_str[0]
+
+        validated_data.pop('city', None)
+        validated_data.pop('state', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
 

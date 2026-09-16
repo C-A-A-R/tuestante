@@ -363,6 +363,34 @@
                                     <span class="info-label">Estado del Envío:</span>
                                     <span id="shipping-status-badge" class="badge-status-pill">Pendiente de fabricación</span>
                                 </div>
+
+                                <div class="shipping-info-item full-width" id="shipping-reception-row" style="display: none;">
+                                    <span class="info-label">Observaciones de Recepción:</span>
+                                    <div id="shipping-reception-notes" class="highlight-reception-notes"></div>
+                                </div>
+                            </div>
+
+                            <!-- Bloque de Confirmar Recepción de Productos -->
+                            <div id="order-reception-box" class="order-reception-box" style="display: none;">
+                                <div class="reception-box-content">
+                                    <div class="reception-box-header">
+                                        <div class="reception-badge-icon" aria-hidden="true">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h4 class="reception-box-title">¿Ya recibiste tus productos?</h4>
+                                            <p class="reception-box-subtitle">Confirma la entrega de tu pedido y añade tus observaciones o notas sobre lo recibido.</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" id="btn-open-reception-modal" class="btn btn-confirm-reception">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        <span>Confirmar Recepción</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -484,6 +512,40 @@
                 </a>
                 <button type="button" id="receipt-modal-dismiss-btn" class="btn-receipt-dismiss">Cerrar</button>
             </footer>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMACIÓN DE RECEPCIÓN DE PRODUCTOS -->
+    <div id="reception-modal-overlay" class="receipt-modal-overlay" aria-hidden="true" role="dialog">
+        <div class="receipt-modal-card reception-modal-card">
+            <header class="receipt-modal-header">
+                <div class="receipt-modal-title-group">
+                    <h3 class="receipt-modal-title">Confirmar Recepción de Productos</h3>
+                    <span class="receipt-modal-meta">Pedido <span id="reception-order-number">#---</span></span>
+                </div>
+                <button type="button" id="btn-close-reception-modal" class="btn-close-receipt-modal" title="Cerrar modal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="18" x2="18" y2="6"></line>
+                    </svg>
+                </button>
+            </header>
+            <div class="receipt-modal-body reception-modal-body">
+                <p class="reception-modal-instruction">Al confirmar, el pedido pasará formalmente a estado <strong>Finalizado</strong>. Puedes añadir cualquier observación sobre el estado del mobiliario recibido, embalaje o notas para nuestro equipo de calidad.</p>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label for="reception-notes-input" class="form-label">Notas u observaciones de lo recibido (opcional):</label>
+                    <textarea id="reception-notes-input" class="form-textarea" rows="4" placeholder="Ej. Recibido completo, en perfecto estado, acabados impecables..."></textarea>
+                </div>
+            </div>
+            <div class="receipt-modal-footer reception-modal-footer">
+                <button type="button" id="btn-cancel-reception" class="btn-receipt-dismiss">Cancelar</button>
+                <button type="button" id="btn-submit-reception" class="btn btn-primary btn-submit-reception">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Confirmar como Recibido</span>
+                </button>
+            </div>
         </div>
     </div>
 

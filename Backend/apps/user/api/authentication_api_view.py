@@ -13,6 +13,8 @@ from apps.user.api.serializers import (
     ChangePasswordSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
+    GoogleAuthSerializer,
+    CompleteProfileSerializer,
 )
 from apps.user.models import User
 from apps.user.services.password_service import (
@@ -292,4 +294,205 @@ class ChangePasswordView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+def verify_google_id_token(credential):
+    """
+    Verifica una credencial/ID Token de Google Identity Services.
+    Consulta el endpoint oficial de Google: https://oauth2.googleapis.com/tokeninfo?id_token=...
+    Retorna el diccionario con la información del usuario de Google o lanza ValidationError si es inválido.
+    """
+    import urllib.request
+    import urllib.error
+    import json
+    from django.conf import settings
+
+    if not credential or not isinstance(credential, str):
+        raise serializers.ValidationError({"credential": "La credencial de Google es requerida."})
+
+    credential_str = credential.strip()
+    url = f"https://oauth2.googleapis.com/tokeninfo?id_token={credential_str}"
+    payload = None
+
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'TuEstante-Backend'})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if response.status == 200:
+                payload = json.loads(response.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        # Si falla en Google o si estamos en entorno local/test con un token mock
+        if settings.DEBUG:
+            try:
+                import jwt
+                payload = jwt.decode(credential_str, options={"verify_signature": False})
+            except Exception:
+                pass
+
+        if not payload:
+            err_msg = "Token de Google no válido o expirado."
+            try:
+                err_data = json.loads(e.read().decode('utf-8'))
+                if 'error_description' in err_data:
+                    err_msg = err_data['error_description']
+            except Exception:
+                pass
+            raise serializers.ValidationError({"credential": f"Error de verificación con Google: {err_msg}"})
+    except urllib.error.URLError as e:
+        if settings.DEBUG:
+            try:
+                import jwt
+                payload = jwt.decode(credential_str, options={"verify_signature": False})
+            except Exception:
+                raise serializers.ValidationError({"credential": f"No se pudo contactar al servidor de Google: {str(e.reason)}"})
+        else:
+            raise serializers.ValidationError({"credential": f"No se pudo contactar al servidor de Google: {str(e.reason)}"})
+    except Exception as e:
+        raise serializers.ValidationError({"credential": f"Error al procesar el token de Google: {str(e)}"})
+
+    if not payload or not isinstance(payload, dict):
+        raise serializers.ValidationError({"credential": "No se pudo obtener información válida del token de Google."})
+
+    if not payload.get('sub') or not payload.get('email'):
+        raise serializers.ValidationError({"credential": "El token de Google no contiene la información mínima requerida (sub o email)."})
+
+    # Validar client_id si está configurado en settings
+    google_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', None)
+    if google_client_id and str(google_client_id).strip():
+        aud = payload.get('aud')
+        azp = payload.get('azp')
+        if aud != google_client_id and azp != google_client_id:
+            raise serializers.ValidationError({"credential": "El token no corresponde al Client ID configurado para esta aplicación."})
+
+    return payload
+
+
+class GoogleAuthView(APIView):
+    """
+    Vista para iniciar sesión o registrarse mediante Google Identity Services.
+    Recibe la credencial (ID token) emitida por Google.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        credential = serializer.validated_data["credential"]
+
+        payload = verify_google_id_token(credential)
+
+        google_id = str(payload.get("sub")).strip()
+        email = str(payload.get("email")).strip().lower()
+        given_name = str(payload.get("given_name") or payload.get("name") or "").strip()
+        family_name = str(payload.get("family_name") or "").strip()
+        avatar_url = str(payload.get("picture") or "").strip()
+
+        # 1. Buscar usuario existente por google_id
+        user = User.objects.filter(google_id=google_id, is_deleted=False).first()
+        is_new_user = False
+
+        if not user:
+            # 2. Si no existe por google_id, buscar por correo
+            user = User.objects.filter(email__iexact=email, is_deleted=False).first()
+            if user:
+                # Vincular google_id al usuario existente
+                user.google_id = google_id
+                if not user.avatar_url and avatar_url:
+                    user.avatar_url = avatar_url
+                if not user.is_active:
+                    user.is_active = True
+                user.save()
+            else:
+                # 3. Crear nuevo usuario a partir de los datos de Google
+                is_new_user = True
+                user = User(
+                    username=email,
+                    email=email,
+                    first_name=given_name,
+                    first_last_name=family_name,
+                    google_id=google_id,
+                    avatar_url=avatar_url or None,
+                    is_active=True,
+                    is_registered=True,
+                )
+                user.set_unusable_password()
+                user.save()
+
+        # Comprobar si el perfil está completo (Cédula, Teléfono y Fecha de Nacimiento obligatoria)
+        profile_completed = bool(
+            user.identity_document
+            and user.phone
+            and user.birth_date
+        )
+
+        refresh = RefreshToken.for_user(user)
+
+        is_employee = False
+        try:
+            from apps.employee_store.models import EmployeeProfile
+            is_employee = EmployeeProfile.objects.filter(
+                user=user,
+                is_deleted=False,
+                is_active=True
+            ).exists()
+        except Exception:
+            is_employee = False
+
+        return Response(
+            {
+                "message": "Autenticación con Google exitosa.",
+                "user": UserSerializer(user).data,
+                "is_new_user": is_new_user,
+                "profile_completed": profile_completed,
+                "is_staff": user.is_staff,
+                "is_superuser": user.is_superuser,
+                "is_employee": is_employee,
+                "tokens": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class UserProfileView(APIView):
+    """
+    Vista para consultar y actualizar el perfil del usuario autenticado actual.
+    Permite culminar el registro (cédula, teléfono que sólo admite números y +, fecha de nacimiento obligatoria).
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        serializer = CompleteProfileSerializer(
+            instance=request.user,
+            data=request.data,
+            partial=True,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        profile_completed = bool(
+            user.identity_document
+            and user.phone
+            and user.birth_date
+        )
+
+        return Response(
+            {
+                "message": "Perfil actualizado exitosamente.",
+                "user": UserSerializer(user).data,
+                "profile_completed": profile_completed
+            },
+            status=status.HTTP_200_OK
+        )
+
+    def put(self, request):
+        return self.patch(request)
 

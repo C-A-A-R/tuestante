@@ -43,15 +43,19 @@ class ProductSerializer(serializers.ModelSerializer):
     angle_images = ProductAngleImageSerializer(many=True, read_only=True)
     is_favorite = serializers.SerializerMethodField()
     favorites_count = serializers.SerializerMethodField()
-    stock = serializers.IntegerField(source='quantity', required=False)
-    color_principal = serializers.CharField(source='main_color', required=False, allow_blank=True)
+    quantity = serializers.IntegerField(required=False)
+    main_color = serializers.CharField(required=False, allow_blank=True)
     product_image = serializers.ImageField(required=False, allow_null=True)
     product_video = serializers.FileField(required=False, allow_null=True)
 
     def to_internal_value(self, data):
-        # Asegurar copia mutable para sanitizar campos
-        if hasattr(data, '_mutable'):
-            data = data.copy()
+        # QueryDict.copy() hace deepcopy y falla con TemporaryUploadedFile.
+        # Construir un dict superficial conserva los archivos sin copiar sus streams.
+        if hasattr(data, 'lists'):
+            data = {
+                key: values[-1] if len(values) == 1 else values
+                for key, values in data.lists()
+            }
         elif isinstance(data, dict):
             data = data.copy()
 
@@ -76,9 +80,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'is_outlet',
             'is_feature_product',
             'quantity',
-            'stock',
             'main_color',
-            'color_principal',
             'is_favorite',
             'favorites_count',
             'height_cm',

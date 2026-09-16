@@ -119,12 +119,16 @@ def compress_and_save_video(video_field,
 
     tmp_input = None
     tmp_output = None
+    is_committed = getattr(video_field, '_committed', True)
 
     try:
         # 1. Leer el contenido del campo a un archivo temporal de entrada
         video_field.open('rb')
         input_bytes = video_field.read()
-        video_field.close()
+        try:
+            video_field.seek(0)
+        except Exception:
+            pass
 
         tmp_input = tempfile.NamedTemporaryFile(suffix='.mp4', delete=False)
         tmp_input.write(input_bytes)
@@ -179,6 +183,11 @@ def compress_and_save_video(video_field,
             base = os.path.splitext(os.path.basename(orig_name))[0] if orig_name else uuid.uuid4().hex
             new_filename = f"{base}.{VIDEO_OUTPUT_EXT}"
 
+            try:
+                video_field.close()
+            except Exception:
+                pass
+
             content_file = ContentFile(compressed_bytes, name=new_filename)
             video_field.file = content_file
             video_field.name = new_filename
@@ -207,6 +216,10 @@ def compress_and_save_video(video_field,
             "compress_and_save_video: error inesperado comprimiendo '%s'. Causa: %s",
             getattr(video_field, 'name', '?'), exc
         )
+        try:
+            video_field.seek(0)
+        except Exception:
+            pass
         return False
 
     finally:

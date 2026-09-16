@@ -8,7 +8,7 @@
 
 import { extractList } from '../../js/api.js';
 import { crearPedido } from './orders.api.js';
-import { obtenerDistribuidores } from './shipment.api.js';
+import { obtenerDistribuidores, obtenerDistribuidoresDisponibles } from './shipment.api.js';
 import { getAccessToken, getCurrentUser } from '../../js/storage.js';
 import { initNavbar } from '../../components/navbar/navbar.js';
 import { initFooter } from '../../components/footer/footer.js';
@@ -282,43 +282,56 @@ function initLocationSelects() {
     // Eventos de cambio
     stateSelect.addEventListener('change', () => {
         updateMunicipalities(stateSelect.value);
+        loadProviders(stateSelect.value, municipalitySelect.value);
     });
 
     municipalitySelect.addEventListener('change', () => {
         updateCities(stateSelect.value, municipalitySelect.value);
+        loadProviders(stateSelect.value, municipalitySelect.value);
     });
 
     // Inicializar cascada con el estado seleccionado
     if (stateSelect.value) {
         updateMunicipalities(stateSelect.value);
+        loadProviders(stateSelect.value, municipalitySelect.value);
+    } else {
+        loadProviders('', '');
     }
 }
 
 /**
- * Carga los proveedores de transporte desde el backend (/api/distributors/)
- * y los inserta en el selector de transportistas.
+ * Carga los proveedores de transporte con cobertura geográfica confirmada
+ * para el Estado y Municipio seleccionados. Si no hay cobertura, bloquea la opción y avisa al usuario.
  */
-async function loadProviders() {
+async function loadProviders(state = '', municipality = '') {
     const providerSelect = document.getElementById('checkout-provider');
     if (!providerSelect) return;
 
-    const defaultProviders = [
-        { id: null, name: "TuEstante Express (Envío Propio / Táchira)" },
-        { id: null, name: "MRW" },
-        { id: null, name: "Tealca" },
-        { id: null, name: "Zoom" },
-        { id: null, name: "Domesa" },
-        { id: null, name: "Fletes GAG" },
-        { id: null, name: "Retiro en Planta / Fábrica (San Cristóbal, Táchira)" }
-    ];
+    providerSelect.innerHTML = '<option value="" disabled selected>Consultando cobertura de envíos...</option>';
+    providerSelect.disabled = true;
 
     try {
-        const response = await obtenerDistribuidores();
-        let distributors = extractList(response);
-        if (!distributors || distributors.length === 0) {
-            distributors = defaultProviders;
+        let distributors = [];
+        if (state) {
+            const response = await obtenerDistribuidoresDisponibles({
+                state: state.trim(),
+                municipality: municipality ? municipality.trim() : ''
+            });
+            distributors = extractList(response);
+        } else {
+            const response = await obtenerDistribuidores();
+            distributors = extractList(response);
         }
 
+        if (!distributors || distributors.length === 0) {
+            providerSelect.innerHTML = '<option value="" disabled selected>Sin cobertura disponible para esta zona</option>';
+            providerSelect.disabled = true;
+            setFieldError('checkout-provider', `No hay empresas de transporte con cobertura disponible para ${state}${municipality ? `, ${municipality}` : ''}. Por favor elige otra ubicación o contáctanos.`);
+            return;
+        }
+
+        clearFieldError('checkout-provider');
+        providerSelect.disabled = false;
         providerSelect.innerHTML = '<option value="" disabled selected>Selecciona un proveedor de transporte</option>';
         distributors.forEach(d => {
             const opt = document.createElement('option');
@@ -326,13 +339,25 @@ async function loadProviders() {
             if (d.id) {
                 opt.dataset.distributorId = d.id;
             }
-            opt.textContent = d.rif ? `${d.name} (${d.rif})` : d.name;
+            let detail = '';
+            if (d.estimated_days_min && d.estimated_days_max) {
+                detail = ` (${d.estimated_days_min}-${d.estimated_days_max} días)`;
+            } else if (d.coverage_type === 'national') {
+                detail = ' (Nacional)';
+            }
+            opt.textContent = `${d.name}${detail}`;
             providerSelect.appendChild(opt);
         });
 
     } catch (err) {
-        console.warn('No se pudieron cargar distribuidores de la API, usando lista por defecto:', err);
+        console.warn('Error al consultar cobertura de distribuidores:', err);
+        providerSelect.disabled = false;
         providerSelect.innerHTML = '<option value="" disabled selected>Selecciona un proveedor de transporte</option>';
+        const defaultProviders = [
+            { id: null, name: "MRW (Nacional)" },
+            { id: null, name: "Tealca (Nacional)" },
+            { id: null, name: "Zoom (Nacional)" }
+        ];
         defaultProviders.forEach(d => {
             const opt = document.createElement('option');
             opt.value = d.name;
@@ -499,9 +524,9 @@ function validateCheckoutForm() {
         if (!firstInvalidElement) firstInvalidElement = sectorEl;
     }
 
-    // 5. Validar Proveedor de Envío
-    if (!provider) {
-        setFieldError('checkout-provider', 'Por favor selecciona una empresa o método de transporte.');
+    // 5. Validar Proveedor de Envío y Cobertura
+    if (!provider || providerEl?.disabled) {
+        setFieldError('checkout-provider', 'Debes seleccionar un transportista con cobertura disponible para tu zona.');
         isValid = false;
         if (!firstInvalidElement) firstInvalidElement = providerEl;
     }
@@ -685,10 +710,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadComponent('footer-placeholder', '../../components/footer/footer.html');
     initFooter();
 
-    // 4. Cargar datos de ubicación, productos y proveedores del backend
+    // 4. Cargar datos de ubicación, productos y cobertura de proveedores
     initLocationSelects();
     renderCheckoutProducts();
-    await loadProviders();
 
     // 5. Configurar validación en tiempo real (limpieza de errores al escribir)
     setupRealtimeValidation();

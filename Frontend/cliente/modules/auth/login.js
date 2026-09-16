@@ -7,6 +7,7 @@
  */
 
 import { loginUser } from "./auth.js";
+import { initGoogleAuth } from "./google-auth.js";
 import { getAccessToken, getRefreshToken, getCurrentUser } from "../../js/storage.js";
 
 /**
@@ -256,6 +257,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	setupPasswordToggle(form);
 	form.addEventListener("submit", handleLogin);
+
+	// Inicializar Google Sign-In
+	initGoogleAuth({
+		btnContainerId: "googleBtn",
+		customBtnId: "customGoogleBtn",
+		onError: (msg) => showAuthErrorNotification(msg),
+	});
 
 	const usuarioField = getFormField(form, "usuario");
 	const passwordField = getFormField(form, "contrasena");

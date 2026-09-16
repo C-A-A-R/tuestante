@@ -1,0 +1,576 @@
+:root {
+  --dist-primary: #005187;
+  --dist-primary-hover: #003e68;
+  --dist-bg: #f8fafc;
+  --dist-border: #e2e8f0;
+  --dist-muted: #64748b;
+  --dist-card: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   CONTENEDOR DE LA PÁGINA
+   ========================================================================== */
+.distributor-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px;
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ==========================================================================
+   1. ENCABEZADO ESTÁNDAR (SCREEN-HEADER-CARD)
+   ========================================================================== */
+.screen-header-card {
+  background: var(--dist-card);
+  border: 1px solid var(--dist-border);
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  gap: 16px;
+}
+
+.screen-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.header-back-link {
+  margin-bottom: 4px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--dist-primary);
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.back-link:hover {
+  color: var(--dist-primary-hover);
+  transform: translateX(-2px);
+}
+
+.back-link svg {
+  flex-shrink: 0;
+}
+
+.screen-main-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.screen-main-desc {
+  font-size: 0.85rem;
+  color: var(--dist-muted);
+  margin: 0;
+  max-width: 680px;
+  line-height: 1.45;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   BOTONES ESTÁNDAR
+   ========================================================================== */
+.btn,
+.dist-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+  border: 1px solid transparent;
+  line-height: 1.25;
+}
+
+.btn svg,
+.dist-btn svg {
+  flex-shrink: 0;
+}
+
+.btn-outline,
+.dist-btn.secondary {
+  background: #ffffff;
+  border-color: var(--dist-border);
+  color: #0f172a;
+}
+
+.btn-outline:hover,
+.dist-btn.secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.btn-primary,
+.dist-btn:not(.secondary):not(.danger) {
+  background: var(--dist-primary);
+  border-color: var(--dist-primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled),
+.dist-btn:not(.secondary):not(.danger):hover:not(:disabled) {
+  background: var(--dist-primary-hover);
+  border-color: var(--dist-primary-hover);
+}
+
+.btn-primary:disabled,
+.btn-outline:disabled,
+.dist-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-danger,
+.dist-btn.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 8px 12px;
+}
+
+.btn-danger:hover,
+.dist-btn.danger:hover {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+/* ==========================================================================
+   ASTERISCO DE CAMPO REQUERIDO (ROJO)
+   ========================================================================== */
+.required-star,
+.required-mark,
+.required {
+  color: #ef4444 !important;
+  font-weight: 700;
+  margin-left: 3px;
+  display: inline-block;
+}
+
+/* ==========================================================================
+   TARJETAS Y FORMULARIOS
+   ========================================================================== */
+.dist-card {
+  background: var(--dist-card);
+  border: 1px solid var(--dist-border);
+  border-radius: 14px;
+  padding: 22px 24px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.dist-card h2 {
+  margin: 0 0 18px;
+  color: #0f172a;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.dist-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dist-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dist-field.full {
+  grid-column: 1 / -1;
+}
+
+.dist-field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.dist-field input,
+.dist-field select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--dist-border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.88rem;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.dist-field input:focus,
+.dist-field select:focus {
+  outline: none;
+  border-color: var(--dist-primary);
+  box-shadow: 0 0 0 3px rgba(0, 81, 135, 0.12);
+}
+
+.dist-field input:disabled,
+.dist-field select:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   SECCIÓN DE COBERTURAS
+   ========================================================================== */
+.coverage-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.coverage-toolbar h2 {
+  margin: 0;
+}
+
+.coverage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Fila de Cobertura con CSS Grid Fluido y Responsivo */
+.coverage-row {
+  display: grid;
+  grid-template-columns: 2.2fr 1.8fr 1.8fr 1.1fr 1.1fr 1.3fr auto;
+  gap: 12px;
+  align-items: flex-end;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid var(--dist-border);
+  border-radius: 12px;
+  transition: all 0.15s ease;
+}
+
+.coverage-row:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03);
+}
+
+/* Evita que los inputs o contenedores se desborden de la pantalla */
+.coverage-row > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.coverage-row label {
+  display: flex;
+  align-items: center;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.coverage-row input,
+.coverage-row select {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--dist-border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.85rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.coverage-row input:focus,
+.coverage-row select:focus {
+  outline: none;
+  border-color: var(--dist-primary);
+  box-shadow: 0 0 0 3px rgba(0, 81, 135, 0.12);
+}
+
+.coverage-row input:disabled,
+.coverage-row select:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Botón de eliminar en fila de cobertura */
+.coverage-btn-remove {
+  height: 38px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.coverage-btn-remove:hover:not(:disabled) {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.coverage-btn-remove:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.dist-status {
+  font-size: 0.85rem;
+  color: var(--dist-muted);
+  min-height: 20px;
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+/* ==========================================================================
+   TABLA DE COBERTURAS (DETALLE)
+   ========================================================================== */
+.dist-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--dist-border);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.dist-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+}
+
+.dist-table th,
+.dist-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--dist-border);
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+
+.dist-table th {
+  background: #f8fafc;
+  color: var(--dist-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dist-table td input,
+.dist-table td select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--dist-border);
+  border-radius: 6px;
+  font-size: 0.84rem;
+  background: #ffffff;
+  color: #0f172a;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.dist-table td input:focus,
+.dist-table td select:focus {
+  outline: none;
+  border-color: var(--dist-primary);
+  box-shadow: 0 0 0 2px rgba(0, 81, 135, 0.12);
+}
+
+.dist-table td input:disabled,
+.dist-table td select:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.table-action-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.btn-table-action {
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.btn-table-save {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+.btn-table-save:hover:not(:disabled) {
+  background: #bae6fd;
+  color: #0284c7;
+}
+
+.btn-table-delete {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.btn-table-delete:hover:not(:disabled) {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.btn-table-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dist-empty {
+  padding: 30px;
+  text-align: center;
+  color: var(--dist-muted);
+}
+
+/* ==========================================================================
+   PIE DE FORMULARIO (BOTONES AL FINAL)
+   ========================================================================== */
+.form-footer-card {
+  background: var(--dist-card);
+  border: 1px solid var(--dist-border);
+  border-radius: 14px;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  margin-top: 18px;
+}
+
+/* ==========================================================================
+   RESPONSIVIDAD Y MEDIA QUERIES
+   ========================================================================== */
+@media (max-width: 1100px) {
+  .coverage-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .coverage-field-state { grid-column: span 1; }
+  .coverage-field-municipality { grid-column: span 1; }
+  .coverage-field-city { grid-column: span 1; }
+  .coverage-field-min-days { grid-column: span 1; }
+  .coverage-field-max-days { grid-column: span 1; }
+  .coverage-field-cost { grid-column: span 1; }
+  .coverage-field-action {
+    grid-column: span 3;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 860px) {
+  .distributor-page {
+    padding: 16px 12px;
+  }
+
+  .screen-header-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .dist-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .coverage-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .coverage-field-state { grid-column: span 2; }
+  .coverage-field-municipality { grid-column: span 2; }
+  .coverage-field-city { grid-column: span 2; }
+  .coverage-field-min-days { grid-column: span 1; }
+  .coverage-field-max-days { grid-column: span 1; }
+  .coverage-field-cost { grid-column: span 2; }
+  .coverage-field-action {
+    grid-column: span 2;
+  }
+  .coverage-btn-remove {
+    width: 100%;
+  }
+
+  .form-footer-card {
+    flex-direction: column-reverse;
+  }
+
+  .form-footer-card .btn {
+    width: 100%;
+  }
+}

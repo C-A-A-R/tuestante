@@ -1244,3 +1244,114 @@
         padding: 24px 14px 60px 14px;
     }
 }
+
+/* =============================================================
+   RECEPCIÓN DE PRODUCTOS Y NOTAS
+   ============================================================= */
+.order-reception-box {
+    margin-top: 18px;
+    padding: 16px 18px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%);
+    border: 1.5px solid rgba(16, 185, 129, 0.3);
+    border-radius: var(--radius-md);
+    animation: fadeIn 0.3s ease;
+}
+
+.reception-box-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.reception-box-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.reception-badge-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #10b981;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+
+.reception-box-title {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #065f46;
+    margin: 0 0 3px 0;
+}
+
+.reception-box-subtitle {
+    font-size: 0.82rem;
+    color: #047857;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.btn-confirm-reception {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    transition: all 0.2s ease;
+}
+
+.btn-confirm-reception:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+}
+
+.shipping-info-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.highlight-reception-notes {
+    display: block;
+    background: #f0fdf4;
+    border-left: 3px solid #10b981;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-style: italic;
+    color: #065f46;
+    font-size: 0.86rem;
+    margin-top: 4px;
+}
+
+.reception-modal-card {
+    max-width: 520px;
+}
+
+.reception-modal-instruction {
+    font-size: 0.88rem;
+    color: var(--body-text);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.btn-submit-reception {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-color: #059669;
+}
+
+.btn-submit-reception:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+

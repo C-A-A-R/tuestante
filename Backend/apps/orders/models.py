@@ -62,6 +62,18 @@ class Order(BaseModel):
         null=True,
         help_text='Observaciones adicionales del cliente sobre el pedido'
     )
+    reception_notes = models.TextField(
+        'Notas u observaciones de recepción',
+        blank=True,
+        null=True,
+        help_text='Observaciones del cliente al recibir los productos'
+    )
+    reception_date = models.DateTimeField(
+        'Fecha y hora de recepción',
+        blank=True,
+        null=True,
+        help_text='Momento exacto en que se confirmó la recepción del pedido'
+    )
 
     class Meta:
         verbose_name = 'Pedido'

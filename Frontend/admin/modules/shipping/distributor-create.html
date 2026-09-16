@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Nuevo Distribuidor | TuEstante Admin</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="../../index.css">
+	<link rel="stylesheet" href="../../components/drawer/drawer.css">
+	<link rel="stylesheet" href="../../components/navbar/navbar.css">
+	<link rel="stylesheet" href="../../components/footer/footer.css">
+	<link rel="stylesheet" href="distributor.css">
+</head>
+<body data-page-title="Nuevo Distribuidor">
+	<div class="app-layout" id="app-layout">
+		<div id="drawer-placeholder"></div>
+		<div id="navbar-placeholder"></div>
+		<main class="app-main-content">
+			<div class="distributor-page">
+				<!-- 1. Encabezado de Pantalla Estándar -->
+				<section class="screen-header-card">
+					<div class="screen-header-text">
+						<div class="header-back-link">
+							<a href="shipping.html" class="back-link" id="link-back-shipping">
+								<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+									<line x1="19" y1="12" x2="5" y2="12"></line>
+									<polyline points="12 19 5 12 12 5"></polyline>
+								</svg>
+								<span>Volver a Envíos</span>
+							</a>
+						</div>
+						<h2 class="screen-main-title">Registrar distribuidor</h2>
+						<p class="screen-main-desc">
+							Registra un transportador y define las zonas donde presta servicio.
+						</p>
+					</div>
+					<div class="header-actions">
+						<a class="btn btn-outline" href="shipping.html" id="btn-cancel-top">Cancelar</a>
+						<button type="submit" class="btn btn-primary" form="distributor-form" id="btn-submit-top">
+							<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+								<polyline points="17 21 17 13 7 13 7 21"></polyline>
+								<polyline points="7 3 7 8 15 8"></polyline>
+							</svg>
+							<span>Guardar distribuidor</span>
+						</button>
+					</div>
+				</section>
+
+				<form id="distributor-form">
+					<section class="dist-card">
+						<h2>Información del distribuidor</h2>
+						<div class="dist-form-grid">
+							<div class="dist-field">
+								<label for="name">Nombre <span class="required-star">*</span></label>
+								<input id="name" required maxlength="200" placeholder="Ej. Tealca, Domesa, Flete Propio">
+							</div>
+							<div class="dist-field">
+								<label for="rif">RIF <span class="required-star">*</span></label>
+								<input id="rif" required maxlength="20" placeholder="Ej. J-12345678-9">
+							</div>
+							<div class="dist-field">
+								<label for="phone">Teléfono</label>
+								<input id="phone" type="tel" inputmode="tel" maxlength="20" placeholder="Ej. +584121234567">
+							</div>
+							<div class="dist-field">
+								<label for="email">Correo</label>
+								<input id="email" type="email" placeholder="contacto@distribuidor.com">
+							</div>
+							<div class="dist-field">
+								<label for="coverage_type">Tipo de cobertura <span class="required-star">*</span></label>
+								<select id="coverage_type">
+									<option value="national">Nacional</option>
+									<option value="regional" selected>Regional</option>
+									<option value="local">Local</option>
+								</select>
+							</div>
+							<div class="dist-field">
+								<label for="is_active">Estado</label>
+								<select id="is_active">
+									<option value="true">Activo</option>
+									<option value="false">Inactivo</option>
+								</select>
+							</div>
+						</div>
+					</section>
+
+					<section class="dist-card">
+						<div class="coverage-toolbar">
+							<h2>Zonas de cobertura</h2>
+							<button type="button" class="btn btn-outline" id="add-coverage">
+								<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+									<line x1="12" y1="5" x2="12" y2="19"></line>
+									<line x1="5" y1="12" x2="19" y2="12"></line>
+								</svg>
+								<span>Agregar zona</span>
+							</button>
+						</div>
+						<div class="coverage-list" id="coverage-list"></div>
+						<p class="dist-status" id="form-status"></p>
+					</section>
+
+					<!-- Botones de Acción al Final del Formulario -->
+					<div class="form-footer-card">
+						<a class="btn btn-outline" href="shipping.html" id="btn-cancel-bottom">Cancelar</a>
+						<button type="submit" class="btn btn-primary" form="distributor-form" id="btn-submit-bottom">
+							<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+								<polyline points="17 21 17 13 7 13 7 21"></polyline>
+								<polyline points="7 3 7 8 15 8"></polyline>
+							</svg>
+							<span>Guardar distribuidor</span>
+						</button>
+					</div>
+				</form>
+			</div>
+		</main>
+		<div id="footer-placeholder"></div>
+	</div>
+	<script type="module" src="distributor-create.js"></script>
+</body>
+</html>

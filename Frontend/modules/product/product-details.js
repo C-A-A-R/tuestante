@@ -1,439 +1,205 @@
 import { initNavbar } from '../../components/navbar/navbar.js';
+import { resolveImageUrl } from '../../js/api.js';
 import { obtenerProductoPorId, obtenerProductos, alternarFavoritoProducto } from './product.api.js';
-import { backendOrigin } from '../../js/config.js';
 import { getAccessToken } from '../../js/storage.js';
 import { showCartModal } from '../../components/cart-modal/cart-modal.js';
 import { showSuccessToast, showInfoToast, showErrorToast } from '../../components/toast/toast.js';
 
-function resolveImageUrl(imagePath, fallback = '../../assets/images/productos/estante-blanco.jpeg') {
-    if (!imagePath) return fallback;
-
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        if (imagePath.includes('/media/')) {
-            const mediaPath = imagePath.substring(imagePath.indexOf('/media/'));
-            return `${backendOrigin}${mediaPath}`;
-        }
-        return imagePath;
-    }
-
-    if (imagePath.startsWith('/media/') || imagePath.startsWith('media/')) {
-        const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-        return `${backendOrigin}${cleanPath}`;
-    }
-
-    if (imagePath.includes('assets/')) {
-        if (!imagePath.startsWith('../') && !imagePath.startsWith('/')) {
-            return `../../${imagePath}`;
-        }
-        return imagePath;
-    }
-
-    if (imagePath.startsWith('/')) {
-        return `${backendOrigin}${imagePath}`;
-    }
-
-    return `${backendOrigin}/${imagePath}`;
-}
-
-
-
 /* ==========================================================================
-   CARGA DE COMPONENTES DE ESTRUCTURA (Navbar y Footer)
+   CARGA DE COMPONENTES ESTRUCTURALES
    ========================================================================== */
 
 async function loadComponent(placeholderId, filePath) {
     try {
-        const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
+        const url = filePath.includes('?') ? `${filePath}&_v=3.3` : `${filePath}?_v=3.3`;
         const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) throw new Error(`Error al cargar ${filePath}`);
         const html = await response.text();
         const container = document.getElementById(placeholderId);
         if (container) container.innerHTML = html;
     } catch (error) {
-        console.error(`Error al cargar ${filePath}:`, error);
+        console.error(`Error al cargar el componente ${filePath}:`, error);
     }
 }
 
 /* ==========================================================================
-   INICIALIZACIÓN PRINCIPAL
+   INICIALIZACIÓN PRINCIPAL DE LA VISTA DE DETALLE
    ========================================================================== */
 
-const DEFAULT_COLOR_PALETTE = [
-    { name: 'Amarillo Sol', hex: '#FACC15', isLight: true },
-    { name: 'Verde Lima', hex: '#84CC16' },
-    { name: 'Verde Esmeralda', hex: '#16A34A' },
-    { name: 'Verde Turquesa', hex: '#0D9488' },
-    { name: 'Azul Rey', hex: '#0284C7' },
-    { name: 'Azul Cobalto', hex: '#2563EB' },
-    { name: 'Morado Real', hex: '#7C3AED' },
-    { name: 'Magenta Fucsia', hex: '#C026D3' },
-    { name: 'Rojo Carmín', hex: '#DC2626' },
-    { name: 'Naranja Intenso', hex: '#EA580C' },
-    { name: 'Naranja Cálido', hex: '#F59E0B' },
-    { name: 'Amarillo Dorado', hex: '#FBBF24', isLight: true },
-    { name: 'Gris Industrial', hex: '#64748b' },
-    { name: 'Blanco Ostra', hex: '#f8fafc', isLight: true },
-    { name: 'Negro Mate', hex: '#1e293b' }
-];
-
-function isColorLight(hexColor) {
-    if (!hexColor || typeof hexColor !== 'string') return false;
-    let hex = hexColor.replace('#', '');
-    if (hex.length === 3) {
-        hex = hex.split('').map(c => c + c).join('');
-    }
-    if (hex.length !== 6) return false;
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    return brightness > 180;
-}
-
-function mapProduct(p) {
-    if (!p) return null;
-
-    const mainImage = resolveImageUrl(p.product_image || p.image, '../../assets/images/productos/estante-blanco.jpeg');
-
-    const primaryColorOption = {
-        name: 'Color Primario',
-        hex: '#005187',
-        image: mainImage,
-        color_image: mainImage,
-        isLight: false,
-        isPrimary: true
-    };
-
-    const rawColorImages = Array.isArray(p.color_images) && p.color_images.length > 0
-        ? p.color_images
-        : (Array.isArray(p.images) ? p.images : (Array.isArray(p.product_image_set) ? p.product_image_set : []));
-
-    let colors = [primaryColorOption];
-    if (rawColorImages.length > 0) {
-        rawColorImages.forEach((imgObj, idx) => {
-            const colorHex = imgObj.color_hex || '#005187';
-            const colorName = imgObj.color_name || (imgObj.color_hex ? `Color ${imgObj.color_hex}` : `Color ${idx + 1}`);
-            const colorImg = resolveImageUrl(imgObj.color_image || imgObj.image, mainImage);
-            colors.push({
-                name: colorName,
-                hex: colorHex,
-                image: colorImg,
-                color_image: colorImg,
-                isLight: isColorLight(colorHex),
-                isPrimary: false
-            });
-        });
-    }
-
-    let angles = [];
-    const rawAngleImages = Array.isArray(p.angle_images) ? p.angle_images : [];
-    if (rawAngleImages.length > 0) {
-        rawAngleImages.forEach((imgObj, idx) => {
-            const angleImg = resolveImageUrl(imgObj.image, mainImage);
-            angles.push({
-                id: imgObj.id || idx,
-                image: angleImg,
-                angle: imgObj.angle || `Ángulo ${idx + 1}`,
-                order: imgObj.order !== undefined ? imgObj.order : idx
-            });
-        });
-        angles.sort((a, b) => a.order - b.order);
-    }
-
-    return {
-        id: p.id,
-        typeId: p.product_type || p.product_type_detail?.id || p.typeId || 1,
-        typeName: p.product_type_detail?.product_type_name || p.typeName || 'General',
-        name: p.product_name || p.name || 'Producto sin nombre',
-        description: p.description || '',
-        fullDescription: p.fullDescription || p.description || '',
-        price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
-        image: mainImage,
-        video: resolveImageUrl(p.product_video || p.video, null),
-        heightCm: p.height_cm !== undefined ? parseFloat(p.height_cm) : (p.heightCm || 0),
-        lengthCm: p.depth_cm !== undefined ? parseFloat(p.depth_cm) : (p.lengthCm || 0),
-        widthCm: p.width_cm !== undefined ? parseFloat(p.width_cm) : (p.widthCm || 0),
-        security: p.security || '',
-        badge: p.is_feature_product ? 'Destacado' : (p.badge || ''),
-        is_active: p.is_active !== undefined ? Boolean(p.is_active) : true,
-        is_outlet: Boolean(p.is_outlet),
-        quantity: typeof p.quantity === 'number' ? p.quantity : parseInt(p.quantity, 10) || 0,
-        is_favorite: Boolean(p.is_favorite),
-        favorites_count: p.favorites_count || 0,
-        colors: colors,
-        angles: angles
-    };
-}
-
-const LOCAL_5_PRODUCTS = [
-    {
-        id: 101,
-        typeId: 1,
-        typeName: 'Lockers',
-        categoryId: 1,
-        categoryName: 'Lockers Metálicos',
-        name: 'LOCKER METÁLICO EJECUTIVO L4',
-        description: 'Locker metálico de 4 compartimentos con cerradura individual y ventilación reforzada.',
-        fullDescription: 'Locker metálico de alta resistencia fabricado en lámina de acero de 0.8mm con recubrimiento en pintura electrostática gris industrial. Ideal para vestuarios, empresas y gimnasios.',
-        price: 399.00,
-        image: '../../assets/images/carrusel-index/LocekrL4Gris.jpg',
-        heightCm: 180,
-        lengthCm: 90,
-        widthCm: 45,
-        security: 'Cerradura de cilindro con 2 llaves por casilla',
-        badge: 'Destacado'
-    },
-    {
-        id: 102,
-        typeId: 2,
-        typeName: 'Armarios',
-        categoryId: 2,
-        categoryName: 'Armarios Metálicos',
-        name: 'ARMARIO METÁLICO MODULAR VERDE',
-        description: 'Armario metálico con puertas de cristal y estantes ajustables para almacenamiento.',
-        fullDescription: 'Armario metálico multifuncional estilo vintage-industrial en acabado verde menta. Incluye 4 niveles de estantería interna regulables y cerradura centralizada.',
-        price: 610.00,
-        image: '../../assets/images/gallery/real_space_11.jpg',
-        heightCm: 190,
-        lengthCm: 100,
-        widthCm: 50,
-        security: 'Cerradura de falleba de 3 puntos',
-        badge: 'Destacado'
-    },
-    {
-        id: 103,
-        typeId: 3,
-        typeName: 'Gabinetes',
-        categoryId: 3,
-        categoryName: 'Gabinetes de Oficina',
-        name: 'GABINETE ORGANIZADOR COMPACTO',
-        description: 'Gabinete organizador compacto de 4 cajones para oficina y hogar.',
-        fullDescription: 'Gabinete metálico moderno en tono rosado pastel para oficinas creativas y del hogar. Dispone de correderas telescópicas con apertura suave y alta capacidad de carga.',
-        price: 280.00,
-        image: '../../assets/images/gallery/real_space_1.jpg',
-        heightCm: 110,
-        lengthCm: 80,
-        widthCm: 40,
-        security: 'Cerradura llave maestra única',
-        badge: ''
-    },
-    {
-        id: 104,
-        typeId: 4,
-        typeName: 'Estantes',
-        categoryId: 4,
-        categoryName: 'Estanterías Industriales',
-        name: 'ESTANTE INDUSTRIAL DE ALTA CARGA',
-        description: 'Estantería metálica con 5 baldas de alta resistencia para depósitos y talleres.',
-        fullDescription: 'Estantería metálica reforzada capaz de soportar hasta 250kg por bandeja. Ensamblado sin tornillos por sistema de encaje a presión con acabado anti-corrosión.',
-        price: 195.00,
-        image: '../../assets/images/gallery/real_space_4.jpg',
-        heightCm: 200,
-        lengthCm: 120,
-        widthCm: 60,
-        security: 'Estructura auto-portante con anclaje a pared',
-        badge: ''
-    },
-    {
-        id: 105,
-        typeId: 3,
-        typeName: 'Gabinetes',
-        categoryId: 3,
-        categoryName: 'Gabinetes de Oficina',
-        name: 'GABINETE ARCHIVADOR TURQUESA',
-        description: 'Archivador metálico de carpeta suspendida en elegante color turquesa.',
-        fullDescription: 'Archivador ejecutivo de 4 gavetas para carpetas oficio y carta. Sistema anti-vuelco de seguridad que permite la apertura de una sola gaveta a la vez.',
-        price: 320.00,
-        image: '../../assets/images/gallery/real_space_9.jpg',
-        heightCm: 135,
-        lengthCm: 50,
-        widthCm: 65,
-        security: 'Cerradura central anti-vuelco',
-        badge: ''
-    }
-];
-
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Cargar Navbar y Footer
     await Promise.all([
         loadComponent('navbar-placeholder', '../../components/navbar/navbar.html'),
         loadComponent('footer-placeholder', '../../components/footer/footer.html')
     ]);
 
-    // 2. Inicializar Comportamiento de Navbar
     initNavbar();
     document.body.classList.add('drawer-collapsed');
 
-    // 3. Obtener el ID del producto de los parámetros de la URL
     const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get('id');
+    let productId = urlParams.get('id');
 
     let product = null;
-    let allProducts = [];
 
-    if (productId) {
-        try {
-            const rawProd = await obtenerProductoPorId(productId);
-            if (rawProd) {
-                product = mapProduct(rawProd?.product || rawProd);
-            }
-        } catch (err) {
-            console.error(`Error al obtener el producto ${productId} desde el backend:`, err);
-        }
-
-        if (!product) {
-            const localMatch = LOCAL_5_PRODUCTS.find(p => String(p.id) === String(productId));
-            if (localMatch) {
-                product = mapProduct(localMatch);
+    try {
+        if (!productId) {
+            // Si no viene ID en URL, consultar el primer producto disponible
+            const initialList = await obtenerProductos();
+            if (Array.isArray(initialList) && initialList.length > 0) {
+                productId = initialList[0].id;
             }
         }
 
-        // Regla: Los clientes no pueden ver productos outlet sin stock
+        if (productId) {
+            product = await obtenerProductoPorId(productId);
+        }
+
+        // Si es producto outlet sin stock para clientes públicos, tratar como no disponible
         if (product && product.is_outlet && (!product.quantity || product.quantity <= 0)) {
             product = null;
         }
-    }
-
-    // Intentar obtener listado de productos para relacionales
-    try {
-        const rawListRes = await obtenerProductos();
-        const listData = Array.isArray(rawListRes)
-            ? rawListRes
-            : (Array.isArray(rawListRes?.results) ? rawListRes.results : (Array.isArray(rawListRes?.products) ? rawListRes.products : []));
-        if (listData.length > 0) {
-            allProducts = listData.map(mapProduct).filter(Boolean);
-        }
     } catch (err) {
-        // Fallback silencioso a productos locales cuando el backend no está disponible
-        allProducts = [];
+        console.error('Error al obtener detalle de producto del backend:', err);
+        product = null;
     }
-
-    if (!allProducts || allProducts.length === 0) {
-        allProducts = LOCAL_5_PRODUCTS.map(mapProduct).filter(Boolean);
-    }
-
-    // Filtrar para no mostrar outlets sin stock en carruseles ni relacionados
-    allProducts = allProducts.filter(p => !p.is_outlet || (p.quantity && p.quantity > 0));
 
     if (product) {
-        // Poblar datos en la pantalla de detalle
         populateProductDetails(product);
         initImageInteractions(product);
-        renderRelatedProducts(product, allProducts);
+
+        // Optimización: Cargar ÚNICAMENTE los productos relacionados del mismo tipo
+        if (product.product_type) {
+            try {
+                const relatedList = await obtenerProductos({ type: product.product_type });
+                const relatedProducts = (Array.isArray(relatedList) ? relatedList : []).filter(
+                    p => p.id !== product.id && (!p.is_outlet || (p.quantity && p.quantity > 0))
+                );
+                renderRelatedProducts(product, relatedProducts);
+            } catch (err) {
+                console.error('Error al cargar productos relacionados:', err);
+                renderRelatedProducts(product, []);
+            }
+        } else {
+            renderRelatedProducts(product, []);
+        }
     } else {
-        const detailContainer = document.querySelector('.product-details-container') || document.querySelector('main');
-        if (detailContainer) {
-            detailContainer.innerHTML = `
-                <div class="empty-results-box" style="padding: 60px 20px; text-align: center;">
-                    <div class="empty-results-icon" style="font-size: 3rem;">🔍</div>
-                    <h3 class="empty-results-title">Producto no encontrado</h3>
-                    <p class="empty-results-desc">El producto solicitado no existe o no se encuentra disponible actualmente.</p>
-                    <a href="products.html" class="type-btn" style="display: inline-block; margin-top: 20px; text-decoration: none;">Volver al Catálogo</a>
+        const mainEl = document.querySelector('.product-details-container') || document.querySelector('main');
+        if (mainEl) {
+            mainEl.innerHTML = `
+                <div class="empty-results-box" style="padding: 80px 20px; text-align: center; max-width: 600px; margin: 40px auto;">
+                    <div class="empty-results-icon" style="font-size: 3.5rem; margin-bottom: 16px;">🔍</div>
+                    <h2 class="empty-results-title" style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 10px;">Producto no disponible</h2>
+                    <p class="empty-results-desc" style="color: #64748b; font-size: 1rem; line-height: 1.6; margin-bottom: 24px;">El producto solicitado no existe o no se encuentra disponible actualmente en nuestro catálogo.</p>
+                    <a href="products.html" class="type-btn" style="display: inline-block; text-decoration: none; padding: 12px 28px; background: #005187; color: white; border-radius: 8px; font-weight: 600;">Volver al Catálogo</a>
                 </div>
             `;
         }
     }
 });
 
+/* ==========================================================================
+   POBLAR VISTA DE DETALLE CON DATOS DEL BACKEND
+   ========================================================================== */
 
-/**
- * Poblar todos los datos del producto en la vista.
- */
 function populateProductDetails(product) {
-    // Estrella "Producto Destacado" (Solo visible si el producto es efectivamente un producto destacado)
     const starBadgeEl = document.getElementById('badge-destacado-star');
-    const isFeatured = !!(product.badge === 'Destacado' || product.is_feature_product || product.isFeatured);
     if (starBadgeEl) {
-        starBadgeEl.style.display = isFeatured ? 'inline-flex' : 'none';
+        starBadgeEl.style.display = product.is_feature_product ? 'inline-flex' : 'none';
     }
 
-    // Imagen principal
+    const mainImageUrl = resolveImageUrl(product.product_image, '../../assets/images/productos/estante-blanco.jpeg');
+
     const imgEl = document.getElementById('detail-product-img');
     if (imgEl) {
-        imgEl.src = product.image;
-        imgEl.alt = product.name;
+        imgEl.src = mainImageUrl;
+        imgEl.alt = product.product_name;
     }
 
-    // Imagen en Pantalla Espejo de Lupa
     const mirrorImgEl = document.getElementById('zoom-mirror-img');
     if (mirrorImgEl) {
-        mirrorImgEl.src = product.image;
-        mirrorImgEl.alt = product.name;
+        mirrorImgEl.src = mainImageUrl;
+        mirrorImgEl.alt = product.product_name;
     }
 
-    // Esquina: Tipo de Producto (Pill badge en mayúsculas)
+    const typeName = product.product_type_detail?.product_type_name || 'General';
+
     const typeCornerEl = document.getElementById('detail-product-type');
-    if (typeCornerEl) {
-        typeCornerEl.textContent = (product.typeName || 'General').toUpperCase();
-    }
+    if (typeCornerEl) typeCornerEl.textContent = typeName.toUpperCase();
 
-    // Breadcrumbs
     const bcTypeLink = document.getElementById('breadcrumb-type-link');
-    if (bcTypeLink) {
-        bcTypeLink.href = `products.html?type=${encodeURIComponent(product.typeId || '')}`;
-    }
+    if (bcTypeLink) bcTypeLink.href = `products.html?type=${encodeURIComponent(product.product_type || '')}`;
 
     const bcTypeEl = document.getElementById('breadcrumb-type');
-    if (bcTypeEl) bcTypeEl.textContent = product.typeName || 'Productos';
+    if (bcTypeEl) bcTypeEl.textContent = typeName;
 
     const bcProdEl = document.getElementById('breadcrumb-product');
-    if (bcProdEl) bcProdEl.textContent = product.name;
+    if (bcProdEl) bcProdEl.textContent = product.product_name;
 
-    // Nombre
     const nameEl = document.getElementById('detail-product-name');
-    if (nameEl) nameEl.textContent = product.name;
+    if (nameEl) nameEl.textContent = product.product_name;
 
     const priceEl = document.getElementById('detail-product-price');
     if (priceEl) {
-        let priceHTML = `$${product.price.toFixed(2)}`;
+        const formattedPrice = parseFloat(product.price || 0).toFixed(2);
+        let priceHTML = `$${formattedPrice}`;
         if (product.is_outlet) {
             priceHTML += ` <span style="background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; margin-left: 8px; vertical-align: middle;">⚡ OUTLET (${product.quantity} disp.)</span>`;
         }
         priceEl.innerHTML = priceHTML;
     }
 
-    // Renderizar Barra Lateral de Miniaturas (Ángulos + Video)
-    renderProductThumbnails(product);
-
-    // Renderizar Sección de Colores Disponibles
-    renderProductColors(product);
-
-    // Descripción Completa
     const descEl = document.getElementById('detail-product-desc');
-    if (descEl) descEl.textContent = product.fullDescription || product.description;
+    const descTextEl = document.getElementById('detail-product-desc-text');
+    const descToggleBtn = document.getElementById('description-toggle-btn');
+    const fullDescription = String(product.description || '').trim();
+    const descriptionLimit = 650;
+    const shortenedDescription = `${fullDescription.slice(0, descriptionLimit).trimEnd()}...`;
 
-    // Especificaciones Técnicas (Alto, Largo, Ancho en cm, Seguridad)
+    if (descTextEl) {
+        descTextEl.textContent = fullDescription.length > descriptionLimit
+            ? shortenedDescription
+            : fullDescription;
+    }
+
+    if (descToggleBtn) {
+        const hasMoreDescription = fullDescription.length > descriptionLimit;
+        descToggleBtn.hidden = !hasMoreDescription;
+        descToggleBtn.textContent = 'Ver más';
+        descToggleBtn.setAttribute('aria-expanded', 'false');
+        descToggleBtn.onclick = () => {
+            const isExpanded = descToggleBtn.getAttribute('aria-expanded') === 'true';
+            descTextEl.textContent = isExpanded ? shortenedDescription : fullDescription;
+            descToggleBtn.textContent = isExpanded ? 'Ver más' : 'Ver menos';
+            descToggleBtn.setAttribute('aria-expanded', String(!isExpanded));
+        };
+    }
+
     const heightEl = document.getElementById('detail-spec-height');
-    if (heightEl) heightEl.textContent = `${product.heightCm || 180} cm`;
+    if (heightEl) heightEl.textContent = `${parseFloat(product.height_cm || 180)} cm`;
 
     const lengthEl = document.getElementById('detail-spec-length');
-    if (lengthEl) lengthEl.textContent = `${product.lengthCm || 90} cm`;
+    if (lengthEl) lengthEl.textContent = `${parseFloat(product.depth_cm || 90)} cm`;
 
     const widthEl = document.getElementById('detail-spec-width');
-    if (widthEl) widthEl.textContent = `${product.widthCm || 45} cm`;
+    if (widthEl) widthEl.textContent = `${parseFloat(product.width_cm || 45)} cm`;
 
-    // Manejo de la Seguridad: Mostrar siempre el tipo de seguridad disponible
     const secContainer = document.getElementById('detail-spec-security-container');
     const secEl = document.getElementById('detail-spec-security');
-    const securityVal = (product.security && product.security.trim() !== '')
-        ? product.security
-        : 'Porta candado / Llave individual';
     if (secContainer) secContainer.style.display = 'flex';
-    if (secEl) secEl.textContent = securityVal;
+    if (secEl) secEl.textContent = product.security || 'Porta candado / Llave individual';
 
-    // Actualizar título de la página
-    document.title = `${product.name} - TuEstante`;
+    document.title = `${product.product_name} - TuEstante`;
 
-    // Estado de disponibilidad / Inactividad
+    renderProductThumbnails(product, mainImageUrl);
+    renderProductColors(product, mainImageUrl);
+
     const isAvailable = product.is_active && (!product.is_outlet || product.quantity > 0);
-
-    // Conectar botón Agregar al Carrito (Utiliza la misma estructura e identificación data-* que en catálogo)
     const btnAddCart = document.getElementById('btn-add-to-cart');
+
     if (btnAddCart) {
         btnAddCart.setAttribute('data-id', product.id);
-        btnAddCart.setAttribute('data-name', product.name);
+        btnAddCart.setAttribute('data-name', product.product_name);
         btnAddCart.setAttribute('data-price', product.price);
-        btnAddCart.setAttribute('data-image', product.image);
+        btnAddCart.setAttribute('data-image', mainImageUrl);
 
         if (!isAvailable) {
             btnAddCart.disabled = true;
@@ -443,7 +209,7 @@ function populateProductDetails(product) {
             btnAddCart.style.background = '#94a3b8';
         } else {
             btnAddCart.disabled = false;
-            btnAddCart.textContent = 'Añadir al Carrito';
+            btnAddCart.textContent = '+ Carrito';
             btnAddCart.style.opacity = '1';
             btnAddCart.style.cursor = 'pointer';
             btnAddCart.style.background = '';
@@ -461,11 +227,11 @@ function populateProductDetails(product) {
             }
 
             const id = parseInt(btnAddCart.getAttribute('data-id'), 10) || product.id;
-            const name = btnAddCart.getAttribute('data-name') || product.name;
-            const price = parseFloat(btnAddCart.getAttribute('data-price')) || product.price || 0;
-            const image = btnAddCart.getAttribute('data-image') || product.image;
+            const name = btnAddCart.getAttribute('data-name') || product.product_name;
+            const price = parseFloat(btnAddCart.getAttribute('data-price')) || parseFloat(product.price) || 0;
+            const image = btnAddCart.getAttribute('data-image') || mainImageUrl;
 
-            let selectedColor = 'Bisley Orange';
+            let selectedColor = product.main_color || 'Estándar';
             const activeSwatch = document.querySelector('.color-swatch-btn.active');
             if (activeSwatch) {
                 const colorTitle = activeSwatch.getAttribute('title') || activeSwatch.getAttribute('data-color-name');
@@ -485,7 +251,7 @@ function populateProductDetails(product) {
             try {
                 const raw = localStorage.getItem(CART_STORAGE_KEY);
                 if (raw) items = JSON.parse(raw);
-            } catch (e) {
+            } catch (err) {
                 items = [];
             }
 
@@ -502,7 +268,6 @@ function populateProductDetails(product) {
         };
     }
 
-    // Conectar botón Lista de Deseos
     const btnWishlist = document.getElementById('btn-detail-wishlist');
     if (btnWishlist) {
         btnWishlist.classList.toggle('active', Boolean(product.is_favorite));
@@ -514,8 +279,7 @@ function populateProductDetails(product) {
                 e.stopPropagation();
             }
 
-            const token = getAccessToken();
-            if (!token) {
+            if (!getAccessToken()) {
                 showInfoToast('Inicia Sesión', 'Debes iniciar sesión para guardar productos en tu lista de deseos.');
                 return;
             }
@@ -535,7 +299,7 @@ function populateProductDetails(product) {
                     }
                 }
             } catch (err) {
-                console.error('Error al alternar favorito en detalle:', err);
+                console.error('Error al alternar favorito:', err);
                 showErrorToast('Error', 'No se pudo actualizar la lista de deseos.');
             } finally {
                 btnWishlist.disabled = false;
@@ -543,150 +307,91 @@ function populateProductDetails(product) {
         };
     }
 
-    // Configuración del campo e incrementadores de cantidad (Máximo 4 dígitos = 9999)
     const qtyMinus = document.getElementById('qty-minus');
     const qtyPlus = document.getElementById('qty-plus');
     const qtyInput = document.getElementById('detail-qty-input');
 
     if (qtyInput) {
-        // Bloquear caracteres no numéricos como 'e', '+', '-', '.'
         qtyInput.addEventListener('keydown', (e) => {
-            if (['e', 'E', '+', '-', '.'].includes(e.key)) {
-                e.preventDefault();
-            }
+            if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
         });
 
-        // Limitar en tiempo real a máximo 4 dígitos
         qtyInput.addEventListener('input', () => {
-            if (qtyInput.value.length > 4) {
-                qtyInput.value = qtyInput.value.slice(0, 4);
-            }
+            if (qtyInput.value.length > 4) qtyInput.value = qtyInput.value.slice(0, 4);
         });
 
-        // Validar y normalizar al perder foco o cambiar (rango: 1 - 9999)
-        qtyInput.addEventListener('blur', () => {
+        const normalizeQty = () => {
             let val = parseInt(qtyInput.value, 10);
-            if (isNaN(val) || val < 1) {
-                qtyInput.value = 1;
-            } else if (val > 9999) {
-                qtyInput.value = 9999;
-            } else {
-                qtyInput.value = val;
-            }
-        });
+            if (isNaN(val) || val < 1) qtyInput.value = 1;
+            else if (val > 9999) qtyInput.value = 9999;
+            else qtyInput.value = val;
+        };
 
-        qtyInput.addEventListener('change', () => {
-            let val = parseInt(qtyInput.value, 10);
-            if (isNaN(val) || val < 1) {
-                qtyInput.value = 1;
-            } else if (val > 9999) {
-                qtyInput.value = 9999;
-            } else {
-                qtyInput.value = val;
-            }
-        });
+        qtyInput.addEventListener('blur', normalizeQty);
+        qtyInput.addEventListener('change', normalizeQty);
     }
 
     if (qtyMinus && qtyInput) {
-        qtyMinus.onclick = (e) => {
-            if (e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
+        qtyMinus.onclick = () => {
             let val = parseInt(qtyInput.value, 10) || 1;
-            if (val > 1) {
-                qtyInput.value = val - 1;
-            }
+            if (val > 1) qtyInput.value = val - 1;
         };
     }
     if (qtyPlus && qtyInput) {
-        qtyPlus.onclick = (e) => {
-            if (e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
+        qtyPlus.onclick = () => {
             let val = parseInt(qtyInput.value, 10) || 1;
-            if (val < 9999) {
-                qtyInput.value = val + 1;
-            }
+            if (val < 9999) qtyInput.value = val + 1;
         };
     }
 }
 
-/**
- * Renderiza la barra lateral de miniaturas de imágenes por ángulo y botón de video.
- */
-function renderProductThumbnails(product) {
+/* ==========================================================================
+   MINIATURAS Y GALERÍA DE COLORES
+   ========================================================================== */
+
+function renderProductThumbnails(product, mainImageUrl) {
     const sidebarEl = document.getElementById('product-thumbnails-sidebar');
     if (!sidebarEl) return;
 
-    const hasVideo = !!(product && product.video && String(product.video).trim() !== '');
-
+    const hasVideo = Boolean(product.product_video);
     sidebarEl.style.display = 'flex';
 
-    const EXISTING_GALLERY_IMAGES = [
-        '../../assets/images/gallery/real_space_1.jpg',
-        '../../assets/images/gallery/real_space_2.jpg',
-        '../../assets/images/gallery/real_space_3.jpg',
-        '../../assets/images/gallery/real_space_4.jpg',
-        '../../assets/images/gallery/real_space_5.jpg',
-        '../../assets/images/gallery/real_space_6.jpg',
-        '../../assets/images/gallery/real_space_7.jpg',
-        '../../assets/images/gallery/real_space_8.jpg',
-        '../../assets/images/gallery/real_space_9.jpg',
-        '../../assets/images/gallery/real_space_10.jpg',
-        '../../assets/images/gallery/real_space_11.jpg'
+    let thumbnailItems = [
+        { url: mainImageUrl, title: `Vista Principal - ${product.product_name}` }
     ];
 
-    const pId = parseInt(product.id, 10) || 1;
-    const secondImg = EXISTING_GALLERY_IMAGES[(pId + 1) % EXISTING_GALLERY_IMAGES.length];
-    const thirdImg = EXISTING_GALLERY_IMAGES[(pId + 3) % EXISTING_GALLERY_IMAGES.length];
-
-    // Construir lista de 3 miniaturas distintas utilizando imágenes existentes del proyecto
-    let thumbnailItems = [];
-
-    // 1. Imagen Principal del Producto
-    thumbnailItems.push({
-        url: product.image,
-        title: `Vista Frontal - ${product.name}`,
-        active: true
-    });
-
-    // 2. Segunda Vista (Imagen de Galería Existente 1)
-    thumbnailItems.push({
-        url: (product.angles && product.angles[0]?.image) || secondImg,
-        title: `Vista Lateral - ${product.name}`,
-        active: false
-    });
-
-    // 3. Tercera Vista (Imagen de Galería Existente 2)
-    thumbnailItems.push({
-        url: (product.angles && product.angles[1]?.image) || thirdImg,
-        title: `Vista Ambientada - ${product.name}`,
-        active: false
-    });
+    if (Array.isArray(product.angle_images)) {
+        product.angle_images.forEach((ang, idx) => {
+            if (ang.image) {
+                thumbnailItems.push({
+                    url: resolveImageUrl(ang.image, mainImageUrl),
+                    title: ang.angle || `Vista ${idx + 1} - ${product.product_name}`
+                });
+            }
+        });
+    }
 
     let html = '';
     thumbnailItems.forEach((item, idx) => {
         html += `
             <button type="button" 
                     class="thumbnail-btn ${idx === 0 ? 'active' : ''}" 
-                    data-image-url="${item.url}"
-                    data-title="${item.title}"
-                    title="${item.title}"
+                    data-image-url="${item.url}" 
+                    data-title="${item.title}" 
+                    title="${item.title}" 
                     aria-label="${item.title}">
                 <img src="${item.url}" alt="${item.title}">
             </button>
         `;
     });
 
-    // 3. Botón/Icono de Video en la lista de miniaturas
     if (hasVideo) {
+        const videoUrl = resolveImageUrl(product.product_video);
         html += `
             <button type="button" 
                     class="thumbnail-btn video-thumbnail-btn" 
-                    data-video-url="${product.video}" 
-                    title="Ver Video del Producto"
+                    data-video-url="${videoUrl}" 
+                    title="Ver Video del Producto" 
                     aria-label="Ver Video del Producto">
                 <img src="../../assets/icons/camara-de-video.png" alt="Video del Producto" class="video-thumb-icon">
             </button>
@@ -715,7 +420,7 @@ function renderProductThumbnails(product) {
                 if (mainVideoEl) {
                     mainVideoEl.src = videoUrl;
                     mainVideoEl.style.display = 'block';
-                    mainVideoEl.play().catch(() => { });
+                    mainVideoEl.play().catch(() => {});
                 }
 
                 const lensBox = document.getElementById('zoom-lens-box');
@@ -739,13 +444,13 @@ function renderProductThumbnails(product) {
 
                 if (mainImgEl && newImgUrl) {
                     mainImgEl.src = newImgUrl;
-                    mainImgEl.alt = title || product.name;
+                    mainImgEl.alt = title || product.product_name;
                     mainImgEl.style.display = 'block';
                 }
 
                 if (mirrorImgEl && newImgUrl) {
                     mirrorImgEl.src = newImgUrl;
-                    mirrorImgEl.alt = title || product.name;
+                    mirrorImgEl.alt = title || product.product_name;
                 }
 
                 if (lightboxVideoEl) {
@@ -761,54 +466,41 @@ function renderProductThumbnails(product) {
     });
 }
 
-/**
- * Renderiza la lista interactiva de colores disponibles.
- */
-function renderProductColors(product) {
+function renderProductColors(product, mainImageUrl) {
     const swatchListEl = document.getElementById('colors-swatch-list');
     const selectedNameEl = document.getElementById('selected-color-name');
     if (!swatchListEl) return;
 
-    const DEFAULT_SWATCHES = [
-        { name: 'Slate Dark', hex: '#334155', image: product.image },
-        { name: 'Negro Mate', hex: '#1e293b', image: product.image },
-        { name: 'Bisley Orange', hex: '#EA580C', image: product.image, isPrimary: true },
-        { name: 'Verde Oliva', hex: '#556b2f', image: product.image },
-        { name: 'Azul Rey', hex: '#3b82f6', image: product.image },
-        { name: 'Gris Claro', hex: '#cbd5e1', image: product.image },
-        { name: 'Rosa Pastel', hex: '#fda4af', image: product.image },
-        { name: 'Amarillo Mostaza', hex: '#d97706', image: product.image },
-        { name: 'Blanco Ostra', hex: '#ffffff', isLight: true, image: product.image },
-        { name: 'Beige Cálido', hex: '#d4a373', image: product.image },
-        { name: 'Verde Azulado', hex: '#0f4c5c', image: product.image }
-    ];
-
-    const colors = product.colors && product.colors.length > 1
-        ? product.colors
-        : DEFAULT_SWATCHES;
-
-    // Buscar color primario o activo por defecto (Bisley Orange)
-    const initialIndex = colors.findIndex(c => c.isPrimary || c.name.includes('Orange') || c.name.includes('Naranja'));
-    const defaultIdx = initialIndex > -1 ? initialIndex : 0;
-
-    if (selectedNameEl) {
-        selectedNameEl.textContent = colors[defaultIdx].name;
+    let colors = [];
+    if (Array.isArray(product.color_images) && product.color_images.length > 0) {
+        colors = product.color_images.map(c => ({
+            name: c.color_name || 'Color',
+            hex: c.color_hex || '#005187',
+            image: resolveImageUrl(c.color_image, mainImageUrl)
+        }));
+    } else if (product.main_color) {
+        colors = [
+            { name: product.main_color, hex: '#005187', image: mainImageUrl }
+        ];
+    } else {
+        // Si no tiene variantes de color registradas en el backend, dejar estándar
+        colors = [
+            { name: 'Estándar', hex: '#64748b', image: mainImageUrl }
+        ];
     }
 
+    if (selectedNameEl) selectedNameEl.textContent = colors[0].name;
+
     let html = '';
-    colors.forEach((color, idx) => {
-        const activeClass = idx === defaultIdx ? 'active' : '';
-        const lightClass = color.isLight ? 'is-light' : '';
-        const primaryClass = color.isPrimary ? 'is-primary' : '';
-        const colorImgUrl = color.color_image || color.image || product.image;
+    colors.forEach((c, idx) => {
         html += `
             <button type="button" 
-                    class="color-swatch-btn ${activeClass} ${lightClass} ${primaryClass}" 
-                    style="background-color: ${color.hex};" 
-                    data-color-name="${color.name}"
-                    data-color-image="${colorImgUrl}"
-                    title="${color.name}"
-                    aria-label="${color.name}">
+                    class="color-swatch-btn ${idx === 0 ? 'active' : ''}" 
+                    style="background-color: ${c.hex};" 
+                    data-color-name="${c.name}" 
+                    data-color-image="${c.image}" 
+                    title="${c.name}" 
+                    aria-label="${c.name}">
             </button>
         `;
     });
@@ -831,30 +523,26 @@ function renderProductColors(product) {
 
             if (selectedNameEl) selectedNameEl.textContent = name;
 
-            // Desactivar estado activo en miniaturas de lateral izquierdo para evitar conflicto visual
             const sidebarEl = document.getElementById('product-thumbnails-sidebar');
             if (sidebarEl) {
                 sidebarEl.querySelectorAll('.thumbnail-btn').forEach(b => b.classList.remove('active'));
             }
 
-            // Pausar y ocultar el video si estaba activo, mostrar la imagen principal
             if (mainVideoEl) {
                 mainVideoEl.pause();
                 mainVideoEl.style.display = 'none';
             }
             if (mainImgEl && newImage) {
                 mainImgEl.src = newImage;
-                mainImgEl.alt = `${product.name} - ${name}`;
+                mainImgEl.alt = `${product.product_name} - ${name}`;
                 mainImgEl.style.display = 'block';
             }
 
-            // Cambiar la imagen en el panel espejo de la lupa
             if (newImage && mirrorImgEl) {
                 mirrorImgEl.src = newImage;
-                mirrorImgEl.alt = `${product.name} - ${name}`;
+                mirrorImgEl.alt = `${product.product_name} - ${name}`;
             }
 
-            // Cambiar la imagen en el modal lightbox
             if (lightboxVideoEl) {
                 lightboxVideoEl.pause();
                 lightboxVideoEl.style.display = 'none';
@@ -867,9 +555,10 @@ function renderProductColors(product) {
     });
 }
 
-/**
- * Inicializar Lupa Espejo (Acotada a la sección inferior de descripción/especificaciones) y Lightbox Modal.
- */
+/* ==========================================================================
+   LUPA DE PRECISIÓN Y LIGHTBOX
+   ========================================================================== */
+
 function initImageInteractions(product) {
     const mainImgContainer = document.getElementById('main-image-container');
     const mainImg = document.getElementById('detail-product-img');
@@ -882,14 +571,12 @@ function initImageInteractions(product) {
     const toggleLupaBtn = document.getElementById('toggle-lupa-btn');
     const lupaBtnText = document.getElementById('lupa-btn-text');
 
-    // Lightbox Modal Elements
     const modal = document.getElementById('image-lightbox-modal');
     const modalImg = document.getElementById('lightbox-img');
     const modalVideo = document.getElementById('lightbox-video');
     const closeBtn = document.getElementById('lightbox-close');
     const overlay = document.getElementById('lightbox-overlay');
 
-    // Estado de la Lupa (True por defecto)
     let isLupaActive = true;
 
     function updateLupaBtnUI() {
@@ -905,7 +592,6 @@ function initImageInteractions(product) {
         }
     }
 
-    // 1. Botón Único Encender / Apagar Lupa
     if (toggleLupaBtn) {
         toggleLupaBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -914,7 +600,6 @@ function initImageInteractions(product) {
         });
     }
 
-    // 2. Movimiento de Lupa y Proyección Espejo en el Área Inferior (Descripción y Especificaciones)
     if (mainImgContainer && mainImg && lensBox && mirrorPanel && mirrorImg) {
         mainImgContainer.addEventListener('mouseenter', () => {
             const isVideoVisible = mainVideo && mainVideo.style.display !== 'none';
@@ -935,7 +620,6 @@ function initImageInteractions(product) {
             const containerRect = mainImgContainer.getBoundingClientRect();
             const imgRect = mainImg.getBoundingClientRect();
 
-            // Dimensiones y límites de la imagen real dentro del contenedor
             const imgLeft = imgRect.left - containerRect.left;
             const imgTop = imgRect.top - containerRect.top;
             const imgW = imgRect.width || 1;
@@ -944,11 +628,9 @@ function initImageInteractions(product) {
             const lensW = lensBox.offsetWidth || 150;
             const lensH = lensBox.offsetHeight || 150;
 
-            // Posición del cursor en el contenedor
             const containerX = e.clientX - containerRect.left;
             const containerY = e.clientY - containerRect.top;
 
-            // Mantener la lente dentro de la imagen del producto
             let lensX = containerX - lensW / 2;
             let lensY = containerY - lensH / 2;
 
@@ -960,28 +642,22 @@ function initImageInteractions(product) {
             lensBox.style.left = `${lensX}px`;
             lensBox.style.top = `${lensY}px`;
 
-            // Centro exacto del recuadro azul de la lente sobre la imagen
             const lensCenterX = (lensX + lensW / 2) - imgLeft;
             const lensCenterY = (lensY + lensH / 2) - imgTop;
 
             const ratioX = Math.max(0, Math.min(1, lensCenterX / imgW));
             const ratioY = Math.max(0, Math.min(1, lensCenterY / imgH));
 
-            // Dimensiones del visor espejo
             const viewport = mirrorImg.parentElement;
             const viewW = viewport ? viewport.clientWidth : 500;
             const viewH = viewport ? viewport.clientHeight : 500;
-
             const scale = 2.5;
 
-            // Ajustar imagen espejo al tamaño de la imagen original
             mirrorImg.style.width = `${imgW}px`;
             mirrorImg.style.height = `${imgH}px`;
 
-            // Traslación exacta para que el punto central de la lente quede en el centro del visor
             const targetX = ratioX * imgW * scale;
             const targetY = ratioY * imgH * scale;
-
             const tx = (viewW / 2) - targetX;
             const ty = (viewH / 2) - targetY;
 
@@ -990,30 +666,26 @@ function initImageInteractions(product) {
         });
 
         mainImgContainer.addEventListener('mouseleave', () => {
-            const isVideoVisible = mainVideo && mainVideo.style.display !== 'none';
-            if (isLupaActive && !isVideoVisible) {
-                lensBox.classList.remove('active');
-                mirrorPanel.classList.remove('active');
-            }
+            if (lensBox) lensBox.classList.remove('active');
+            if (mirrorPanel) mirrorPanel.classList.remove('active');
         });
     }
 
-    // 3. Ventana Flotante (Lightbox Modal) al hacer clic en la imagen o video
     function openLightbox() {
         if (!modal) return;
         const isVideoVisible = mainVideo && mainVideo.style.display !== 'none';
-        if (isVideoVisible && modalVideo && product.video) {
+        if (isVideoVisible && modalVideo && product.product_video) {
             if (modalImg) modalImg.style.display = 'none';
-            modalVideo.src = product.video;
+            modalVideo.src = resolveImageUrl(product.product_video);
             modalVideo.style.display = 'block';
-            modalVideo.play().catch(() => { });
+            modalVideo.play().catch(() => {});
         } else if (modalImg) {
             if (modalVideo) {
                 modalVideo.pause();
                 modalVideo.style.display = 'none';
             }
-            modalImg.src = mainImg ? mainImg.src : product.image;
-            modalImg.alt = product.name;
+            modalImg.src = mainImg ? mainImg.src : resolveImageUrl(product.product_image);
+            modalImg.alt = product.product_name;
             modalImg.style.display = 'block';
         }
         modal.classList.add('active');
@@ -1031,7 +703,6 @@ function initImageInteractions(product) {
 
     if (galleryCard) {
         galleryCard.addEventListener('click', (e) => {
-            // Evitar abrir modal si hace clic en miniaturas laterales, botones de color, encender/apagar lupa, estrella o controles de video
             if (
                 e.target.closest('#product-thumbnails-sidebar') ||
                 e.target.closest('#colors-swatch-list') ||
@@ -1057,10 +728,11 @@ function initImageInteractions(product) {
     updateLupaBtnUI();
 }
 
-/**
- * Renderiza el carrusel de productos relacionados del mismo tipo (EN 1 SOLA FILA).
- */
-function renderRelatedProducts(currentProduct, allProducts = []) {
+/* ==========================================================================
+   CARRUSEL DE PRODUCTOS RELACIONADOS (UN SOLO TIPO DE PRODUCTO)
+   ========================================================================== */
+
+function renderRelatedProducts(currentProduct, related = []) {
     const section = document.querySelector('.related-products-section');
     const track = document.getElementById('related-grid-track');
     const viewport = document.getElementById('related-carousel-viewport');
@@ -1072,30 +744,20 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
         return;
     }
 
-    const sourceList = Array.isArray(allProducts) ? allProducts : [];
-
-    // Obtener productos del mismo tipo omitiendo el producto actual
-    const currentTypeId = currentProduct?.typeId || currentProduct?.product_type || currentProduct?.product_type_detail?.id;
-    const currentProdId = currentProduct?.id;
-
-    let relatedProducts = [];
-    if (currentTypeId !== undefined && currentTypeId !== null) {
-        relatedProducts = sourceList.filter(p => {
-            const pTypeId = p.typeId || p.product_type || p.product_type_detail?.id;
-            return String(pTypeId) === String(currentTypeId) && String(p.id) !== String(currentProdId);
-        });
-    }
-
-    // Si NO existen productos del mismo tipo, no mostrar el carrusel
-    if (!relatedProducts || relatedProducts.length === 0) {
+    if (!related || related.length === 0) {
         if (section) section.style.display = 'none';
         return;
     }
 
-    // Si existen productos, asegurarse de que la sección sea visible
     if (section) section.style.display = 'block';
 
-    const totalCols = relatedProducts.length;
+    const subtitleEl = document.getElementById('related-subtitle-text');
+    if (subtitleEl) {
+        const typeName = currentProduct.product_type_detail?.product_type_name || 'este tipo de mueble';
+        subtitleEl.textContent = `Explora otros modelos y alternativas de ${typeName}`;
+    }
+
+    const totalCols = related.length;
 
     function getVisibleCols() {
         const width = window.innerWidth;
@@ -1109,7 +771,6 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
         const width = window.innerWidth;
         if (width <= 480) return 12;
         if (width <= 768) return 16;
-        if (width <= 1100) return 20;
         return 20;
     }
 
@@ -1117,8 +778,7 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
     const isInfinite = totalCols > visibleCols;
 
     function createCardHTML(p, col) {
-        const isFeatured = !!(p.rating === 5.0 || p.badge === 'Destacado' || p.is_feature_product !== false);
-        const starBadgeHTML = isFeatured ? `
+        const starBadgeHTML = p.is_feature_product ? `
             <div class="badge-destacado-star" title="Producto Destacado">
                 <svg class="star-icon" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="1.5">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
@@ -1127,13 +787,35 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
             </div>
         ` : '';
 
+        const outletBadgeHTML = p.is_outlet ? `
+            <div class="badge-outlet-flag" style="position: absolute; top: 12px; left: 12px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35); z-index: 3; display: flex; align-items: center; gap: 4px;">
+                <span>⚡ OUTLET</span>
+                ${p.quantity > 0 ? `<span style="background: rgba(0,0,0,0.25); padding: 1px 6px; border-radius: 10px; font-size: 0.68rem;">${p.quantity} disp.</span>` : ''}
+            </div>
+        ` : '';
+
+        const prodImg = resolveImageUrl(p.product_image, '../../assets/images/productos/estante-blanco.jpeg');
+        const formattedPrice = parseFloat(p.price || 0).toFixed(2);
+
+        let swatchesHTML = '';
+        if (Array.isArray(p.color_images) && p.color_images.length > 0) {
+            const visibleColors = p.color_images.slice(0, 4);
+            const remaining = p.color_images.length - 4;
+            const dots = visibleColors.map(c => `
+                <span class="swatch-dot" style="background-color: ${c.color_hex || '#cbd5e1'};" title="${c.color_name || 'Color'}"></span>
+            `).join('');
+            const more = remaining > 0 ? `<span class="swatch-more">+${remaining}</span>` : '';
+            swatchesHTML = `<div class="unified-card-swatches">${dots}${more}</div>`;
+        }
+
         return `
             <div class="unified-product-card" style="grid-row: 1; grid-column: ${col}; height: 100%;">
-                <div class="unified-card-media">
+                <div class="unified-card-media" style="position: relative;">
                     <a href="product-details.html?id=${p.id}" class="unified-card-img-link">
-                        <img src="${p.image}" alt="${p.name}" class="unified-card-img">
+                        <img src="${prodImg}" alt="${p.product_name}" class="unified-card-img" loading="lazy">
                     </a>
                     
+                    ${outletBadgeHTML}
                     ${starBadgeHTML}
                     
                     <button class="unified-wishlist-btn ${p.is_favorite ? 'active' : ''}" data-id="${p.id}" title="${p.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos'}" aria-label="Añadir a favoritos">
@@ -1147,25 +829,19 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
                     <div>
                         <div class="unified-card-header">
                             <h3 class="unified-card-title">
-                                <a href="product-details.html?id=${p.id}">${p.name}</a>
+                                <a href="product-details.html?id=${p.id}">${p.product_name}</a>
                             </h3>
-                            <span class="unified-card-price">$${parseFloat(p.price || 0).toFixed(2)}</span>
+                            <span class="unified-card-price">$${formattedPrice}</span>
                         </div>
 
                         <p class="unified-card-desc">${p.description || ''}</p>
 
-                        <div class="unified-card-swatches">
-                            <span class="swatch-dot" style="background-color: #ea580c;" title="Naranja"></span>
-                            <span class="swatch-dot" style="background-color: #0f172a;" title="Gris Oscuro"></span>
-                            <span class="swatch-dot" style="background-color: #15803d;" title="Verde Sabana"></span>
-                            <span class="swatch-dot" style="background-color: #005187;" title="Azul"></span>
-                            <span class="swatch-more">+4</span>
-                        </div>
+                        ${swatchesHTML}
                     </div>
 
                     <div class="unified-card-actions">
                         <a href="product-details.html?id=${p.id}" class="unified-btn btn-details">Ver Detalle</a>
-                        <button class="unified-btn btn-card-add-cart" data-id="${p.id}" data-name="${p.name}" data-price="${p.price}" data-image="${p.image}">
+                        <button class="unified-btn btn-card-add-cart" data-id="${p.id}" data-name="${p.product_name}" data-price="${p.price}" data-image="${prodImg}">
                             + Carrito
                         </button>
                     </div>
@@ -1178,30 +854,26 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
     let htmlContent = '';
 
     if (isInfinite) {
-        relatedProducts.forEach((p, idx) => {
+        related.forEach((p, idx) => {
             const col = idx + 1;
             if (col > totalCols - cloneCount) {
-                const cloneCol = col - totalCols;
-                htmlContent += createCardHTML(p, cloneCol);
+                htmlContent += createCardHTML(p, col - totalCols);
             }
         });
 
-        relatedProducts.forEach((p, idx) => {
-            const col = idx + 1;
-            htmlContent += createCardHTML(p, col);
+        related.forEach((p, idx) => {
+            htmlContent += createCardHTML(p, idx + 1);
         });
 
-        relatedProducts.forEach((p, idx) => {
+        related.forEach((p, idx) => {
             const col = idx + 1;
             if (col <= cloneCount) {
-                const cloneCol = col + totalCols;
-                htmlContent += createCardHTML(p, cloneCol);
+                htmlContent += createCardHTML(p, col + totalCols);
             }
         });
     } else {
-        relatedProducts.forEach((p, idx) => {
-            const col = idx + 1;
-            htmlContent += createCardHTML(p, col);
+        related.forEach((p, idx) => {
+            htmlContent += createCardHTML(p, idx + 1);
         });
     }
 
@@ -1275,7 +947,7 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
     function startAutoSlide() {
         if (!isInfinite) return;
         stopAutoSlide();
-        autoTimer = setInterval(slideNext, 3000);
+        autoTimer = setInterval(slideNext, 4000);
     }
 
     function stopAutoSlide() {
@@ -1286,17 +958,17 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
     }
 
     if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
+        prevBtn.onclick = () => {
             slidePrev();
             startAutoSlide();
-        });
+        };
     }
 
     if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
+        nextBtn.onclick = () => {
             slideNext();
             startAutoSlide();
-        });
+        };
     }
 
     viewport.addEventListener('mouseenter', stopAutoSlide);
@@ -1309,15 +981,13 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
     updatePosition(false);
     startAutoSlide();
 
-    // Eventos para botones de tarjetas relacionadas (+ Carrito y Lista de Deseos)
     track.addEventListener('click', async (e) => {
         const wishlistBtn = e.target.closest('.unified-wishlist-btn');
         if (wishlistBtn) {
-            const id = wishlistBtn.getAttribute('data-id') || wishlistBtn.closest('.unified-product-card')?.querySelector('.btn-card-add-cart')?.getAttribute('data-id');
+            const id = wishlistBtn.getAttribute('data-id');
             if (!id) return;
 
-            const token = getAccessToken();
-            if (!token) {
+            if (!getAccessToken()) {
                 showInfoToast('Inicia Sesión', 'Debes iniciar sesión para guardar productos en tu lista de deseos.');
                 return;
             }
@@ -1336,7 +1006,7 @@ function renderRelatedProducts(currentProduct, allProducts = []) {
                     }
                 }
             } catch (err) {
-                console.error('Error al alternar favorito en productos relacionados:', err);
+                console.error('Error al alternar favorito:', err);
                 showErrorToast('Error', 'No se pudo actualizar la lista de deseos.');
             } finally {
                 wishlistBtn.disabled = false;

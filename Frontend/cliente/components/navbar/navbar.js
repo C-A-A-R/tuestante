@@ -640,8 +640,91 @@ function syncUserAuthState() {
     }
   }
 
+/**
+ * Muestra un modal estilizado y moderno para confirmar el cierre de sesión en TuEstante.
+ * @param {Object} [options]
+ * @returns {Promise<boolean>}
+ */
+export function showLogoutConfirmModal({
+  title = '¿Cerrar Sesión?',
+  message = '¿Estás seguro de que deseas salir de tu cuenta? Tendrás que iniciar sesión nuevamente para acceder a tus compras y carrito.',
+  confirmText = 'Sí, Cerrar Sesión',
+  cancelText = 'Permanecer conectado'
+} = {}) {
+  return new Promise((resolve) => {
+    let container = document.getElementById('tuestante-logout-modal-root');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'tuestante-logout-modal-root';
+      document.body.appendChild(container);
+    }
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'tu-logout-modal-backdrop';
+    backdrop.setAttribute('role', 'dialog');
+    backdrop.setAttribute('aria-modal', 'true');
+
+    backdrop.innerHTML = `
+      <div class="tu-logout-modal-card">
+        <button type="button" class="tu-logout-modal-close" aria-label="Cerrar modal">&times;</button>
+        <div class="tu-logout-icon-wrap" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </div>
+        <h3 class="tu-logout-title">${title}</h3>
+        <p class="tu-logout-desc">${message}</p>
+        <div class="tu-logout-actions">
+          <button type="button" class="tu-logout-btn tu-logout-btn-cancel">${cancelText}</button>
+          <button type="button" class="tu-logout-btn tu-logout-btn-confirm">${confirmText}</button>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(backdrop);
+
+    requestAnimationFrame(() => {
+      backdrop.classList.add('is-visible');
+    });
+
+    const close = (confirmed) => {
+      backdrop.classList.remove('is-visible');
+      setTimeout(() => {
+        backdrop.remove();
+        resolve(confirmed);
+      }, 220);
+    };
+
+    const confirmBtn = backdrop.querySelector('.tu-logout-btn-confirm');
+    const cancelBtn = backdrop.querySelector('.tu-logout-btn-cancel');
+    const closeBtn = backdrop.querySelector('.tu-logout-modal-close');
+
+    confirmBtn?.addEventListener('click', () => close(true));
+    cancelBtn?.addEventListener('click', () => close(false));
+    closeBtn?.addEventListener('click', () => close(false));
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) close(false);
+    });
+
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        document.removeEventListener('keydown', handleKey);
+        close(false);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.showLogoutConfirmModal = showLogoutConfirmModal;
+}
+
   const handleLogout = async () => {
-    if (!confirm('¿Estás seguro de que deseas cerrar sesión en TuEstante?')) return;
+    const confirmed = await showLogoutConfirmModal();
+    if (!confirmed) return;
     try {
       const refreshToken = getRefreshToken();
       if (refreshToken) {

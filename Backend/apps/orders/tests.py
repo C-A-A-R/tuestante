@@ -24,7 +24,8 @@ class OrderAPITest(TestCase):
         )
         self.distributor = Distributor.objects.create(
             name='MRW Express',
-            rif='J-99887766-5'
+            rif='J-99887766-5',
+            coverage_type='national'
         )
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
@@ -401,6 +402,55 @@ class OrderAPITest(TestCase):
         self.assertEqual(shipment.address, "Av. Los Próceres #10")
         self.assertEqual(shipment.state, "Carabobo")
         self.assertEqual(shipment.city, "Valencia")
+
+    def test_create_order_with_distributor_coverage_validation(self):
+        """Verifica que no se permita comprar si el distribuidor regional no cubre la zona indicada."""
+        regional_distributor = Distributor.objects.create(
+            name='Transportes Carabobo Regional',
+            rif='J-11223344-5',
+            coverage_type='regional'
+        )
+        # 1. Sin cobertura para Zulia -> Debe rechazar con HTTP 400
+        payload = {
+            "items": [{"product_id": self.product.id, "quantity": 1}],
+            "shipment": {
+                "distributor_id": regional_distributor.id,
+                "state": "Zulia",
+                "municipality": "Maracaibo",
+                "address": "Calle 72 con Av. Bella Vista"
+            }
+        }
+        response = self.client.post('/api/orders/', payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("no posee cobertura", response.data['error'])
+
+        # 2. Con cobertura agregada -> Debe permitir la creación
+        from apps.shipment.models import DistributorCoverage
+        DistributorCoverage.objects.create(
+            distributor=regional_distributor,
+            state="Zulia",
+            municipality="Maracaibo"
+        )
+        response_ok = self.client.post('/api/orders/', payload, format='json')
+        self.assertEqual(response_ok.status_code, status.HTTP_201_CREATED)
+
+    def test_receive_order_with_notes_action(self):
+        """Verifica la acción de recepción de pedido con notas u observaciones."""
+        order = Order.objects.create(user=self.user, status='shipped', total_price=150)
+        shipment = Shipment.objects.create(order=order, address="Calle 1", status='in_transit')
+
+        # Cliente confirma recepción con observaciones
+        response = self.client.post(f'/api/orders/{order.id}/receive/', {'notes': 'Recibido en excelente estado, sin rayaduras'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('mensaje', response.data)
+
+        order.refresh_from_db()
+        shipment.refresh_from_db()
+        self.assertEqual(order.status, 'finalized')
+        self.assertEqual(order.reception_notes, 'Recibido en excelente estado, sin rayaduras')
+        self.assertIsNotNone(order.reception_date)
+        self.assertEqual(shipment.status, 'delivered')
+
 
 
 

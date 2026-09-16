@@ -11,6 +11,8 @@ from apps.user.api.authentication_api_view import (
     ChangePasswordView,
     PasswordResetRequestView,
     PasswordResetConfirmView,
+    GoogleAuthView,
+    UserProfileView,
 )
 from apps.user.report.views import UsuariosReportView
 
@@ -28,7 +30,9 @@ auth_urlpatterns = [
     path("password/change/", ChangePasswordView.as_view(), name="change-password"),
     path("password/reset/", PasswordResetRequestView.as_view(), name="request-password-reset"),
     path("password/reset/confirm/<uidb64>/<token>/", PasswordResetConfirmView.as_view(), name="confirm-password-reset"),
-    
+    path("google/", GoogleAuthView.as_view(), name="google-auth"),
+    path("profile/", UserProfileView.as_view(), name="user-profile"),
+
     # Rutas en español para mantener compatibilidad
     path("registro/", UserRegisterView.as_view(), name="registro"),
     path("activar/<uidb64>/<token>/", ActivateAccountView.as_view(), name="activar-cuenta"),
@@ -38,6 +42,7 @@ auth_urlpatterns = [
     path("cambiar-contrasena/", ChangePasswordView.as_view(), name="cambiar-contrasena"),
     path("restablecer-contrasena/", PasswordResetRequestView.as_view(), name="solicitar-restablecimiento-contrasena"),
     path("restablecer-contrasena/confirmar/<uidb64>/<token>/", PasswordResetConfirmView.as_view(), name="confirmar-restablecimiento-contrasena"),
+    path("perfil/", UserProfileView.as_view(), name="perfil-usuario"),
 ]
 
 # URLs de usuarios

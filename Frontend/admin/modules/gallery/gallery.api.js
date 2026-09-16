@@ -203,7 +203,7 @@ export async function getClientsList() {
       return list.map(u => ({
         id: u.id,
         name: u.name || `${u.first_name || ''} ${u.first_last_name || ''}`.trim() || u.username,
-        identity_document: u.identity_document || 'V-18.452.369',
+        identity_document: u.identity_document || '',
         email: u.email || ''
       }));
     }
@@ -251,20 +251,23 @@ export async function getGalleryData() {
           displayStatus = matchLocal.status;
         }
 
-        const userFullName = bItem.user_detail?.full_name || (bItem.user_detail?.email ? bItem.user_detail.email.split('@')[0] : null) || bItem.social_media_handle?.replace('@', '') || matchLocal?.client_name || 'Usuario TuEstante';
-        const userDoc = matchLocal?.identity_document || 'V-18.452.369';
+        const hasUserDetail = Boolean(bItem.user_detail);
+        const userFullName = hasUserDetail
+          ? (bItem.user_detail.full_name || bItem.user_detail.username || '')
+          : (matchLocal?.client_name || '');
+        const userDoc = (matchLocal?.identity_document || '');
         const isPublished = (displayStatus === 'Aprobada' && bItem.is_active);
 
         return {
           id: bItem.id,
-          user_id: bItem.user,
+          user_id: bItem.user || null,
           title: bItem.caption ? bItem.caption.split('.')[0].slice(0, 35) : `Imagen #${bItem.id}`,
-          caption: bItem.caption || 'Sin descripción',
+          caption: bItem.caption || '',
           client_name: userFullName,
           identity_document: userDoc,
           social_network: bItem.social_network || 'Instagram',
-          social_media_handle: bItem.social_media_handle || '@usuario',
-          social_media_url: bItem.social_media_url || '#',
+          social_media_handle: bItem.social_media_handle || '',
+          social_media_url: (bItem.social_media_url && bItem.social_media_url !== '#') ? bItem.social_media_url : '',
           image: bItem.image || '../../assets/images/gallery/real_space_1.jpg',
           is_active: Boolean(bItem.is_active),
           status: displayStatus,
@@ -302,19 +305,20 @@ export async function createGalleryItem(data) {
   // Extraer valores si es FormData o un objeto plano
   let caption = '';
   let social_network = 'Instagram';
-  let social_media_handle = '@usuario';
+  let social_media_handle = '';
   let social_media_url = '';
-  let client_name = 'Juan Pérez';
-  let identity_document = 'V-18.452.369';
+  let client_name = '';
+  let identity_document = '';
   let imageUrl = '../../assets/images/gallery/real_space_1.jpg';
 
   if (data instanceof FormData) {
     caption = data.get('caption') || '';
     social_network = data.get('social_network') || 'Instagram';
-    social_media_handle = data.get('social_media_handle') || '@usuario';
-    social_media_url = data.get('social_media_url') || '';
-    client_name = data.get('client_name') || 'Juan Pérez';
-    identity_document = data.get('identity_document') || 'V-18.452.369';
+    social_media_handle = data.get('social_media_handle') || '';
+    const rawUrl = data.get('social_media_url') || '';
+    social_media_url = (rawUrl === '#' || !rawUrl) ? '' : rawUrl;
+    client_name = data.get('client_name') || '';
+    identity_document = data.get('identity_document') || '';
     const file = data.get('image');
     if (file && file instanceof File && file.size > 0) {
       imageUrl = URL.createObjectURL(file);
@@ -322,10 +326,11 @@ export async function createGalleryItem(data) {
   } else if (typeof data === 'object') {
     caption = data.caption || '';
     social_network = data.social_network || 'Instagram';
-    social_media_handle = data.social_media_handle || '@usuario';
-    social_media_url = data.social_media_url || '';
-    client_name = data.client_name || 'Juan Pérez';
-    identity_document = data.identity_document || 'V-18.452.369';
+    social_media_handle = data.social_media_handle || '';
+    const rawUrl = data.social_media_url || '';
+    social_media_url = (rawUrl === '#' || !rawUrl) ? '' : rawUrl;
+    client_name = data.client_name || '';
+    identity_document = data.identity_document || '';
     imageUrl = data.image || imageUrl;
   }
 
@@ -385,7 +390,10 @@ export async function updateGalleryItem(id, data) {
       if (data.has('caption')) caption = data.get('caption');
       if (data.has('social_network')) social_network = data.get('social_network');
       if (data.has('social_media_handle')) social_media_handle = data.get('social_media_handle');
-      if (data.has('social_media_url')) social_media_url = data.get('social_media_url');
+      if (data.has('social_media_url')) {
+        const rawUrl = data.get('social_media_url');
+        social_media_url = (rawUrl === '#' || !rawUrl) ? '' : rawUrl;
+      }
       if (data.has('client_name')) client_name = data.get('client_name');
       if (data.has('identity_document')) identity_document = data.get('identity_document');
       if (data.has('status')) status = data.get('status');
@@ -398,7 +406,9 @@ export async function updateGalleryItem(id, data) {
       if (data.caption !== undefined) caption = data.caption;
       if (data.social_network !== undefined) social_network = data.social_network;
       if (data.social_media_handle !== undefined) social_media_handle = data.social_media_handle;
-      if (data.social_media_url !== undefined) social_media_url = data.social_media_url;
+      if (data.social_media_url !== undefined) {
+        social_media_url = (data.social_media_url === '#' || !data.social_media_url) ? '' : data.social_media_url;
+      }
       if (data.client_name !== undefined) client_name = data.client_name;
       if (data.identity_document !== undefined) identity_document = data.identity_document;
       if (data.status !== undefined) status = data.status;

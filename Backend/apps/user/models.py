@@ -191,6 +191,24 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         help_text='Número de teléfono del usuario'
     )
 
+    # Campos de integración externa (Google OAuth)
+    google_id = models.CharField(
+        'ID de Google',
+        max_length=255,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text='Identificador único de usuario en Google OAuth (sub)'
+    )
+    avatar_url = models.URLField(
+        'URL de foto de perfil',
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text='URL de la foto de perfil (obtenida de Google o externa)'
+    )
+
     objects = CustomUserManager()
 
     class Meta:
@@ -231,6 +249,8 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
             self.username = None
         if self.document_type == '':
             self.document_type = None
+        if self.google_id == '':
+            self.google_id = None
 
         # Si no se asignó document_type pero identity_document contiene prefijo (ej: V-12345678)
         if self.identity_document and not self.document_type:

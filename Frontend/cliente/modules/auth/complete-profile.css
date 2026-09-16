@@ -1,0 +1,164 @@
+/**
+ * ==========================================================================
+ * ESTILOS DE LA PANTALLA INTERMEDIA DE CULMINACIÓN DE PERFIL - TUESTANTE
+ * ==========================================================================
+ */
+
+.complete-card {
+    max-width: 620px;
+    width: 100%;
+}
+
+/* Indicador de Pasos */
+.stepper-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #005187;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+}
+
+.stepper-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    animation: pulseDot 2s infinite;
+}
+
+/* Tarjeta Resumen de Google */
+.google-user-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.user-summary-avatar-wrap {
+    flex-shrink: 0;
+}
+
+.summary-avatar-img {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.summary-avatar-initials {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #005187 0%, #00365c 100%);
+    color: #ffffff;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 81, 135, 0.25);
+}
+
+.user-summary-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-summary-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.user-summary-email {
+    font-size: 0.86rem;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 6px;
+}
+
+.user-summary-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #059669;
+    font-size: 0.74rem;
+    font-weight: 700;
+    border-radius: 20px;
+}
+
+/* Ayuda de campo Teléfono */
+.phone-helper-text {
+    display: block;
+    font-size: 0.76rem;
+    color: #64748b;
+    margin-top: 5px;
+    line-height: 1.35;
+}
+
+/* Transición suave para input de fecha */
+input[type="date"].form-input {
+    color-scheme: light;
+}
+
+/* Responsividad */
+@media (max-width: 640px) {
+    .complete-card {
+        padding: 26px 18px;
+    }
+
+    .form-row-2col {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .google-user-summary-card {
+        padding: 14px 16px;
+        gap: 12px;
+    }
+
+    .summary-avatar-img,
+    .summary-avatar-initials {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+    }
+}
+
+@keyframes pulseDot {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.25);
+    }
+}

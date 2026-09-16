@@ -31,7 +31,7 @@ class OrderViewSet(BaseViewSet):
 
     def get_permissions(self):
         """Define permisos dinámicos según la acción."""
-        if self.action in ['list', 'retrieve', 'create', 'my_orders', 'user_orders']:
+        if self.action in ['list', 'retrieve', 'create', 'my_orders', 'user_orders', 'receive']:
             return [permissions.IsAuthenticated()]
         return [permissions.IsAdminUser()]
 
@@ -310,6 +310,14 @@ class OrderViewSet(BaseViewSet):
                         {"error": f"El distribuidor con ID {distributor_id} no existe o ha sido eliminado."},
                         status=status.HTTP_404_NOT_FOUND
                     )
+                # Validar cobertura geográfica del transportista
+                ship_state = normalized_shipment.get('state')
+                ship_municipality = normalized_shipment.get('municipality')
+                if ship_state and not distributor.covers_location(ship_state, ship_municipality):
+                    return Response(
+                        {"error": f"El distribuidor '{distributor.name}' no posee cobertura para {ship_state}, {ship_municipality or 'General'}. Por favor selecciona una empresa de transporte que cubra tu zona."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
         target_user = request.user
         selected_user_id = data.get('user') or data.get('client_id') if isinstance(data, dict) else None
@@ -456,6 +464,60 @@ class OrderViewSet(BaseViewSet):
             return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='receive', permission_classes=[permissions.IsAuthenticated])
+    @transaction.atomic
+    def receive(self, request, pk=None):
+        """
+        Permite al cliente (o personal de TuEstante) confirmar la recepción de los productos,
+        ingresando notas u observaciones sobre lo recibido.
+        Actualiza el estado de la orden a 'finalized' y los envíos a 'delivered'.
+        """
+        order = self.get_object()
+
+        # Validación de propiedad: cliente dueño o staff
+        if not (request.user.is_staff or order.user == request.user):
+            return Response(
+                {"error": "No tienes permiso para confirmar la recepción de este pedido."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if order.status not in ['shipped', 'delivered', 'finalized']:
+            return Response(
+                {"error": f"No se puede confirmar recepción para un pedido con estado '{order.get_status_display()}'. El pedido debe haber sido enviado."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        reception_notes = request.data.get('notes') or request.data.get('reception_notes') or request.data.get('observaciones') or ''
+        now = timezone.now()
+
+        order.status = 'finalized'
+        if isinstance(reception_notes, str) and reception_notes.strip():
+            order.reception_notes = reception_notes.strip()
+        order.reception_date = now
+        order.save(update_fields=['status', 'reception_notes', 'reception_date', 'updated_at'])
+
+        # Actualizar envíos asociados
+        for shipment in order.shipments.filter(is_deleted=False):
+            shipment.status = 'delivered'
+            if not shipment.delivered_at:
+                shipment.delivered_at = now
+            if order.reception_notes:
+                if shipment.notes:
+                    shipment.notes = f"{shipment.notes} | Observaciones de recepción: {order.reception_notes}"
+                else:
+                    shipment.notes = f"Observaciones de recepción: {order.reception_notes}"
+            shipment.save(update_fields=['status', 'delivered_at', 'notes', 'updated_at'])
+
+        if hasattr(order, '_prefetched_objects_cache'):
+            order._prefetched_objects_cache.clear()
+
+        serializer = self.get_serializer(order)
+        return Response({
+            "message": "Recepción de productos confirmada exitosamente.",
+            "mensaje": "Recepción de productos confirmada exitosamente.",
+            "order": serializer.data
+        }, status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
         """Bloquea la actualización de pedidos."""
