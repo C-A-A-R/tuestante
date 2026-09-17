@@ -39,6 +39,45 @@
     margin-bottom: 18px;
 }
 
+.google-auth-container-hidden {
+    display: none;
+}
+
+.register-google-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: -8px 0 20px;
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.google-register-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #005187;
+    font: inherit;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.google-register-icon {
+    width: 19px;
+    height: 19px;
+    flex: 0 0 19px;
+}
+
+.google-register-link:hover {
+    color: #003d66;
+}
+
 /* Botón Oficial de Google Identity Services renderizado */
 #googleBtn {
     width: 100%;

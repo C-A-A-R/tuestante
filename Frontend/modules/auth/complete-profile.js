@@ -57,33 +57,23 @@ function setupStrictInputs() {
     if (phoneInput) {
         // Bloquear en keydown cualquier tecla que no sea dígito, '+', o teclas de control
         phoneInput.addEventListener("keydown", (e) => {
-            // Permitir teclas de control: Backspace, Tab, Enter, Delete, flechas, Home, End
             const allowedControlKeys = [
                 "Backspace", "Tab", "Enter", "Delete", "ArrowLeft", "ArrowRight",
                 "ArrowUp", "ArrowDown", "Home", "End"
             ];
             if (allowedControlKeys.includes(e.key)) return;
-
-            // Permitir atajos: Ctrl/Cmd + A, C, V, X, Z
             if (e.ctrlKey || e.metaKey) return;
-
-            // Permitir '+' solo si aún no existe en el campo
             if (e.key === "+" && !phoneInput.value.includes("+")) return;
-
-            // Permitir dígitos 0-9
             if (/^[0-9]$/.test(e.key)) return;
 
-            // Bloquear cualquier otra tecla (letras, símbolos, espacios)
             e.preventDefault();
         });
 
         // Sanitizar en evento input ante cualquier caso (ej. autocompletado del navegador)
         phoneInput.addEventListener("input", () => {
             let val = phoneInput.value;
-            // Eliminar todo lo que no sea dígito o '+'
             val = val.replace(/[^0-9+]/g, "");
 
-            // Si hay un '+', solo permitirlo al inicio
             if (val.indexOf("+") > 0) {
                 const hasPlusAtStart = val.startsWith("+");
                 val = (hasPlusAtStart ? "+" : "") + val.replace(/\+/g, "");
@@ -307,7 +297,6 @@ async function handleCompleteProfileSubmit(e) {
         let mainMessage = err?.message || "Ocurrió un error al actualizar tus datos. Verifica la información ingresada.";
 
         if (data && typeof data === "object") {
-            // Mapear errores específicos por campo devueltos por DRF
             Object.keys(data).forEach((key) => {
                 const msg = Array.isArray(data[key]) ? data[key][0] : data[key];
                 if (key === "identity_document") setFieldError("identity_document", msg);

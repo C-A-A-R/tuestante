@@ -109,7 +109,7 @@ function ensureNavbarElementsExist() {
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
           </svg>
           <span>Carrito</span>
-          <span class="badge-count nav-cart-count">0</span>
+          <span class="badge-count nav-cart-count" style="display: none;">0</span>
         </a>
         <a href="https://wa.me/584266272286?text=Hola%20TuEstante%2C%20deseo%20m%C3%A1s%20informaci%C3%B3n" target="_blank" rel="noopener noreferrer" class="drawer-quick-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -240,7 +240,12 @@ export function updateCartBadge(explicitCount) {
   badgeElements.forEach((badge) => {
     badge.textContent = totalCount > 99 ? '99+' : String(totalCount);
     badge.setAttribute('aria-label', `${totalCount} artículos en el carrito`);
-    badge.style.display = 'flex';
+    badge.style.display = totalCount > 0 ? 'flex' : 'none';
+    if (totalCount > 0) {
+      badge.classList.remove('badge-bump');
+      void badge.offsetWidth;
+      badge.classList.add('badge-bump');
+    }
   });
 }
 

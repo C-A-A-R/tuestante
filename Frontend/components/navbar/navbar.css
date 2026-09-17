@@ -518,6 +518,26 @@ body, body[class] {
   line-height: 1;
   border: 2px solid var(--color-bg-white);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.badge-bump {
+  animation: badgeBump 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes badgeBump {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .mobile-cart-btn .badge-count {

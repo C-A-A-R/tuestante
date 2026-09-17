@@ -7,6 +7,7 @@
  */
 
 import { loginUser } from "./auth.js";
+import { initGoogleAuth } from "./google-auth.js";
 import { getAccessToken, getRefreshToken, getCurrentUser } from "../../js/storage.js";
 
 /**
@@ -269,5 +270,12 @@ document.addEventListener("DOMContentLoaded", () => {
 			const notif = document.getElementById("authErrorNotification");
 			if (notif) notif.style.display = "none";
 		});
+	});
+
+	// Inicializar autenticación con Google
+	initGoogleAuth({
+		btnContainerId: "googleBtn",
+		customBtnId: "customGoogleBtn",
+		onError: (msg) => showAuthErrorNotification(msg),
 	});
 });

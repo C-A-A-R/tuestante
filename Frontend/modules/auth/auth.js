@@ -86,3 +86,33 @@ export async function changePassword(data) {
     body: data,
   });
 }
+
+export async function loginWithGoogle(credential) {
+  const result = await postRequest(
+    `${AUTH_BASE_PATH}/google/`,
+    { credential },
+    { auth: false }
+  );
+  persistJwtTokens(result);
+  persistSessionUser(result);
+  return result;
+}
+
+export async function getCurrentUserProfile() {
+  return apiRequest({
+    path: `${AUTH_BASE_PATH}/profile/`,
+    method: "GET",
+  });
+}
+
+export async function completeUserProfile(data) {
+  const result = await apiRequest({
+    path: `${AUTH_BASE_PATH}/profile/`,
+    method: "PATCH",
+    body: data,
+  });
+  if (result?.user) {
+    setCurrentUser(result.user);
+  }
+  return result;
+}

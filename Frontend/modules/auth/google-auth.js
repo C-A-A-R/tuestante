@@ -7,6 +7,34 @@
 import { GOOGLE_CLIENT_ID } from "../../js/config.js";
 import { loginWithGoogle } from "./auth.js";
 
+let originErrorLogged = false;
+
+/**
+ * Intercepta mensajes de error del SDK de Google Identity Services para advertir
+ * claramente en pantalla si el origen actual (ej. http://localhost:5500) no fue
+ * añadido a los "Orígenes de JavaScript autorizados" en Google Cloud Console.
+ */
+function setupOriginErrorDetection(onError) {
+    if (window.__gsiOriginMonitored__) return;
+    window.__gsiOriginMonitored__ = true;
+
+    const originalConsoleError = console.error;
+    console.error = function (...args) {
+        originalConsoleError.apply(console, args);
+        try {
+            const fullText = args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a || ""))).join(" ");
+            if (fullText.includes("The given origin is not allowed for the given client ID")) {
+                originErrorLogged = true;
+                const currentOrigin = window.location.origin;
+                const msg = `Aviso de configuración en Google Cloud: El origen actual (${currentOrigin}) no está en los "Orígenes de JavaScript autorizados" del Client ID en Google Cloud Console. Por favor agrégalo para que el inicio de sesión funcione.`;
+                if (typeof onError === "function") {
+                    onError(msg);
+                }
+            }
+        } catch (_) {}
+    };
+}
+
 /**
  * Inicializa el flujo de Google Identity Services en la página actual.
  * @param {Object} options Opciones de configuración y callbacks
@@ -19,12 +47,15 @@ export function initGoogleAuth(options = {}) {
         onError = null,
     } = options;
 
+    setupOriginErrorDetection(onError);
+
     const clientId = GOOGLE_CLIENT_ID || window.__GOOGLE_CLIENT_ID__ || "";
+    const hasValidClientId = clientId.endsWith(".apps.googleusercontent.com");
 
     // Cargar SDK de Google si aún no existe
     loadGoogleScript(() => {
-        if (!clientId) {
-            setupDemoFallback(customBtnId, onError);
+        if (!hasValidClientId) {
+            setupDemoFallback([customBtnId, "topGoogleRegisterBtn", "customGoogleBtnFallback"], onError);
             return;
         }
 
@@ -49,29 +80,61 @@ export function initGoogleAuth(options = {}) {
                         shape: "rectangular",
                         text: "continue_with",
                         logo_alignment: "left",
-                        width: container.offsetWidth || 340,
+                        width: 320,
                     });
+
+                    // Si el botón oficial se renderizó, ocultar el botón personalizado fallback
+                    const observer = new MutationObserver(() => {
+                        if (container.querySelector("iframe")) {
+                            const customBtn = document.getElementById(customBtnId);
+                            if (customBtn) customBtn.style.display = "none";
+                        }
+                    });
+                    observer.observe(container, { childList: true, subtree: true });
                 }
             }
         } catch (err) {
             console.error("Error al inicializar Google Identity Services:", err);
-            setupDemoFallback(customBtnId, onError);
+            setupDemoFallback([customBtnId, "topGoogleRegisterBtn", "customGoogleBtnFallback"], onError);
         }
     });
 
-    // Vincular botón personalizado si existe
-    const customBtn = document.getElementById(customBtnId);
-    if (customBtn) {
-        customBtn.addEventListener("click", () => {
-            if (!clientId) {
-                setupDemoFallback(customBtnId, onError);
-                return;
-            }
-            if (window.google?.accounts?.id) {
-                window.google.accounts.id.prompt();
-            }
-        });
-    }
+    // Vincular botones personalizados (tanto el botón principal como links de registro rápido)
+    const triggerGoogleSignIn = () => {
+        if (!clientId || !hasValidClientId) {
+            setupDemoFallback([customBtnId, "topGoogleRegisterBtn", "customGoogleBtnFallback"], onError);
+            return;
+        }
+
+        if (originErrorLogged) {
+            const currentOrigin = window.location.origin;
+            const msg = `Aviso de configuración en Google Cloud: El origen actual (${currentOrigin}) no está registrado en los "Orígenes de JavaScript autorizados" de tu Client ID en Google Cloud Console.`;
+            if (typeof onError === "function") onError(msg);
+            else alert(msg);
+            return;
+        }
+
+        if (window.google?.accounts?.id) {
+            window.google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed()) {
+                    const reason = notification.getNotDisplayedReason();
+                    console.warn("[Google Identity] Not displayed reason:", reason);
+                    if (reason === "unregistered_origin" || reason === "origin_mismatch") {
+                        const currentOrigin = window.location.origin;
+                        const msg = `Aviso: El origen actual (${currentOrigin}) no está registrado en los "Orígenes de JavaScript autorizados" de Google Cloud Console.`;
+                        if (typeof onError === "function") onError(msg);
+                    }
+                }
+            });
+        }
+    };
+
+    [customBtnId, "topGoogleRegisterBtn", "customGoogleBtnFallback"].forEach((btnId) => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener("click", triggerGoogleSignIn);
+        }
+    });
 
     // Configurar listener del botón Continuar en el modal de éxito
     setupGoogleModalContinue();
@@ -117,6 +180,7 @@ export async function processGoogleCredential(credential, { onSuccess, onError }
         const user = result?.user;
         const profileCompleted = Boolean(result?.profile_completed);
         const isNewUser = Boolean(result?.is_new_user);
+        const isEmployee = Boolean(result?.is_employee || user?.is_employee);
 
         if (onSuccess && typeof onSuccess === "function") {
             onSuccess(result);
@@ -125,8 +189,16 @@ export async function processGoogleCredential(credential, { onSuccess, onError }
         // Si es un usuario nuevo o aún no ha completado cédula/teléfono/fecha
         if (isNewUser || !profileCompleted) {
             showGoogleSuccessModal(user);
+        } else if (isEmployee) {
+            // Empleado con perfil completo
+            const redirectParam = new URLSearchParams(window.location.search).get("redirect");
+            if (redirectParam && redirectParam.includes("/employee/")) {
+                window.location.href = redirectParam;
+            } else {
+                window.location.href = "../../employee/index.html";
+            }
         } else {
-            // Usuario recurrente con perfil completo
+            // Cliente recurrente con perfil completo
             const redirectParam = new URLSearchParams(window.location.search).get("redirect");
             window.location.href = redirectParam || "../../index.html";
         }
@@ -160,7 +232,7 @@ export function showGoogleSuccessModal(user) {
     const avatarEl = modal.querySelector(".modal-avatar-img");
 
     if (nameEl && user) {
-        nameEl.textContent = user.full_name || `${user.first_name || ''} ${user.first_last_name || ''}`.trim() || user.username || "Usuario";
+        nameEl.textContent = user.full_name || `${user.first_name || ""} ${user.first_last_name || ""}`.trim() || user.username || "Usuario";
     }
     if (emailEl && user) {
         emailEl.textContent = user.email || "";
@@ -204,26 +276,34 @@ function redirectToCompleteProfile() {
  * Indicador de carga durante la llamada a la API.
  */
 function showGoogleLoading(isLoading) {
-    const customBtn = document.getElementById("customGoogleBtn");
-    if (customBtn) {
-        customBtn.disabled = isLoading;
-        customBtn.style.opacity = isLoading ? "0.6" : "1";
-    }
+    const customBtns = [
+        document.getElementById("customGoogleBtn"),
+        document.getElementById("topGoogleRegisterBtn"),
+    ];
+    customBtns.forEach((btn) => {
+        if (btn) {
+            btn.disabled = isLoading;
+            btn.style.opacity = isLoading ? "0.6" : "1";
+        }
+    });
 }
 
 /**
  * Fallback informativo cuando GOOGLE_CLIENT_ID no está configurado aún.
  */
-function setupDemoFallback(customBtnId, onError) {
-    const customBtn = document.getElementById(customBtnId);
-    if (customBtn) {
-        customBtn.addEventListener("click", () => {
-            const msg = "Para habilitar el inicio de sesión con Google, por favor configura la variable GOOGLE_CLIENT_ID en el archivo .env del backend o en Frontend/js/config.js";
-            if (onError && typeof onError === "function") {
-                onError(msg);
-            } else {
-                alert(msg);
-            }
-        });
-    }
+function setupDemoFallback(btnIds, onError) {
+    const ids = Array.isArray(btnIds) ? btnIds : [btnIds];
+    ids.forEach((id) => {
+        const customBtn = document.getElementById(id);
+        if (customBtn) {
+            customBtn.addEventListener("click", () => {
+                const msg = "Para habilitar el inicio de sesión con Google, por favor configura la variable GOOGLE_CLIENT_ID en el archivo .env del backend o en Frontend/js/config.js";
+                if (onError && typeof onError === "function") {
+                    onError(msg);
+                } else {
+                    alert(msg);
+                }
+            });
+        }
+    });
 }

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+    <!-- Punta superior - TURQUESA -->
+    <path
+        d="M75 35
+           V28
+           C75 18 83 10 100 10
+           C117 10 125 18 125 28
+           V35 Z"
+        fill="#54A9A9"
+    />
+
+    <!-- Punta izquierda - AZUL PRINCIPAL -->
+    <path
+        d="M35 75
+           C25 75 17 83 17 100
+           C17 117 25 125 35 125
+           V75 Z"
+        fill="#2874B2"
+    />
+
+    <!-- Punta derecha - AZUL PRINCIPAL -->
+    <path
+        d="M165 75
+           V125
+           C175 125 183 117 183 100
+           C183 83 175 75 165 75 Z"
+        fill="#2874B2"
+    />
+
+    <!-- Punta inferior - TURQUESA -->
+    <path
+        d="M75 165
+           V172
+           C75 182 83 190 100 190
+           C117 190 125 182 125 172
+           V165 Z"
+        fill="#54A9A9"
+    />
+
+    <!-- Cuerpo principal - AZUL -->
+    <rect x="35" y="35" width="130" height="130" rx="20" fill="#2874B2" />
+
+    <!-- Barra superior - BLANCA -->
+    <rect x="57" y="55" width="86" height="22" rx="11" fill="#FFFFFF" />
+
+    <!-- Barra central - BLANCA -->
+    <rect x="57" y="89" width="86" height="22" rx="11" fill="#FFFFFF" />
+
+    <!-- Barra inferior - BLANCA -->
+    <rect x="57" y="123" width="86" height="22" rx="11" fill="#FFFFFF" />
+</svg>

@@ -10,4 +10,4 @@ export const OPENAPI_JSON_URL = `${backendOrigin}/swagger.json`;
 export const OPENAPI_YAML_URL = `${backendOrigin}/swagger.yaml`;
 
 // Google OAuth Client ID (puede sobreescribirse globalmente con window.__GOOGLE_CLIENT_ID__)
-export const GOOGLE_CLIENT_ID = window.__GOOGLE_CLIENT_ID__ || "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";
+export const GOOGLE_CLIENT_ID = window.__GOOGLE_CLIENT_ID__ || "807644267079-4ngg37insa1biom4421bj7k2599v307s.apps.googleusercontent.com";

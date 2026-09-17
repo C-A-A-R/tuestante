@@ -115,6 +115,10 @@ body.auth-body {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+.register-card {
+    padding-top: 18px;
+}
+
 /* Encabezado */
 .auth-header {
     text-align: center;
@@ -127,11 +131,19 @@ body.auth-body {
     text-decoration: none;
 }
 
+.register-card .auth-logo-link {
+    margin-bottom: 4px;
+}
+
 .auth-logo-img {
     height: 48px;
     width: auto;
     object-fit: contain;
     transition: transform 0.2s ease;
+}
+
+.register-card .auth-logo-img {
+    height: 92px;
 }
 
 .auth-logo-img:hover {
@@ -147,6 +159,10 @@ body.auth-body {
     letter-spacing: -0.02em;
 }
 
+.register-card .auth-title {
+    margin-bottom: 6px;
+}
+
 .auth-subtitle {
     font-family: 'Inter', sans-serif;
     font-size: 0.9rem;
@@ -154,6 +170,10 @@ body.auth-body {
     line-height: 1.45;
     margin: 0 auto;
     max-width: 540px;
+}
+
+.register-card .register-google-inline {
+    margin-top: 10px;
 }
 
 /* Notificación de Error Global / Éxito */

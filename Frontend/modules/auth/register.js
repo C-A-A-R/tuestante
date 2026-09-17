@@ -7,6 +7,7 @@
  */
 
 import { registerUser } from "./auth.js";
+import { initGoogleAuth } from "./google-auth.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("registerForm");
@@ -16,6 +17,13 @@ document.addEventListener("DOMContentLoaded", () => {
     setupLivePasswordValidation();
     setupNumericInputs();
     setupFormSubmission(form);
+
+    // Inicializar Google Sign-In / Registro
+    initGoogleAuth({
+        btnContainerId: "googleBtn",
+        customBtnId: "customGoogleBtn",
+        onError: (msg) => showErrorNotification(msg),
+    });
 });
 
 /**
@@ -113,6 +121,7 @@ function setupFormSubmission(form) {
         hideNotifications();
 
         // Obtener campos
+        const usuarioInput = document.getElementById("usuario");
         const emailInput = document.getElementById("email");
         const firstNameInput = document.getElementById("first_name");
         const secondNameInput = document.getElementById("second_name");
@@ -132,7 +141,17 @@ function setupFormSubmission(form) {
 
         let hasError = false;
 
-        // 1. Validar Correo
+        // 1. Validar Usuario
+        const usuario = (usuarioInput?.value || "").trim();
+        if (!usuario) {
+            setFieldError(usuarioInput, "El nombre de usuario es obligatorio.");
+            hasError = true;
+        } else if (usuario.length < 3) {
+            setFieldError(usuarioInput, "El usuario debe tener al menos 3 caracteres.");
+            hasError = true;
+        }
+
+        // 2. Validar Correo
         const email = (emailInput?.value || "").trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!email) {
@@ -143,7 +162,7 @@ function setupFormSubmission(form) {
             hasError = true;
         }
 
-        // 2. Validar Nombres y Apellidos
+        // 3. Validar Nombres y Apellidos
         const firstName = (firstNameInput?.value || "").trim();
         if (!firstName) {
             setFieldError(firstNameInput, "El primer nombre es obligatorio.");
@@ -156,7 +175,7 @@ function setupFormSubmission(form) {
             hasError = true;
         }
 
-        // 3. Validar Documento de Identidad
+        // 4. Validar Documento de Identidad
         const identityDoc = (identityDocInput?.value || "").trim();
         if (!identityDoc) {
             setFieldError(identityDocInput, "El número de documento es obligatorio.");
@@ -166,7 +185,7 @@ function setupFormSubmission(form) {
             hasError = true;
         }
 
-        // 4. Validar Teléfono
+        // 5. Validar Teléfono
         const phoneNumber = (phoneNumberInput?.value || "").trim();
         if (!phoneNumber) {
             setFieldError(phoneNumberInput, "El número de teléfono es obligatorio.");
@@ -176,7 +195,7 @@ function setupFormSubmission(form) {
             hasError = true;
         }
 
-        // 5. Validar Contraseña
+        // 6. Validar Contraseña
         const password = passwordInput?.value || "";
         const confirmPassword = confirmPasswordInput?.value || "";
 
@@ -205,6 +224,7 @@ function setupFormSubmission(form) {
         const formattedDoc = `${docType}-${identityDoc}`;
 
         const payload = {
+            username: usuario,
             email: email,
             first_name: firstName,
             second_name: (secondNameInput?.value || "").trim() || undefined,
@@ -335,6 +355,7 @@ function mapBackendFieldErrors(data) {
     if (!data || typeof data !== "object") return;
 
     const fieldMap = {
+        username: "usuario",
         email: "email",
         first_name: "first_name",
         first_last_name: "first_last_name",
