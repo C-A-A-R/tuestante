@@ -22,7 +22,11 @@ export async function obtenerDistribuidores(params = {}) {
  * @returns {Promise<Object>} Lista de transportistas con cobertura en la zona.
  */
 export async function obtenerDistribuidoresDisponibles(params = {}) {
-    return getRequest('/distributors/available/', params, { auth: true });
+    const res = await getRequest('/distributors/available/', params, { auth: true });
+    if (res && Array.isArray(res.distributors)) {
+        return res.distributors;
+    }
+    return res;
 }
 
 /**

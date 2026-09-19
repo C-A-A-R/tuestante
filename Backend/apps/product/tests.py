@@ -297,17 +297,18 @@ class OutletModelAndAPITest(TestCase):
         )
         self.client = APIClient()
 
-    def test_outlet_product_auto_deactivation_on_zero_quantity(self):
-        """Verifica que al guardar un producto outlet con cantidad 0, se inactive automáticamente para clientes."""
+    def test_outlet_product_active_status_persists_on_zero_quantity(self):
+        """Verifica que el estado is_active se mantenga y no se fuerce a inactivo al guardar un producto outlet con cantidad 0."""
         self.assertTrue(self.product.is_active)
         self.assertEqual(self.product.quantity, 5)
 
-        # Reducir cantidad a 0 y guardar
+        # Reducir cantidad a 0 y guardar manteniendo o activando is_active
         self.product.quantity = 0
+        self.product.is_active = True
         self.product.save()
 
         self.product.refresh_from_db()
-        self.assertFalse(self.product.is_active)
+        self.assertTrue(self.product.is_active)
         self.assertEqual(self.product.quantity, 0)
 
     def test_outlet_filter_excludes_zero_quantity_for_clients(self):

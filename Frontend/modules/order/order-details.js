@@ -70,6 +70,7 @@ const PAYMENT_STATUS_CONFIG = {
 
 let currentOrderData = null;
 let currentPaymentsList = [];
+let currentPaymentBreakdown = null;
 
 /**
  * Carga y renderiza todos los datos del pedido desde la API.
@@ -123,6 +124,7 @@ async function loadOrderData(orderId) {
 
         try {
             paymentBreakdown = await calculateOrderPaymentBreakdown(order.total_price);
+            currentPaymentBreakdown = paymentBreakdown;
             const rateTextEl = document.getElementById('exchange-rate-text');
             const totalVesEl = document.getElementById('order-total-ves');
 
@@ -389,6 +391,10 @@ function renderExistingPayments(payments) {
  * Deduce la etapa del backend sin consultar al usuario y establece el monto inicial en Bolívares (50%).
  */
 function setupPaymentFormState(order, payments, paymentBreakdown = null) {
+    if (paymentBreakdown) {
+        currentPaymentBreakdown = paymentBreakdown;
+    }
+
     const formSection = document.getElementById('payment-form-section');
     const formTitle = document.getElementById('payment-form-title');
     const stageHiddenInput = document.getElementById('payment-stage');
@@ -701,15 +707,76 @@ function setupPaymentFormSubmit(orderId) {
             return;
         }
 
+        // Conversión a USD para la API del Backend (el usuario ingresa monto en Bolívares Bs.)
+        const totalOrderUsd = parseFloat(currentOrderData?.total_price || 0);
+        let amountUsd = 0;
+        const exchangeRate = currentPaymentBreakdown?.exchangeRate || 1;
+
+        if (currentPaymentBreakdown) {
+            if (stage === 'initial') {
+                if (Math.abs(amountNum - currentPaymentBreakdown.initialPayment.rawVes) <= 0.05) {
+                    amountUsd = currentPaymentBreakdown.initialPayment.rawUsd;
+                } else if (Math.abs(amountNum - currentPaymentBreakdown.total.rawVes) <= 0.05) {
+                    amountUsd = currentPaymentBreakdown.total.rawUsd;
+                } else if (exchangeRate > 0 && amountNum > totalOrderUsd) {
+                    amountUsd = Number((amountNum / exchangeRate).toFixed(2));
+                    const minInitialUsd = currentPaymentBreakdown.initialPayment.rawUsd;
+                    if (amountUsd < minInitialUsd && (minInitialUsd - amountUsd) <= 0.05) {
+                        amountUsd = minInitialUsd;
+                    }
+                    if (amountUsd > totalOrderUsd) {
+                        amountUsd = totalOrderUsd;
+                    }
+                } else {
+                    amountUsd = amountNum;
+                }
+            } else if (stage === 'final') {
+                if (Math.abs(amountNum - currentPaymentBreakdown.finalPayment.rawVes) <= 0.05) {
+                    amountUsd = currentPaymentBreakdown.finalPayment.rawUsd;
+                } else if (exchangeRate > 0 && amountNum > totalOrderUsd) {
+                    amountUsd = Number((amountNum / exchangeRate).toFixed(2));
+                    const remainingUsd = currentPaymentBreakdown.finalPayment.rawUsd;
+                    if (Math.abs(amountUsd - remainingUsd) <= 0.05) {
+                        amountUsd = remainingUsd;
+                    }
+                } else {
+                    amountUsd = amountNum;
+                }
+            } else {
+                if (Math.abs(amountNum - currentPaymentBreakdown.total.rawVes) <= 0.05) {
+                    amountUsd = currentPaymentBreakdown.total.rawUsd;
+                } else if (exchangeRate > 0 && amountNum > totalOrderUsd) {
+                    amountUsd = Number((amountNum / exchangeRate).toFixed(2));
+                    if (Math.abs(amountUsd - totalOrderUsd) <= 0.05) {
+                        amountUsd = totalOrderUsd;
+                    }
+                } else {
+                    amountUsd = amountNum;
+                }
+            }
+        } else {
+            amountUsd = (totalOrderUsd > 0 && amountNum > totalOrderUsd && exchangeRate > 0)
+                ? Number((amountNum / exchangeRate).toFixed(2))
+                : amountNum;
+        }
+
+        // Construir nota con auditoría de conversión en Bolívares
+        let combinedNotes = notes;
+        if (amountNum > 0) {
+            const formattedTransferredBs = amountNum.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const auditTrace = `[Pago en Bs.: Bs. ${formattedTransferredBs} | Tasa Oficial: Bs. ${exchangeRate.toFixed(2)}/$ | Registrado en USD: $${amountUsd.toFixed(2)}]`;
+            combinedNotes = notes ? `${notes}\n\n${auditTrace}` : auditTrace;
+        }
+
         // Construir FormData
         const formData = new FormData();
         formData.append('order', orderId);
         formData.append('payment_stage', stage);
         formData.append('payment_method', method);
-        formData.append('amount', amount);
+        formData.append('amount', amountUsd.toFixed(2));
         formData.append('reference_number', reference);
         formData.append('receipt_file', fileInput.files[0]);
-        if (notes) formData.append('notes', notes);
+        if (combinedNotes) formData.append('notes', combinedNotes);
 
         // Estado de carga en el botón
         btnSubmit.disabled = true;
@@ -743,7 +810,27 @@ function setupPaymentFormSubmit(orderId) {
 
         } catch (error) {
             console.error('Error al registrar el pago:', error);
-            const errorMsg = error?.data?.detail || error?.data?.error || error?.message || 'No se pudo registrar el pago. Verifica los datos e intenta nuevamente.';
+            let errorMsg = 'No se pudo registrar el pago. Verifica los datos e intenta nuevamente.';
+            if (error?.data) {
+                if (typeof error.data === 'string') {
+                    errorMsg = error.data;
+                } else if (error.data.detail) {
+                    errorMsg = error.data.detail;
+                } else if (error.data.error) {
+                    errorMsg = error.data.error;
+                } else if (typeof error.data === 'object') {
+                    const messages = [];
+                    for (const [key, val] of Object.entries(error.data)) {
+                        const strVal = Array.isArray(val) ? val.join(' ') : String(val);
+                        messages.push(strVal);
+                    }
+                    if (messages.length > 0) {
+                        errorMsg = messages.join('\n');
+                    }
+                }
+            } else if (error?.message) {
+                errorMsg = error.message;
+            }
             showErrorToast('Error al Registrar Pago', errorMsg, 7000);
         } finally {
             btnSubmit.disabled = false;

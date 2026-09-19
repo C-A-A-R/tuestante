@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupPhotoDropzone();
   setupLiveBirthDateValidation();
   setupPasswordModal();
+  setupDocumentTypeSync();
   setupFormSubmit();
 
   await loadEmployeeData(editEmployeeId);
@@ -91,7 +92,20 @@ async function loadEmployeeData(employeeId) {
     setInputValue('input-second-name', secondName);
     setInputValue('input-last-name', lastName);
     setInputValue('input-second-last-name', secondLastName);
-    setInputValue('input-identity-doc', emp.id_number || emp.identity_document || emp.user?.identity_document || emp.user?.username || '');
+
+    const rawDoc = emp.id_number || emp.identity_document || emp.user?.identity_document || emp.user?.username || '';
+    let docType = emp.document_type || emp.user?.document_type || 'V';
+    let docNum = rawDoc;
+    if (rawDoc && rawDoc.includes('-')) {
+      const parts = rawDoc.split('-');
+      docType = parts[0].toUpperCase();
+      docNum = parts.slice(1).join('-');
+    } else if (rawDoc && /^[A-Za-z]/.test(rawDoc)) {
+      docType = rawDoc.charAt(0).toUpperCase();
+      docNum = rawDoc.slice(1);
+    }
+    setInputValue('select-document-type', docType);
+    setInputValue('input-identity-doc', docNum);
     setInputValue('input-phone', emp.phone || emp.user?.phone || '');
     setInputValue('input-email', emp.user?.email || emp.email || '');
     setInputValue('input-employee-number', emp.employee_number || '');
@@ -512,6 +526,28 @@ function setupPhotoDropzone() {
 }
 
 /**
+ * Sincronización del tipo de documento y el número de cédula
+ */
+function setupDocumentTypeSync() {
+  const selectDocType = document.getElementById('select-document-type');
+  const inputIdentityDoc = document.getElementById('input-identity-doc');
+  if (!selectDocType || !inputIdentityDoc) return;
+
+  inputIdentityDoc.addEventListener('input', () => {
+    const val = inputIdentityDoc.value.trim();
+    const match = val.match(/^([VEJGPRvejgpr])[-_ ]?(.*)$/);
+    if (match) {
+      const detectedType = match[1].toUpperCase();
+      const rest = match[2];
+      if (val.includes('-') || (rest && /^\d+$/.test(rest))) {
+        selectDocType.value = detectedType;
+        inputIdentityDoc.value = rest;
+      }
+    }
+  });
+}
+
+/**
  * Guardado del Formulario de Edición Principal
  */
 function setupFormSubmit() {
@@ -575,6 +611,18 @@ function setupFormSubmit() {
       }
     }
 
+    const docType = document.getElementById('select-document-type')?.value || 'V';
+    const rawDocNum = document.getElementById('input-identity-doc')?.value.trim() || '';
+    let cleanDocNum = rawDocNum.replace(/^[A-Za-z]-?/, '').replace(/\s+/g, '');
+    if (!cleanDocNum && rawDocNum) cleanDocNum = rawDocNum;
+    const fullIdentityDoc = cleanDocNum ? `${docType}-${cleanDocNum}` : '';
+
+    if (!cleanDocNum) {
+      showToast('Ingresa el número de cédula o documento de identidad.', 'error');
+      document.getElementById('input-identity-doc')?.focus();
+      return;
+    }
+
     isSubmitting = true;
 
     // Armar FormData para enviar datos y posible foto
@@ -583,7 +631,9 @@ function setupFormSubmit() {
     formData.append('second_name', document.getElementById('input-second-name').value.trim());
     formData.append('last_name', document.getElementById('input-last-name').value.trim());
     formData.append('second_last_name', document.getElementById('input-second-last-name').value.trim());
-    formData.append('identity_document', document.getElementById('input-identity-doc').value.trim());
+    formData.append('document_type', docType);
+    formData.append('identity_document', fullIdentityDoc);
+    formData.append('id_number', fullIdentityDoc);
     formData.append('phone', document.getElementById('input-phone').value.trim());
     formData.append('email', document.getElementById('input-email').value.trim());
     formData.append('employee_number', document.getElementById('input-employee-number').value.trim());

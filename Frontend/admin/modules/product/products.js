@@ -169,7 +169,7 @@ function renderProductsTable() {
   if (total === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-muted);">
           No se encontraron productos que coincidan con los filtros seleccionados.
         </td>
       </tr>
@@ -275,7 +275,15 @@ function renderProductsTable() {
           $${p.price.toFixed(2)}
         </td>
 
-        <!-- 4. Outlet -->
+        <!-- 4. Cantidad (Stock disponible) -->
+        <td style="text-align: center;">
+          <span class="stock-badge ${p.quantity > 10 ? 'stock-ok' : (p.quantity > 0 ? 'stock-low' : 'stock-zero')}" 
+                title="${p.quantity > 0 ? `${p.quantity} unidades en inventario` : 'Sin unidades en inventario'}">
+            ${p.quantity > 0 ? `${p.quantity} unid.` : '0 unid.'}
+          </span>
+        </td>
+
+        <!-- 5. Outlet -->
         <td style="text-align: center;">
           ${p.is_outlet ? `
             <span class="outlet-badge-tag" style="display: inline-block; padding: 3px 8px; font-size: 0.72rem; font-weight: 700; background: #fef3c7; color: #b45309; border: 1px solid #fde68a; border-radius: 9999px;">
@@ -286,7 +294,7 @@ function renderProductsTable() {
           `}
         </td>
 
-        <!-- 5. Ángulos (Botón con Contador y Desplegable) -->
+        <!-- 6. Ángulos (Botón con Contador y Desplegable) -->
         <td style="text-align: center;">
           <button 
             type="button" 
@@ -300,7 +308,7 @@ function renderProductsTable() {
           </button>
         </td>
 
-        <!-- 6. Colores (Botón con Contador y Desplegable) -->
+        <!-- 7. Colores (Botón con Contador y Desplegable) -->
         <td style="text-align: center;">
           <button 
             type="button" 
@@ -314,7 +322,7 @@ function renderProductsTable() {
           </button>
         </td>
 
-        <!-- 7. Video (Click para Reproducir) -->
+        <!-- 8. Video (Click para Reproducir) -->
         <td style="text-align: center;">
           ${hasVideo ? `
             <button 
@@ -332,22 +340,23 @@ function renderProductsTable() {
           `}
         </td>
 
-        <!-- 8. Estado -->
+        <!-- 9. Estado -->
         <td style="text-align: center;">
-          <span class="status-pill ${statusClass}">
+          <button type="button" class="status-pill status-toggle-btn btn-toggle-active ${statusClass}" data-product-id="${p.id}" title="Click para ${p.is_active ? 'desactivar' : 'activar'} este producto">
             <span class="status-dot"></span>
             <span>${statusLabel}</span>
-          </span>
+          </button>
         </td>
 
-        <!-- 9. Acciones (Ojo, Lápiz, 3 Puntos) -->
+        <!-- 10. Acciones (Ojo, Lápiz, 3 Puntos) -->
         <td style="text-align: right;">
           <div class="table-actions-cell">
             <!-- Botón Ojo (Ver Detalle en nueva pestaña o modal) -->
             <a 
-              href="./product-create.html" 
+              href="./product-detail.html?id=${encodeURIComponent(p.id)}" 
               class="btn-table-action" 
-              title="Ver especificaciones">
+              title="Ver especificaciones" 
+              aria-label="Ver especificaciones de ${escapeHtml(p.product_name)}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
@@ -356,9 +365,10 @@ function renderProductsTable() {
 
             <!-- Botón Lápiz (Editar Producto) -->
             <a 
-              href="./product-create.html" 
+              href="./product-detail.html?id=${encodeURIComponent(p.id)}&edit=true" 
               class="btn-table-action" 
-              title="Editar producto">
+              title="Editar producto" 
+              aria-label="Editar ${escapeHtml(p.product_name)}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -380,13 +390,18 @@ function renderProductsTable() {
 
             <!-- Popover flotante del menú de 3 puntos -->
             <div class="action-popover" id="popover-${p.id}">
-              <!-- Opción: Hacer Inactivo / Activo -->
+              <!-- Opción: Poner Inactivo / Activo -->
               <button type="button" class="popover-item btn-toggle-active" data-product-id="${p.id}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                  ${p.is_active ? `
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                  ` : `
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="9 12 11 14 15 10"></polyline>
+                  `}
                 </svg>
-                <span>${p.is_active ? 'Hacer inactivo' : 'Hacer activo'}</span>
+                <span>${p.is_active ? 'Poner inactivo' : 'Poner activo'}</span>
               </button>
 
               <!-- Opción: Alternar Outlet -->
@@ -412,7 +427,7 @@ function renderProductsTable() {
 
       <!-- Fila Acordeón Expandible para Variantes -->
       <tr class="product-accordion-row" id="accordion-row-${p.id}">
-        <td colspan="9" style="padding: 0;">
+        <td colspan="10" style="padding: 0;">
           <div class="accordion-container">
             <!-- Sub-tabla 1: Ángulos (Perspectivas) -->
             <div class="accordion-box">
@@ -508,18 +523,39 @@ function attachTableEventListeners() {
     });
   });
 
-  // 5. Acción: Hacer Activo / Inactivo
+  // 5. Acción: Poner Activo / Inactivo (desde menú 3 puntos o píldora de estado)
   tbody.querySelectorAll('.btn-toggle-active').forEach(btn => {
     btn.addEventListener('click', async (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      const id = parseInt(btn.getAttribute('data-product-id'), 10);
+      const id = btn.getAttribute('data-product-id');
+      if (!id) return;
+
       closeActivePopover();
+
+      // Feedback visual inmediato
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+
       try {
         const updated = await toggleProductActive(id);
-        showToast('success', 'Estado Actualizado', `El producto "${updated.product_name}" ahora está ${updated.is_active ? 'Activo' : 'Inactivo'}.`);
+        const newStatus = updated && typeof updated.is_active === 'boolean' ? updated.is_active : null;
+        const name = updated?.product_name || 'Producto';
+
+        // Actualización optimista local
+        const pIndex = state.products.findIndex(p => String(p.id) === String(id));
+        if (pIndex !== -1 && newStatus !== null) {
+          state.products[pIndex].is_active = newStatus;
+        }
+
+        showToast('success', 'Estado Actualizado', `El producto "${name}" ahora está ${newStatus ? 'Activo' : 'Inactivo'}.`);
         await Promise.all([loadProductMetrics(), loadProductsData()]);
       } catch (err) {
-        showToast('error', 'Error al cambiar estado', err.message);
+        console.error('Error al cambiar estado activo/inactivo:', err);
+        showToast('error', 'Error al cambiar estado', err.message || 'No se pudo cambiar el estado del producto.');
+      } finally {
+        btn.disabled = false;
+        btn.style.opacity = '1';
       }
     });
   });

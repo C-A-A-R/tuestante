@@ -85,7 +85,24 @@
 
                 <!-- Columna Derecha: Panel de Información del Producto -->
                 <div class="product-info-panel" id="product-info-panel">
-                    <!-- Panel Espejo de Lupa Ampliada (Tapa la columna derecha solo cuando la lupa está activa) -->
+                    <!-- Encabezado del Producto: Tipo, Nombre y Precio (Permanecen siempre visibles sin ser tapados por la lupa) -->
+                    <div class="product-header-block" id="product-header-block">
+                        <!-- Tipo de Producto en la Esquina Superior Derecha -->
+                        <div class="product-type-badge-container">
+                            <span class="product-type-corner-badge" id="detail-product-type">TIPO DE PRODUCTO</span>
+                        </div>
+
+                        <!-- 1. Nombre del producto -->
+                        <h1 class="product-title" id="detail-product-name">Cargando Nombre...</h1>
+
+                        <!-- 4. Precio del producto + IVA -->
+                        <div class="product-price-container">
+                            <span class="price-amount" id="detail-product-price">$0.00</span>
+                            <span class="price-vat">IVA incluido</span>
+                        </div>
+                    </div>
+
+                    <!-- Panel Espejo de Lupa Ampliada (Ubicado debajo del nombre y precio para no tapar el encabezado) -->
                     <div class="zoom-mirror-panel" id="zoom-mirror-panel">
                         <div class="mirror-header">
                             <span class="mirror-title">LUPA DE PRECISIÓN</span>
@@ -96,23 +113,9 @@
                         </div>
                     </div>
 
-                    <!-- Tipo de Producto en la Esquina Superior Derecha -->
-                    <div class="product-type-badge-container">
-                        <span class="product-type-corner-badge" id="detail-product-type">TIPO DE PRODUCTO</span>
-                    </div>
-
-                    <!-- 1. Nombre del producto -->
-                    <h1 class="product-title" id="detail-product-name">Cargando Nombre...</h1>
-
-                    <!-- 4. Precio del producto + IVA -->
-                    <div class="product-price-container">
-                        <span class="price-amount" id="detail-product-price">$0.00</span>
-                        <span class="price-vat">IVA incluido</span>
-                    </div>
-
                     <!-- 2. Pequeña descripción -->
                     <p class="product-short-desc" id="detail-product-desc">
-                        <span id="detail-product-desc-text">Cargando descripción...</span><button type="button" class="description-toggle-btn" id="description-toggle-btn" hidden aria-expanded="false">Ver más</button>
+                        <span id="detail-product-desc-text">Cargando descripción...</span><button type="button" class="description-toggle-btn is-hidden" id="description-toggle-btn" hidden aria-expanded="false" style="display: none;">Mostrar más</button>
                     </p>
 
                     <!-- Especificaciones Técnicas (Listado Simple) -->

@@ -143,24 +143,30 @@ class PaymentViewSet(BaseViewSet):
 
         if review_status == 'approved':
             payment.rejection_reason = None
+
+            # 🛠️ Registrar SIEMPRE la orden en fabricación si no existe aún
+            try:
+                from apps.production.models import ProductionOrder
+                if not ProductionOrder.objects.filter(order=order, is_deleted=False).exists():
+                    stage_label = payment.get_payment_stage_display() if hasattr(payment, 'get_payment_stage_display') else payment.payment_stage
+                    ProductionOrder.objects.create(
+                        order=order,
+                        status='queued',
+                        technical_notes=order.notes or f'Iniciada automáticamente por aprobación de pago ({stage_label})'
+                    )
+            except Exception as ex:
+                print(f"[Payment Review] Error al registrar orden de fabricación: {ex}")
+
             if payment.payment_stage == 'total':
-                order.status = 'shipped'
+                order.status = 'manufacturing'
                 create_invoice_for_order(order)
             elif payment.payment_stage == 'initial':
                 order.status = 'manufacturing'
-                try:
-                    from apps.production.models import ProductionOrder
-                    if not ProductionOrder.objects.filter(order=order, is_deleted=False).exists():
-                        ProductionOrder.objects.create(
-                            order=order,
-                            status='queued',
-                            technical_notes=order.notes or 'Iniciada por aprobación de pago inicial'
-                        )
-                except Exception:
-                    pass
-            else:
+            elif payment.payment_stage == 'final':
                 order.status = 'shipped'
                 create_invoice_for_order(order)
+            else:
+                order.status = 'manufacturing'
         else:  # rejected
             payment.rejection_reason = rejection_reason or "Rechazado por administración"
             # Si el pago es rechazado, devolvemos el pedido a pendiente de pago

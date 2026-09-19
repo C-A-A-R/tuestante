@@ -1,5 +1,5 @@
 import { initNavbar } from '../../components/navbar/navbar.js';
-import { resolveImageUrl } from '../../js/api.js';
+import { resolveImageUrl, extractList } from '../../js/api.js';
 import { obtenerProductos, obtenerTiposProducto, alternarFavoritoProducto } from './product.api.js';
 import { getAccessToken } from '../../js/storage.js';
 import { showCartModal } from '../../components/cart-modal/cart-modal.js';
@@ -14,8 +14,11 @@ async function loadComponent(placeholderId, filePath) {
         const response = await fetch(filePath);
         if (!response.ok) throw new Error(`Error al cargar ${filePath}`);
         const html = await response.text();
+        const cleanHtml = html
+            .replace(/<!-- Code injected by live-server -->[\s\S]*?<\/script>/gi, '')
+            .replace(/<\/body>/gi, '');
         const container = document.getElementById(placeholderId);
-        if (container) container.innerHTML = html;
+        if (container) container.innerHTML = cleanHtml;
     } catch (error) {
         console.error(`Error al cargar el componente ${filePath}:`, error);
     }
@@ -125,13 +128,27 @@ function initHeaderCarousel(types) {
    LÓGICA DE FILTRADO Y BÚSQUEDA DEL CATÁLOGO
    ========================================================================== */
 
+function normalizeText(text) {
+    if (!text) return '';
+    return text.toString()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
+
 function initFilters(types, products) {
     const searchInput = document.getElementById('search-input');
+    const searchClearBtn = document.getElementById('search-clear-btn');
     const filterTypeSelect = document.getElementById('filter-type');
     const filterOutletSelect = document.getElementById('filter-outlet');
     const filterFeaturedSelect = document.getElementById('filter-featured');
+    const filterSortSelect = document.getElementById('filter-sort');
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
+    const resultsCountBadge = document.getElementById('filter-results-badge');
+    const chipsContainer = document.getElementById('active-filter-chips');
 
+    // Poblar el selector de tipos de producto dinámicamente
     if (filterTypeSelect) {
         filterTypeSelect.innerHTML = '<option value="all">Todos los Tipos</option>';
         types.forEach(t => {
@@ -142,23 +159,151 @@ function initFilters(types, products) {
         });
     }
 
-    function applyFilters() {
-        const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    function updateStatusAndChips(filteredCount, totalCount, activeFilters) {
+        if (resultsCountBadge) {
+            if (filteredCount === 0) {
+                resultsCountBadge.innerHTML = 'No se encontraron productos';
+            } else if (filteredCount === 1) {
+                resultsCountBadge.innerHTML = 'Mostrando <strong>1</strong> producto';
+            } else if (filteredCount === totalCount) {
+                resultsCountBadge.innerHTML = `Mostrando todos los <strong>${totalCount}</strong> productos`;
+            } else {
+                resultsCountBadge.innerHTML = `Mostrando <strong>${filteredCount}</strong> de ${totalCount} productos`;
+            }
+        }
+
+        if (chipsContainer) {
+            chipsContainer.innerHTML = '';
+            activeFilters.forEach(chip => {
+                const chipEl = document.createElement('div');
+                chipEl.className = 'filter-chip';
+                chipEl.innerHTML = `
+                    <span>${chip.label}</span>
+                    <button type="button" class="filter-chip-remove" aria-label="Remover filtro ${chip.label}" title="Quitar este filtro">&times;</button>
+                `;
+                chipEl.querySelector('.filter-chip-remove').addEventListener('click', () => {
+                    chip.onRemove();
+                });
+                chipsContainer.appendChild(chipEl);
+            });
+        }
+    }
+
+    function updateUrlParams(query, selectedType, selectedOutlet, isFeaturedOnly, selectedSort) {
+        const url = new URL(window.location);
+        if (query) url.searchParams.set('search', query); else url.searchParams.delete('search');
+        if (selectedType !== 'all') url.searchParams.set('type', selectedType); else url.searchParams.delete('type');
+        if (selectedOutlet !== 'all') url.searchParams.set('outlet', selectedOutlet); else url.searchParams.delete('outlet');
+        if (isFeaturedOnly) url.searchParams.set('featured', 'true'); else url.searchParams.delete('featured');
+        if (selectedSort !== 'default') url.searchParams.set('sort', selectedSort); else url.searchParams.delete('sort');
+        
+        window.history.replaceState({}, '', url.toString());
+    }
+
+    function applyFilters(updateUrl = true) {
+        const rawQuery = searchInput ? searchInput.value.trim() : '';
+        const normQuery = normalizeText(rawQuery);
+        const queryTerms = normQuery.split(/\s+/).filter(Boolean);
         const selectedType = filterTypeSelect ? filterTypeSelect.value : 'all';
         const selectedOutlet = filterOutletSelect ? filterOutletSelect.value : 'all';
         const isFeaturedOnly = filterFeaturedSelect ? (filterFeaturedSelect.value === 'featured') : false;
+        const selectedSort = filterSortSelect ? filterSortSelect.value : 'default';
+
+        if (searchClearBtn) {
+            searchClearBtn.style.display = rawQuery ? 'flex' : 'none';
+        }
+
+        const activeFilters = [];
+
+        if (rawQuery) {
+            activeFilters.push({
+                label: `Búsqueda: "${rawQuery}"`,
+                onRemove: () => {
+                    if (searchInput) searchInput.value = '';
+                    if (searchClearBtn) searchClearBtn.style.display = 'none';
+                    applyFilters();
+                }
+            });
+        }
+
+        if (selectedType !== 'all') {
+            const selectedOpt = filterTypeSelect ? filterTypeSelect.options[filterTypeSelect.selectedIndex] : null;
+            activeFilters.push({
+                label: `Tipo: ${selectedOpt ? selectedOpt.textContent : selectedType}`,
+                onRemove: () => {
+                    if (filterTypeSelect) filterTypeSelect.value = 'all';
+                    applyFilters();
+                }
+            });
+        }
+
+        if (selectedOutlet === 'outlet') {
+            activeFilters.push({
+                label: '⚡ Solo Outlet',
+                onRemove: () => {
+                    if (filterOutletSelect) filterOutletSelect.value = 'all';
+                    applyFilters();
+                }
+            });
+        } else if (selectedOutlet === 'regular') {
+            activeFilters.push({
+                label: '📦 Catálogo Estándar',
+                onRemove: () => {
+                    if (filterOutletSelect) filterOutletSelect.value = 'all';
+                    applyFilters();
+                }
+            });
+        }
+
+        if (isFeaturedOnly) {
+            activeFilters.push({
+                label: '⭐ Más Deseados',
+                onRemove: () => {
+                    if (filterFeaturedSelect) filterFeaturedSelect.value = 'all';
+                    applyFilters();
+                }
+            });
+        }
+
+        if (selectedSort !== 'default') {
+            const sortOpt = filterSortSelect ? filterSortSelect.options[filterSortSelect.selectedIndex] : null;
+            activeFilters.push({
+                label: `Orden: ${sortOpt ? sortOpt.textContent : selectedSort}`,
+                onRemove: () => {
+                    if (filterSortSelect) filterSortSelect.value = 'default';
+                    applyFilters();
+                }
+            });
+        }
 
         let filtered = products.filter(p => {
-            if (p.is_outlet && (!p.quantity || p.quantity <= 0)) {
+            // Regla de negocio de la plataforma: Productos outlet sin cantidad disponible (<= 0) no se muestran
+            if (p.is_outlet && (p.quantity !== undefined && p.quantity !== null && Number(p.quantity) <= 0)) {
                 return false;
             }
 
-            const matchesSearch = !query || 
-                (p.product_name && p.product_name.toLowerCase().includes(query)) || 
-                (p.description && p.description.toLowerCase().includes(query));
-            
-            const matchesType = selectedType === 'all' || String(p.product_type) === selectedType;
-            
+            // Búsqueda multi-palabra insensible a mayúsculas y acentos
+            let matchesSearch = true;
+            if (queryTerms.length > 0) {
+                const nameNorm = normalizeText(p.product_name);
+                const descNorm = normalizeText(p.description);
+                const typeNameNorm = normalizeText(p.product_type_detail?.product_type_name);
+                const colorsNorm = Array.isArray(p.color_images)
+                    ? p.color_images.map(c => normalizeText(c.color_name)).join(' ')
+                    : '';
+                const fullSearchTarget = `${nameNorm} ${descNorm} ${typeNameNorm} ${colorsNorm}`;
+
+                matchesSearch = queryTerms.every(term => fullSearchTarget.includes(term));
+            }
+
+            // Coincidencia de tipo de producto robusta (soporta IDs u objetos anidados)
+            let matchesType = true;
+            if (selectedType !== 'all') {
+                const pTypeId = p.product_type?.id || p.product_type || p.product_type_detail?.id;
+                matchesType = String(pTypeId) === String(selectedType);
+            }
+
+            // Filtro por Outlet / Catálogo Regular
             let matchesOutlet = true;
             if (selectedOutlet === 'outlet') {
                 matchesOutlet = Boolean(p.is_outlet);
@@ -166,62 +311,137 @@ function initFilters(types, products) {
                 matchesOutlet = !p.is_outlet;
             }
 
+            // Filtro por Destacados / Más Deseados
             const matchesFeatured = !isFeaturedOnly || Boolean(p.is_feature_product);
 
             return matchesSearch && matchesType && matchesOutlet && matchesFeatured;
         });
 
-        if (isFeaturedOnly) {
-            filtered.sort((a, b) => (b.favorites_count || 0) - (a.favorites_count || 0) || b.id - a.id);
-        } else {
-            filtered.sort((a, b) => b.id - a.id);
-        }
+        // Ordenamiento del catálogo
+        filtered.sort((a, b) => {
+            if (selectedSort === 'price-asc') {
+                return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
+            }
+            if (selectedSort === 'price-desc') {
+                return (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0);
+            }
+            if (selectedSort === 'popular') {
+                return (b.favorites_count || 0) - (a.favorites_count || 0) || b.id - a.id;
+            }
+            if (selectedSort === 'name-asc') {
+                return (a.product_name || '').localeCompare(b.product_name || '', 'es', { sensitivity: 'base' });
+            }
+
+            // Orden por defecto: si es filtro destacado, priorizar popularidad; si no, los más recientes
+            if (isFeaturedOnly) {
+                return (b.favorites_count || 0) - (a.favorites_count || 0) || b.id - a.id;
+            }
+            return b.id - a.id;
+        });
 
         renderUnifiedProducts(filtered);
+        updateStatusAndChips(filtered.length, products.length, activeFilters);
+
+        if (updateUrl) {
+            updateUrlParams(rawQuery, selectedType, selectedOutlet, isFeaturedOnly, selectedSort);
+        }
     }
 
-    if (searchInput) searchInput.addEventListener('input', applyFilters);
-    if (filterTypeSelect) filterTypeSelect.addEventListener('change', applyFilters);
-    if (filterOutletSelect) filterOutletSelect.addEventListener('change', applyFilters);
-    if (filterFeaturedSelect) filterFeaturedSelect.addEventListener('change', applyFilters);
-
-    if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', () => {
-            if (searchInput) searchInput.value = '';
-            if (filterTypeSelect) filterTypeSelect.value = 'all';
-            if (filterOutletSelect) filterOutletSelect.value = 'all';
-            if (filterFeaturedSelect) filterFeaturedSelect.value = 'all';
-            applyFilters();
+    // Debounce para la entrada de búsqueda de texto
+    let searchDebounceTimer = null;
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            if (searchClearBtn) {
+                searchClearBtn.style.display = searchInput.value.trim() ? 'flex' : 'none';
+            }
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => applyFilters(true), 120);
         });
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramSearch = urlParams.get('search') || urlParams.get('buscar') || urlParams.get('q') || '';
-    const paramOutlet = urlParams.get('outlet') || urlParams.get('is_outlet');
-    const paramType = urlParams.get('type') || urlParams.get('typeId');
-    const paramFeatured = urlParams.get('featured') || urlParams.get('destacados');
-
-    if (paramSearch && searchInput) {
-        searchInput.value = paramSearch;
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', () => {
+            if (searchInput) {
+                searchInput.value = '';
+                searchClearBtn.style.display = 'none';
+                searchInput.focus();
+                applyFilters(true);
+            }
+        });
     }
 
-    if (paramOutlet && filterOutletSelect && ['true', '1', 'yes', 'outlet'].includes(paramOutlet.toLowerCase())) {
-        filterOutletSelect.value = 'outlet';
+    if (filterTypeSelect) filterTypeSelect.addEventListener('change', () => applyFilters(true));
+    if (filterOutletSelect) filterOutletSelect.addEventListener('change', () => applyFilters(true));
+    if (filterFeaturedSelect) filterFeaturedSelect.addEventListener('change', () => applyFilters(true));
+    if (filterSortSelect) filterSortSelect.addEventListener('change', () => applyFilters(true));
+
+    function resetFilters() {
+        if (searchInput) searchInput.value = '';
+        if (searchClearBtn) searchClearBtn.style.display = 'none';
+        if (filterTypeSelect) filterTypeSelect.value = 'all';
+        if (filterOutletSelect) filterOutletSelect.value = 'all';
+        if (filterFeaturedSelect) filterFeaturedSelect.value = 'all';
+        if (filterSortSelect) filterSortSelect.value = 'default';
+        applyFilters(true);
     }
 
-    if (paramType && filterTypeSelect) {
-        const matchOpt = Array.from(filterTypeSelect.options).find(o => 
-            String(o.value) === String(paramType) || 
-            o.textContent.toLowerCase().includes(paramType.toLowerCase())
-        );
-        if (matchOpt) filterTypeSelect.value = matchOpt.value;
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', resetFilters);
     }
 
-    if (paramFeatured && filterFeaturedSelect && ['true', '1', 'yes', 'si', 'featured'].includes(paramFeatured.toLowerCase())) {
-        filterFeaturedSelect.value = 'featured';
+    // Exponer resetFilters globalmente para el botón del estado vacío
+    window.__tuestante_reset_product_filters = resetFilters;
+
+    // Sincronizar filtros a partir de los parámetros de la URL
+    function syncFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramSearch = urlParams.get('search') || urlParams.get('buscar') || urlParams.get('q') || '';
+        const paramOutlet = urlParams.get('outlet') || urlParams.get('is_outlet');
+        const paramType = urlParams.get('type') || urlParams.get('typeId') || urlParams.get('tipo');
+        const paramFeatured = urlParams.get('featured') || urlParams.get('destacados');
+        const paramSort = urlParams.get('sort') || urlParams.get('orden');
+
+        if (paramSearch && searchInput) {
+            searchInput.value = paramSearch;
+            if (searchClearBtn) searchClearBtn.style.display = 'flex';
+        }
+
+        if (paramOutlet && filterOutletSelect) {
+            if (['true', '1', 'yes', 'outlet'].includes(paramOutlet.toLowerCase())) {
+                filterOutletSelect.value = 'outlet';
+            } else if (['regular', 'no_outlet', 'false', '0'].includes(paramOutlet.toLowerCase())) {
+                filterOutletSelect.value = 'regular';
+            } else {
+                filterOutletSelect.value = 'all';
+            }
+        }
+
+        if (paramType && filterTypeSelect) {
+            const matchOpt = Array.from(filterTypeSelect.options).find(o => 
+                String(o.value) === String(paramType) || 
+                normalizeText(o.textContent) === normalizeText(paramType) ||
+                normalizeText(o.textContent).includes(normalizeText(paramType))
+            );
+            if (matchOpt) filterTypeSelect.value = matchOpt.value;
+        }
+
+        if (paramFeatured && filterFeaturedSelect && ['true', '1', 'yes', 'si', 'featured'].includes(paramFeatured.toLowerCase())) {
+            filterFeaturedSelect.value = 'featured';
+        }
+
+        if (paramSort && filterSortSelect) {
+            if (Array.from(filterSortSelect.options).some(o => o.value === paramSort)) {
+                filterSortSelect.value = paramSort;
+            }
+        }
+
+        applyFilters(false);
     }
 
-    applyFilters();
+    syncFromUrl();
+
+    // Responder a la navegación del historial del navegador (Atrás/Adelante)
+    window.addEventListener('popstate', syncFromUrl);
 }
 
 /* ==========================================================================
@@ -310,9 +530,23 @@ function renderUnifiedProducts(products) {
             <div class="empty-results-box" style="grid-column: 1 / -1; width: 100%; text-align: center; padding: 60px 20px;">
                 <div class="empty-results-icon" style="font-size: 3rem; margin-bottom: 12px;">🔍</div>
                 <h3 class="empty-results-title" style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 8px;">No se encontraron productos</h3>
-                <p class="empty-results-desc" style="color: #64748b; font-size: 0.95rem;">Intenta ajustar tu búsqueda o presiona el botón "Limpiar Filtros" para ver todo el catálogo.</p>
+                <p class="empty-results-desc" style="color: #64748b; font-size: 0.95rem; max-width: 500px; margin: 0 auto 16px;">No encontramos ningún producto que coincida con tus criterios de búsqueda o filtros seleccionados.</p>
+                <button type="button" class="btn-clear-empty-state" id="empty-clear-filters-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l6.73-6.19"></path>
+                    </svg>
+                    Restablecer Filtros
+                </button>
             </div>
         `;
+        const emptyBtn = document.getElementById('empty-clear-filters-btn');
+        if (emptyBtn) {
+            emptyBtn.addEventListener('click', () => {
+                if (typeof window.__tuestante_reset_product_filters === 'function') {
+                    window.__tuestante_reset_product_filters();
+                }
+            });
+        }
         return;
     }
 
@@ -340,8 +574,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             obtenerProductos(),
             obtenerTiposProducto()
         ]);
-        products = Array.isArray(productsData) ? productsData : [];
-        types = Array.isArray(typesData) ? typesData : [];
+        products = extractList(productsData);
+        types = extractList(typesData);
     } catch (err) {
         console.error('Error al conectar con el backend:', err);
     }

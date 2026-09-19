@@ -44,7 +44,9 @@ class ProductSerializer(serializers.ModelSerializer):
     is_favorite = serializers.SerializerMethodField()
     favorites_count = serializers.SerializerMethodField()
     quantity = serializers.IntegerField(required=False)
+    stock = serializers.IntegerField(source='quantity', required=False)
     main_color = serializers.CharField(required=False, allow_blank=True)
+    color_principal = serializers.CharField(source='main_color', required=False, allow_blank=True)
     product_image = serializers.ImageField(required=False, allow_null=True)
     product_video = serializers.FileField(required=False, allow_null=True)
 
@@ -80,7 +82,9 @@ class ProductSerializer(serializers.ModelSerializer):
             'is_outlet',
             'is_feature_product',
             'quantity',
+            'stock',
             'main_color',
+            'color_principal',
             'is_favorite',
             'favorites_count',
             'height_cm',
@@ -92,10 +96,11 @@ class ProductSerializer(serializers.ModelSerializer):
             'product_video',
             'color_images',
             'angle_images',
+            'is_deleted',
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['id', 'is_favorite', 'favorites_count', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'is_favorite', 'favorites_count', 'is_deleted', 'created_at', 'updated_at']
 
     def get_favorites_count(self, obj):
         if hasattr(obj, 'favorites_count'):

@@ -88,23 +88,27 @@ async function loadHomeFeaturedProducts() {
   try {
     let response;
     try {
-      response = await obtenerProductosDestacados();
+      response = await obtenerProductosDestacados({ sort_by_favorites: 'true' });
     } catch {
-      response = await obtenerProductos();
+      response = await obtenerProductos({ sort_by_favorites: 'true' });
     }
     const products = extractList(response);
-    if (products.length === 0) return;
+    if (!products || products.length === 0) return;
 
-    // Mostrar 10 productos destacados (2 filas de 5 productos)
+    // Mostrar hasta 10 productos destacados (2 filas de 5 productos), dejando espacios si hay menos
     let displayProducts = [...products];
-    if (displayProducts.length < 10) {
-      const initialLen = displayProducts.length;
-      let i = 0;
-      while (displayProducts.length < 10) {
-        displayProducts.push(products[i % initialLen]);
-        i++;
-      }
-    }
+
+    // Prioridad a los más amados / más favoritos primero
+    displayProducts.sort((a, b) => {
+      const favA = Number(a.favorites_count ?? a.favorite_count ?? 0);
+      const favB = Number(b.favorites_count ?? b.favorite_count ?? 0);
+      if (favB !== favA) return favB - favA;
+      const ratingA = Number(a.rating ?? 0);
+      const ratingB = Number(b.rating ?? 0);
+      if (ratingB !== ratingA) return ratingB - ratingA;
+      return (b.id ?? 0) - (a.id ?? 0);
+    });
+
     displayProducts = displayProducts.slice(0, 10);
 
     container.innerHTML = displayProducts.map(prod => {

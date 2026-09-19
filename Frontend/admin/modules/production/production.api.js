@@ -273,13 +273,14 @@ let mockProductionOrders = [
  */
 export async function getProductionOrders(params = {}) {
   try {
-    const query = new URLSearchParams();
-    if (params.search) query.append('search', params.search);
-    if (params.status && params.status !== 'all') query.append('status', params.status);
-    if (params.order_id) query.append('order_id', params.order_id);
+    const queryParams = {};
+    if (params.search) queryParams.search = params.search;
+    if (params.status && params.status !== 'all') queryParams.status = params.status;
+    if (params.order_id) queryParams.order_id = params.order_id;
+    if (params.date_from) queryParams.date_from = params.date_from;
+    if (params.date_to) queryParams.date_to = params.date_to;
 
-    const queryString = query.toString() ? `?${query.toString()}` : '';
-    const res = await getRequest(`/production-orders/${queryString}`, {}, { auth: true });
+    const res = await getRequest('/production-orders/', queryParams, { auth: true });
     
     if (res && (Array.isArray(res) || Array.isArray(res.results))) {
       const data = Array.isArray(res) ? res : res.results;
@@ -350,6 +351,7 @@ export async function getProductionProducts(params = {}) {
         quantity: item.quantity,
         status: order.status,
         status_display: order.status_display,
+        order_status: order.order_status,
         start_date: order.start_date,
         estimated_completion_date: order.estimated_completion_date,
         actual_completion_date: order.actual_completion_date
@@ -515,6 +517,8 @@ function normalizeBackendProductionOrder(backendObj) {
     iteration: backendObj.iteration || 1,
     client_name: backendObj.client_name || 'Cliente registrado',
     client_phone: backendObj.client_phone || '',
+    order_status: backendObj.order_status || '',
+    order_status_display: backendObj.order_status_display || '',
     status: backendObj.status,
     status_display: backendObj.status_display || stage.label,
     start_date: backendObj.start_date,

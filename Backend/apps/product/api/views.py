@@ -145,6 +145,8 @@ class ProductViewSet(BaseViewSet):
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'featured']:
             return [permissions.AllowAny()]
+        if self.action in ['toggle_active']:
+            return [permissions.IsAuthenticated()]
         return [permissions.IsAdminUser()]
 
     def get_serializer_context(self):
@@ -171,20 +173,28 @@ class ProductViewSet(BaseViewSet):
 
         # Filtro de activación y disponibilidad:
         # - Para clientes públicos: solo productos activos (is_active=True).
+        # - En modo administración (staff o parámetro admin=true): se muestran todos, o se filtra según el selector.
         # - Los productos outlet que no tengan cantidad (quantity <= 0) NO pueden verse para los clientes.
         # - Los productos regulares sí pueden verse con stock 0 (se fabrican bajo pedido).
-        if not (self.request.user and self.request.user.is_staff):
+        is_admin_view = bool(
+            (self.request.user and (self.request.user.is_staff or self.request.user.is_superuser)) or
+            self.request.query_params.get('admin') in ['true', '1'] or
+            self.request.query_params.get('manage') in ['true', '1']
+        )
+
+        if not is_admin_view:
             queryset = queryset.filter(is_active=True).exclude(is_outlet=True, quantity__lte=0)
         else:
             is_active_param = (
                 self.request.query_params.get('is_active') or
                 self.request.query_params.get('es_activo') or
-                self.request.query_params.get('activo')
+                self.request.query_params.get('activo') or
+                self.request.query_params.get('status')
             )
-            if is_active_param is not None:
-                if is_active_param.strip().lower() in ['true', '1', 'yes', 'si']:
+            if is_active_param is not None and is_active_param.strip().lower() != 'all':
+                if is_active_param.strip().lower() in ['true', '1', 'yes', 'si', 'active', 'activo']:
                     queryset = queryset.filter(is_active=True)
-                elif is_active_param.strip().lower() in ['false', '0', 'no']:
+                elif is_active_param.strip().lower() in ['false', '0', 'no', 'inactive', 'inactivo']:
                     queryset = queryset.filter(is_active=False)
 
         # Filtro por tipo de producto
@@ -196,7 +206,7 @@ class ProductViewSet(BaseViewSet):
         outlet_param = self.request.query_params.get('outlet') or self.request.query_params.get('is_outlet')
         if outlet_param is not None and outlet_param.strip().lower() in ['true', '1', 'yes']:
             queryset = queryset.filter(is_outlet=True)
-            if not (self.request.user and self.request.user.is_staff):
+            if not is_admin_view:
                 queryset = queryset.filter(quantity__gt=0)
 
         # Filtro opcional para obtener únicamente los favoritos del usuario autenticado
@@ -264,6 +274,26 @@ class ProductViewSet(BaseViewSet):
             favorites=Count('favorites', filter=Q(favorites__is_deleted=False), distinct=True),
         )
         return Response(totals, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post', 'patch'], url_path='toggle-active', permission_classes=[permissions.IsAuthenticated])
+    def toggle_active(self, request, pk=None):
+        """Alterna el estado is_active del producto de forma atómica y rápida."""
+        product = Product.objects.filter(id=pk, is_deleted=False).first()
+        if not product:
+            return Response({'detail': 'Producto no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if 'is_active' in request.data:
+            val = request.data.get('is_active')
+            if isinstance(val, str):
+                product.is_active = val.lower() in ['true', '1', 'yes']
+            else:
+                product.is_active = bool(val)
+        else:
+            product.is_active = not product.is_active
+
+        product.save(update_fields=['is_active', 'updated_at'])
+        serializer = self.get_serializer(product)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
@@ -358,12 +388,22 @@ class ProductViewSet(BaseViewSet):
                 c_name = item.get('color_name') or f"Color {idx + 1}"
                 c_hex = item.get('color_hex') or "#000000"
                 c_file = request.FILES.get(f'color_file_{idx}') or request.FILES.get(f'color_image_{idx}')
-                ProductColorImage.objects.create(
-                    product=product,
-                    color_name=c_name,
-                    color_hex=c_hex,
-                    color_image=c_file
-                )
+                color_id = item.get('id')
+                color = ProductColorImage.objects.filter(id=color_id, product=product).first() if color_id else None
+                if color:
+                    color.color_name = c_name
+                    color.color_hex = c_hex
+                    color.is_deleted = False
+                    if c_file:
+                        color.color_image = c_file
+                    color.save()
+                else:
+                    ProductColorImage.objects.create(
+                        product=product,
+                        color_name=c_name,
+                        color_hex=c_hex,
+                        color_image=c_file
+                    )
 
         # 2. Variantes de ángulos
         angles_raw = request.data.get('angles_data')
@@ -384,11 +424,20 @@ class ProductViewSet(BaseViewSet):
                     continue
                 a_angle = item.get('angle') or f"Vista {idx + 1}"
                 a_file = request.FILES.get(f'angle_file_{idx}') or request.FILES.get(f'angle_image_{idx}')
-                ProductAngleImage.objects.create(
-                    product=product,
-                    angle=a_angle,
-                    image=a_file
-                )
+                angle_id = item.get('id')
+                angle = ProductAngleImage.objects.filter(id=angle_id, product=product).first() if angle_id else None
+                if angle:
+                    angle.angle = a_angle
+                    angle.is_deleted = False
+                    if a_file:
+                        angle.image = a_file
+                    angle.save()
+                else:
+                    ProductAngleImage.objects.create(
+                        product=product,
+                        angle=a_angle,
+                        image=a_file
+                    )
 
 
 # =========================================================================

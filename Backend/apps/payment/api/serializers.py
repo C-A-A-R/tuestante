@@ -8,18 +8,38 @@ class PaymentSerializer(serializers.ModelSerializer):
     """Serializer para la gestión de Pagos."""
 
     reviewed_by = serializers.StringRelatedField(read_only=True)
+    payment_code = serializers.SerializerMethodField(read_only=True)
+    order_code = serializers.SerializerMethodField(read_only=True)
+    order_id = serializers.IntegerField(source='order.id', read_only=True)
+    order_total = serializers.DecimalField(source='order.total_price', max_digits=12, decimal_places=2, read_only=True)
+    client = serializers.SerializerMethodField(read_only=True)
+    payment_method_label = serializers.CharField(source='get_payment_method_display', read_only=True)
+    payment_stage_label = serializers.CharField(source='get_payment_stage_display', read_only=True)
+    status_label = serializers.CharField(source='get_status_display', read_only=True)
+    receipt_file_url = serializers.SerializerMethodField(read_only=True)
+    order_summary = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Payment
         fields = [
             'id',
             'order',
+            'order_id',
+            'order_code',
+            'payment_code',
             'payment_stage',
+            'payment_stage_label',
             'amount',
             'payment_method',
+            'payment_method_label',
             'status',
+            'status_label',
             'reference_number',
             'receipt_file',
+            'receipt_file_url',
+            'client',
+            'order_total',
+            'order_summary',
             'notes',
             'reviewed_by',
             'reviewed_at',
@@ -27,7 +47,88 @@ class PaymentSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'status', 'reviewed_by', 'reviewed_at', 'rejection_reason', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id', 'status', 'reviewed_by', 'reviewed_at', 'rejection_reason',
+            'created_at', 'updated_at', 'payment_code', 'order_code', 'order_id',
+            'order_total', 'client', 'payment_method_label', 'payment_stage_label',
+            'status_label', 'receipt_file_url', 'order_summary'
+        ]
+
+    def get_payment_code(self, obj):
+        return f"#PAG-{obj.id:03d}"
+
+    def get_order_code(self, obj):
+        if obj.order:
+            return obj.order.order_number or f"#00{obj.order.id}"
+        return ""
+
+    def get_client(self, obj):
+        if obj.order and obj.order.user:
+            u = obj.order.user
+            first_name = u.first_name or ""
+            last_name = getattr(u, 'first_last_name', '') or u.last_name or ""
+            full_name = f"{first_name} {last_name}".strip()
+            name = full_name or u.get_full_name() or u.username or "Cliente"
+            return {
+                "id": u.id,
+                "name": name,
+                "email": u.email or "",
+                "phone": getattr(u, 'phone', '') or ""
+            }
+        return {"id": None, "name": "Cliente", "email": "", "phone": ""}
+
+    def get_receipt_file_url(self, obj):
+        if obj.receipt_file:
+            try:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.receipt_file.url)
+                return obj.receipt_file.url
+            except Exception:
+                return str(obj.receipt_file)
+        return None
+
+    def get_order_summary(self, obj):
+        if not obj.order:
+            return None
+        order = obj.order
+        items = []
+        try:
+            for detail in order.details.prefetch_related('order_products__product').all():
+                order_prods = detail.order_products.all()
+                if order_prods.exists():
+                    for op in order_prods:
+                        p_name = op.product.product_name if op.product else "Producto"
+                        items.append({
+                            "id": op.id,
+                            "product_name": p_name,
+                            "quantity": detail.quantity,
+                            "unit_price_usd": float(detail.unit_price or 0),
+                            "total_price_usd": float(detail.final_price or (detail.unit_price * detail.quantity if detail.unit_price else 0)),
+                            "notes": detail.notes or ""
+                        })
+                else:
+                    items.append({
+                        "id": detail.id,
+                        "product_name": f"Producto (Detalle #{detail.id})",
+                        "quantity": detail.quantity,
+                        "unit_price_usd": float(detail.unit_price or 0),
+                        "total_price_usd": float(detail.final_price or 0),
+                        "notes": detail.notes or ""
+                    })
+        except Exception:
+            pass
+
+        return {
+            "id": order.id,
+            "order_code": order.order_number or f"#00{order.id}",
+            "status": order.status,
+            "status_label": order.get_status_display() if hasattr(order, 'get_status_display') else order.status,
+            "total_amount": float(order.total_price or 0),
+            "items_count": len(items) if items else 1,
+            "items": items,
+            "created_at": order.created_at.isoformat() if order.created_at else None
+        }
 
     def validate(self, attrs):
         """Validar permisos, montos y coherencia según la etapa del pago."""
@@ -73,21 +174,28 @@ class PaymentSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         {"payment_stage": "Este pedido ya ha sido pagado en su totalidad."}
                     )
-                if amount < total_order:
+                if amount < (total_order - Decimal('0.02')):
                     raise serializers.ValidationError(
-                        {"amount": f"Para un pago único o total, el monto debe cubrir el 100% del pedido (${total_order}). Monto recibido: ${amount}."}
+                        {"amount": f"Para un pago único o total, el monto debe cubrir el 100% del pedido (${total_order} USD). Monto recibido: ${amount} USD."}
                     )
+                elif amount < total_order:
+                    attrs['amount'] = total_order
 
             elif payment_stage == 'initial':
                 min_initial = (total_order * Decimal('0.50')).quantize(Decimal('0.01'))
-                if amount < min_initial:
+                if amount < (min_initial - Decimal('0.02')):
                     raise serializers.ValidationError(
-                        {"amount": f"El pago inicial debe ser de al menos el 50% del total (${min_initial}). Monto recibido: ${amount}."}
+                        {"amount": f"El pago inicial debe ser de al menos el 50% del total (${min_initial} USD). Monto recibido: ${amount} USD."}
                     )
-                if amount > total_order:
+                elif amount < min_initial:
+                    attrs['amount'] = min_initial
+
+                if amount > (total_order + Decimal('0.02')):
                     raise serializers.ValidationError(
-                        {"amount": f"El monto del pago inicial no puede exceder el total del pedido (${total_order})."}
+                        {"amount": f"El monto del pago inicial (${amount} USD) no puede exceder el total del pedido (${total_order} USD). Asegúrate de registrar el monto equivalente en USD."}
                     )
+                elif amount > total_order:
+                    attrs['amount'] = total_order
 
             elif payment_stage == 'final':
                 remaining = max(Decimal('0.00'), total_order - approved_paid)
@@ -95,9 +203,11 @@ class PaymentSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         {"payment_stage": "Este pedido ya no tiene saldo pendiente por pagar."}
                     )
-                if amount < remaining:
+                if amount < (remaining - Decimal('0.02')):
                     raise serializers.ValidationError(
-                        {"amount": f"El pago final debe cubrir el saldo pendiente restante (${remaining}). Monto recibido: ${amount}."}
+                        {"amount": f"El pago final debe cubrir el saldo pendiente restante (${remaining} USD). Monto recibido: ${amount} USD."}
                     )
+                elif amount < remaining:
+                    attrs['amount'] = remaining
 
         return attrs

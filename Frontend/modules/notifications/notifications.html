@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Notificaciones — TuEstante</title>
+    <meta name="description" content="Consulta las novedades sobre tus pedidos, pagos, entregas y avisos importantes en TuEstante.">
+
+    <!-- Fuentes Google: Outfit e Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Estilos Base y Componentes -->
+    <link rel="stylesheet" href="../../index.css">
+    <link rel="stylesheet" href="../../components/navbar/navbar.css">
+    <link rel="stylesheet" href="../../components/footer/footer.css">
+    <link rel="stylesheet" href="../../components/toast/toast.css">
+    <link rel="stylesheet" href="./notifications.css">
+</head>
+<body class="notifications-body">
+
+    <!-- Navbar Dinámica -->
+    <div id="navbar-container"></div>
+
+    <!-- Contenido Principal -->
+    <main class="notifications-main" id="notifications-main-content">
+        <div class="notifications-container">
+
+            <!-- Breadcrumbs -->
+            <nav class="notifications-breadcrumbs" aria-label="Navegación de migas de pan">
+                <a href="../../index.html">Inicio</a>
+                <span class="separator">/</span>
+                <span class="current">Centro de Notificaciones</span>
+            </nav>
+
+            <!-- Encabezado de Notificaciones -->
+            <section class="notifications-header-card">
+                <div class="header-left">
+                    <div class="header-icon-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                    </div>
+                    <div class="header-text-group">
+                        <h1>
+                            Notificaciones
+                            <span class="unread-badge-pill is-hidden" id="unread-count-badge">0 pendientes</span>
+                        </h1>
+                        <p>Novedades sobre tus pedidos, pagos, despachos y comunicados de TuEstante.</p>
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <button type="button" class="btn-mark-all-read" id="btn-mark-all-read" title="Marcar todas las notificaciones como leídas">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>Marcar todo como leído</span>
+                    </button>
+                    <div class="live-indicator" id="live-indicator" title="Conexión en vivo activa">
+                        <span class="pulse-dot"></span>
+                        <span id="live-status-text">En vivo</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Barra de Filtros y Búsqueda -->
+            <section class="notifications-toolbar" aria-label="Filtros de notificaciones">
+                <div class="filter-tabs" role="tablist">
+                    <button type="button" class="filter-tab-btn is-active" data-filter="all" role="tab" aria-selected="true">
+                        <span>Todas</span>
+                        <span class="filter-tab-badge" id="badge-count-all">0</span>
+                    </button>
+                    <button type="button" class="filter-tab-btn" data-filter="unread" role="tab" aria-selected="false">
+                        <span>No leídas</span>
+                        <span class="filter-tab-badge" id="badge-count-unread">0</span>
+                    </button>
+                    <button type="button" class="filter-tab-btn" data-filter="order" role="tab" aria-selected="false">
+                        <span>Pedidos</span>
+                        <span class="filter-tab-badge" id="badge-count-order">0</span>
+                    </button>
+                    <button type="button" class="filter-tab-btn" data-filter="general" role="tab" aria-selected="false">
+                        <span>Avisos del Sistema</span>
+                        <span class="filter-tab-badge" id="badge-count-general">0</span>
+                    </button>
+                </div>
+
+                <div class="toolbar-search">
+                    <svg class="toolbar-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input 
+                        type="text" 
+                        class="toolbar-search-input" 
+                        id="toolbar-search-input" 
+                        placeholder="Buscar por título, pedido o mensaje..." 
+                        autocomplete="off">
+                    <button type="button" class="toolbar-search-clear" id="toolbar-search-clear" aria-label="Limpiar búsqueda" title="Limpiar búsqueda">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Arquitectura Master-Detail Split Pane -->
+            <div class="notifications-split-layout" id="notifications-split-layout">
+
+                <!-- Panel Izquierdo: Feed de Notificaciones (Master) -->
+                <section class="notifications-master-panel" aria-label="Lista de notificaciones">
+                    <div class="master-panel-header">
+                        <h2 class="master-panel-title">
+                            <span>Mensajes Recientes</span>
+                        </h2>
+                        <span class="master-panel-count" id="master-items-count">0 notificaciones</span>
+                    </div>
+
+                    <!-- Skeleton de Carga -->
+                    <div class="notifications-skeleton" id="notifications-skeleton">
+                        <div class="skeleton-card skeleton-pulse">
+                            <div class="skeleton-icon"></div>
+                            <div class="skeleton-info">
+                                <div class="skeleton-line w-80"></div>
+                                <div class="skeleton-line w-50"></div>
+                                <div class="skeleton-line w-30"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card skeleton-pulse">
+                            <div class="skeleton-icon"></div>
+                            <div class="skeleton-info">
+                                <div class="skeleton-line w-80"></div>
+                                <div class="skeleton-line w-50"></div>
+                                <div class="skeleton-line w-30"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card skeleton-pulse">
+                            <div class="skeleton-icon"></div>
+                            <div class="skeleton-info">
+                                <div class="skeleton-line w-80"></div>
+                                <div class="skeleton-line w-50"></div>
+                                <div class="skeleton-line w-30"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista Interactiva de Notificaciones -->
+                    <div class="notifications-feed-list" id="notifications-feed-list" role="list"></div>
+
+                    <!-- Estado Vacío del Feed -->
+                    <div class="feed-empty-state" id="feed-empty-state" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <p id="feed-empty-text">No tienes notificaciones en esta categoría.</p>
+                    </div>
+                </section>
+
+                <!-- Panel Derecho: Detalle Completo a un Costado (Detail) -->
+                <section class="notifications-detail-panel" id="notifications-detail-panel" aria-label="Detalle de la notificación">
+                    
+                    <!-- Estado Inicial Vacío: Ninguna notificación seleccionada -->
+                    <div class="detail-empty-state" id="detail-empty-state">
+                        <div class="empty-state-illustration">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <path d="M7 15h0M2 9.5h20"></path>
+                            </svg>
+                        </div>
+                        <h3>Selecciona una Notificación</h3>
+                        <p>Elige cualquier mensaje de la lista de la izquierda para ver todos sus datos, pedidos vinculados y archivos adjuntos aquí.</p>
+                    </div>
+
+                    <!-- Contenido del Detalle Poblado al Seleccionar -->
+                    <div class="detail-content-wrapper" id="detail-content-wrapper" style="display: none;">
+                        
+                        <!-- Botón Volver (Visible en versión móvil/pantallas pequeñas) -->
+                        <button type="button" class="btn-back-to-feed" id="btn-back-to-feed">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            <span>Volver a la lista</span>
+                        </button>
+
+                        <!-- Barra Superior del Detalle -->
+                        <div class="detail-top-bar">
+                            <div class="detail-badges-group">
+                                <span class="detail-type-pill" id="detail-type-pill">Pedido</span>
+                                <span class="detail-date-badge" id="detail-date-badge">--</span>
+                            </div>
+
+                            <div class="detail-actions-group">
+                                <!-- <button type="button" class="btn-detail-action" id="btn-toggle-read-status" title="Cambiar estado leído / no leído">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span id="label-toggle-read">Marcar no leída</span>
+                                </button> -->
+                                <button type="button" class="btn-detail-action btn-delete" id="btn-delete-notification" title="Eliminar notificación">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                    <span>Eliminar</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Título Principal -->
+                        <h2 class="detail-title" id="detail-title">--</h2>
+
+                        <!-- Cuerpo del Mensaje -->
+                        <div class="detail-body-text" id="detail-body-text">--</div>
+
+                        <!-- Tarjeta de Pedido Relacionado (si aplica) -->
+                        <div class="detail-order-box" id="detail-order-box" style="display: none;">
+                            <div class="order-box-info">
+                                <div class="order-box-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                                        <path d="M16 10a4 4 0 0 1-8 0"></path>
+                                    </svg>
+                                </div>
+                                <div class="order-box-titles">
+                                    <h4 id="order-box-number">Pedido #00000</h4>
+                                    <p>
+                                        <span>Estado:</span>
+                                        <span class="order-status-tag" id="order-box-status">En proceso</span>
+                                        <span id="order-box-total"></span>
+                                    </p>
+                                </div>
+                            </div>
+                            <a href="#" class="btn-view-order" id="btn-view-order-link">
+                                <span>Ver Detalle del Pedido</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </a>
+                        </div>
+
+                        <!-- Galería de Archivos Adjuntos (si aplica) -->
+                        <div class="detail-media-section" id="detail-media-section" style="display: none;">
+                            <h4 class="detail-media-title">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                    <polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                                <span>Archivos Multimedia Adjuntos</span>
+                            </h4>
+                            <div class="detail-media-grid" id="detail-media-grid"></div>
+                        </div>
+
+                    </div>
+                </section>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal Lightbox para Ampliación de Imágenes -->
+    <div class="notif-lightbox-modal" id="notif-lightbox-modal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="lightbox-content">
+            <button type="button" class="lightbox-close-btn" id="lightbox-close-btn" aria-label="Cerrar visor de imagen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <img src="" alt="Vista previa ampliada" class="lightbox-img" id="lightbox-img">
+        </div>
+    </div>
+
+    <!-- Footer Dinámico -->
+    <div id="footer-container"></div>
+
+    <!-- Controlador JavaScript -->
+    <script type="module" src="./notifications.js"></script>
+</body>
+</html>

@@ -1,8 +1,11 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from decimal import Decimal
 
 from apps.base.models import BaseModel
 from apps.product.models import Product
+
+from apps.orders.utils import generate_order_number, get_bcv_usd_rate
 
 User = get_user_model()
 
@@ -74,6 +77,34 @@ class Order(BaseModel):
         null=True,
         help_text='Momento exacto en que se confirmó la recepción del pedido'
     )
+    bcv_rate = models.DecimalField(
+        'Tasa BCV',
+        max_digits=12,
+        decimal_places=2,
+        default=0.00,
+        help_text='Tasa oficial en Bs./USD congelada para el pedido'
+    )
+
+    @property
+    def total_price_bs(self):
+        """Calcula el total del pedido en Bolívares."""
+        if self.bcv_rate and self.total_price:
+            return (self.total_price * self.bcv_rate).quantize(Decimal('0.01'))
+        return Decimal('0.00')
+
+    @property
+    def paid_amount(self):
+        """Suma de pagos aprobados en USD."""
+        return sum(
+            p.amount for p in self.payments.filter(status='approved', is_deleted=False)
+        )
+
+    @property
+    def pending_balance(self):
+        """Saldo pendiente por pagar en USD."""
+        return max(Decimal('0.00'), self.total_price - self.paid_amount)
+    
+    
 
     class Meta:
         verbose_name = 'Pedido'
@@ -81,11 +112,17 @@ class Order(BaseModel):
         ordering = ['-created_at']
 
     def save(self, *args, **kwargs):
-        """Asigna automáticamente el número de orden si no está establecido."""
+        """Asigna automáticamente el número de orden y la tasa BCV del día."""
         if not self.order_number:
-            from apps.orders.utils import generate_order_number
             self.order_number = generate_order_number()
-        super().save(*args, **kwargs)
+
+        # Si la tasa no está definida o está en 0.00, la consulta con pyBCV
+        if not self.bcv_rate or self.bcv_rate == Decimal('0.00'):
+            current_rate = get_bcv_usd_rate()
+            if current_rate > Decimal('0.00'):
+                self.bcv_rate = current_rate
+
+        super().save(*args, **kwargs)   
 
     def delete(self, *args, **kwargs):
         """Impide la eliminación lógica o física de un pedido."""

@@ -317,10 +317,14 @@ async function loadProviders(state = '', municipality = '') {
                 state: state.trim(),
                 municipality: municipality ? municipality.trim() : ''
             });
-            distributors = extractList(response);
+            distributors = Array.isArray(response)
+                ? response
+                : (Array.isArray(response?.distributors) ? response.distributors : extractList(response));
         } else {
             const response = await obtenerDistribuidores();
-            distributors = extractList(response);
+            distributors = Array.isArray(response)
+                ? response
+                : (Array.isArray(response?.distributors) ? response.distributors : extractList(response));
         }
 
         if (!distributors || distributors.length === 0) {

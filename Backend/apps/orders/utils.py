@@ -1,5 +1,27 @@
 import re
 from django.utils import timezone
+from decimal import Decimal
+import logging
+from pyBCV import Currency
+
+logger = logging.getLogger(__name__)
+
+def get_bcv_usd_rate():
+    """Consulta la tasa oficial USD desde pyBCV."""
+    try:
+        bcv = Currency()
+        # pyBCV retorna la tasa del dólar
+        rate = bcv.get_rate(currency='USD')
+        
+        # Limpieza por si viene en formato string con coma ('848,55')
+        if isinstance(rate, str):
+            rate = rate.replace(',', '.').strip()
+            
+        return Decimal(str(rate)).quantize(Decimal('0.01'))
+    except Exception as e:
+        logger.error(f"Error al consultar pyBCV: {e}")
+        # Retorna 0.00 o puedes consultar el último pago aprobado como fallback
+        return Decimal('0.00')
 
 
 def generate_order_number():

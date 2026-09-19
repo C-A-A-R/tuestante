@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 
 from apps.base.api import BaseViewSet
 from apps.orders.models import Order, OrderDetail, OrderProduct, ManufacturingOrder
+from apps.payment.models import Payment
 from apps.production.models import ProductionOrder
 from apps.product.models import Product
 from apps.shipment.models import Shipment, Distributor
@@ -65,6 +66,10 @@ class OrderViewSet(BaseViewSet):
             Prefetch(
                 'shipments',
                 queryset=Shipment.objects.filter(is_deleted=False).select_related('distributor')
+            ),
+            Prefetch(
+                'payments',
+                queryset=Payment.objects.filter(is_deleted=False).select_related('reviewed_by')
             )
         )
 

@@ -166,11 +166,11 @@
         rel="stylesheet">
 
     <!-- Global Stylesheet -->
-    <link rel="stylesheet" href="index.css?v=3.2">
+    <link rel="stylesheet" href="index.css?v=3.5">
 
     <!-- Component Styles -->
     <link rel="stylesheet" href="components/navbar/navbar.css?v=3.2">
-    <link rel="stylesheet" href="components/footer/footer.css?v=3.2">
+    <link rel="stylesheet" href="components/footer/footer.css?v=3.3">
 </head>
 
 <body>
@@ -213,8 +213,23 @@
                 <div class="carousel-dots" id="carousel-dots">
                     <span class="carousel-dot active" data-index="0"></span>
                     <span class="carousel-dot" data-index="1"></span>
-                    <span class="carousel-dot" data-index="2"></span>
-                    <span class="carousel-dot" data-index="3"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tipos de Productos Section (Reubicado arriba tras el hero) -->
+        <section id="tipos-productos" class="section-container">
+            <div class="categories-section-container">
+                <div class="section-header">
+                    <span class="section-tagline">Variedad</span>
+                    <h2 class="section-title">Tipos de Productos</h2>
+                    <div class="section-divider"></div>
+                    <p class="section-description">Soluciones profesionales diseñadas para optimizar y dar estilo a tus
+                        espacios.</p>
+                </div>
+
+                <div class="product-types-grid" id="home-product-types-container">
+                    <!-- Tipos de Productos inyectados dinámicamente desde el backend -->
                 </div>
             </div>
         </section>
@@ -265,7 +280,7 @@
             </div>
         </section>
 
-        <!-- Productos Destacados Section (Carrusel) -->
+        <!-- Productos Destacados Section -->
         <section id="productos" class="section-container bg-light">
             <div class="section-header section-header-products">
                 <span class="section-tagline">Destacados</span>
@@ -273,10 +288,8 @@
                 <div class="section-divider"></div>
             </div>
 
-            <div class="home-featured-carousel-viewport" id="home-featured-carousel-viewport">
-                <div class="home-featured-track" id="home-featured-products-container">
-                    <!-- Productos Destacados inyectados dinámicamente desde el backend -->
-                </div>
+            <div class="products-grid" id="home-featured-products-container">
+                <!-- Productos Destacados inyectados dinámicamente desde el backend -->
             </div>
 
             <div class="products-action-wrapper">
@@ -285,35 +298,16 @@
         </section>
 
         <!-- Outlet Section (Se muestra dinámicamente si hay productos outlet disponibles) -->
-        <section id="outlet" class="section-container" style="display: none;">
-            <div class="categories-section-container">
-                <div class="section-header">
-                    <span class="section-tagline" style="color: #ef4444; font-weight: 700;">🔥 Liquidación & Entrega Inmediata</span>
-                    <h2 class="section-title">Zona Outlet</h2>
-                    <div class="section-divider" style="background: linear-gradient(90deg, #ef4444, #f59e0b);"></div>
-                    <p class="section-description">Aprovecha nuestras ofertas exclusivas en productos con stock limitado y disponibilidad inmediata.</p>
-                </div>
-
-                <div class="home-outlet-grid" id="home-outlet-container">
-                    <!-- Productos en Outlet inyectados dinámicamente desde el backend -->
-                </div>
+        <section id="outlet" class="section-container bg-light" style="display: none;">
+            <div class="section-header">
+                <span class="section-tagline" style="color: #ef4444; font-weight: 700;">🔥 Liquidación & Entrega Inmediata</span>
+                <h2 class="section-title">Zona Outlet</h2>
+                <div class="section-divider" style="background: linear-gradient(90deg, #ef4444, #f59e0b);"></div>
+                <p class="section-description">Aprovecha nuestras ofertas exclusivas en productos con stock limitado y disponibilidad inmediata.</p>
             </div>
-        </section>
 
-        <!-- Tipos de Productos Section -->
-        <section id="tipos-productos" class="section-container bg-light">
-            <div class="categories-section-container">
-                <div class="section-header">
-                    <span class="section-tagline">Variedad</span>
-                    <h2 class="section-title">Tipos de Productos</h2>
-                    <div class="section-divider"></div>
-                    <p class="section-description">Soluciones profesionales diseñadas para optimizar y dar estilo a tus
-                        espacios.</p>
-                </div>
-
-                <div class="product-types-grid" id="home-product-types-container">
-                    <!-- Tipos de Productos inyectados dinámicamente desde el backend -->
-                </div>
+            <div class="products-grid" id="home-outlet-container">
+                <!-- Productos en Outlet inyectados dinámicamente desde el backend -->
             </div>
         </section>
 
@@ -348,7 +342,7 @@
         </section>
 
         <!-- Sección Espacios Reales / Galería Preview (Inspirado en la Imagen 1 de Referencia) -->
-        <section id="espacios-reales" class="section-container real-spaces-section">
+        <section id="espacios-reales" class="section-container real-spaces-section" style="display: none;">
             <div class="real-spaces-container">
 
                 <!-- Lado Izquierdo: Carrusel Horizontal de Fotografías de Espacios Reales -->
@@ -361,41 +355,10 @@
                         </svg>
                     </button>
 
-                    <!-- Pista deslizable con las 8 fotos de espacios reales -->
+                    <!-- Pista deslizable con las fotos de espacios reales -->
                     <div class="real-spaces-track-container">
                         <div class="real-spaces-track" id="real-spaces-track">
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_1.jpg" alt="Espacio Real 1"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_2.jpg" alt="Espacio Real 2"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_3.jpg" alt="Espacio Real 3"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_4.jpg" alt="Espacio Real 4"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_5.jpg" alt="Espacio Real 5"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/gallery/real_space_6.jpg" alt="Espacio Real 6"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/carrusel-index/LocekrL4Gris.jpg" alt="Espacio Real 7"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
-                            <div class="real-spaces-card">
-                                <img src="assets/images/carrusel-index/Carrousel.png" alt="Espacio Real 8"
-                                    class="real-spaces-img" loading="lazy">
-                            </div>
+                            <!-- Fotos de proyectos inyectadas dinámicamente -->
                         </div>
                     </div>
 
@@ -506,7 +469,7 @@
     <div id="footer-placeholder"></div>
 
     <!-- Global Application Logic -->
-    <script type="module" src="index.js?v=3.2"></script>
+    <script type="module" src="index.js?v=3.6"></script>
 </body>
 
 </html>

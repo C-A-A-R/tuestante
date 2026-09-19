@@ -80,9 +80,8 @@ class Product(BaseModel):
         ordering = ['product_name']
 
     def save(self, *args, **kwargs):
-        if self.is_outlet and self.quantity <= 0:
+        if self.is_outlet and self.quantity < 0:
             self.quantity = 0
-            self.is_active = False
         if self.product_image:
             compress_and_save_image(self.product_image)
         super().save(*args, **kwargs)

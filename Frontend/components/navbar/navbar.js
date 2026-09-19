@@ -5,7 +5,7 @@
  * Controlador integral y modular conectado al backend de Django.
  */
 
-import { getRequest, resolveImageUrl, extractList } from '../../js/api.js';
+import { getRequest, postRequest, resolveImageUrl, extractList } from '../../js/api.js';
 import { getAccessToken, getRefreshToken, getCurrentUser, clearTokens, clearCurrentUser } from '../../js/storage.js';
 
 // Prefijo y estilos para logs de depuración en consola
@@ -71,7 +71,7 @@ function ensureNavbarElementsExist() {
       <div class="drawer-top-bar" aria-hidden="true"></div>
       <div class="drawer-header">
         <a href="${prefix}index.html" class="brand-logo" data-nav-link="home">
-          <img src="${prefix}assets/images/logo.jpeg" alt="TuEstante Logo" class="brand-logo-img">
+          <img src="${prefix}assets/images/logo.svg" alt="TuEstante Logo" class="brand-logo-img" width="36" height="36">
           <span class="brand-name">TuEstante</span>
         </a>
         <button type="button" id="drawer-close-btn" class="drawer-close-btn" aria-label="Cerrar menú">
@@ -94,12 +94,12 @@ function ensureNavbarElementsExist() {
         </div>
       </div>
       <div class="drawer-quick-actions">
-        <a href="${prefix}modules/order/my-orders.html" class="drawer-quick-btn" data-nav-link="notifications">
+        <a href="${prefix}modules/notifications/notifications.html" class="drawer-quick-btn" data-nav-link="notifications">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
           </svg>
-          <span>Avisos</span>
+          <span>Notificaciones</span>
           <span class="badge-count nav-notifications-count" style="display: none;">0</span>
         </a>
         <a href="${prefix}modules/cart/cart.html" class="drawer-quick-btn" data-nav-link="cart">
@@ -174,6 +174,57 @@ function ensureNavbarElementsExist() {
     `;
     document.body.appendChild(drawer);
   }
+
+  // 4. Asegurar botón de carrito en .desktop-actions (desktop)
+  const desktopActions = header ? header.querySelector('.desktop-actions') : document.querySelector('.desktop-actions');
+  if (desktopActions && !desktopActions.querySelector('.nav-cart-btn, .desktop-cart-btn')) {
+    const cartBtn = document.createElement('a');
+    cartBtn.href = `${prefix}modules/cart/cart.html`;
+    cartBtn.className = 'action-btn desktop-cart-btn nav-cart-btn';
+    cartBtn.id = 'nav-desktop-cart-btn';
+    cartBtn.setAttribute('aria-label', 'Carrito de compras');
+    cartBtn.setAttribute('title', 'Ver Carrito de Compras');
+    cartBtn.setAttribute('data-nav-link', 'cart');
+    cartBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="21" r="1"></circle>
+        <circle cx="20" cy="21" r="1"></circle>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+      </svg>
+      <span class="badge-count nav-cart-count" style="display: none;" aria-hidden="true"></span>
+    `;
+    const authBox = desktopActions.querySelector('#nav-auth-buttons, #nav-user-dropdown-wrapper');
+    if (authBox) {
+      desktopActions.insertBefore(cartBtn, authBox);
+    } else {
+      desktopActions.appendChild(cartBtn);
+    }
+  }
+
+  // 5. Asegurar botón de carrito móvil en .navbar-main
+  const navbarMain = header ? header.querySelector('.navbar-main') : document.querySelector('.navbar-main');
+  if (navbarMain && !navbarMain.querySelector('.mobile-cart-btn')) {
+    const mobileCartBtn = document.createElement('a');
+    mobileCartBtn.href = `${prefix}modules/cart/cart.html`;
+    mobileCartBtn.className = 'mobile-cart-btn nav-cart-btn';
+    mobileCartBtn.setAttribute('aria-label', 'Carrito de compras');
+    mobileCartBtn.setAttribute('title', 'Ver Carrito de Compras');
+    mobileCartBtn.setAttribute('data-nav-link', 'cart');
+    mobileCartBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="21" r="1"></circle>
+        <circle cx="20" cy="21" r="1"></circle>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+      </svg>
+      <span class="badge-count nav-cart-count" style="display: none;" aria-hidden="true"></span>
+    `;
+    const deskActions = navbarMain.querySelector('.desktop-actions');
+    if (deskActions) {
+      navbarMain.insertBefore(mobileCartBtn, deskActions);
+    } else {
+      navbarMain.appendChild(mobileCartBtn);
+    }
+  }
 }
 
 /**
@@ -182,7 +233,7 @@ function ensureNavbarElementsExist() {
  */
 export function setAutoFavicon() {
   const prefix = getBasePathPrefix();
-  const logoUrl = `${prefix}assets/images/logo.jpeg`;
+  const logoUrl = `${prefix}assets/images/logo.svg`;
 
   try {
     let linkIcon = document.querySelector("link[rel='icon']");
@@ -191,7 +242,7 @@ export function setAutoFavicon() {
       linkIcon.rel = 'icon';
       document.head.appendChild(linkIcon);
     }
-    linkIcon.type = 'image/jpeg';
+    linkIcon.type = 'image/svg+xml';
     linkIcon.href = logoUrl;
 
     let linkApple = document.querySelector("link[rel='apple-touch-icon']");
@@ -238,13 +289,17 @@ export function updateCartBadge(explicitCount) {
 
   const badgeElements = document.querySelectorAll('.nav-cart-count');
   badgeElements.forEach((badge) => {
-    badge.textContent = totalCount > 99 ? '99+' : String(totalCount);
-    badge.setAttribute('aria-label', `${totalCount} artículos en el carrito`);
-    badge.style.display = totalCount > 0 ? 'flex' : 'none';
     if (totalCount > 0) {
+      badge.textContent = totalCount > 99 ? '99+' : String(totalCount);
+      badge.setAttribute('aria-label', `${totalCount} artículos en el carrito`);
+      badge.style.display = 'inline-flex';
       badge.classList.remove('badge-bump');
       void badge.offsetWidth;
       badge.classList.add('badge-bump');
+    } else {
+      badge.textContent = '';
+      badge.style.display = 'none';
+      badge.removeAttribute('aria-label');
     }
   });
 }
@@ -280,6 +335,13 @@ export async function updateNotificationsBadge(explicitCount) {
       b.textContent = unread > 99 ? '99+' : String(unread);
       b.style.display = unread > 0 ? 'flex' : 'none';
     });
+
+    // Pre-cargar la lista de notificaciones en el dropdown para que esté lista de inmediato al pasar el ratón
+    const container = document.getElementById('navbar-notifications-list');
+    if (container && !container.querySelector('.notif-dropdown-item')) {
+      renderNavbarNotificationsList(list.slice(0, 6));
+      lastNotifFetchTime = Date.now();
+    }
   } catch (error) {
     if (error?.status === 401) {
       clearTokens();
@@ -301,7 +363,7 @@ function normalizeNavbarRoutes() {
   });
 
   document.querySelectorAll('.brand-logo-img').forEach((img) => {
-    img.setAttribute('src', `${prefix}assets/images/logo.jpeg`);
+    img.setAttribute('src', `${prefix}assets/images/logo.svg`);
   });
 
   const routeMap = {
@@ -317,6 +379,7 @@ function normalizeNavbarRoutes() {
     'cart': `${prefix}modules/cart/cart.html`,
     'profile': `${prefix}modules/profile/profile.html`,
     'orders': `${prefix}modules/order/my-orders.html`,
+    'notifications': `${prefix}modules/notifications/notifications.html`,
     'wishlist': `${prefix}modules/product/wishlist.html`,
     'login': `${prefix}modules/auth/login.html`,
     'register': `${prefix}modules/auth/login.html#registro`
@@ -517,6 +580,16 @@ function syncUserAuthState() {
           <span class="action-item-text">Mis compras / Pedidos</span>
         </a>
 
+        <a href="${prefix}modules/notifications/notifications.html" class="action-menu-item" role="menuitem">
+          <span class="action-item-icon">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+          </span>
+          <span class="action-item-text">Notificaciones</span>
+        </a>
+
         <a href="${prefix}modules/product/wishlist.html" class="action-menu-item" role="menuitem">
           <span class="action-item-icon">
             <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -588,6 +661,17 @@ function syncUserAuthState() {
                 <path d="M16 10a4 4 0 0 1-8 0"></path>
               </svg>
               Mis Compras y Pedidos
+            </span>
+          </a>
+        </li>
+        <li class="drawer-nav-item">
+          <a href="${prefix}modules/notifications/notifications.html" class="drawer-nav-link">
+            <span class="drawer-link-left">
+              <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              Notificaciones
             </span>
           </a>
         </li>
@@ -1167,6 +1251,14 @@ function setupMobileDrawer() {
  */
 function setupActionDropdowns() {
   document.addEventListener('click', (e) => {
+    // Si se presiona el botón o icono de notificaciones, redirigir a la pantalla de notificaciones
+    const notifBtn = e.target.closest('.nav-notifications-btn');
+    if (notifBtn) {
+      const prefix = getBasePathPrefix();
+      window.location.href = `${prefix}modules/notifications/notifications.html`;
+      return;
+    }
+
     const btn = e.target.closest('.action-dropdown-wrapper .action-btn');
     if (btn) {
       e.preventDefault();
@@ -1188,6 +1280,9 @@ function setupActionDropdowns() {
       if (!isOpen) {
         menu.classList.add('is-open');
         btn.setAttribute('aria-expanded', 'true');
+        if (wrapper && wrapper.classList.contains('notifications-dropdown-wrapper')) {
+          loadNavbarNotifications(true);
+        }
       } else {
         menu.classList.remove('is-open');
         btn.setAttribute('aria-expanded', 'false');
@@ -1213,6 +1308,185 @@ function setupActionDropdowns() {
     }
   });
 }
+
+/**
+ * Configura la carga automática de notificaciones al pasar el ratón (hover) sobre el botón/menú.
+ */
+function setupNavbarNotificationHover() {
+  document.addEventListener('mouseover', (e) => {
+    const wrapper = e.target.closest('.notifications-dropdown-wrapper');
+    if (wrapper) {
+      loadNavbarNotifications();
+    }
+  });
+}
+
+let isNotifLoading = false;
+let lastNotifFetchTime = 0;
+const NOTIF_CACHE_TTL = 20000; // 20 segundos
+
+/**
+ * Renderiza la lista de elementos en el contenedor del dropdown de notificaciones.
+ */
+function renderNavbarNotificationsList(list) {
+  const container = document.getElementById('navbar-notifications-list');
+  if (!container) return;
+
+  const prefix = getBasePathPrefix();
+
+  if (!list || !list.length) {
+    container.innerHTML = `<div class="notif-dropdown-empty">No tienes notificaciones recientes.</div>`;
+    return;
+  }
+
+  container.innerHTML = list.map((item) => {
+    const isUnread = !item.is_read;
+    const isOrder = item.notification_type === 'order' || item.notification_type === 'employee_order';
+    const timeAgo = formatRelativeTimeShort(item.created_at);
+
+    return `
+      <a href="${prefix}modules/notifications/notifications.html?id=${item.id}" 
+         class="notif-dropdown-item ${isUnread ? 'is-unread' : ''}" 
+         data-id="${item.id}"
+         role="menuitem">
+        <div class="notif-dropdown-icon">
+          ${isOrder ? `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+          ` : `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+          `}
+        </div>
+        <div class="notif-dropdown-content">
+          <h4 class="notif-dropdown-item-title">${escapeHtmlNav(item.title || 'Notificación')}</h4>
+          <p class="notif-dropdown-item-preview">${escapeHtmlNav(item.message || '')}</p>
+          <span class="notif-dropdown-item-time">${timeAgo}</span>
+        </div>
+        ${isUnread ? '<span class="notif-dropdown-dot"></span>' : ''}
+      </a>
+    `;
+  }).join('');
+
+  // Eventos de clic en items del dropdown
+  container.querySelectorAll('.notif-dropdown-item').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const id = parseInt(link.getAttribute('data-id'), 10);
+      postRequest(`/notifications/${id}/mark_as_read/`, {}, { auth: true }).catch(() => {});
+
+      // Si ya nos encontramos en la pantalla de notificaciones, seleccionar directamente sin recargar
+      if (window.location.pathname.includes('/notifications/notifications.html') && typeof window.selectNotification === 'function') {
+        e.preventDefault();
+        document.querySelectorAll('.action-dropdown-menu').forEach((m) => m.classList.remove('is-open'));
+        window.selectNotification(id);
+      }
+    });
+  });
+}
+
+/**
+ * Carga y renderiza la lista de notificaciones recientes en el dropdown del navbar.
+ */
+async function loadNavbarNotifications(force = false) {
+  const container = document.getElementById('navbar-notifications-list');
+  if (!container) return;
+
+  const token = getAccessToken();
+  const prefix = getBasePathPrefix();
+
+  if (!token) {
+    container.innerHTML = `
+      <div class="notif-dropdown-empty">
+        <p style="margin: 0 0 10px; font-weight: 500;">Inicia sesión para ver tus notificaciones.</p>
+        <a href="${prefix}modules/auth/login.html" class="btn-dropdown-mark-all" style="display: inline-block; background: #e0f2fe; padding: 6px 12px;">Iniciar Sesión</a>
+      </div>
+    `;
+    return;
+  }
+
+  // Si ya se consultó recientemente y el contenedor tiene elementos, evitar peticiones duplicadas
+  const now = Date.now();
+  if (!force && now - lastNotifFetchTime < NOTIF_CACHE_TTL && (container.querySelector('.notif-dropdown-item') || container.querySelector('.notif-dropdown-empty'))) {
+    return;
+  }
+  if (isNotifLoading) return;
+  isNotifLoading = true;
+
+  // Solo mostrar el mensaje de carga si el contenedor aún no tiene elementos renderizados
+  if (!container.querySelector('.notif-dropdown-item')) {
+    container.innerHTML = `<div class="notif-dropdown-loading">Cargando notificaciones...</div>`;
+  }
+
+  try {
+    const data = await getRequest('/notifications/', { page_size: 6 }, { auth: true });
+    lastNotifFetchTime = Date.now();
+    const list = extractList(data);
+    renderNavbarNotificationsList(list);
+  } catch (err) {
+    console.warn('[Navbar] Error al cargar notificaciones en dropdown:', err);
+    if (!container.querySelector('.notif-dropdown-item')) {
+      container.innerHTML = `<div class="notif-dropdown-empty">No se pudieron cargar las notificaciones.</div>`;
+    }
+  } finally {
+    isNotifLoading = false;
+  }
+}
+
+/**
+ * Eventos para botones dentro del dropdown de notificaciones
+ */
+function setupNavbarNotificationActions() {
+  const btnMarkRead = document.getElementById('btn-navbar-mark-read');
+  if (btnMarkRead) {
+    btnMarkRead.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try {
+        await postRequest('/notifications/mark_all_as_read/', {}, { auth: true });
+        updateNotificationsBadge(0);
+        const container = document.getElementById('navbar-notifications-list');
+        if (container) {
+          container.querySelectorAll('.notif-dropdown-item.is-unread').forEach((el) => {
+            el.classList.remove('is-unread');
+            const dot = el.querySelector('.notif-dropdown-dot');
+            if (dot) dot.remove();
+          });
+        }
+      } catch (err) {
+        console.warn('Error al marcar todas como leídas desde dropdown:', err);
+      }
+    });
+  }
+}
+
+function formatRelativeTimeShort(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const diffSec = Math.floor((new Date() - date) / 1000);
+  if (diffSec < 60) return 'Ahora';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m`;
+  const diffHrs = Math.floor(diffMin / 60);
+  if (diffHrs < 24) return `${diffHrs}h`;
+  const diffDays = Math.floor(diffHrs / 24);
+  if (diffDays < 7) return `${diffDays}d`;
+  return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+}
+
+function escapeHtmlNav(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 
 /**
  * Agrega sombra dinámica al header al hacer scroll.
@@ -1287,6 +1561,8 @@ export function initNavbar() {
   setupSearchHandler();
   setupMobileDrawer();
   setupActionDropdowns();
+  setupNavbarNotificationHover();
+  setupNavbarNotificationActions();
   setupHeaderScrollShadow();
   setupGlobalSyncListeners();
 

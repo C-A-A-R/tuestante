@@ -26,7 +26,7 @@
 
         <!-- Brand Logo -->
         <a href="index.html" class="brand-logo" aria-label="TuEstante - Inicio" data-nav-link="home">
-          <img src="assets/images/logo.svg" alt="TuEstante Logo" class="brand-logo-img">
+          <img src="assets/images/logo.svg" alt="TuEstante Logo" class="brand-logo-img" width="36" height="36">
           <span class="brand-name">TuEstante</span>
         </a>
       </div>
@@ -84,19 +84,38 @@
           <circle cx="20" cy="21" r="1"></circle>
           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
         </svg>
-        <span class="badge-count nav-cart-count" style="display: none;" aria-hidden="true">0</span>
+        <span class="badge-count nav-cart-count" style="display: none;" aria-hidden="true"></span>
       </a>
 
       <!-- Right Section: Desktop Action Icons with Dropdown Menus -->
       <div class="desktop-actions" aria-label="Acciones de usuario">
-        <!-- Notification Bell -->
-        <a href="modules/order/my-orders.html" class="action-btn nav-notifications-btn" aria-label="Notificaciones" title="Notificaciones" data-nav-link="notifications">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-          <span class="badge-count nav-notifications-count" style="display: none;" aria-hidden="true">0</span>
-        </a>
+        <!-- Notification Bell with Dropdown Menu -->
+        <div class="action-dropdown-wrapper notifications-dropdown-wrapper">
+          <a href="modules/notifications/notifications.html" class="action-btn nav-notifications-btn" aria-label="Notificaciones" title="Ver Notificaciones" data-nav-link="notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="badge-count nav-notifications-count" style="display: none;" aria-hidden="true">0</span>
+          </a>
+
+          <!-- Notification Dropdown Menu -->
+          <div class="action-dropdown-menu notifications-dropdown-menu" role="menu" aria-label="Notificaciones recientes">
+            <div class="notif-dropdown-header">
+              <a href="modules/notifications/notifications.html" class="notif-dropdown-title" data-nav-link="notifications" title="Ir a Notificaciones">Notificaciones</a>
+              <button type="button" class="btn-dropdown-mark-all" id="btn-navbar-mark-read" title="Marcar todas como leídas">Marcar leídas</button>
+            </div>
+            <div class="notif-dropdown-list" id="navbar-notifications-list">
+              <div class="notif-dropdown-loading">Cargando notificaciones...</div>
+            </div>
+            <div class="notif-dropdown-footer">
+              <a href="modules/notifications/notifications.html" class="notif-dropdown-view-all" data-nav-link="notifications">
+                <span>Ver todas las notificaciones</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </a>
+            </div>
+          </div>
+        </div>
 
         <!-- Contact / Phone Support with Dropdown Menu -->
         <div class="action-dropdown-wrapper">
@@ -153,14 +172,14 @@
           </div>
         </div>
 
-        <!-- Shopping Cart Icon Button with Badge (Desktop) -->
-        <a href="modules/cart/cart.html" class="action-btn nav-cart-btn" aria-label="Carrito de compras" title="Ver Carrito de Compras" data-nav-link="cart">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Shopping Cart with Badge (Barra grande / Desktop) -->
+        <a href="modules/cart/cart.html" class="action-btn desktop-cart-btn nav-cart-btn" id="nav-desktop-cart-btn" aria-label="Carrito de compras" title="Ver Carrito de Compras" data-nav-link="cart">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="9" cy="21" r="1"></circle>
             <circle cx="20" cy="21" r="1"></circle>
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
           </svg>
-          <span class="badge-count nav-cart-count" style="display: none;" aria-hidden="true">0</span>
+          <span class="badge-count nav-cart-count" style="display: none;" aria-hidden="true"></span>
         </a>
 
         <!-- Guest Auth Action Buttons (Shown when not logged in) -->
@@ -238,7 +257,7 @@
   <!-- Drawer Header -->
   <div class="drawer-header">
     <a href="index.html" class="brand-logo" data-nav-link="home">
-      <img src="assets/images/logo.jpeg" alt="TuEstante Logo" class="brand-logo-img">
+      <img src="assets/images/logo.svg" alt="TuEstante Logo" class="brand-logo-img" width="36" height="36">
       <span class="brand-name">TuEstante</span>
     </a>
 
@@ -270,12 +289,12 @@
 
   <!-- Quick Actions Grid in Drawer (Notifications, Cart, Phone) -->
   <div class="drawer-quick-actions">
-    <a href="modules/order/my-orders.html" class="drawer-quick-btn" data-nav-link="notifications">
+    <a href="modules/notifications/notifications.html" class="drawer-quick-btn" data-nav-link="notifications">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
         <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
       </svg>
-      <span>Avisos</span>
+      <span>Notificaciones</span>
       <span class="badge-count nav-notifications-count" style="display: none;">0</span>
     </a>
 
@@ -286,7 +305,7 @@
         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
       </svg>
       <span>Carrito</span>
-      <span class="badge-count nav-cart-count" style="display: none;">0</span>
+      <span class="badge-count nav-cart-count" style="display: none;"></span>
     </a>
 
     <a href="https://wa.me/584266272286?text=Hola%20TuEstante%2C%20deseo%20m%C3%A1s%20informaci%C3%B3n" target="_blank" rel="noopener noreferrer" class="drawer-quick-btn">

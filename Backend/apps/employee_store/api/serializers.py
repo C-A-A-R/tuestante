@@ -62,6 +62,8 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     email = serializers.CharField(source='user.email', required=False, allow_blank=True, allow_null=True)
     phone = serializers.CharField(source='user.phone', required=False, allow_blank=True)
+    document_type = serializers.CharField(source='user.document_type', required=False, allow_blank=True, allow_null=True)
+    document_type_display = serializers.CharField(source='user.get_document_type_display', read_only=True)
     id_number = serializers.CharField(source='user.identity_document', required=False, allow_blank=True, allow_null=True)
     identity_document = serializers.CharField(source='user.identity_document', required=False, allow_blank=True, allow_null=True)
     birth_date = serializers.DateField(source='user.birth_date', required=False, allow_null=True)
@@ -84,6 +86,8 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             'full_name',
             'email',
             'phone',
+            'document_type',
+            'document_type_display',
             'id_number',
             'identity_document',
             'birth_date',
@@ -147,6 +151,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         user_data = validated_data.pop('user', {})
         password = validated_data.pop('password', None)
 
+        document_type = user_data.get('document_type') or None
         identity_doc = user_data.get('identity_document') or validated_data.get('employee_number')
         first_name = user_data.get('first_name', '')
         second_name = user_data.get('second_name', '')
@@ -167,6 +172,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             user = User.objects.create_user(
                 username=uname,
                 email=email,
+                document_type=document_type,
                 identity_document=identity_doc or None,
                 first_name=first_name,
                 second_name=second_name,
@@ -182,6 +188,9 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 user.save()
         else:
             update_fields = []
+            if document_type is not None:
+                user.document_type = document_type
+                update_fields.append('document_type')
             if first_name:
                 user.first_name = first_name; update_fields.append('first_name')
             if second_name is not None:
@@ -216,6 +225,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 'second_name': 'second_name',
                 'last_name': 'last_name',
                 'second_last_name': 'second_last_name',
+                'document_type': 'document_type',
                 'identity_document': 'identity_document',
                 'birth_date': 'birth_date',
                 'email': 'email',
@@ -224,7 +234,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             for attr, field in user_field_map.items():
                 if attr in user_data:
                     val = user_data[attr]
-                    if val == '' and attr in ['identity_document', 'email', 'birth_date']:
+                    if val == '' and attr in ['identity_document', 'email', 'birth_date', 'document_type']:
                         val = None
                     setattr(user, field, val)
                     user_update_fields.append(field)

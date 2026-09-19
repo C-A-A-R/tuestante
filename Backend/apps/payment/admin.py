@@ -44,29 +44,35 @@ class PaymentAdmin(BaseAdmin):
             payment.reviewed_at = timezone.now()
             payment.save()
 
-            # Avanzar automáticamente el estado del pedido correspondiente
+            # Avanzar automáticamente el estado del pedido y registrar en fabricación
             order = payment.order
+
+            try:
+                from apps.production.models import ProductionOrder
+                if not ProductionOrder.objects.filter(order=order, is_deleted=False).exists():
+                    stage_label = payment.get_payment_stage_display() if hasattr(payment, 'get_payment_stage_display') else payment.payment_stage
+                    ProductionOrder.objects.create(
+                        order=order,
+                        status='queued',
+                        technical_notes=order.notes or f'Iniciada por aprobación de pago en admin ({stage_label})'
+                    )
+            except Exception as ex:
+                print(f"[Admin Payment Review] Error al registrar orden de fabricación: {ex}")
+
             if payment.payment_stage == 'total':
-                order.status = 'shipped'
-                order.save()
-                create_invoice_for_order(order)
-            elif payment.payment_stage == 'initial' and order.status in ['pending_initial_payment', 'initial_payment_review']:
                 order.status = 'manufacturing'
                 order.save()
-                try:
-                    from apps.production.models import ProductionOrder
-                    if not ProductionOrder.objects.filter(order=order, is_deleted=False).exists():
-                        ProductionOrder.objects.create(
-                            order=order,
-                            status='queued',
-                            technical_notes=order.notes or 'Iniciada por aprobación de pago inicial en admin'
-                        )
-                except Exception:
-                    pass
+                create_invoice_for_order(order)
+            elif payment.payment_stage == 'initial':
+                order.status = 'manufacturing'
+                order.save()
             elif payment.payment_stage == 'final' and order.status in ['waiting_final_payment', 'final_payment_review']:
                 order.status = 'shipped'
                 order.save()
                 create_invoice_for_order(order)
+            else:
+                order.status = 'manufacturing'
+                order.save()
 
         self.message_user(request, f"{queryset.count()} pago(s) aprobado(s) exitosamente.")
 

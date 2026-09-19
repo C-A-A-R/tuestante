@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="../../index.css">
     <link rel="stylesheet" href="../../components/navbar/navbar.css">
     <link rel="stylesheet" href="../../components/footer/footer.css">
+    <link rel="stylesheet" href="../../components/toast/toast.css">
 
     <!-- Hoja de Estilos Específica de la Galería -->
     <link rel="stylesheet" href="gallery.css">
@@ -60,10 +61,10 @@
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .58.04.85.12V9.4a6.33 6.33 0 0 0-.85-.06A6.34 6.34 0 0 0 3 15.68a6.34 6.34 0 0 0 6.34 6.34c3.48 0 6.32-2.82 6.34-6.3V8.85a8.28 8.28 0 0 0 4.91 1.59V7a4.81 4.81 0 0 1-1-.31z"/></svg>
                         <span>@tuestante.ve en TikTok</span>
                     </a>
-                    <a href="https://wa.link/lpe0md" target="_blank" rel="noopener" class="header-social-pill upload-pill">
+                    <button type="button" id="btn-header-upload" class="header-social-pill upload-pill" aria-label="Subir foto a la galería">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 3 21 3 21 8"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                         <span>Sube tu foto</span>
-                    </a>
+                    </button>
                 </div>
             </div>
             <!-- Transición decorativa inferior -->
@@ -110,6 +111,145 @@
                 <h3 id="lightbox-title" class="lightbox-title">Espacio Real</h3>
                 <p id="lightbox-desc" class="lightbox-desc">Descripción del espacio</p>
                 <span id="lightbox-tag" class="lightbox-tag">@tuestante.ve</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Subir Fotografías a la Galería -->
+    <div id="gallery-upload-modal" class="upload-modal" aria-hidden="true" role="dialog" aria-labelledby="upload-modal-title">
+        <div class="upload-modal-backdrop" id="upload-modal-backdrop"></div>
+        <div class="upload-modal-container">
+            <div class="upload-modal-card">
+                
+                <!-- Encabezado del Modal -->
+                <div class="upload-modal-header">
+                    <div class="upload-modal-header-text">
+                        <div class="upload-modal-badge">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            <span>Espacios Reales</span>
+                        </div>
+                        <h2 id="upload-modal-title" class="upload-modal-title">Sube tu foto a la Galería</h2>
+                        <p class="upload-modal-subtitle">Comparte cómo organizas tu vida y tus proyectos con mobiliario TuEstante.</p>
+                    </div>
+                    <button type="button" class="upload-modal-close" id="upload-modal-close-btn" aria-label="Cerrar modal">&times;</button>
+                </div>
+
+                <!-- Estado No Autenticado (Invitado) -->
+                <div id="upload-guest-view" class="upload-guest-view" style="display: none;">
+                    <div class="upload-guest-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <h3 class="upload-guest-title">Inicia sesión para compartir tu foto</h3>
+                    <p class="upload-guest-desc">Para poder darte crédito en la comunidad y moderar las fotografías, necesitas contar con una cuenta activa en TuEstante.</p>
+                    <div class="upload-guest-actions">
+                        <a href="../auth/login.html" class="btn btn-primary upload-auth-btn" id="upload-login-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+                            <span>Iniciar Sesión</span>
+                        </a>
+                        <a href="../auth/register.html" class="btn btn-outline upload-auth-btn" id="upload-register-btn">
+                            <span>Registrarme</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Formulario de Subida (Usuarios Autenticados) -->
+                <form id="gallery-upload-form" class="upload-form" novalidate>
+                    
+                    <!-- Dropzone de imagen -->
+                    <div class="upload-form-group">
+                        <label class="upload-label">Fotografía de tu espacio <span class="required-star">*</span></label>
+                        <div id="upload-dropzone" class="upload-dropzone" tabindex="0" role="button" aria-label="Seleccionar o arrastrar fotografía">
+                            <input type="file" id="upload-file-input" name="image" accept="image/jpeg,image/png,image/webp,image/jpg" style="display: none;">
+                            
+                            <div class="dropzone-idle-content" id="dropzone-idle-content">
+                                <div class="dropzone-icon-circle">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                </div>
+                                <p class="dropzone-primary-text"><strong>Haz clic para seleccionar</strong> o arrastra y suelta tu foto aquí</p>
+                                <span class="dropzone-secondary-text">Formatos permitidos: JPG, PNG o WebP (máx. 5 MB)</span>
+                            </div>
+
+                            <div class="dropzone-preview-content" id="dropzone-preview-content" style="display: none;">
+                                <div class="preview-img-container">
+                                    <img id="upload-image-preview" src="" alt="Vista previa de foto a subir">
+                                    <button type="button" class="preview-remove-btn" id="preview-remove-btn" title="Quitar o cambiar imagen" aria-label="Quitar fotografía">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    </button>
+                                </div>
+                                <div class="preview-info">
+                                    <span class="preview-file-name" id="preview-file-name">foto.jpg</span>
+                                    <span class="preview-file-size" id="preview-file-size">0 KB</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="upload-field-error" id="image-error-text" style="display: none;"></span>
+                    </div>
+
+                    <!-- Descripción / Caption -->
+                    <div class="upload-form-group">
+                        <div class="upload-label-row">
+                            <label for="upload-caption" class="upload-label">Descripción de tu espacio</label>
+                            <span class="char-counter" id="caption-counter">0 / 255</span>
+                        </div>
+                        <textarea id="upload-caption" name="caption" class="upload-textarea" maxlength="255" rows="3" placeholder="Ej: Mi locker TuEstante organizando el estudio de diseño en Caracas..."></textarea>
+                    </div>
+
+                    <!-- Red Social y Usuario -->
+                    <div class="upload-form-row">
+                        <div class="upload-form-group col-half">
+                            <label for="upload-social-network" class="upload-label">Red Social</label>
+                            <div class="upload-select-wrapper">
+                                <select id="upload-social-network" name="social_network" class="upload-select">
+                                    <option value="instagram" selected>Instagram</option>
+                                    <option value="tiktok">TikTok</option>
+                                    <option value="facebook">Facebook</option>
+                                    <option value="pinterest">Pinterest</option>
+                                    <option value="twitter">X (Twitter)</option>
+                                    <option value="otro">Otra</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="upload-form-group col-half">
+                            <label for="upload-social-handle" class="upload-label">Usuario o @handle</label>
+                            <input type="text" id="upload-social-handle" name="social_media_handle" class="upload-input" placeholder="@tu_usuario" maxlength="100">
+                        </div>
+                    </div>
+
+                    <!-- URL Opcional de la Publicación -->
+                    <div class="upload-form-group">
+                        <label for="upload-social-url" class="upload-label">Enlace a tu publicación original (opcional)</label>
+                        <input type="url" id="upload-social-url" name="social_media_url" class="upload-input" placeholder="https://www.instagram.com/p/...">
+                    </div>
+
+                    <!-- Nota de moderación comunitaria -->
+                    <div class="upload-notice">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        <span>Tu foto será moderada y aprobada por el equipo antes de publicarse en la galería.</span>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="upload-modal-footer">
+                        <button type="button" class="btn btn-secondary upload-cancel-btn" id="upload-cancel-btn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary upload-submit-btn" id="upload-submit-btn">
+                            <span class="btn-text">Subir a la galería</span>
+                            <svg class="btn-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display: none;">
+                                <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+
             </div>
         </div>
     </div>

@@ -727,6 +727,32 @@ html, body {
   background-color: #16a34a;
 }
 
+/* Indicador de entrega/envío del pedido */
+.delivery-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.delivery-status-tag.tag-delivered {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.delivery-status-tag.tag-shipped {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
 /* Fechas */
 .date-cell-text {
   font-size: 0.815rem;

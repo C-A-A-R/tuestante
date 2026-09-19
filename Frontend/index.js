@@ -53,9 +53,13 @@ async function loadComponent(placeholderId, filePath) {
       throw new Error(`Error al cargar el componente: ${response.statusText}`);
     }
     const html = await response.text();
+    // Limpiar posibles etiquetas inyectadas por servidores de desarrollo o cierre
+    const cleanHtml = html
+      .replace(/<!-- Code injected by live-server -->[\s\S]*?<\/script>/gi, '')
+      .replace(/<\/body>/gi, '');
     const container = document.getElementById(placeholderId);
     if (container) {
-      container.innerHTML = html;
+      container.innerHTML = cleanHtml;
     }
   } catch (error) {
     console.error(`Error cargando el componente desde ${filePath}:`, error);
@@ -93,50 +97,32 @@ async function loadHomeOutlet() {
     // Mostrar sección ya que hay disponibilidad
     outletSection.style.display = 'block';
 
-    container.innerHTML = outletProducts.slice(0, 4).map((prod, idx) => {
+    container.innerHTML = outletProducts.slice(0, 5).map((prod, idx) => {
       const id = prod.id;
       const name = prod.product_name || prod.name || 'Producto Outlet';
-      const desc = prod.description || 'Oportunidad única en mobiliario metálico con entrega inmediata.';
       const price = typeof prod.price === 'number' ? prod.price : parseFloat(prod.price) || 0;
-      const img = resolveImageUrl(prod.product_image || prod.image, 'assets/images/productos/estante-blanco.jpeg');
+      const img = resolveImageUrl(prod.product_image || prod.image, 'assets/images/gallery/real_space_1.jpg');
       const qty = prod.quantity !== undefined ? prod.quantity : 1;
       const link = `modules/product/product-details.html?id=${id}`;
 
       return `
-        <div class="unified-product-card" data-index="${idx}">
-          <div class="unified-card-media">
-            <a href="${link}" class="unified-card-img-link">
-              <img src="${img}" alt="${name}" class="unified-card-img" loading="lazy">
-            </a>
-            
+        <div class="catalog-product-card" data-index="${idx}">
+          <a href="${link}" class="catalog-product-img-wrapper">
             <div class="badge-outlet-tag" title="Stock disponible para entrega inmediata">
               <span>⚡ OUTLET (${qty} disp.)</span>
             </div>
-            
-            <button class="unified-wishlist-btn ${prod.is_favorite ? 'active' : ''}" data-id="${id}" title="${prod.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos'}" aria-label="Añadir a favoritos">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-              </svg>
-            </button>
-          </div>
+            <img src="${img}" alt="${name}" class="catalog-product-img" loading="lazy">
+          </a>
 
-          <div class="unified-card-body">
+          <div class="catalog-product-body">
             <div>
-              <div class="unified-card-header">
-                <h3 class="unified-card-title">
-                  <a href="${link}">${name}</a>
-                </h3>
-                <span class="unified-card-price">$${price.toFixed(2)}</span>
-              </div>
-
-              <p class="unified-card-desc">${desc}</p>
+              <h3 class="catalog-product-name">
+                <a href="${link}" style="color: inherit; text-decoration: none;">${name}</a>
+              </h3>
             </div>
-
-            <div class="unified-card-actions">
-              <a href="${link}" class="unified-btn btn-details">Ver Detalle</a>
-              <button class="unified-btn btn-card-add-cart" data-id="${id}" data-name="${name}" data-price="${price}" data-image="${img}">
-                + Carrito
-              </button>
+            <div class="catalog-product-footer">
+              <span class="catalog-product-price">$${price.toFixed(2)}</span>
+              <a href="${link}" class="catalog-product-btn">Ver Detalle</a>
             </div>
           </div>
         </div>
@@ -191,39 +177,60 @@ async function loadHomeProductTypes() {
 }
 
 /**
- * Carga dinámicamente el Carrusel de Productos Destacados desde la API de Django con Scroll Táctil.
+ * Carga dinámicamente los Productos Destacados desde la API de Django en la cuadrícula de portada.
  */
 async function loadHomeFeaturedProducts() {
-  const track = document.getElementById('home-featured-products-container');
-  const viewport = document.getElementById('home-featured-carousel-viewport');
-
-  if (!track || !viewport) return;
+  const container = document.getElementById('home-featured-products-container');
+  if (!container) return;
 
   try {
     let response;
     try {
-      response = await obtenerProductosDestacados();
+      response = await obtenerProductosDestacados({ sort_by_favorites: 'true' });
     } catch {
-      response = await obtenerProductos();
+      response = await obtenerProductos({ sort_by_favorites: 'true' });
     }
     const products = extractList(response);
     if (!products || products.length === 0) {
-      track.innerHTML = createApiEmptyFeedback('No hay productos destacados registrados en este momento.', 'Consulta nuestro catálogo completo para ver todas las opciones.');
+      container.innerHTML = createApiEmptyFeedback('No hay productos destacados registrados en este momento.', 'Consulta nuestro catálogo completo para ver todas las opciones.');
       return;
     }
 
-    track.innerHTML = products.map((prod, idx) => {
+    let displayProducts = products.filter(p => p.rating === 5.0 || p.badge === 'Destacado' || p.is_feature_product !== false);
+    if (displayProducts.length === 0) {
+      displayProducts = [...products];
+    }
+
+    // Prioridad de orden: los más amados / más favoritos primero
+    displayProducts.sort((a, b) => {
+      const favA = Number(a.favorites_count ?? a.favorite_count ?? 0);
+      const favB = Number(b.favorites_count ?? b.favorite_count ?? 0);
+      if (favB !== favA) {
+        return favB - favA; // Mayor número de favoritos primero
+      }
+      const ratingA = Number(a.rating ?? 0);
+      const ratingB = Number(b.rating ?? 0);
+      if (ratingB !== ratingA) {
+        return ratingB - ratingA;
+      }
+      return (b.id ?? 0) - (a.id ?? 0);
+    });
+
+    // Permitir hasta 2 filas de productos (5 por fila = 10 productos).
+    // Si no hay suficientes para llenar ambas filas, se deja el espacio vacío naturalmente sin repetir productos.
+    displayProducts = displayProducts.slice(0, 10);
+
+    container.innerHTML = displayProducts.map(prod => {
       const id = prod.id;
       const name = prod.product_name || prod.name || 'Producto Destacado';
-      const desc = prod.description || 'Estructura metálica de alta durabilidad y resistencia para optimizar tus espacios.';
       const price = typeof prod.price === 'number' ? prod.price : parseFloat(prod.price) || 0;
-      const img = resolveImageUrl(prod.product_image || prod.image, 'assets/images/productos/estante-blanco.jpeg');
+      const img = resolveImageUrl(prod.product_image || prod.image, 'assets/images/gallery/real_space_1.jpg');
       const isFeatured = !!(prod.rating === 5.0 || prod.badge === 'Destacado' || prod.is_feature_product !== false);
       const link = `modules/product/product-details.html?id=${id}`;
 
       const starBadgeHTML = isFeatured ? `
         <div class="badge-destacado-star" title="Producto Destacado">
-          <svg class="star-icon" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="1.5">
+          <svg class="star-icon" viewBox="0 0 24 24" fill="#94A3B8" stroke="#64748B" stroke-width="1.5">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
           </svg>
           <span class="star-label">Producto Destacado</span>
@@ -231,101 +238,29 @@ async function loadHomeFeaturedProducts() {
       ` : '';
 
       return `
-        <div class="unified-product-card" data-index="${idx}">
-          <div class="unified-card-media">
-            <a href="${link}" class="unified-card-img-link">
-              <img src="${img}" alt="${name}" class="unified-card-img" loading="lazy">
-            </a>
-            
+        <div class="catalog-product-card">
+          <a href="${link}" class="catalog-product-img-wrapper">
             ${starBadgeHTML}
-            
-            <button class="unified-wishlist-btn ${prod.is_favorite ? 'active' : ''}" data-id="${id}" title="${prod.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos'}" aria-label="Añadir a favoritos">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-              </svg>
-            </button>
-          </div>
-
-          <div class="unified-card-body">
+            <img src="${img}" alt="${name}" class="catalog-product-img" loading="lazy">
+          </a>
+          <div class="catalog-product-body">
             <div>
-              <div class="unified-card-header">
-                <h3 class="unified-card-title">
-                  <a href="${link}">${name}</a>
-                </h3>
-                <span class="unified-card-price">$${price.toFixed(2)}</span>
-              </div>
-
-              <p class="unified-card-desc">${desc}</p>
-
-              <div class="unified-card-swatches">
-                <span class="swatch-dot" style="background-color: #ea580c;" title="Naranja"></span>
-                <span class="swatch-dot" style="background-color: #0f172a;" title="Gris Oscuro"></span>
-                <span class="swatch-dot" style="background-color: #15803d;" title="Verde Sabana"></span>
-                <span class="swatch-dot" style="background-color: #005187;" title="Azul"></span>
-                <span class="swatch-more">+4</span>
-              </div>
+              <h3 class="catalog-product-name">
+                <a href="${link}" style="color: inherit; text-decoration: none;">${name}</a>
+              </h3>
             </div>
-
-            <div class="unified-card-actions">
-              <a href="${link}" class="unified-btn btn-details">Ver Detalle</a>
-              <button class="unified-btn btn-card-add-cart" data-id="${id}" data-name="${name}" data-price="${price}" data-image="${img}">
-                + Carrito
-              </button>
+            <div class="catalog-product-footer">
+              <span class="catalog-product-price">$${price.toFixed(2)}</span>
+              <a href="${link}" class="catalog-product-btn">Ver Detalle</a>
             </div>
           </div>
         </div>
       `;
     }).join('');
 
-    // Soporte para arrastrar con el ratón en escritorio (Mouse Drag Scroll)
-    let isMouseDown = false;
-    let startX = 0;
-    let scrollLeft = 0;
-    let isDragging = false;
-
-    viewport.addEventListener('mousedown', (e) => {
-      isMouseDown = true;
-      isDragging = false;
-      startX = e.pageX - viewport.offsetLeft;
-      scrollLeft = viewport.scrollLeft;
-      viewport.classList.add('is-dragging');
-    });
-
-    viewport.addEventListener('mouseleave', () => {
-      isMouseDown = false;
-      viewport.classList.remove('is-dragging');
-    });
-
-    viewport.addEventListener('mouseup', () => {
-      isMouseDown = false;
-      setTimeout(() => {
-        isDragging = false;
-        viewport.classList.remove('is-dragging');
-      }, 50);
-    });
-
-    viewport.addEventListener('mousemove', (e) => {
-      if (!isMouseDown) return;
-      e.preventDefault();
-      const x = e.pageX - viewport.offsetLeft;
-      const walk = (x - startX) * 1.5;
-      if (Math.abs(walk) > 5) {
-        isDragging = true;
-      }
-      viewport.scrollLeft = scrollLeft - walk;
-    });
-
-    // Prevenir clic accidental si el usuario estaba arrastrando
-    viewport.addEventListener('click', (e) => {
-      if (isDragging) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    }, true);
-
   } catch (error) {
-    console.error('Error al cargar carrusel de productos destacados en el home:', error);
-    track.innerHTML = createApiErrorFeedback('No se pudieron cargar los productos destacados.', 'Por favor, intenta de nuevo más tarde.');
+    console.error('Error al cargar productos destacados en el home:', error);
+    container.innerHTML = createApiErrorFeedback('No se pudieron cargar los productos destacados.', 'Por favor, intenta de nuevo más tarde.');
   }
 }
 
@@ -418,80 +353,48 @@ function initCarousel() {
 }
 
 /**
- * Carga dinámicamente 8 imágenes desde la API del backend Django para el carrusel de Espacios Reales en la portada.
+ * Carga dinámicamente proyectos desde la API para la sección de Espacios Reales / Galería en la portada.
+ * Si no hay proyectos registrados en el backend, la sección se oculta completamente.
  */
 async function loadHomeRealSpacesGallery() {
+  const gallerySection = document.getElementById('espacios-reales');
   const track = document.getElementById('real-spaces-track');
-  if (!track) return;
+  if (!gallerySection || !track) return;
 
   try {
-    let rawItems = [];
-    // 1. Intentar obtener la lista de proyectos desde el backend
-    try {
-      const projResp = await obtenerProyectos();
-      rawItems = extractList(projResp);
-    } catch (e) {
-      console.warn('Advertencia al consultar proyectos backend para el carrusel:', e);
+    const projResp = await obtenerProyectos();
+    const rawItems = extractList(projResp);
+    const realProjects = (rawItems || []).filter(p => p && p.is_active !== false);
+
+    if (!realProjects || realProjects.length === 0) {
+      gallerySection.style.display = 'none';
+      track.innerHTML = '';
+      return;
     }
 
-    // 2. Si hay menos de 8 elementos, complementar con productos del backend
-    if (rawItems.length < 8) {
-      try {
-        const prodResp = await obtenerProductos();
-        const prodItems = extractList(prodResp);
-        rawItems = [...rawItems, ...prodItems];
-      } catch (e) {
-        console.warn('Advertencia al consultar productos backend para el carrusel:', e);
-      }
-    }
+    // Si existen proyectos reales en el backend, mostrar la sección
+    gallerySection.style.display = 'block';
 
-    // 3. Mapear los datos traídos del backend resolviendo las URLs completas de las imágenes
-    let galleryItems = rawItems.map((item, idx) => {
-      const title = item.project_name || item.product_name || item.name || `Espacio Real ${idx + 1}`;
-      const imgPath = item.project_images || item.product_image || item.image || item.category_image;
-      const imgUrl = resolveImageUrl(imgPath, `assets/images/gallery/real_space_${(idx % 6) + 1}.jpg`);
-      return { title, imgUrl };
-    });
+    track.innerHTML = realProjects.map((item, idx) => {
+      const title = item.project_name || item.name || `Proyecto ${idx + 1}`;
+      const imgPath = item.project_images || item.image;
+      const imgUrl = resolveImageUrl(imgPath, 'assets/images/carrusel-index/Carrousel.png');
+      const link = `modules/project/projects.html`;
+      return `
+        <div class="real-spaces-card">
+          <a href="${link}">
+            <img src="${imgUrl}" alt="${title}" class="real-spaces-img" loading="lazy">
+          </a>
+        </div>
+      `;
+    }).join('');
 
-    // 4. Respaldos visuales del sistema en caso de que la base de datos backend no tenga suficientes fotos cargadas
-    const fallbackImages = [
-      'assets/images/gallery/real_space_1.jpg',
-      'assets/images/gallery/real_space_2.jpg',
-      'assets/images/gallery/real_space_3.jpg',
-      'assets/images/gallery/real_space_4.jpg',
-      'assets/images/gallery/real_space_5.jpg',
-      'assets/images/gallery/real_space_6.jpg',
-      'assets/images/gallery/real_space_7.jpg',
-      'assets/images/gallery/real_space_8.jpg',
-      'assets/images/gallery/real_space_9.jpg',
-      'assets/images/gallery/real_space_10.jpg',
-      'assets/images/gallery/real_space_11.jpg',
-      'assets/images/carrusel-index/LocekrL4Gris.jpg'
-    ];
-
-    let fallbackIdx = 0;
-    while (galleryItems.length < 8) {
-      galleryItems.push({
-        title: `Espacio Real TuEstante ${galleryItems.length + 1}`,
-        imgUrl: fallbackImages[fallbackIdx % fallbackImages.length]
-      });
-      fallbackIdx++;
-    }
-
-    // Asegurar exactamente 8 imágenes mostrándose 3 a la vez
-    galleryItems = galleryItems.slice(0, 8);
-
-    // Inyectar las 8 tarjetas en el DOM de la pista del carrusel
-    track.innerHTML = galleryItems.map(item => `
-      <div class="real-spaces-card">
-        <img src="${item.imgUrl}" alt="${item.title}" class="real-spaces-img" loading="lazy">
-      </div>
-    `).join('');
-
-    // Re-inicializar controles de navegación del carrusel de 8 imágenes
+    // Re-inicializar controles de navegación del carrusel si hay proyectos
     initRealSpacesSlider();
   } catch (error) {
-    console.error('Error al cargar la galería de 8 imágenes en portada:', error);
+    console.warn('No se pudo consultar proyectos backend para la galería de portada:', error);
+    gallerySection.style.display = 'none';
+    track.innerHTML = '';
   }
 }
 

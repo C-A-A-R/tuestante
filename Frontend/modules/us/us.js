@@ -14,9 +14,12 @@ async function loadComponent(placeholderId, filePath) {
       throw new Error(`Error al cargar el componente: ${response.statusText}`);
     }
     const html = await response.text();
+    const cleanHtml = html
+      .replace(/<!-- Code injected by live-server -->[\s\S]*?<\/script>/gi, '')
+      .replace(/<\/body>/gi, '');
     const container = document.getElementById(placeholderId);
     if (container) {
-      container.innerHTML = html;
+      container.innerHTML = cleanHtml;
     }
   } catch (error) {
     console.error(`Error cargando el componente desde ${filePath}:`, error);

@@ -345,10 +345,17 @@ function renderProductsTable() {
 
         <!-- Estado de Fabricación -->
         <td>
-          <span class="status-stage-badge ${stage.badgeClass}">
-            <span class="stage-dot"></span>
-            <span>${stage.label}</span>
-          </span>
+          <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+            <span class="status-stage-badge ${stage.badgeClass}">
+              <span class="stage-dot"></span>
+              <span>${stage.label}</span>
+            </span>
+            ${item.order_status && ['delivered', 'completed', 'shipped'].includes(item.order_status) ? `
+              <span class="delivery-status-tag ${item.order_status === 'shipped' ? 'tag-shipped' : 'tag-delivered'}" title="Estado del pedido: ${escapeHtml(item.order_status)}">
+                ✓ ${item.order_status === 'shipped' ? 'Enviado' : 'Entregado'}
+              </span>
+            ` : ''}
+          </div>
         </td>
 
         <!-- Fecha Inicio -->
@@ -491,10 +498,17 @@ function renderOrdersTable() {
 
         <!-- Estado -->
         <td>
-          <span class="status-stage-badge ${stage.badgeClass}">
-            <span class="stage-dot"></span>
-            <span>${stage.label}</span>
-          </span>
+          <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+            <span class="status-stage-badge ${stage.badgeClass}">
+              <span class="stage-dot"></span>
+              <span>${stage.label}</span>
+            </span>
+            ${order.order_status && ['delivered', 'completed', 'shipped'].includes(order.order_status) ? `
+              <span class="delivery-status-tag ${order.order_status === 'shipped' ? 'tag-shipped' : 'tag-delivered'}" title="Estado del pedido: ${escapeHtml(order.order_status)}">
+                ✓ ${order.order_status === 'shipped' ? 'Enviado' : 'Entregado'}
+              </span>
+            ` : ''}
+          </div>
         </td>
 
         <!-- Campo de Productos con Botón a Modal (Solo cantidad de productos) -->

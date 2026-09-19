@@ -524,6 +524,232 @@ export const MOCK_PAYMENTS = [
  */
 
 /**
+ * Normaliza un objeto de pago obtenido del backend o mock
+ * para garantizar coherencia estructural total con la interfaz del panel administrativo.
+ */
+export function normalizePayment(p) {
+  if (!p) return p;
+
+  const id = p.id;
+  const orderId = p.order_id || (typeof p.order === 'object' ? p.order?.id : p.order) || 0;
+  const orderCode = p.order_code || (typeof p.order === 'object' ? p.order?.order_number : null) || `#00${orderId}`;
+  const paymentCode = p.payment_code || `#PAG-${String(id).padStart(3, '0')}`;
+
+  // Normalización del cliente
+  let client = p.client;
+  if (!client || typeof client !== 'object') {
+    if (typeof p.order === 'object' && p.order?.user) {
+      const u = p.order.user;
+      client = {
+        id: u.id || null,
+        name: `${u.first_name || ''} ${u.first_last_name || u.last_name || ''}`.trim() || u.username || 'Cliente',
+        email: u.email || '',
+        phone: u.phone || ''
+      };
+    } else {
+      client = {
+        id: null,
+        name: 'Cliente',
+        email: '',
+        phone: ''
+      };
+    }
+  } else {
+    client = {
+      id: client.id || null,
+      name: client.name || `${client.first_name || ''} ${client.last_name || ''}`.trim() || 'Cliente',
+      email: client.email || '',
+      phone: client.phone || ''
+    };
+  }
+
+  // Montos
+  const amount = parseFloat(p.amount || 0);
+  const formattedAmount = p.formatted_amount || `$${amount.toFixed(2)}`;
+
+  // Etapa
+  const stage = p.payment_stage || 'initial';
+  const stageLabels = {
+    'initial': 'Pago Inicial',
+    'final': 'Pago Final',
+    'total': 'Pago Total'
+  };
+  const stageClasses = {
+    'initial': 'badge-stage-initial',
+    'final': 'badge-stage-final',
+    'total': 'badge-stage-total'
+  };
+  const paymentStageLabel = p.payment_stage_label || stageLabels[stage] || stage;
+  const stageBadgeClass = p.stage_badge_class || stageClasses[stage] || 'badge-stage-initial';
+
+  // Estado: El backend usa 'pending', el panel administrativo usa 'review'
+  let status = p.status || 'pending';
+  if (status === 'pending') status = 'review';
+
+  const statusLabels = {
+    'review': 'En revisión',
+    'approved': 'Aprobado',
+    'rejected': 'Rechazado'
+  };
+  const statusClasses = {
+    'review': 'badge-status-review',
+    'approved': 'badge-status-approved',
+    'rejected': 'badge-status-rejected'
+  };
+  const statusLabel = p.status_label || statusLabels[status] || status;
+  const statusBadgeClass = p.status_badge_class || statusClasses[status] || 'badge-status-review';
+
+  // Método
+  const method = p.payment_method || 'transfer';
+  const methodLabels = {
+    'mobile_payment': 'Pago Móvil',
+    'transfer': 'Transferencia Bancaria',
+    'cash': 'Efectivo en sede',
+    'other': 'Zelle / Divisas / Otro'
+  };
+  const paymentMethodLabel = p.payment_method_label || methodLabels[method] || method;
+
+  // Fechas
+  let formattedDate = p.formatted_date || '';
+  let formattedTime = p.formatted_time || '';
+  if (p.created_at && (!formattedDate || !formattedTime)) {
+    const d = new Date(p.created_at);
+    if (!isNaN(d.getTime())) {
+      if (!formattedDate) formattedDate = d.toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      if (!formattedTime) formattedTime = d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+    }
+  }
+
+  // Comprobante
+  const receiptFileUrl = p.receipt_file_url || (p.receipt_file ? resolveImageUrl(p.receipt_file) : '');
+
+  // Resumen de Orden
+  const orderSummary = p.order_summary || {
+    id: orderId,
+    order_code: orderCode,
+    status: 'manufacturing',
+    status_label: 'En fabricación',
+    status_badge_class: 'badge-manufacturing',
+    total_amount: p.order_total || amount,
+    items_count: 1,
+    items: []
+  };
+
+  return {
+    ...p,
+    id,
+    payment_code: paymentCode,
+    order_id: orderId,
+    order_code: orderCode,
+    client,
+    amount,
+    formatted_amount: formattedAmount,
+    payment_stage: stage,
+    payment_stage_label: paymentStageLabel,
+    stage_badge_class: stageBadgeClass,
+    status,
+    status_label: statusLabel,
+    status_badge_class: statusBadgeClass,
+    payment_method: method,
+    payment_method_label: paymentMethodLabel,
+    bank_name: p.bank_name || (method === 'mobile_payment' ? 'Pago Móvil' : 'Transferencia Bancaria'),
+    reference_number: p.reference_number || 'N/A',
+    receipt_file_url: receiptFileUrl,
+    formatted_date: formattedDate || 'Reciente',
+    formatted_time: formattedTime || '',
+    notes: p.notes || '',
+    order_summary: orderSummary
+  };
+}
+
+/**
+ * Normaliza el resumen de una orden obtenido del backend
+ */
+export function normalizeOrderSummary(data) {
+  if (!data) return data;
+
+  const orderId = data.id;
+  const orderCode = data.order_number || `#00${orderId}`;
+
+  let client = { name: 'Cliente', email: '', phone: '' };
+  if (data.user) {
+    if (typeof data.user === 'object') {
+      client = {
+        name: `${data.user.first_name || ''} ${data.user.first_last_name || data.user.last_name || ''}`.trim() || data.user.username || 'Cliente',
+        email: data.user.email || '',
+        phone: data.user.phone || ''
+      };
+    } else if (typeof data.user === 'string') {
+      const parts = data.user.split(' - ');
+      const displayName = parts.length > 1 ? parts[1] : parts[0];
+      client = { name: displayName, email: '', phone: '' };
+    }
+  }
+
+  const items = [];
+  if (Array.isArray(data.details)) {
+    data.details.forEach(det => {
+      if (Array.isArray(det.order_products) && det.order_products.length > 0) {
+        det.order_products.forEach(op => {
+          items.push({
+            id: op.id,
+            product_name: op.product?.product_name || 'Producto',
+            quantity: det.quantity || 1,
+            unit_price_usd: parseFloat(det.unit_price || op.price_at_order || 0),
+            total_price_usd: parseFloat(det.final_price || 0),
+            notes: det.notes || ''
+          });
+        });
+      } else {
+        items.push({
+          id: det.id,
+          product_name: `Detalle #${det.id}`,
+          quantity: det.quantity || 1,
+          unit_price_usd: parseFloat(det.unit_price || 0),
+          total_price_usd: parseFloat(det.final_price || 0),
+          notes: det.notes || ''
+        });
+      }
+    });
+  }
+
+  const totalUSD = parseFloat(data.total_price || 0);
+  const statusLabels = {
+    'pending_initial_payment': 'Pendiente de pago inicial',
+    'initial_payment_review': 'Pago inicial en revisión',
+    'manufacturing': 'En fabricación',
+    'waiting_final_payment': 'Esperando pago final',
+    'final_payment_review': 'Pago final en revisión',
+    'shipped': 'Enviado',
+    'finalized': 'Finalizado',
+    'cancelled': 'Cancelado'
+  };
+  const statusClasses = {
+    'pending_initial_payment': 'badge-status-pending',
+    'initial_payment_review': 'badge-payment-review',
+    'manufacturing': 'badge-manufacturing',
+    'waiting_final_payment': 'badge-status-pending',
+    'final_payment_review': 'badge-payment-review',
+    'shipped': 'badge-shipped',
+    'finalized': 'badge-finalized',
+    'cancelled': 'badge-cancelled'
+  };
+
+  return {
+    ...data,
+    id: orderId,
+    order_code: orderCode,
+    client,
+    status: data.status,
+    status_label: statusLabels[data.status] || data.status,
+    status_badge_class: statusClasses[data.status] || 'badge-manufacturing',
+    total_amount: totalUSD,
+    items_count: items.length || 1,
+    items
+  };
+}
+
+/**
  * Obtiene el listado de comprobantes y pagos registrados con soporte de filtros y doble moneda.
  * @param {Object} filters Opciones de filtrado
  * @returns {Promise<{results: Array, total: number, page: number, total_pages: number}>}
@@ -542,7 +768,8 @@ export async function getPayments(filters = {}) {
 
     const data = await getRequest('/payments/', queryParams, { auth: true });
     if (data && (Array.isArray(data) || Array.isArray(data.results))) {
-      const results = extractList(data);
+      const rawResults = extractList(data);
+      const results = rawResults.map(p => normalizePayment(p));
       return {
         results,
         total: data.count || results.length,
@@ -560,12 +787,12 @@ export async function getPayments(filters = {}) {
   if (filters.search) {
     const term = filters.search.toLowerCase().trim();
     filtered = filtered.filter(p => 
-      p.payment_code.toLowerCase().includes(term) ||
-      p.order_code.toLowerCase().includes(term) ||
-      p.client.name.toLowerCase().includes(term) ||
-      p.client.email.toLowerCase().includes(term) ||
-      p.reference_number.toLowerCase().includes(term) ||
-      p.bank_name.toLowerCase().includes(term)
+      (p.payment_code || '').toLowerCase().includes(term) ||
+      (p.order_code || '').toLowerCase().includes(term) ||
+      (p.client?.name || '').toLowerCase().includes(term) ||
+      (p.client?.email || '').toLowerCase().includes(term) ||
+      (p.reference_number || '').toLowerCase().includes(term) ||
+      (p.bank_name || '').toLowerCase().includes(term)
     );
   }
 
@@ -609,7 +836,7 @@ export async function getPayments(filters = {}) {
 export async function getPaymentById(paymentId) {
   try {
     const data = await getRequest(`/payments/${paymentId}/`, {}, { auth: true });
-    if (data) return data;
+    if (data) return normalizePayment(data);
   } catch (error) {
     console.warn(`[TuEstante Payment API] Fallback a datos mock para comprobante #${paymentId}:`, error.message);
   }
@@ -631,7 +858,7 @@ export async function getOrderSummaryForPayment(orderId) {
 
   try {
     const data = await getRequest(`/orders/${orderId}/`, {}, { auth: true });
-    if (data) return data;
+    if (data) return normalizeOrderSummary(data);
   } catch (error) {
     // Fallback a datos mock asociados
   }

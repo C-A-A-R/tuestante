@@ -668,7 +668,36 @@ html, body {
   color: var(--text-muted);
 }
 
-/* Stock */
+/* Stock / Cantidad */
+.stock-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.stock-badge.stock-ok {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.stock-badge.stock-low {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.stock-badge.stock-zero {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
 .stock-text {
   font-weight: 700;
   font-size: 0.86rem;
@@ -711,6 +740,23 @@ html, body {
 .status-inactive {
   background: #f1f5f9;
   color: #64748b;
+}
+
+button.status-pill.status-toggle-btn {
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  outline: none;
+}
+
+button.status-pill.status-toggle-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.95);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+button.status-pill.status-toggle-btn:active {
+  transform: translateY(0);
 }
 
 .status-inactive .status-dot {

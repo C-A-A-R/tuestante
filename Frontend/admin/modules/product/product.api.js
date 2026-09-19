@@ -6,7 +6,7 @@
  * ==========================================================================
  */
 
-import { getRequest, postRequest, patchRequest, putRequest, deleteRequest } from '../../js/api.js';
+import { getRequest, postRequest, patchRequest, putRequest, deleteRequest, resolveImageUrl } from '../../js/api.js';
 
 // ==========================================================================
 // BANCO DE DATOS MOCK DE PRODUCTOS, VARIANTES Y MEDIOS
@@ -57,6 +57,7 @@ let mockProducts = [
     product_type_id: 1,
     price: 150.00,
     price_ves: 5475.00,
+    quantity: 15,
     is_active: true,
     is_outlet: false,
     is_feature_product: true,
@@ -87,6 +88,7 @@ let mockProducts = [
     product_type_id: 1,
     price: 220.00,
     price_ves: 8030.00,
+    quantity: 8,
     is_active: true,
     is_outlet: false,
     is_feature_product: false,
@@ -115,6 +117,7 @@ let mockProducts = [
     product_type_id: 3,
     price: 50.00,
     price_ves: 1825.00,
+    quantity: 0,
     is_active: true,
     is_outlet: true,
     is_feature_product: false,
@@ -141,6 +144,7 @@ let mockProducts = [
     product_type_id: 2,
     price: 320.00,
     price_ves: 11680.00,
+    quantity: 24,
     is_active: true,
     is_outlet: false,
     is_feature_product: true,
@@ -170,6 +174,7 @@ let mockProducts = [
     product_type_id: 2,
     price: 280.00,
     price_ves: 10220.00,
+    quantity: 3,
     is_active: false,
     is_outlet: true,
     is_feature_product: false,
@@ -197,6 +202,7 @@ let mockProducts = [
     product_type_id: 2,
     price: 350.00,
     price_ves: 12775.00,
+    quantity: 12,
     is_active: true,
     is_outlet: false,
     is_feature_product: true,
@@ -225,6 +231,12 @@ let mockProducts = [
  */
 function normalizeBackendProduct(p) {
   const typeName = p.product_type_detail?.product_type_name || p.product_type_name || 'Mobiliario Modular';
+  const defaultImg = '../../assets/images/products/tipo-producto-estante.png';
+  const rawCover = p.product_image ? resolveImageUrl(p.product_image, defaultImg) : defaultImg;
+  const rawVideo = p.product_video ? resolveImageUrl(p.product_video) : '';
+
+  const isDeleted = Boolean(p.is_deleted);
+  const isActive = isDeleted ? false : (p.is_active !== undefined ? Boolean(p.is_active) : true);
 
   return {
     id: p.id,
@@ -234,26 +246,29 @@ function normalizeBackendProduct(p) {
     product_type_id: p.product_type || p.product_type_id || 1,
     price: parseFloat(p.price) || 0,
     price_ves: (parseFloat(p.price) || 0) * 36.50,
-    is_active: p.is_deleted === false && (p.is_active !== undefined ? p.is_active : true),
+    is_active: isActive,
+    is_deleted: isDeleted,
     is_outlet: Boolean(p.is_outlet),
     is_feature_product: Boolean(p.is_feature_product),
     favorites_count: p.favorites_count !== undefined ? p.favorites_count : (p.favorite_count || p.wishlist_count || 0),
+    quantity: p.quantity !== undefined ? parseInt(p.quantity, 10) || 0 : (p.stock !== undefined ? parseInt(p.stock, 10) || 0 : 0),
+    main_color: p.main_color || p.color_principal || '',
     height_cm: parseFloat(p.height_cm) || 0,
     width_cm: parseFloat(p.width_cm) || 0,
     depth_cm: parseFloat(p.depth_cm) || 0,
     security: p.security || '',
-    product_image: p.product_image || '../../assets/images/products/tipo-producto-estante.png',
-    product_video: p.product_video || '',
+    product_image: rawCover,
+    product_video: rawVideo,
     angle_images: Array.isArray(p.angle_images) ? p.angle_images.map(a => ({
-      id: a.id || Math.random(),
+      id: a.id || null,
       angle: a.angle || 'Vista',
-      image: a.image || p.product_image || '../../assets/images/products/tipo-producto-estante.png'
+      image: a.image ? resolveImageUrl(a.image, rawCover) : rawCover
     })) : [],
     color_images: Array.isArray(p.color_images) ? p.color_images.map(c => ({
-      id: c.id || Math.random(),
+      id: c.id || null,
       color_name: c.color_name || 'Color',
       color_hex: c.color_hex || '#101010',
-      color_image: c.color_image || c.image || p.product_image || '../../assets/images/products/tipo-producto-estante.png'
+      color_image: (c.color_image || c.image) ? resolveImageUrl(c.color_image || c.image, rawCover) : rawCover
     })) : []
   };
 }
@@ -263,7 +278,30 @@ function normalizeBackendProduct(p) {
  */
 export async function getProducts(params = {}) {
   try {
-    const res = await getRequest('/products/products/', params, { auth: true });
+    const queryParams = { ...params, admin: 'true' };
+    if (queryParams.status) {
+      if (queryParams.status === 'active') queryParams.is_active = 'true';
+      else if (queryParams.status === 'inactive') queryParams.is_active = 'false';
+      delete queryParams.status;
+    }
+    if (queryParams.outlet) {
+      if (queryParams.outlet === 'outlet') queryParams.is_outlet = 'true';
+      else if (queryParams.outlet === 'regular') queryParams.is_outlet = 'false';
+      delete queryParams.outlet;
+    }
+    if (queryParams.featured) {
+      if (queryParams.featured === 'featured') queryParams.is_feature_product = 'true';
+      else if (queryParams.featured === 'regular') queryParams.is_feature_product = 'false';
+      delete queryParams.featured;
+    }
+    // Limpiar claves con valor 'all' o vacías
+    Object.keys(queryParams).forEach(k => {
+      if (queryParams[k] === 'all' || queryParams[k] === '' || queryParams[k] === undefined || queryParams[k] === null) {
+        delete queryParams[k];
+      }
+    });
+
+    const res = await getRequest('/products/products/', queryParams, { auth: true });
     if (Array.isArray(res)) {
       return res.map(normalizeBackendProduct);
     }
@@ -272,7 +310,28 @@ export async function getProducts(params = {}) {
     }
     return [];
   } catch (err) {
-    throw err;
+    console.warn('[Product API] Falló llamada a getProducts en backend, usando fallback mock:', err);
+    let list = [...mockProducts];
+    if (params.search) {
+      const q = params.search.toLowerCase();
+      list = list.filter(p => (p.product_name || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q));
+    }
+    if (params.type && params.type !== 'all') {
+      list = list.filter(p => p.product_type === params.type || String(p.product_type_id) === String(params.type));
+    }
+    if (params.status && params.status !== 'all') {
+      const wantActive = params.status === 'active';
+      list = list.filter(p => p.is_active === wantActive);
+    }
+    if (params.outlet && params.outlet !== 'all') {
+      const wantOutlet = params.outlet === 'outlet';
+      list = list.filter(p => p.is_outlet === wantOutlet);
+    }
+    if (params.featured && params.featured !== 'all') {
+      const wantFeatured = params.featured === 'featured';
+      list = list.filter(p => p.is_feature_product === wantFeatured);
+    }
+    return list;
   }
 }
 
@@ -323,8 +382,25 @@ export async function updateProduct(id, data = {}) {
  * Alterna el estado activo/inactivo de un producto
  */
 export async function toggleProductActive(id) {
-  const product = await getProduct(id);
-  return updateProduct(id, { is_active: !product.is_active });
+  try {
+    const res = await postRequest(`/products/products/${id}/toggle-active/`, {}, { auth: true });
+    if (res && (res.id !== undefined || res.pk !== undefined || typeof res.is_active === 'boolean')) {
+      return normalizeBackendProduct(res);
+    }
+  } catch (err) {
+    console.warn(`[Product API] Endpoint toggle-active falló, usando patch fallback:`, err);
+    try {
+      const product = await getProduct(id);
+      return await updateProduct(id, { is_active: !product.is_active });
+    } catch (fallbackErr) {
+      const mockIndex = mockProducts.findIndex(p => String(p.id) === String(id));
+      if (mockIndex !== -1) {
+        mockProducts[mockIndex].is_active = !mockProducts[mockIndex].is_active;
+        return { ...mockProducts[mockIndex] };
+      }
+      throw err;
+    }
+  }
 }
 
 /**

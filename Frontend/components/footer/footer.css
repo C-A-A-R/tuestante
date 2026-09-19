@@ -1,16 +1,17 @@
 /* ==========================================================================
-   Componente: Footer General (Sutil y Elegante)
+   Componente: Footer General TuEstante (Sutil, Elegante y Responsivo)
    ========================================================================== */
 .app-footer {
     background-color: #ffffff;
-    color: #94a3b8;
-    font-family: 'Inter', sans-serif;
-    padding: 30px 0 0 0;
+    border-top: 1px solid #e2e8f0;
+    color: #64748b;
+    font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+    padding: 32px 0 0 0;
     width: 100%;
     position: relative;
     z-index: 10;
     box-sizing: border-box;
-    margin-left: var(--drawer-width, 0);
+    margin-left: 0;
 }
 
 .drawer-collapsed .app-footer {
@@ -25,11 +26,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 30px;
+    gap: 32px;
     box-sizing: border-box;
 }
 
-/* Parte Izquierda: Iconos de Redes (pequeños) + Enlaces de Navegación */
+/* Parte Izquierda: Iconos de Redes + Enlaces de Navegación */
 .footer-left {
     display: flex;
     align-items: center;
@@ -41,38 +42,72 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .social-icon-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.06);
-    color: #94a3b8;
+    background-color: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
 }
 
 .social-icon-btn svg {
-    width: 25px;
-    height: 25px;
+    width: 19px;
+    height: 19px;
+    transition: transform 0.25s ease;
 }
 
 .social-icon-btn:hover {
     color: #ffffff;
     background-color: #005187;
+    border-color: #005187;
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 81, 135, 0.25);
+}
+
+.social-icon-btn:hover svg {
+    transform: scale(1.08);
+}
+
+/* Modificadores de color específicos para cada red en hover */
+.social-icon-btn.whatsapp-btn:hover {
+    background-color: #25d366;
+    border-color: #25d366;
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+}
+
+.social-icon-btn.instagram-btn:hover {
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+    border-color: #d6249f;
+    box-shadow: 0 4px 12px rgba(214, 36, 159, 0.3);
+}
+
+.social-icon-btn.tiktok-btn:hover {
+    background-color: #010101;
+    border-color: #010101;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.social-icon-btn.gmail-btn:hover {
+    background-color: #ea4335;
+    border-color: #ea4335;
+    box-shadow: 0 4px 12px rgba(234, 67, 53, 0.3);
 }
 
 .footer-nav-links {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 18px;
+    gap: 20px;
     list-style: none;
     margin: 0;
     padding: 0;
@@ -80,47 +115,51 @@
 }
 
 .footer-nav-link {
-    color: #223a5c;
+    color: #334155;
     text-decoration: none;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     font-weight: 500;
     transition: color 0.2s ease;
 }
 
 .footer-nav-link:hover {
-    color: #0088ff;
+    color: #005187;
 }
 
-/* Parte Derecha: Descripción de la empresa con fuente pequeña */
+/* Parte Derecha: Descripción de la empresa */
 .footer-right {
-    max-width: 380px;
+    max-width: 400px;
     text-align: right;
 }
 
 .footer-desc {
-    font-size: 0.78rem;
-    line-height: 1.45;
+    font-size: 0.82rem;
+    line-height: 1.5;
     color: #64748b;
     margin: 0;
 }
 
 /* Pie de página inferior: Copyright */
 .footer-bottom {
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 14px 32px;
+    border-top: 1px solid #f1f5f9;
+    padding: 16px 32px;
     text-align: center;
-    font-size: 0.78rem;
-    color: #64748b;
+    font-size: 0.8rem;
+    color: #94a3b8;
 }
 
-/* Adaptación Responsiva Móvil */
-@media (max-width: 768px) {
+.footer-bottom p {
+    margin: 0;
+}
+
+/* Adaptación Responsiva Móvil y Tablet */
+@media (max-width: 900px) {
     .footer-container {
         flex-direction: column;
         align-items: center;
         text-align: center;
-        gap: 20px;
-        padding: 0 20px 20px 20px;
+        gap: 24px;
+        padding: 0 24px 24px 24px;
     }
 
     .footer-left {
@@ -128,7 +167,7 @@
         align-items: center;
         justify-content: center;
         width: 100%;
-        gap: 16px;
+        gap: 18px;
     }
 
     .footer-social-icons {
@@ -139,6 +178,7 @@
     .footer-nav-links {
         justify-content: center;
         width: 100%;
+        gap: 16px;
     }
 
     .footer-right {

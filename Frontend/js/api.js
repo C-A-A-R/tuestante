@@ -205,8 +205,10 @@ export { backendOrigin, API_BASE_URL } from "./config.js";
 export function extractList(apiResult) {
   if (!apiResult) return [];
   if (Array.isArray(apiResult)) return apiResult;
+  if (Array.isArray(apiResult.distributors)) return apiResult.distributors;
   if (Array.isArray(apiResult.results)) return apiResult.results;
   if (Array.isArray(apiResult.data)) return apiResult.data;
+  if (Array.isArray(apiResult.items)) return apiResult.items;
   return [];
 }
 

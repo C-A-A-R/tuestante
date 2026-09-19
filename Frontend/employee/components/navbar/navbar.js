@@ -178,7 +178,7 @@ export function renderNavbar(placeholderId = 'navbar-placeholder') {
               <circle cx="20" cy="21" r="1"></circle>
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
             </svg>
-            <span class="cart-count-badge" id="cart-count-badge">0</span>
+            <span class="cart-count-badge" id="cart-count-badge" style="display: none;"></span>
           </a>
 
           <!-- Perfil de Usuario con Icono de Usuario -->
@@ -716,11 +716,17 @@ function setupCartBadge() {
 
   function updateBadge(count) {
     const num = parseInt(count, 10) || 0;
-    badge.textContent = num > 99 ? '99+' : String(num);
-    badge.style.transform = 'scale(1.25)';
-    setTimeout(() => {
-      badge.style.transform = 'scale(1)';
-    }, 180);
+    if (num > 0) {
+      badge.textContent = num > 99 ? '99+' : String(num);
+      badge.style.display = 'inline-flex';
+      badge.style.transform = 'scale(1.25)';
+      setTimeout(() => {
+        badge.style.transform = 'scale(1)';
+      }, 180);
+    } else {
+      badge.textContent = '';
+      badge.style.display = 'none';
+    }
   }
 
   // Leer estado actual desde localStorage

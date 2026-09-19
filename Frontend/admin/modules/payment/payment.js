@@ -222,8 +222,8 @@ function renderPaymentsTable(payments) {
         </td>
         <td>
           <div class="cell-client-meta">
-            <span class="client-name-bold">${payment.client.name}</span>
-            <span class="client-email-muted">${payment.client.phone || payment.client.email}</span>
+            <span class="client-name-bold">${payment.client?.name || 'Cliente'}</span>
+            <span class="client-email-muted">${payment.client?.phone || payment.client?.email || ''}</span>
           </div>
         </td>
         <td>
@@ -449,8 +449,8 @@ function openApproveConfirmModal(payment) {
   document.getElementById('modal-approve-confirm-msg').innerHTML = `
     ¿Deseas confirmar la aprobación del comprobante <strong>${payment.payment_code}</strong>?
   `;
-  document.getElementById('modal-approve-amount-text').textContent = `${payment.formatted_amount} (${vesAmount})`;
-  document.getElementById('modal-approve-order-text').textContent = `${payment.order_code} - ${payment.client.name}`;
+  document.getElementById('modal-approve-amount-text').textContent = `${payment.formatted_amount || ''} (${vesAmount})`;
+  document.getElementById('modal-approve-order-text').textContent = `${payment.order_code || ''} - ${payment.client?.name || 'Cliente'}`;
 
   const noteEl = document.getElementById('modal-approve-stage-note');
   if (noteEl) {
@@ -518,8 +518,8 @@ function openReceiptReviewModal(payment, autoFocusRejection = false) {
     };
   }
 
-  document.getElementById('modal-receipt-order').textContent = payment.order_code;
-  document.getElementById('modal-receipt-client').textContent = `${payment.client.name} (${payment.client.phone || payment.client.email})`;
+  document.getElementById('modal-receipt-order').textContent = payment.order_code || '';
+  document.getElementById('modal-receipt-client').textContent = `${payment.client?.name || 'Cliente'} (${payment.client?.phone || payment.client?.email || ''})`;
   document.getElementById('modal-receipt-amount').textContent = payment.formatted_amount;
   document.getElementById('modal-receipt-amount-ves').textContent = vesAmount;
   document.getElementById('modal-receipt-stage').textContent = payment.payment_stage_label;

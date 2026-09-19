@@ -14,6 +14,15 @@ function fixFooterPaths(footer) {
     inicioLink.setAttribute('href', target);
     inicioLink.addEventListener('click', (e) => {
       e.preventDefault();
+      const isIndexPage = !window.location.pathname.includes('/modules/') && 
+                          (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/') || window.location.pathname === '');
+      if (isIndexPage) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (history.pushState) {
+          history.pushState(null, null, window.location.pathname);
+        }
+        return;
+      }
       window.location.href = target;
     });
   }

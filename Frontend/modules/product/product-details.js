@@ -151,26 +151,52 @@ function populateProductDetails(product) {
     const descTextEl = document.getElementById('detail-product-desc-text');
     const descToggleBtn = document.getElementById('description-toggle-btn');
     const fullDescription = String(product.description || '').trim();
-    const descriptionLimit = 650;
-    const shortenedDescription = `${fullDescription.slice(0, descriptionLimit).trimEnd()}...`;
+    const descriptionLimit = 160;
+
+    // Solo mostrar "Mostrar más" si el texto realmente no cabe en el espacio (supera ~160 caracteres o tiene múltiples párrafos)
+    const isLongDescription = fullDescription.length > descriptionLimit;
+    const hasMultipleLines = fullDescription.split('\n').filter(l => l.trim().length > 0).length > 2;
+    const hasMoreDescription = isLongDescription || hasMultipleLines;
+
+    function getTruncatedDescription(text, maxChars = 145) {
+        if (text.length <= maxChars) return text;
+        const sliced = text.slice(0, maxChars);
+        const lastSpace = sliced.lastIndexOf(' ');
+        const cleanSlice = lastSpace > 80 ? sliced.slice(0, lastSpace) : sliced;
+        return `${cleanSlice.trimEnd()}...`;
+    }
+
+    const shortenedDescription = hasMoreDescription ? getTruncatedDescription(fullDescription, 145) : fullDescription;
 
     if (descTextEl) {
-        descTextEl.textContent = fullDescription.length > descriptionLimit
-            ? shortenedDescription
-            : fullDescription;
+        descTextEl.textContent = hasMoreDescription ? shortenedDescription : fullDescription;
     }
 
     if (descToggleBtn) {
-        const hasMoreDescription = fullDescription.length > descriptionLimit;
-        descToggleBtn.hidden = !hasMoreDescription;
-        descToggleBtn.textContent = 'Ver más';
-        descToggleBtn.setAttribute('aria-expanded', 'false');
-        descToggleBtn.onclick = () => {
-            const isExpanded = descToggleBtn.getAttribute('aria-expanded') === 'true';
-            descTextEl.textContent = isExpanded ? shortenedDescription : fullDescription;
-            descToggleBtn.textContent = isExpanded ? 'Ver más' : 'Ver menos';
-            descToggleBtn.setAttribute('aria-expanded', String(!isExpanded));
-        };
+        if (!hasMoreDescription) {
+            descToggleBtn.hidden = true;
+            descToggleBtn.style.display = 'none';
+            descToggleBtn.classList.add('is-hidden');
+            descToggleBtn.setAttribute('aria-expanded', 'false');
+        } else {
+            descToggleBtn.hidden = false;
+            descToggleBtn.style.display = 'inline';
+            descToggleBtn.classList.remove('is-hidden');
+            descToggleBtn.textContent = 'Mostrar más';
+            descToggleBtn.setAttribute('aria-expanded', 'false');
+            descToggleBtn.onclick = () => {
+                const isExpanded = descToggleBtn.getAttribute('aria-expanded') === 'true';
+                if (isExpanded) {
+                    descTextEl.textContent = shortenedDescription;
+                    descToggleBtn.textContent = 'Mostrar más';
+                    descToggleBtn.setAttribute('aria-expanded', 'false');
+                } else {
+                    descTextEl.textContent = fullDescription;
+                    descToggleBtn.textContent = 'Mostrar menos';
+                    descToggleBtn.setAttribute('aria-expanded', 'true');
+                }
+            };
+        }
     }
 
     const heightEl = document.getElementById('detail-spec-height');
@@ -600,10 +626,25 @@ function initImageInteractions(product) {
         });
     }
 
+    function updateLupaPosition() {
+        const headerBlock = document.getElementById('product-header-block') || document.querySelector('.product-price-container');
+        const infoPanel = document.getElementById('product-info-panel');
+        if (headerBlock && infoPanel && mirrorPanel) {
+            const headerRect = headerBlock.getBoundingClientRect();
+            const panelRect = infoPanel.getBoundingClientRect();
+            const offset = Math.max(0, Math.round(headerRect.bottom - panelRect.top + 8));
+            infoPanel.style.setProperty('--lupa-top-offset', `${offset}px`);
+        }
+    }
+
+    window.addEventListener('resize', updateLupaPosition);
+    updateLupaPosition();
+
     if (mainImgContainer && mainImg && lensBox && mirrorPanel && mirrorImg) {
         mainImgContainer.addEventListener('mouseenter', () => {
             const isVideoVisible = mainVideo && mainVideo.style.display !== 'none';
             if (isLupaActive && !isVideoVisible) {
+                updateLupaPosition();
                 lensBox.classList.add('active');
                 mirrorPanel.classList.add('active');
             }

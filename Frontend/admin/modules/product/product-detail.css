@@ -1,0 +1,644 @@
+/* ==========================================================================
+   TUESTANTE ADMIN - ESTILOS DE DETALLE Y EDICIÓN DE PRODUCTO
+   (PRODUCT-DETAIL.CSS)
+   ========================================================================== */
+
+/* Contenedor Principal */
+.product-detail-container {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* Fila de Título con Indicador de Modo */
+.title-with-mode-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mode-badge.is-view {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.mode-badge.is-edit {
+  background: #ecfdf5;
+  border: 1px solid #34d399;
+  color: #065f46;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+  animation: pulseEditBadge 2s infinite ease-in-out;
+}
+
+@keyframes pulseEditBadge {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+}
+
+/* Fila de Etiquetas Rápidas / Metadatos */
+.detail-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.detail-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.detail-tag.tag-id {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.detail-tag.tag-type {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.detail-tag.tag-status {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.detail-tag.tag-status.is-inactive {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.detail-tag.tag-outlet {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  font-weight: 700;
+}
+
+.detail-tag.tag-featured {
+  background: #fae8ff;
+  color: #86198f;
+  border: 1px solid #f0abfc;
+  font-weight: 700;
+}
+
+.detail-tag.tag-stock {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+/* Encabezados y Acciones del Header */
+.screen-header-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.screen-header-actions .btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* ==========================================================================
+   ESTADOS: MODO LECTURA (IS-VIEW-MODE) VS MODO EDICIÓN (IS-EDIT-MODE)
+   ========================================================================== */
+
+/* En Modo Lectura: Estilo limpio y legible sin apariencia apagada de disabled */
+.create-product-grid.is-view-mode .form-input:disabled,
+.create-product-grid.is-view-mode .form-select:disabled,
+.create-product-grid.is-view-mode .form-textarea:disabled {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #e2e8f0;
+  opacity: 1;
+  cursor: default;
+  -webkit-text-fill-color: #0f172a;
+}
+
+.create-product-grid.is-view-mode .switch-toggle input:disabled + .switch-slider {
+  opacity: 0.85;
+  cursor: default;
+}
+
+.create-product-grid.is-view-mode .edit-only-inline,
+.create-product-grid.is-view-mode .edit-only-block,
+.create-product-grid.is-view-mode .edit-only-flex {
+  display: none !important;
+}
+
+/* En Modo Edición: Resalte de interactividad */
+.create-product-grid.is-edit-mode .form-section-card {
+  border-color: #cbd5e1;
+}
+
+.create-product-grid.is-edit-mode .form-input,
+.create-product-grid.is-edit-mode .form-select,
+.create-product-grid.is-edit-mode .form-textarea {
+  background: #ffffff;
+  color: var(--text-main);
+  border-color: var(--border-color);
+  cursor: text;
+}
+
+.create-product-grid.is-edit-mode .form-select {
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   MULTIMEDIA PRINCIPAL: PORTADA Y VIDEO
+   ========================================================================== */
+
+.media-header-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.media-hint-tag {
+  font-size: 0.74rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Caja de Imagen de Portada */
+.detail-image-box {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  min-height: 250px;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.detail-image-box .dropzone-bg-img {
+  width: 100%;
+  height: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  display: block;
+  background: #f8fafc;
+}
+
+/* Overlay de Zoom en Imagen Principal */
+.image-zoom-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-in;
+  z-index: 4;
+}
+
+.detail-image-box:hover .image-zoom-overlay {
+  opacity: 1;
+}
+
+.zoom-badge {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f172a;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  transform: translateY(4px);
+  transition: transform 0.2s ease;
+}
+
+.detail-image-box:hover .zoom-badge {
+  transform: translateY(0);
+}
+
+/* Botones flotantes de edición sobre imagen principal */
+.edit-media-buttons-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  z-index: 6;
+}
+
+.btn-change-preview {
+  background: var(--primary, #0272bc);
+  color: #ffffff;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.15s ease;
+}
+
+.btn-change-preview:hover {
+  background: #025994;
+}
+
+/* Caja de Video Demostrativo */
+.detail-video-box {
+  min-height: 250px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-video-box .video-dropzone-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.detail-video-box .video-player-container {
+  flex: 1;
+  background: #0b1120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.detail-video-box .video-player-frame {
+  width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+}
+
+/* ==========================================================================
+   VARIANTES DE COLOR Y ÁNGULOS: VISTA EN MODO CONSULTA (GALLERY CARDS)
+   ========================================================================== */
+
+/* Grid de Variantes en Modo Consulta */
+.variants-view-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+/* Tarjeta de Color en Modo Consulta */
+.variant-view-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+.variant-view-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 20px rgba(0, 81, 135, 0.08);
+}
+
+.variant-view-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.variant-color-swatch-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px #cbd5e1;
+  flex-shrink: 0;
+}
+
+.variant-color-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.variant-color-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.variant-color-hex {
+  font-size: 0.74rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #64748b;
+}
+
+/* Caja de Miniatura de Foto de la Variante */
+.variant-view-thumb-box {
+  position: relative;
+  width: 100%;
+  height: 150px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  cursor: zoom-in;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.variant-view-thumb-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.variant-view-thumb-box:hover img {
+  transform: scale(1.05);
+}
+
+.variant-thumb-zoom-pill {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: all 0.2s ease;
+}
+
+.variant-view-thumb-box:hover .variant-thumb-zoom-pill {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Tarjeta de Ángulo en Modo Consulta */
+.angle-view-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.angle-view-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 20px rgba(0, 81, 135, 0.08);
+}
+
+.angle-view-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.angle-badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.angle-badge-tag svg {
+  width: 14px;
+  height: 14px;
+  color: var(--primary, #0272bc);
+  flex-shrink: 0;
+}
+
+/* Aviso de vacío elegante */
+.empty-state-notice {
+  width: 100%;
+  text-align: center;
+  padding: 28px 20px;
+  color: #64748b;
+  font-size: 0.88rem;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+/* ==========================================================================
+   MODAL LIGHTBOX / VISUALIZADOR HD A PANTALLA COMPLETA
+   ========================================================================== */
+
+.lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeInLightbox 0.2s ease forwards;
+}
+
+@keyframes fadeInLightbox {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.lightbox-backdrop.hidden {
+  display: none !important;
+}
+
+.lightbox-dialog {
+  position: relative;
+  max-width: 92vw;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.lightbox-btn-close {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #0f172a;
+  border: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  z-index: 10;
+}
+
+.lightbox-btn-close:hover {
+  transform: scale(1.1);
+  background: #f1f5f9;
+}
+
+.lightbox-img-wrapper {
+  background: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  max-width: 100%;
+  max-height: 76vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-image {
+  max-width: 100%;
+  max-height: 76vh;
+  object-fit: contain;
+  display: block;
+}
+
+.lightbox-caption-bar {
+  text-align: center;
+  color: #f8fafc;
+}
+
+.lightbox-caption-title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.lightbox-caption-sub {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   FOOTER INFO EN MODO CONSULTA
+   ========================================================================== */
+
+.detail-footer-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-hint-text {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   ADAPTABILIDAD RESPONSIVA
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .screen-header-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .screen-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .title-with-mode-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .variants-view-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lightbox-btn-close {
+    top: 8px;
+    right: 8px;
+  }
+}

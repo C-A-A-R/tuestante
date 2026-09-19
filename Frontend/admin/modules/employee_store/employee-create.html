@@ -177,25 +177,40 @@
 
                 <div class="form-grid-2">
                   <div class="form-group">
-                    <label for="input-identity-doc" class="form-label">Cédula o Documento de Identidad <span class="req">*</span></label>
-                    <input type="text" id="input-identity-doc" name="identity_document" class="form-input" placeholder="Ej: V-12345678" required autocomplete="off">
-                    <small class="form-hint">Se utilizará para búsquedas y autenticación en la tienda.</small>
+                    <label for="select-document-type" class="form-label">Tipo de Documento <span class="req">*</span></label>
+                    <select id="select-document-type" name="document_type" class="form-select" required>
+                      <option value="V" selected>V - Venezolano</option>
+                      <option value="E">E - Extranjero</option>
+                      <option value="J">J - Jurídico</option>
+                      <option value="G">G - Gubernamental</option>
+                      <option value="P">P - Pasaporte</option>
+                      <option value="R">R - Firma Personal</option>
+                    </select>
+                    <small class="form-hint">Selecciona la condición o tipo legal de documento.</small>
                   </div>
 
+                  <div class="form-group">
+                    <label for="input-identity-doc" class="form-label">Cédula o N° de Documento <span class="req">*</span></label>
+                    <input type="text" id="input-identity-doc" name="identity_document" class="form-input" placeholder="Ej: 12345678" required autocomplete="off">
+                    <small class="form-hint">Número de documento para búsquedas y autenticación en la tienda.</small>
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
                   <div class="form-group">
                     <label for="input-birth-date" class="form-label">Fecha de Nacimiento <span class="req">*</span></label>
                     <input type="date" id="input-birth-date" name="birth_date" class="form-input" required>
                     <small class="form-hint" id="birth-date-hint">Mínimo 15 años cumplidos (edad válida hasta 100 años).</small>
                     <small class="form-error-msg" id="birth-date-error" style="display: none; color: #dc2626; font-size: 0.8rem; margin-top: 4px; font-weight: 500;"></small>
                   </div>
-                </div>
 
-                <div class="form-grid-2">
                   <div class="form-group">
                     <label for="input-phone" class="form-label">Teléfono de Contacto</label>
                     <input type="tel" id="input-phone" name="phone" class="form-input" placeholder="Ej: 0414-1234567" autocomplete="off">
                   </div>
+                </div>
 
+                <div class="form-grid-2">
                   <div class="form-group">
                     <label for="input-email" class="form-label">Correo Electrónico (Opcional)</label>
                     <input type="email" id="input-email" name="email" class="form-input" placeholder="trabajador@empresa.com" autocomplete="off">
