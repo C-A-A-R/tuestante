@@ -518,6 +518,16 @@
     transform: scale(1.05);
 }
 
+.color-swatch-btn.is-base-color {
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 1.5px #0272bc;
+}
+
+.color-swatch-btn.is-base-color.active {
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #0272bc;
+}
+
+
 .color-swatch-btn.video-swatch-btn {
     background: linear-gradient(135deg, var(--primary) 0%, #0284c7 100%);
     border: 2px solid #0284c7;

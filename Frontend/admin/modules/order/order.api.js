@@ -339,9 +339,9 @@ const ORDER_STATUS_LABELS = {
   cancelled: 'Cancelado'
 };
 
-function normalizeOrder(order = {}) {
+export function normalizeOrder(order = {}) {
   const client = typeof order.user === 'string'
-    ? { name: order.user, email: '' }
+    ? { name: order.user, email: '', phone: '' }
     : (order.client || order.user || {});
   const details = order.details || [];
   const items = details.flatMap(detail => (detail.order_products || []).length
@@ -349,30 +349,175 @@ function normalizeOrder(order = {}) {
       id: orderProduct.id,
       product_id: orderProduct.product?.id,
       product_name: orderProduct.product?.product_name || 'Producto',
+      specs: orderProduct.product?.description || detail.notes || 'Especificación estándar',
       quantity: detail.quantity || 1,
       unit_price: Number(detail.unit_price || orderProduct.price_at_order || 0),
       total_price: Number(detail.final_price || 0),
+      image: orderProduct.product?.image_url ? resolveImageUrl(orderProduct.product.image_url) : (orderProduct.product?.image ? resolveImageUrl(orderProduct.product.image) : '../../assets/images/logo.jpeg'),
       notes: detail.notes || ''
     }))
     : [{
       id: detail.id,
       product_name: 'Producto',
+      specs: detail.notes || 'Especificación estándar',
       quantity: detail.quantity || 1,
       unit_price: Number(detail.unit_price || 0),
       total_price: Number(detail.final_price || 0),
+      image: '../../assets/images/logo.jpeg',
       notes: detail.notes || ''
     }]
   );
   const total = Number(order.total_price ?? order.total_amount ?? 0);
+  const bcvRate = Number(order.bcv_rate || 0);
+  const totalBs = Number(order.total_price_bs ?? (bcvRate > 0 ? (total * bcvRate) : 0));
+
+  // 1. Dirección de envío normalizada
+  const shipment = (order.shipments && order.shipments[0]) || {};
+  const shipping_address = order.shipping_address || {
+    line1: shipment.address || 'No registrada',
+    address: shipment.address || 'No registrada',
+    city: shipment.city || '',
+    municipality: shipment.municipality || '',
+    state: shipment.state || '',
+    city_state: [shipment.city, shipment.municipality, shipment.state].filter(Boolean).join(', ') || 'No registrada',
+    country: 'Venezuela'
+  };
+
+  // 2. Método de pago
+  const payment_method = order.payment_method_label || order.payment_method || (shipment.distributor_name ? `Flete / ${shipment.distributor_name}` : 'Transferencia / Pago móvil');
+
+  // 3. Lista de pagos normalizada a partir de payment_summary o order.payments
+  const payments_list = [];
+  const rawPayments = Array.isArray(order.payments) ? order.payments : [];
+
+  if (order.payment_summary) {
+    const ps = order.payment_summary;
+    if (ps.initial) {
+      payments_list.push({
+        id: ps.initial.id || 201,
+        payment_stage: 'initial',
+        title: 'Pago inicial (50%)',
+        amount_usd: Number(ps.initial.amount_usd || 0),
+        amount_bs: Number(ps.initial.amount_bs || 0),
+        rate_applied: bcvRate,
+        status: ps.initial.status,
+        status_label: ps.initial.status_label,
+        date: ps.initial.created_at ? (typeof ps.initial.created_at === 'string' && ps.initial.created_at.includes('T') ? new Date(ps.initial.created_at).toLocaleDateString('es-ES') : ps.initial.created_at) : '-',
+        payment_method: ps.initial.payment_method || 'Pago Móvil / Transferencia',
+        reference: ps.initial.reference || '-',
+        receipt_url: ps.initial.receipt_url ? resolveImageUrl(ps.initial.receipt_url) : null,
+        is_edited: false
+      });
+    }
+    if (ps.final) {
+      payments_list.push({
+        id: ps.final.id || 202,
+        payment_stage: 'final',
+        title: 'Pago final (50%)',
+        amount_usd: Number(ps.final.amount_usd || 0),
+        amount_bs: Number(ps.final.amount_bs || 0),
+        rate_applied: bcvRate,
+        status: ps.final.status,
+        status_label: ps.final.status_label,
+        date: ps.final.created_at ? (typeof ps.final.created_at === 'string' && ps.final.created_at.includes('T') ? new Date(ps.final.created_at).toLocaleDateString('es-ES') : ps.final.created_at) : '-',
+        payment_method: ps.final.payment_method || 'Pago Móvil / Transferencia',
+        reference: ps.final.reference || '-',
+        receipt_url: ps.final.receipt_url ? resolveImageUrl(ps.final.receipt_url) : null,
+        is_edited: false
+      });
+    }
+  } else {
+    // Si no vino payment_summary, construir desde rawPayments
+    const initPay = rawPayments.find(p => p.payment_stage === 'initial');
+    const finalPay = rawPayments.find(p => p.payment_stage === 'final');
+    const half = Number((total / 2).toFixed(2));
+
+    payments_list.push({
+      id: initPay?.id || 201,
+      payment_stage: 'initial',
+      title: 'Pago inicial (50%)',
+      amount_usd: Number(initPay?.amount || half),
+      amount_bs: Number((Number(initPay?.amount || half) * (bcvRate || 1)).toFixed(2)),
+      rate_applied: bcvRate,
+      status: initPay ? initPay.status : 'unregistered',
+      status_label: initPay ? (initPay.status_label || (initPay.status === 'approved' ? 'Aprobado' : 'Pendiente de revisión')) : 'Pendiente por registrar',
+      date: initPay?.created_at ? new Date(initPay.created_at).toLocaleDateString('es-ES') : '-',
+      payment_method: initPay?.payment_method_label || initPay?.payment_method || 'Pago Móvil',
+      reference: initPay?.reference_number || '-',
+      receipt_url: initPay?.receipt_file_url ? resolveImageUrl(initPay.receipt_file_url) : null,
+      is_edited: false
+    });
+
+    payments_list.push({
+      id: finalPay?.id || 202,
+      payment_stage: 'final',
+      title: 'Pago final (50%)',
+      amount_usd: Number(finalPay?.amount || (total - half)),
+      amount_bs: Number((Number(finalPay?.amount || (total - half)) * (bcvRate || 1)).toFixed(2)),
+      rate_applied: bcvRate,
+      status: finalPay ? finalPay.status : 'unregistered',
+      status_label: finalPay ? (finalPay.status_label || (finalPay.status === 'approved' ? 'Aprobado' : 'Pendiente de revisión')) : 'Pendiente por registrar',
+      date: finalPay?.created_at ? new Date(finalPay.created_at).toLocaleDateString('es-ES') : '-',
+      payment_method: finalPay?.payment_method_label || finalPay?.payment_method || 'Pago Móvil',
+      reference: finalPay?.reference_number || '-',
+      receipt_url: finalPay?.receipt_file_url ? resolveImageUrl(finalPay.receipt_file_url) : null,
+      is_edited: false
+    });
+  }
+
+  // 4. Stepper timeline
+  let timeline_steps = [];
+  if (Array.isArray(order.timeline) && order.timeline.length > 0) {
+    timeline_steps = order.timeline.map(t => ({
+      id: t.status_key,
+      label: t.label,
+      status: t.state, // 'completed' | 'current' | 'pending'
+      date: t.date_display
+    }));
+  } else {
+    const FLOW = [
+      { id: 'pending_initial_payment', label: 'Pendiente de pago' },
+      { id: 'initial_payment_review', label: 'Pago inicial en revisión' },
+      { id: 'manufacturing', label: 'En fabricación' },
+      { id: 'waiting_final_payment', label: 'Esperando pago final' },
+      { id: 'final_payment_review', label: 'Pago final en revisión' },
+      { id: 'shipped', label: 'Enviado' },
+      { id: 'finalized', label: 'Finalizado' }
+    ];
+    const currentIdx = FLOW.findIndex(f => f.id === order.status);
+    timeline_steps = FLOW.map((f, idx) => ({
+      id: f.id,
+      label: f.label,
+      status: currentIdx === -1 ? 'pending' : idx < currentIdx ? 'completed' : idx === currentIdx ? 'current' : 'pending',
+      date: idx < currentIdx ? 'Completado' : idx === currentIdx ? 'En curso' : 'Pendiente'
+    }));
+  }
 
   return {
     ...order,
     order_code: order.order_code || order.order_number || `#${String(order.id || '').padStart(5, '0')}`,
     client,
+    shipping_address,
+    payment_method,
     items,
     items_count: items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
     total_amount: total,
+    total_amount_bs: totalBs,
+    bcv_rate: bcvRate,
+    payments_list,
+    timeline_steps,
     status_label: order.status_label || ORDER_STATUS_LABELS[order.status] || order.status,
+    status_badge_class: {
+      'pending_initial_payment': 'badge-pending-payment',
+      'initial_payment_review': 'badge-payment-review',
+      'manufacturing': 'badge-manufacturing',
+      'waiting_final_payment': 'badge-waiting-final',
+      'final_payment_review': 'badge-payment-review',
+      'shipped': 'badge-shipped',
+      'finalized': 'badge-approved',
+      'returned_manufacturing': 'badge-pending',
+      'cancelled': 'badge-pending'
+    }[order.status] || 'badge-manufacturing',
     formatted_date: order.created_at ? new Date(order.created_at).toLocaleDateString('es-ES') : '',
     formatted_time: order.created_at ? new Date(order.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : ''
   };
@@ -464,11 +609,37 @@ export async function getOrders(filters = {}) {
 export async function getOrderById(orderId) {
   try {
     const data = await getRequest(`/orders/${orderId}/`, {}, { auth: true });
-    if (data) return normalizeOrder(data);
+    if (data) {
+      if ((!data.payments || data.payments.length === 0) && !data.payment_summary) {
+        try {
+          const payData = await getRequest('/payments/', { order_id: orderId }, { auth: true });
+          const payList = extractList(payData);
+          if (payList && payList.length > 0) {
+            data.payments = payList;
+          }
+        } catch (pErr) {
+          console.warn('[order.api] Error al consultar pagos secundarios:', pErr);
+        }
+      }
+      return normalizeOrder(data);
+    }
   } catch (error) {
     throw error;
   }
   return null;
+}
+
+/**
+ * Consulta la tasa de cambio oficial del día persistida en el backend.
+ * @returns {Promise<{date: string, rate: number, formatted_rate: string, source: string}|null>}
+ */
+export async function getDailyExchangeRate() {
+  try {
+    return await getRequest('/orders/current_rate/', {}, { auth: false });
+  } catch (error) {
+    console.warn('[order.api] Error al obtener tasa diaria:', error);
+    return null;
+  }
 }
 
 /**
@@ -661,6 +832,35 @@ export async function reviewPayment(paymentId, status, rejectionReason = '') {
     throw error;
     return { success: true, paymentId, status };
   }
+}
+
+/**
+ * Crea o registra un nuevo pago / comprobante para un pedido.
+ * @param {FormData|Object} payload Datos del pago (multipart o JSON)
+ * @returns {Promise<Object>}
+ */
+export async function createPayment(payload) {
+  return await postRequest('/payments/', payload, { auth: true });
+}
+
+/**
+ * Actualiza parcialmente un pago (monto, referencia, método, notas).
+ * @param {number|string} paymentId ID del pago
+ * @param {Object} payload Datos a actualizar
+ * @returns {Promise<Object>}
+ */
+export async function updatePayment(paymentId, payload) {
+  return await patchRequest(`/payments/${paymentId}/`, payload, { auth: true });
+}
+
+/**
+ * Actualiza los datos generales de un pedido (notas, dirección de entrega).
+ * @param {number|string} orderId ID del pedido
+ * @param {Object} payload Datos a actualizar
+ * @returns {Promise<Object>}
+ */
+export async function updateOrderDetails(orderId, payload) {
+  return await patchRequest(`/orders/${orderId}/`, payload, { auth: true });
 }
 
 /**

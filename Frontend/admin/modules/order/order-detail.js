@@ -15,21 +15,25 @@ import { getOfficialRate } from '../../js/service/exchange-rate.service.js';
 import { 
   getOrderById, 
   updateOrderStatus, 
-  issueManufacturingOrder 
+  updateOrderDetails,
+  issueManufacturingOrder,
+  reviewPayment,
+  updatePayment,
+  createPayment,
+  getDailyExchangeRate
 } from './order.api.js';
 
 /**
  * SECUENCIA OFICIAL DEL FLUJO DE ESTADOS DE PEDIDO
  */
 const ORDER_STATUS_FLOW = [
-  { id: 'pending_payment', label: 'Pendiente de pago' },
-  { id: 'initial_review', label: 'Pago inicial en revisión' },
-  { id: 'initial_approved', label: 'Pago inicial aprobado' },
+  { id: 'pending_initial_payment', label: 'Pendiente de pago inicial' },
+  { id: 'initial_payment_review', label: 'Pago inicial en revisión' },
   { id: 'manufacturing', label: 'En fabricación' },
   { id: 'waiting_final_payment', label: 'Esperando pago final' },
-  { id: 'final_review', label: 'Pago final en revisión' },
+  { id: 'final_payment_review', label: 'Pago final en revisión' },
   { id: 'shipped', label: 'Enviado' },
-  { id: 'completed', label: 'Finalizado' }
+  { id: 'finalized', label: 'Finalizado' }
 ];
 
 /**
@@ -98,6 +102,19 @@ function renderOrderDetail(order) {
   const headerStatusText = document.getElementById('order-header-status-text');
   if (headerStatusBadge && headerStatusText) {
     headerStatusText.textContent = order.status_label || getStatusLabel(order.status);
+    headerStatusBadge.className = 'order-status-badge-header';
+    const statusClassMap = {
+      'pending_initial_payment': 'badge-pending-payment',
+      'initial_payment_review': 'badge-payment-review',
+      'manufacturing': 'badge-manufacturing',
+      'waiting_final_payment': 'badge-waiting-final',
+      'final_payment_review': 'badge-payment-review',
+      'shipped': 'badge-shipped',
+      'finalized': 'badge-approved',
+      'returned_manufacturing': 'badge-pending',
+      'cancelled': 'badge-pending'
+    };
+    headerStatusBadge.classList.add(statusClassMap[order.status] || 'badge-manufacturing');
   }
 
   // 3. Timestamp
@@ -124,6 +141,11 @@ function renderOrderDetail(order) {
 
   const payMethod = document.getElementById('meta-payment-method');
   if (payMethod) payMethod.textContent = order.payment_method || 'Transferencia / Pago móvil';
+
+  // Usar tasa congelada en el pedido si existe
+  if (order.bcv_rate && Number(order.bcv_rate) > 0) {
+    detailState.exchangeRate = Number(order.bcv_rate);
+  }
 
   // Total USD y Bs
   const totalUsd = typeof order.total_amount === 'number' ? order.total_amount : parseFloat(order.total_amount || 0);
@@ -215,56 +237,30 @@ function renderPaymentsCards(paymentsList) {
   const container = document.getElementById('payments-cards-container');
   if (!container) return;
 
-  const defaultPayments = [
-    {
-      id: 201,
-      title: "Pago inicial",
-      amount_usd: 175.00,
-      amount_bs: 138481.00, // Monto guardado si ya está pago
-      rate_applied: 791.32,
-      status: "approved",
-      status_label: "Aprobado",
-      date: "31/08/2026 - 11:20 AM",
-      payment_method: "Pago móvil Banesco",
-      reference: "REF-849204",
-      receipt_url: "../../assets/images/logo.jpeg",
-      is_edited: false
-    },
-    {
-      id: 202,
-      title: "Pago final",
-      amount_usd: 175.00,
-      amount_bs: null, // Pendiente: se calcula con la tasa en tiempo real
-      rate_applied: null,
-      status: "pending",
-      status_label: "Pendiente",
-      date: "-",
-      payment_method: "-",
-      reference: "-",
-      receipt_url: null,
-      is_edited: false
-    }
-  ];
-
-  const list = paymentsList.length > 0 ? paymentsList : defaultPayments;
+  const list = Array.isArray(paymentsList) && paymentsList.length > 0 ? paymentsList : [];
+  if (list.length === 0) {
+    container.innerHTML = '<p class="text-muted" style="padding: 16px;">No hay registros de pago vinculados.</p>';
+    return;
+  }
 
   container.innerHTML = list.map(pay => {
     const isApproved = pay.status === 'approved';
     const isPending = pay.status === 'pending';
-    const badgeClass = isApproved ? 'badge-approved' : 'badge-pending';
-    const badgeLabel = pay.status_label || (isApproved ? 'Aprobado' : 'Pendiente');
+    const isRejected = pay.status === 'rejected';
+    const isUnregistered = pay.status === 'unregistered';
+    const badgeClass = isApproved ? 'badge-approved' : (isRejected ? 'badge-pending' : (isPending ? 'badge-payment-review' : 'badge-pending'));
+    const badgeLabel = pay.status_label || (isApproved ? 'Aprobado' : (isRejected ? 'Rechazado' : (isPending ? 'En revisión' : 'Pendiente por registrar')));
 
     const usdVal = typeof pay.amount_usd === 'number' ? pay.amount_usd : (parseFloat(pay.amount || 0));
-    
-    // Regla de negocio: Si ya está pagado, usa el monto guardado. Si está pendiente, usa tasa actual
     const bsVal = (isApproved && pay.amount_bs) 
       ? pay.amount_bs 
       : (usdVal * detailState.exchangeRate);
 
     const isEdited = Boolean(pay.is_edited);
+    const hasReceipt = Boolean(pay.receipt_url);
 
     return `
-      <div class="payment-subcard ${isEdited ? 'is-edited-card' : ''}" data-payment-id="${pay.id}">
+      <div class="payment-subcard ${isEdited ? 'is-edited-card' : ''}" data-payment-id="${pay.id || ''}">
         <div class="payment-subcard-header">
           <div class="payment-subcard-title-group">
             <span class="payment-subcard-title">${escapeHtml(pay.title)}</span>
@@ -287,10 +283,11 @@ function renderPaymentsCards(paymentsList) {
         <div class="payment-subcard-meta-list">
           <span>Fecha: ${escapeHtml(pay.date || '-')}</span>
           <span>Ref: ${escapeHtml(pay.reference || '-')}</span>
+          <span>Método: ${escapeHtml(pay.payment_method || '-')}</span>
         </div>
 
         <div class="payment-subcard-actions-row">
-          ${isApproved ? `
+          ${hasReceipt ? `
             <button type="button" class="btn btn-outline btn-sm btn-view-receipt" data-payment-id="${pay.id}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -298,8 +295,26 @@ function renderPaymentsCards(paymentsList) {
               </svg>
               <span>Ver comprobante</span>
             </button>
-          ` : `
-            <button type="button" class="btn btn-outline btn-sm btn-upload-receipt" data-payment-id="${pay.id}">
+          ` : ''}
+
+          ${isPending && pay.id ? `
+            <button type="button" class="btn btn-success btn-sm btn-approve-pay" data-payment-id="${pay.id}" data-usd="${usdVal}" data-bs="${bsVal}" title="Aprobar este pago y avanzar etapa del pedido">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Aprobar</span>
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm btn-reject-pay" data-payment-id="${pay.id}" title="Rechazar comprobante de pago">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span>Rechazar</span>
+            </button>
+          ` : ''}
+
+          ${(!hasReceipt || isUnregistered) ? `
+            <button type="button" class="btn btn-primary btn-sm btn-upload-receipt" data-stage="${pay.payment_stage}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
@@ -307,74 +322,129 @@ function renderPaymentsCards(paymentsList) {
               </svg>
               <span>Subir comprobante</span>
             </button>
-          `}
+          ` : ''}
 
-          <!-- Botón Editar Pago -->
-          <button type="button" class="btn btn-outline btn-sm btn-edit-payment" data-payment-id="${pay.id}" title="Editar registro de pago">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
-            <span>Editar</span>
-          </button>
+          ${(pay.id && !isUnregistered) ? `
+            <button type="button" class="btn btn-outline btn-sm btn-edit-payment" data-payment-id="${pay.id}" title="Editar registro de pago">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              <span>Editar</span>
+            </button>
+          ` : ''}
         </div>
       </div>
     `;
   }).join('');
 
-  // Eventos de botones de comprobantes y edición
+  // Eventos de botones
   container.querySelectorAll('.btn-view-receipt').forEach(btn => {
     btn.addEventListener('click', () => {
-      const pid = parseInt(btn.getAttribute('data-payment-id'), 10);
-      const pay = list.find(p => p.id === pid) || list[0];
+      const pid = btn.getAttribute('data-payment-id');
+      const pay = list.find(p => String(p.id) === String(pid)) || list[0];
       openReceiptModal(pay);
+    });
+  });
+
+  container.querySelectorAll('.btn-approve-pay').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pid = btn.getAttribute('data-payment-id');
+      const usdVal = btn.getAttribute('data-usd');
+      const bsVal = btn.getAttribute('data-bs');
+      showConfirmationModal({
+        title: '¿Aprobar pago?',
+        message: `¿Confirmar la aprobación de este pago por $${usdVal} (Bs. ${Number(bsVal).toLocaleString('es-VE')})? El estado del pedido se actualizará en el backend.`,
+        onConfirm: async () => {
+          try {
+            await reviewPayment(pid, 'approved');
+            detailState.order = await getOrderById(detailState.orderId);
+            renderOrderDetail(detailState.order);
+            showToastNotification('¡Pago aprobado con éxito! El pedido avanzó automáticamente.');
+          } catch (err) {
+            console.error(err);
+            alert('Error al aprobar el pago: ' + (err.message || err));
+          }
+        }
+      });
+    });
+  });
+
+  container.querySelectorAll('.btn-reject-pay').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pid = btn.getAttribute('data-payment-id');
+      const reason = prompt('Indique el motivo del rechazo del comprobante de pago:', 'Comprobante no legible o datos no coincidentes');
+      if (reason && reason.trim()) {
+        showConfirmationModal({
+          title: '¿Rechazar comprobante de pago?',
+          message: `El comprobante será marcado como rechazado: "${reason.trim()}".`,
+          onConfirm: async () => {
+            try {
+              await reviewPayment(pid, 'rejected', reason.trim());
+              detailState.order = await getOrderById(detailState.orderId);
+              renderOrderDetail(detailState.order);
+              showToastNotification('Pago rechazado y registrado en el sistema.');
+            } catch (err) {
+              console.error(err);
+              alert('Error al rechazar el pago: ' + (err.message || err));
+            }
+          }
+        });
+      }
     });
   });
 
   container.querySelectorAll('.btn-upload-receipt').forEach(btn => {
     btn.addEventListener('click', () => {
-      openUploadPaymentModal();
+      const stage = btn.getAttribute('data-stage') || 'final';
+      openUploadPaymentModal(stage);
     });
   });
 
   container.querySelectorAll('.btn-edit-payment').forEach(btn => {
     btn.addEventListener('click', () => {
-      const pid = parseInt(btn.getAttribute('data-payment-id'), 10);
-      const pay = list.find(p => p.id === pid) || list[0];
+      const pid = btn.getAttribute('data-payment-id');
+      const pay = list.find(p => String(p.id) === String(pid)) || list[0];
       openEditPaymentModal(pay);
     });
   });
 }
 
 /**
- * Renderiza el stepper vertical con la fecha debajo de cada etapa
+ * Renderiza el stepper vertical con la fecha debajo de cada etapa y soporte para navegación interactiva
  */
 function renderTimelineStepper(steps, currentStatus) {
   const container = document.getElementById('order-timeline-container');
   if (!container) return;
 
-  const defaultSteps = [
-    { id: "pending_payment", label: "Pendiente de pago", date: "31/08/2026 - 10:32 AM", status: "completed" },
-    { id: "initial_review", label: "Pago inicial en revisión", date: "31/08/2026 - 11:05 AM", status: "completed" },
-    { id: "initial_approved", label: "Pago inicial aprobado", date: "31/08/2026 - 11:20 AM", status: "completed" },
-    { id: "manufacturing", label: "En fabricación", date: "31/08/2026 - 02:45 PM", status: "completed" },
-    { id: "waiting_final_payment", label: "Esperando pago final", date: "01/09/2026 - 10:00 AM (En curso)", status: "current" },
-    { id: "final_review", label: "Pago final en revisión", date: "Pendiente", status: "pending" },
-    { id: "shipped", label: "Enviado", date: "Pendiente", status: "pending" },
-    { id: "completed", label: "Finalizado", date: "Pendiente", status: "pending" },
-    { id: "refunded", label: "Devuelto", date: "No aplica", status: "pending" }
+  const FLOW = [
+    { id: "pending_initial_payment", label: "Pendiente de pago" },
+    { id: "initial_payment_review", label: "Pago inicial en revisión" },
+    { id: "manufacturing", label: "En fabricación" },
+    { id: "waiting_final_payment", label: "Esperando pago final" },
+    { id: "final_payment_review", label: "Pago final en revisión" },
+    { id: "shipped", label: "Enviado" },
+    { id: "finalized", label: "Finalizado" }
   ];
 
-  const timeline = steps.length > 0 ? steps : defaultSteps;
+  let timeline = steps;
+  if (!timeline || timeline.length === 0) {
+    const currentIdx = FLOW.findIndex(f => f.id === currentStatus);
+    timeline = FLOW.map((f, idx) => ({
+      id: f.id,
+      label: f.label,
+      status: currentIdx === -1 ? 'pending' : (idx < currentIdx ? 'completed' : (idx === currentIdx ? 'current' : 'pending')),
+      date: idx < currentIdx ? 'Completado' : (idx === currentIdx ? 'En curso' : 'Pendiente')
+    }));
+  }
 
   container.innerHTML = timeline.map(step => {
     const isCompleted = step.status === 'completed';
     const isCurrent = step.status === 'current';
-
     const itemClass = isCompleted ? 'is-completed' : isCurrent ? 'is-current' : 'is-pending';
 
     return `
-      <div class="timeline-step-item ${itemClass}">
+      <div class="timeline-step-item ${itemClass}" data-status="${escapeHtml(step.id)}" data-label="${escapeHtml(step.label)}" title="Haga clic para cambiar a este estado">
         <div class="timeline-dot-wrapper">
           ${isCompleted ? `
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -392,6 +462,39 @@ function renderTimelineStepper(steps, currentStatus) {
       </div>
     `;
   }).join('');
+
+  // Permitir interacción directa al hacer clic sobre un paso del stepper
+  container.querySelectorAll('.timeline-step-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const targetStatus = item.getAttribute('data-status');
+      const targetLabel = item.getAttribute('data-label');
+      if (!targetStatus || targetStatus === detailState.order?.status) return;
+
+      const validation = validateStatusTransition(targetStatus, detailState.order);
+      if (!validation.valid) {
+        if (validation.needsApproval && validation.payment) {
+          showConfirmationModal({
+            title: 'Pago pendiente de verificación',
+            message: `${validation.message}\n\n¿Deseas abrir el comprobante de este pago para revisarlo y aprobarlo ahora?`,
+            onConfirm: () => {
+              openReceiptModal(validation.payment);
+            }
+          });
+          return;
+        }
+        alert(`⚠️ Acción Bloqueada:\n${validation.message}`);
+        return;
+      }
+
+      showConfirmationModal({
+        title: `¿Cambiar estado a "${targetLabel}"?`,
+        message: `¿Está seguro de que desea cambiar el estado del pedido a "${targetLabel}"?`,
+        onConfirm: async () => {
+          await applyStatusChange(targetStatus, targetLabel);
+        }
+      });
+    });
+  });
 }
 
 /**
@@ -430,34 +533,38 @@ function updateAdvanceStatusButton(currentStatus) {
  */
 function validateStatusTransition(targetStatus, order) {
   const payments = order.payments_list || [];
-  const initialPayment = payments.find(p => p.id === 201 || (p.title && p.title.toLowerCase().includes('inicial')));
-  const finalPayment = payments.find(p => p.id === 202 || (p.title && p.title.toLowerCase().includes('final')));
+  const initialPayment = payments.find(p => p.payment_stage === 'initial' || (p.title && p.title.toLowerCase().includes('inicial')));
+  const finalPayment = payments.find(p => p.payment_stage === 'final' || (p.title && p.title.toLowerCase().includes('final')));
 
   // 1. Regla: Para pasar a "En fabricación" (manufacturing), el pago inicial debe estar aprobado
   if (targetStatus === 'manufacturing') {
     if (initialPayment && initialPayment.status !== 'approved') {
       return {
         valid: false,
+        needsApproval: true,
+        payment: initialPayment,
         message: 'No se puede avanzar a "En fabricación" porque el Pago Inicial aún no ha sido verificado y aprobado.'
       };
     }
   }
 
-  // 2. Regla: Para pasar a "Enviado" (shipped) o "Finalizado" (completed), el pago final debe estar aprobado
-  if (targetStatus === 'shipped' || targetStatus === 'completed') {
+  // 2. Regla: Para pasar a "Enviado" (shipped) o "Finalizado" (finalized), el pago final debe estar aprobado
+  if (targetStatus === 'shipped' || targetStatus === 'finalized' || targetStatus === 'completed') {
     if (finalPayment && finalPayment.status !== 'approved') {
       return {
         valid: false,
-        message: 'No se puede marcar como "' + getStatusLabel(targetStatus) + '" porque el Pago Final aún se encuentra pendiente.'
+        needsApproval: true,
+        payment: finalPayment,
+        message: 'No se puede marcar como "' + getStatusLabel(targetStatus) + '" porque el Pago Final aún se encuentra pendiente de verificación o registro.'
       };
     }
   }
 
   // 3. Regla: Si ya está devuelto o cancelado, advertir
-  if (order.status === 'refunded') {
+  if (order.status === 'cancelled' || order.status === 'refunded') {
     return {
       valid: false,
-      message: 'Este pedido ya fue cancelado/devuelto. No se pueden reabrir etapas directamente.'
+      message: 'Este pedido ya fue cancelado. No se pueden reabrir etapas directamente.'
     };
   }
 
@@ -544,8 +651,14 @@ function closeEditPaymentModal() {
 /**
  * Procesa la edición del pago con confirmación previa
  */
+/**
+ * Procesa la edición del pago con confirmación previa y guardado en backend
+ */
 function handleSavePaymentEdit(e) {
   e.preventDefault();
+
+  const payment = detailState.activePaymentForModal;
+  if (!payment) return;
 
   const usdVal = parseFloat(document.getElementById('edit-payment-amount-usd').value || 0);
   const bsVal = parseFloat(document.getElementById('edit-payment-amount-bs').value || 0);
@@ -553,27 +666,33 @@ function handleSavePaymentEdit(e) {
   const methodVal = document.getElementById('edit-payment-method').value.trim();
   const statusVal = document.getElementById('edit-payment-status').value;
 
-  // Paso de confirmación obligatorio
   showConfirmationModal({
     title: '¿Confirmar edición del pago?',
-    message: `Se actualizará el monto a ${formatUsd(usdVal)} (${formatBs(bsVal)}) y se guardará el registro de auditoría.`,
-    onConfirm: () => {
-      const payment = detailState.activePaymentForModal;
-      if (payment) {
-        payment.amount_usd = usdVal;
-        payment.amount_bs = bsVal;
-        payment.reference = refVal;
-        payment.payment_method = methodVal;
-        payment.status = statusVal;
-        payment.status_label = statusVal === 'approved' ? 'Aprobado' : statusVal === 'pending' ? 'Pendiente' : 'En revisión';
-        payment.is_edited = true;
-        payment.edited_at = new Date().toLocaleDateString('es-ES') + ' - ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-        payment.edited_by = 'Administrador';
+    message: `Se actualizará el monto a ${formatUsd(usdVal)} (${formatBs(bsVal)}) y se guardará el cambio en el servidor.`,
+    onConfirm: async () => {
+      try {
+        if (payment.id) {
+          const payload = {
+            amount: usdVal,
+            reference_number: refVal,
+            payment_method: methodVal
+          };
+          await updatePayment(payment.id, payload);
 
-        // Re-renderizar tarjetas de pago
-        renderPaymentsCards(detailState.order.payments_list);
+          if (statusVal && statusVal !== payment.status) {
+            if (statusVal === 'approved' || statusVal === 'rejected') {
+              await reviewPayment(payment.id, statusVal);
+            }
+          }
+        }
+
+        detailState.order = await getOrderById(detailState.orderId);
+        renderOrderDetail(detailState.order);
         closeEditPaymentModal();
-        showToastNotification('¡Pago editado y actualizado con éxito!');
+        showToastNotification('¡Pago editado y actualizado con éxito en el servidor!');
+      } catch (err) {
+        console.error(err);
+        alert('Error al actualizar el pago en el servidor: ' + (err.message || err));
       }
     }
   });
@@ -581,7 +700,7 @@ function handleSavePaymentEdit(e) {
 
 /**
  * ==========================================================================
- * MODAL: VER COMPROBANTE CON LIGHTBOX FLOTANTE
+ * MODAL: VER COMPROBANTE CON LIGHTBOX FLOTANTE Y ACCIONES DIRECTAS
  * ==========================================================================
  */
 
@@ -604,15 +723,79 @@ function openReceiptModal(payment) {
   const bsVal = payment.amount_bs || (usdVal * detailState.exchangeRate);
 
   if (subTitle) subTitle.textContent = `${payment.title || 'Pago'} - ${formatUsd(usdVal)}`;
-  if (refEl) refEl.textContent = payment.reference || 'REF-849204';
-  if (bankEl) bankEl.textContent = payment.payment_method || 'Pago Móvil Banesco';
-  if (dateEl) dateEl.textContent = payment.date || '31/08/2026 - 11:20 AM';
-  if (rateEl) rateEl.textContent = `${(payment.rate_applied || detailState.exchangeRate).toLocaleString('es-VE')} Bs/$`;
+  if (refEl) refEl.textContent = (payment.reference && payment.reference !== '-') ? payment.reference : 'Sin referencia';
+  if (bankEl) bankEl.textContent = (payment.payment_method && payment.payment_method !== '-') ? payment.payment_method : 'No especificado';
+  if (dateEl) dateEl.textContent = (payment.date && payment.date !== '-') ? payment.date : 'Pendiente';
+  if (rateEl) rateEl.textContent = `${(payment.rate_applied || detailState.exchangeRate || 849.56).toLocaleString('es-VE')} Bs/$`;
   if (usdAmountEl) usdAmountEl.textContent = formatUsd(usdVal);
   if (bsAmountEl) bsAmountEl.textContent = formatBs(bsVal);
 
   const imgSrc = payment.receipt_url || "../../assets/images/logo.jpeg";
   if (imgEl) imgEl.src = imgSrc;
+
+  // Descarga del comprobante
+  const btnDownload = document.getElementById('btn-download-receipt');
+  if (btnDownload) {
+    btnDownload.onclick = () => {
+      if (payment.receipt_url) {
+        window.open(payment.receipt_url, '_blank');
+      } else {
+        alert('No hay archivo de comprobante disponible para descargar.');
+      }
+    };
+  }
+
+  // Acciones directas de aprobación / rechazo dentro del modal de comprobante
+  const btnApprove = document.getElementById('btn-approve-receipt-modal');
+  const btnReject = document.getElementById('btn-reject-receipt-modal');
+  const isPending = payment.status === 'pending';
+
+  if (btnApprove) {
+    btnApprove.style.display = isPending ? 'inline-flex' : 'none';
+    btnApprove.onclick = () => {
+      showConfirmationModal({
+        title: '¿Aprobar comprobante de pago?',
+        message: `¿Confirmar la aprobación de ${payment.title || 'este pago'} por ${formatUsd(usdVal)} (${formatBs(bsVal)})? El estado del pedido se actualizará automáticamente.`,
+        onConfirm: async () => {
+          try {
+            await reviewPayment(payment.id, 'approved');
+            detailState.order = await getOrderById(detailState.orderId);
+            renderOrderDetail(detailState.order);
+            closeReceiptModal();
+            showToastNotification('¡Pago aprobado con éxito! El pedido avanzó automáticamente.');
+          } catch (err) {
+            console.error(err);
+            alert('Error al aprobar el pago: ' + (err.message || err));
+          }
+        }
+      });
+    };
+  }
+
+  if (btnReject) {
+    btnReject.style.display = isPending ? 'inline-flex' : 'none';
+    btnReject.onclick = () => {
+      const reason = prompt('Indique el motivo del rechazo del pago:', 'Comprobante no válido o datos ilegibles');
+      if (reason && reason.trim()) {
+        showConfirmationModal({
+          title: '¿Rechazar comprobante?',
+          message: `El pago será rechazado con motivo: "${reason.trim()}".`,
+          onConfirm: async () => {
+            try {
+              await reviewPayment(payment.id, 'rejected', reason.trim());
+              detailState.order = await getOrderById(detailState.orderId);
+              renderOrderDetail(detailState.order);
+              closeReceiptModal();
+              showToastNotification('Pago rechazado y notificado.');
+            } catch (err) {
+              console.error(err);
+              alert('Error al rechazar el pago: ' + (err.message || err));
+            }
+          }
+        });
+      }
+    };
+  }
 
   // Mostrar alerta si fue editado
   if (editedAlert) {
@@ -663,9 +846,26 @@ function closeImageLightbox() {
  * ==========================================================================
  */
 
-function openUploadPaymentModal() {
+function openUploadPaymentModal(stage = 'final') {
   const modal = document.getElementById('upload-payment-modal-backdrop');
-  if (modal) modal.classList.add('is-open');
+  if (!modal) return;
+
+  const stageSelect = document.getElementById('payment-stage-select');
+  const amountInput = document.getElementById('payment-amount-input');
+  const subTitle = document.getElementById('upload-modal-subtitle');
+
+  if (stageSelect) stageSelect.value = stage;
+
+  const total = Number(detailState.order?.total_amount || 0);
+  const paid = Number(detailState.order?.paid_amount || 0);
+  const targetAmount = stage === 'initial' 
+    ? (total / 2) 
+    : (detailState.order?.pending_balance ? Number(detailState.order.pending_balance) : (total - paid || total / 2));
+
+  if (amountInput) amountInput.value = targetAmount.toFixed(2);
+  if (subTitle) subTitle.textContent = `${stage === 'final' ? 'Pago final' : 'Pago inicial'} - ${formatUsd(targetAmount)}`;
+
+  modal.classList.add('is-open');
 }
 
 function closeUploadPaymentModal() {
@@ -683,7 +883,28 @@ function closeUploadPaymentModal() {
 
 function openEditOrderModal() {
   const modal = document.getElementById('edit-order-modal-backdrop');
-  if (modal) modal.classList.add('is-open');
+  if (!modal) return;
+
+  const addrInput = document.getElementById('edit-shipping-address');
+  const clientNotes = document.getElementById('edit-client-notes');
+  const internalNotes = document.getElementById('edit-internal-notes');
+  const titleEl = document.getElementById('edit-order-modal-title');
+
+  if (titleEl) {
+    titleEl.textContent = `Editar Pedido ${detailState.order?.order_code || ('#' + detailState.orderId)}`;
+  }
+
+  if (addrInput) {
+    addrInput.value = detailState.order?.shipping_address?.address || detailState.order?.shipping_address?.line1 || '';
+  }
+  if (clientNotes) {
+    clientNotes.value = detailState.order?.client_notes || detailState.order?.notes || '';
+  }
+  if (internalNotes) {
+    internalNotes.value = detailState.order?.internal_notes || '';
+  }
+
+  modal.classList.add('is-open');
 }
 
 function closeEditOrderModal() {
@@ -800,6 +1021,16 @@ function setupDetailEventListeners() {
         // Validar reglas de transición
         const validation = validateStatusTransition(newStatus, detailState.order);
         if (!validation.valid) {
+          if (validation.needsApproval && validation.payment) {
+            showConfirmationModal({
+              title: 'Pago pendiente de aprobación',
+              message: `${validation.message}\n\n¿Deseas abrir el comprobante de este pago para revisarlo y aprobarlo ahora?`,
+              onConfirm: () => {
+                openReceiptModal(validation.payment);
+              }
+            });
+            return;
+          }
           alert(`⚠️ Acción Bloqueada:\n${validation.message}`);
           return;
         }
@@ -827,6 +1058,16 @@ function setupDetailEventListeners() {
 
       const validation = validateStatusTransition(targetStatus, detailState.order);
       if (!validation.valid) {
+        if (validation.needsApproval && validation.payment) {
+          showConfirmationModal({
+            title: 'Pago pendiente de verificación',
+            message: `${validation.message}\n\n¿Deseas abrir el comprobante de este pago para revisarlo y aprobarlo ahora?`,
+            onConfirm: () => {
+              openReceiptModal(validation.payment);
+            }
+          });
+          return;
+        }
         alert(`⚠️ Validación de Estado:\n${validation.message}`);
         return;
       }
@@ -845,29 +1086,12 @@ function setupDetailEventListeners() {
   async function applyStatusChange(newStatus, statusLabel) {
     try {
       await updateOrderStatus(detailState.orderId, newStatus, `Avanzado a ${statusLabel}`);
-      detailState.order.status = newStatus;
-      detailState.order.status_label = statusLabel;
-
-      // Actualizar timestamp en el stepper
-      if (detailState.order.timeline_steps) {
-        let reached = false;
-        detailState.order.timeline_steps.forEach(s => {
-          if (s.id === newStatus) {
-            s.status = 'current';
-            s.date = new Date().toLocaleDateString('es-ES') + ' - ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + ' (Actualizado)';
-            reached = true;
-          } else if (!reached) {
-            s.status = 'completed';
-          } else {
-            s.status = 'pending';
-          }
-        });
-      }
-
+      detailState.order = await getOrderById(detailState.orderId);
       renderOrderDetail(detailState.order);
       showToastNotification(`Estado del pedido actualizado a "${statusLabel}"`);
     } catch (err) {
       console.error(err);
+      alert(`Error al actualizar estado del pedido: ${err.message || err}`);
     }
   }
 
@@ -901,11 +1125,10 @@ function setupDetailEventListeners() {
       if (moreOptionsMenu) moreOptionsMenu.classList.remove('is-active');
       showConfirmationModal({
         title: '¿Cancelar este pedido?',
-        message: 'El pedido pasará a estado Devuelto/Cancelado y se detendrán todas las actividades de fabricación.',
+        message: 'El pedido pasará a estado Cancelado y se detendrán todas las actividades de fabricación.',
         onConfirm: async () => {
-          await updateOrderStatus(detailState.orderId, 'refunded', 'Cancelado por el administrador');
-          detailState.order.status = 'refunded';
-          detailState.order.status_label = 'Devuelto';
+          await updateOrderStatus(detailState.orderId, 'cancelled', 'Cancelado por el administrador');
+          detailState.order = await getOrderById(detailState.orderId);
           renderOrderDetail(detailState.order);
           showToastNotification('Pedido cancelado');
         }
@@ -959,18 +1182,50 @@ function setupDetailEventListeners() {
   if (uploadForm) {
     uploadForm.addEventListener('submit', (e) => {
       e.preventDefault();
+
+      const stageVal = document.getElementById('payment-stage-select')?.value || 'final';
+      const amountVal = parseFloat(document.getElementById('payment-amount-input')?.value || 0);
+      const methodVal = document.getElementById('payment-method-select')?.value || 'mobile_payment';
+      const refVal = document.getElementById('payment-ref-input')?.value.trim() || '';
+      const fileInput = document.getElementById('payment-receipt-file');
+      const notesVal = document.getElementById('payment-notes-input')?.value.trim() || '';
+
+      if (!fileInput || !fileInput.files[0]) {
+        alert('Por favor, adjunte el archivo de comprobante de pago.');
+        return;
+      }
+
       showConfirmationModal({
         title: '¿Guardar comprobante de pago?',
-        message: 'El comprobante pasará a revisión para su posterior aprobación.',
-        onConfirm: () => {
-          closeUploadPaymentModal();
-          showToastNotification('¡Comprobante de pago guardado y enviado a revisión!');
+        message: `Se enviará el comprobante de ${stageVal === 'initial' ? 'pago inicial' : 'pago final'} por ${formatUsd(amountVal)} para revisión.`,
+        onConfirm: async () => {
+          try {
+            const formData = new FormData();
+            formData.append('order', detailState.orderId);
+            formData.append('payment_stage', stageVal);
+            formData.append('amount', amountVal);
+            formData.append('payment_method', methodVal);
+            formData.append('reference_number', refVal);
+            formData.append('receipt_file', fileInput.files[0]);
+            if (notesVal) {
+              formData.append('notes', notesVal);
+            }
+
+            await createPayment(formData);
+            detailState.order = await getOrderById(detailState.orderId);
+            renderOrderDetail(detailState.order);
+            closeUploadPaymentModal();
+            showToastNotification('¡Comprobante de pago guardado y enviado a revisión con éxito!');
+          } catch (err) {
+            console.error(err);
+            alert('Error al registrar el comprobante: ' + (err.message || err));
+          }
         }
       });
     });
   }
 
-  // 10. Modal Editar Pedido (con confirmación)
+  // 10. Modal Editar Pedido (con confirmación y guardado en backend)
   const btnCloseEdit = document.getElementById('btn-close-edit-modal');
   const btnCancelEdit = document.getElementById('btn-cancel-edit-modal');
   if (btnCloseEdit) btnCloseEdit.addEventListener('click', closeEditOrderModal);
@@ -982,18 +1237,25 @@ function setupDetailEventListeners() {
       e.preventDefault();
       showConfirmationModal({
         title: '¿Guardar modificaciones del pedido?',
-        message: 'Se actualizarán las direcciones de entrega y observaciones del pedido.',
-        onConfirm: () => {
-          const addrInput = document.getElementById('edit-shipping-address');
-          const clientNotes = document.getElementById('edit-client-notes');
-          const internalNotes = document.getElementById('edit-internal-notes');
+        message: 'Se actualizarán las direcciones de entrega y observaciones del pedido en el servidor.',
+        onConfirm: async () => {
+          try {
+            const addrInput = document.getElementById('edit-shipping-address');
+            const clientNotes = document.getElementById('edit-client-notes');
 
-          if (addrInput) document.getElementById('meta-shipping-line1').textContent = addrInput.value;
-          if (clientNotes) document.getElementById('info-client-notes').textContent = clientNotes.value;
-          if (internalNotes) document.getElementById('info-internal-notes').textContent = internalNotes.value;
+            await updateOrderDetails(detailState.orderId, {
+              address: addrInput ? addrInput.value.trim() : '',
+              notes: clientNotes ? clientNotes.value.trim() : ''
+            });
 
-          closeEditOrderModal();
-          showToastNotification('Datos del pedido actualizados');
+            detailState.order = await getOrderById(detailState.orderId);
+            renderOrderDetail(detailState.order);
+            closeEditOrderModal();
+            showToastNotification('Datos del pedido actualizados con éxito en el servidor');
+          } catch (err) {
+            console.error(err);
+            alert('Error al actualizar datos del pedido: ' + (err.message || err));
+          }
         }
       });
     });
@@ -1064,17 +1326,26 @@ async function initOrderDetailPage() {
     // 1. Inicializar componentes compartidos (Navbar, Drawer y Footer)
     await loadAdminComponents({ title: 'Detalle de Pedido' });
 
-    // 2. Obtener tasa oficial del BCV
-    try {
-      detailState.exchangeRate = await getOfficialRate();
-    } catch (err) {
-      console.warn('Usando tasa de contingencia:', err);
-      detailState.exchangeRate = 791.32;
-    }
-
-    // 3. Cargar datos del pedido
+    // 2. Cargar datos del pedido
     detailState.orderId = getOrderIdFromUrl();
     detailState.order = await getOrderById(detailState.orderId);
+
+    // 3. Determinar tasa oficial del BCV (priorizando tasa congelada del pedido)
+    if (detailState.order && detailState.order.bcv_rate && Number(detailState.order.bcv_rate) > 0) {
+      detailState.exchangeRate = Number(detailState.order.bcv_rate);
+    } else {
+      try {
+        const dailyRate = await getDailyExchangeRate();
+        if (dailyRate && dailyRate.rate) {
+          detailState.exchangeRate = Number(dailyRate.rate);
+        } else {
+          detailState.exchangeRate = await getOfficialRate();
+        }
+      } catch (err) {
+        console.warn('Usando tasa de contingencia:', err);
+        detailState.exchangeRate = await getOfficialRate().catch(() => 849.56);
+      }
+    }
 
     // 4. Renderizar componentes visuales
     renderOrderDetail(detailState.order);

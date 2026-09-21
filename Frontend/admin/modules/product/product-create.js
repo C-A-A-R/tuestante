@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 5. Vincular Eventos de Interacción
   setupFormEvents();
   setupMainImageEvents();
+  setupMainColorEvents();
   setupVideoDropzone();
   setupColorPresetButtons();
   setupAngleEvents();
@@ -199,6 +200,41 @@ function setupMainImageEvents() {
     updateLivePreview();
   }
 }
+
+// ==========================================================================
+// GESTIÓN DE COLOR PRINCIPAL (BASE DE PORTADA)
+// ==========================================================================
+
+function setupMainColorEvents() {
+  const nameInput = document.getElementById('input-main-color-name');
+  const pickerInput = document.getElementById('input-main-color-picker');
+  if (!nameInput || !pickerInput) return;
+
+  const colorMap = {
+    'blanco': '#ffffff', 'negro': '#111827', 'gris': '#9ca3af', 'gris claro': '#d1d5db',
+    'roble': '#b48a56', 'roble nórdico': '#c29b68', 'madera': '#a0714f', 'marron': '#78350f',
+    'azul': '#0272bc', 'azul rey': '#0272bc', 'azul oscuro': '#3d5ead', 'morado': '#702c91',
+    'fuccia': '#b6217f', 'fucsia': '#b6217f', 'rojo': '#ef1c25', 'naranja': '#f15a21',
+    'amarillo': '#fff300', 'turqueza': '#00a28a', 'turquesa': '#00a28a', 'verde': '#9ec536',
+    'verde pasto': '#4eb043', 'mostaza': '#ffc20f', 'rosado': '#f472b6', 'rosa': '#f472b6'
+  };
+
+  pickerInput.addEventListener('input', (e) => {
+    if (!nameInput.value.trim() || nameInput.value.startsWith('#')) {
+      nameInput.value = e.target.value;
+    }
+  });
+
+  nameInput.addEventListener('input', (e) => {
+    const val = e.target.value.trim().toLowerCase();
+    if (colorMap[val]) {
+      pickerInput.value = colorMap[val];
+    } else if (/^#[0-9a-f]{6}$/i.test(val)) {
+      pickerInput.value = val;
+    }
+  });
+}
+
 
 // ==========================================================================
 // GESTIÓN DE SUBIDA Y REPRODUCCIÓN DE VIDEO DEMOSTRATIVO
@@ -841,10 +877,9 @@ function setupFormEvents() {
     formData.append('is_feature_product', is_feature_product);
 
     // Color principal
-    const mainColor = state.colors.length > 0 ? (state.colors[0].color_name || state.colors[0].color_hex) : '';
-    if (mainColor) {
-      formData.append('main_color', mainColor);
-    }
+    const mainColorInput = document.getElementById('input-main-color-name')?.value.trim();
+    const mainColor = mainColorInput || (state.colors.length > 0 ? (state.colors[0].color_name || state.colors[0].color_hex) : 'Blanco');
+    formData.append('main_color', mainColor);
 
     // Imagen de portada: Enviar solo archivo File real si existe
     if (state.mainImageFile instanceof File) {

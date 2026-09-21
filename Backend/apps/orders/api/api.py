@@ -524,19 +524,67 @@ class OrderViewSet(BaseViewSet):
             "order": serializer.data
         }, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'], url_path='current_rate', permission_classes=[permissions.AllowAny])
+    def current_rate(self, request):
+        """Retorna la tasa oficial BCV del día persistida en la base de datos."""
+        from apps.orders.utils import get_or_create_daily_exchange_rate
+        rate_obj = get_or_create_daily_exchange_rate()
+        if rate_obj:
+            return Response({
+                'date': str(rate_obj.date),
+                'rate': float(rate_obj.rate),
+                'formatted_rate': f"{rate_obj.rate:,.2f} Bs/$",
+                'source': rate_obj.source
+            }, status=status.HTTP_200_OK)
+        return Response({'error': 'No se pudo obtener la tasa oficial del día'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def update(self, request, *args, **kwargs):
-        """Bloquea la actualización de pedidos."""
+        """Bloquea la sobrescritura completa (PUT) de pedidos."""
         return Response(
-            {"error": "Los pedidos no pueden ser actualizados una vez creados."},
+            {"error": "Utilice actualización parcial (PATCH) para modificar el estado u observaciones."},
             status=status.HTTP_405_METHOD_NOT_ALLOWED
         )
 
     def partial_update(self, request, *args, **kwargs):
-        """Bloquea la actualización parcial de pedidos."""
-        return Response(
-            {"error": "Los pedidos no pueden ser actualizados una vez creados."},
-            status=status.HTTP_405_METHOD_NOT_ALLOWED
-        )
+        """Permite a administradores actualizar el estado, notas y dirección del pedido."""
+        if not (request.user and request.user.is_staff):
+            return Response(
+                {"error": "No tiene permisos para modificar este pedido."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        order = self.get_object()
+        new_status = request.data.get('status')
+        notes = request.data.get('notes') or request.data.get('internal_notes')
+        address_data = request.data.get('address') or request.data.get('shipping_address')
+
+        if new_status:
+            order.status = new_status
+        if notes is not None:
+            order.notes = notes
+
+        if address_data:
+            shipment = order.shipments.filter(is_deleted=False).first()
+            if shipment:
+                if isinstance(address_data, dict):
+                    shipment.address = address_data.get('address') or address_data.get('line1') or shipment.address
+                    if 'city' in address_data and address_data['city']:
+                        shipment.city = address_data['city']
+                    if 'state' in address_data and address_data['state']:
+                        shipment.state = address_data['state']
+                    if 'municipality' in address_data and address_data['municipality']:
+                        shipment.municipality = address_data['municipality']
+                else:
+                    shipment.address = str(address_data)
+                shipment.save()
+            else:
+                addr_text = address_data.get('address') or address_data.get('line1') if isinstance(address_data, dict) else str(address_data)
+                Shipment.objects.create(order=order, address=addr_text)
+
+        order.save()
+        if hasattr(order, '_prefetched_objects_cache'):
+            order._prefetched_objects_cache.clear()
+        serializer = self.get_serializer(order)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
         """Bloquea la eliminación de pedidos."""

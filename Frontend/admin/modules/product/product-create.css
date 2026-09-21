@@ -1419,3 +1419,76 @@
   font-size: 0.95rem;
   font-weight: 800;
 }
+
+/* Grupo de Color Principal de Portada */
+.main-color-group {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.main-color-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.main-color-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.main-color-badge-tag {
+  font-size: 0.70rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.main-color-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.main-color-picker-wrapper {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color, #cbd5e1);
+  flex-shrink: 0;
+  cursor: pointer;
+  background: #f8fafc;
+}
+
+.main-color-picker-wrapper input[type="color"] {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 60px;
+  height: 60px;
+  border: none;
+  cursor: pointer;
+  background: none;
+}
+
+.main-color-name-input {
+  flex: 1;
+}
+

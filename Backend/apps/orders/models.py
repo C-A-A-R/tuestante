@@ -1,13 +1,63 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from decimal import Decimal
 
 from apps.base.models import BaseModel
 from apps.product.models import Product
 
-from apps.orders.utils import generate_order_number, get_bcv_usd_rate
+from apps.orders.utils import (
+    generate_order_number, 
+    get_bcv_usd_rate, 
+    get_or_create_daily_exchange_rate
+)
 
 User = get_user_model()
+
+
+class ExchangeRate(BaseModel):
+    """
+    Registro histórico y persistente de la tasa oficial del Banco Central de Venezuela (BCV).
+    Se crea o actualiza una sola vez al día para evitar que las publicaciones vespertinas
+    del BCV (con fecha valor del día hábil siguiente) alteren transacciones del día en curso.
+    """
+    date = models.DateField(
+        'Fecha de vigencia',
+        unique=True,
+        db_index=True,
+        help_text='Fecha calendario a la que aplica esta tasa oficial'
+    )
+    rate = models.DecimalField(
+        'Tasa oficial (Bs./USD)',
+        max_digits=12,
+        decimal_places=4,
+        help_text='Monto en Bolívares por Dólar (USD)'
+    )
+    source = models.CharField(
+        'Fuente',
+        max_length=50,
+        default='BCV',
+        help_text='Entidad emisora de la tasa (ej. Banco Central de Venezuela)'
+    )
+    is_manual = models.BooleanField(
+        'Ajuste manual',
+        default=False,
+        help_text='Indica si la tasa fue ingresada o editada manualmente por el administrador'
+    )
+    notes = models.CharField(
+        'Notas u observaciones',
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    class Meta:
+        verbose_name = 'Tasa de Cambio'
+        verbose_name_plural = 'Tasas de Cambio'
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.date}: {self.rate} Bs./USD ({self.source})"
 
 
 class Order(BaseModel):
@@ -77,10 +127,19 @@ class Order(BaseModel):
         null=True,
         help_text='Momento exacto en que se confirmó la recepción del pedido'
     )
+    exchange_rate = models.ForeignKey(
+        'ExchangeRate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='orders',
+        verbose_name='Tasa de cambio aplicada',
+        help_text='Registro de la tasa oficial del día aplicada al pedido'
+    )
     bcv_rate = models.DecimalField(
         'Tasa BCV',
         max_digits=12,
-        decimal_places=2,
+        decimal_places=4,
         default=0.00,
         help_text='Tasa oficial en Bs./USD congelada para el pedido'
     )
@@ -116,11 +175,18 @@ class Order(BaseModel):
         if not self.order_number:
             self.order_number = generate_order_number()
 
-        # Si la tasa no está definida o está en 0.00, la consulta con pyBCV
+        # Si la tasa no está definida o está en 0.00, consulta o asigna la tasa oficial fija del día
         if not self.bcv_rate or self.bcv_rate == Decimal('0.00'):
-            current_rate = get_bcv_usd_rate()
-            if current_rate > Decimal('0.00'):
-                self.bcv_rate = current_rate
+            rate_record = get_or_create_daily_exchange_rate()
+            if rate_record:
+                self.exchange_rate = rate_record
+                self.bcv_rate = rate_record.rate
+        elif not self.exchange_rate and self.bcv_rate > Decimal('0.00'):
+            # Si ya se especificó bcv_rate numérico, intentar vincular el registro del día
+            order_date = self.created_at or timezone.localdate()
+            rate_record = ExchangeRate.objects.filter(date=order_date, is_deleted=False).first()
+            if rate_record:
+                self.exchange_rate = rate_record
 
         super().save(*args, **kwargs)   
 

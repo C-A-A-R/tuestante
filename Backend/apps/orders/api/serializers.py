@@ -1,11 +1,42 @@
 from rest_framework import serializers
 from decimal import Decimal
 
-from apps.orders.models import Order, OrderDetail, OrderProduct, ManufacturingOrder
+from apps.orders.models import (
+    Order, 
+    OrderDetail, 
+    OrderProduct, 
+    ManufacturingOrder,
+    ExchangeRate
+)
 from apps.product.api.serializers import ProductSerializer
 from apps.shipment.api.serializers import ShipmentSerializer
 from apps.production.api.serializers import ProductionOrderSerializer
 from apps.payment.api.serializers import PaymentSerializer
+
+
+class ExchangeRateSerializer(serializers.ModelSerializer):
+    """Serializer para la consulta de Tasas de Cambio Oficiales (BCV)."""
+
+    formatted_rate = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = ExchangeRate
+        fields = [
+            'id',
+            'date',
+            'rate',
+            'formatted_rate',
+            'source',
+            'is_manual',
+            'notes',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'formatted_rate']
+
+    def get_formatted_rate(self, obj):
+        return f"{obj.rate:,.2f} Bs/$"
+
 
 
 class OrderProductSerializer(serializers.ModelSerializer):
@@ -84,7 +115,11 @@ class OrderSerializer(serializers.ModelSerializer):
     
     # --- Nuevos campos para la vista OMS ---
     total_price_bs = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    paid_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    pending_balance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    exchange_rate_date = serializers.DateField(source='exchange_rate.date', read_only=True)
     payment_method_label = serializers.SerializerMethodField(read_only=True)
+    shipping_address = serializers.SerializerMethodField(read_only=True)
     payment_summary = serializers.SerializerMethodField(read_only=True)
     timeline = serializers.SerializerMethodField(read_only=True)
 
@@ -104,9 +139,14 @@ class OrderSerializer(serializers.ModelSerializer):
             'status',
             'status_label',
             'total_price',
+            'paid_amount',
+            'pending_balance',
             'bcv_rate',
             'total_price_bs',
+            'exchange_rate',
+            'exchange_rate_date',
             'payment_method_label',
+            'shipping_address',
             'payment_summary',
             'timeline',
             'notes',
@@ -122,9 +162,10 @@ class OrderSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id', 'order_number', 'user', 'client', 'status_label', 'total_price',
-            'total_price_bs', 'reception_date', 'details', 'payments', 
-            'manufacturing_orders', 'production_orders', 'shipments', 
-            'created_at', 'updated_at'
+            'paid_amount', 'pending_balance', 'total_price_bs', 'exchange_rate', 
+            'exchange_rate_date', 'shipping_address', 'reception_date', 
+            'details', 'payments', 'manufacturing_orders', 'production_orders', 
+            'shipments', 'created_at', 'updated_at'
         ]
 
     def get_client(self, obj):
@@ -147,6 +188,32 @@ class OrderSerializer(serializers.ModelSerializer):
         first_payment = obj.payments.filter(is_deleted=False).first()
         return first_payment.get_payment_method_display() if first_payment else "No especificado"
 
+    def get_shipping_address(self, obj):
+        """Retorna la dirección de entrega estructurada a partir del envío."""
+        shipment = obj.shipments.filter(is_deleted=False).first()
+        if shipment:
+            city_state = ", ".join(filter(None, [shipment.city, shipment.municipality, shipment.state]))
+            return {
+                "address": shipment.address or "No registrada",
+                "line1": shipment.address or "No registrada",
+                "city": shipment.city or "",
+                "municipality": shipment.municipality or "",
+                "state": shipment.state or "",
+                "city_state": city_state or shipment.state or "Venezuela",
+                "country": "Venezuela",
+                "distributor_name": shipment.distributor.name if shipment.distributor else None
+            }
+        return {
+            "address": "No registrada",
+            "line1": "No registrada",
+            "city": "",
+            "municipality": "",
+            "state": "",
+            "city_state": "No registrada",
+            "country": "Venezuela",
+            "distributor_name": None
+        }
+
     def get_payment_summary(self, obj):
         """Desglose automático para las dos tarjetas de pagos (Inicial y Final)."""
         rate = obj.bcv_rate or Decimal('1.00')
@@ -155,22 +222,42 @@ class OrderSerializer(serializers.ModelSerializer):
         initial_payment = obj.payments.filter(payment_stage='initial', is_deleted=False).first()
         final_payment = obj.payments.filter(payment_stage='final', is_deleted=False).first()
 
+        init_receipt_url = None
+        if initial_payment and initial_payment.receipt_file:
+            try:
+                init_receipt_url = initial_payment.receipt_file.url
+            except Exception:
+                init_receipt_url = None
+
+        final_receipt_url = None
+        if final_payment and final_payment.receipt_file:
+            try:
+                final_receipt_url = final_payment.receipt_file.url
+            except Exception:
+                final_receipt_url = None
+
         return {
             "initial": {
+                "id": initial_payment.id if initial_payment else None,
                 "amount_usd": initial_payment.amount if initial_payment else initial_target,
                 "amount_bs": ((initial_payment.amount if initial_payment else initial_target) * rate).quantize(Decimal('0.01')),
-                "status": initial_payment.status if initial_payment else "pending",
-                "status_label": initial_payment.get_status_display() if initial_payment else "Pendiente",
+                "status": initial_payment.status if initial_payment else "unregistered",
+                "status_label": initial_payment.get_status_display() if initial_payment else "Pendiente por registrar",
                 "reference": initial_payment.reference_number if initial_payment else None,
-                "receipt_url": initial_payment.receipt_file.url if (initial_payment and initial_payment.receipt_file) else None,
+                "receipt_url": init_receipt_url,
+                "payment_method": initial_payment.get_payment_method_display() if initial_payment else None,
+                "created_at": initial_payment.created_at if initial_payment else None,
             },
             "final": {
-                "amount_usd": final_payment.amount if final_payment else obj.pending_balance,
-                "amount_bs": ((final_payment.amount if final_payment else obj.pending_balance) * rate).quantize(Decimal('0.01')),
-                "status": final_payment.status if final_payment else "pending",
-                "status_label": final_payment.get_status_display() if final_payment else "Pendiente",
+                "id": final_payment.id if final_payment else None,
+                "amount_usd": final_payment.amount if final_payment else (obj.total_price - initial_target),
+                "amount_bs": ((final_payment.amount if final_payment else (obj.total_price - initial_target)) * rate).quantize(Decimal('0.01')),
+                "status": final_payment.status if final_payment else "unregistered",
+                "status_label": final_payment.get_status_display() if final_payment else "Pendiente por registrar",
                 "reference": final_payment.reference_number if final_payment else None,
-                "receipt_url": final_payment.receipt_file.url if (final_payment and final_payment.receipt_file) else None,
+                "receipt_url": final_receipt_url,
+                "payment_method": final_payment.get_payment_method_display() if final_payment else None,
+                "created_at": final_payment.created_at if final_payment else None,
             }
         }
 

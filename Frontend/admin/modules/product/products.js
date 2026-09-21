@@ -37,6 +37,32 @@ const state = {
   activePopoverId: null
 };
 
+const COLOR_NAME_MAP = {
+  'blanco': '#ffffff', 'white': '#ffffff', 'negro': '#111827', 'black': '#111827',
+  'gris': '#9ca3af', 'gris claro': '#d1d5db', 'gris oscuro': '#4b5563', 'gray': '#9ca3af',
+  'roble': '#b48a56', 'roble nórdico': '#c29b68', 'madera': '#a0714f', 'marron': '#78350f',
+  'café': '#652d0d', 'azul': '#0272bc', 'azul rey': '#0272bc', 'azul oscuro': '#3d5ead',
+  'morado': '#702c91', 'fuccia': '#b6217f', 'fucsia': '#b6217f', 'rojo': '#ef1c25',
+  'naranja': '#f15a21', 'amarillo': '#fff300', 'turqueza': '#00a28a', 'turquesa': '#00a28a',
+  'verde pasto': '#4eb043', 'verde': '#9ec536', 'mostaza': '#ffc20f', 'rosado': '#f472b6',
+  'rosa': '#f472b6'
+};
+
+function resolveColorHex(name, variants = []) {
+  if (!name) return '#ffffff';
+  const clean = String(name).trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/i.test(clean)) return clean;
+  if (/^#[0-9a-f]{3}$/i.test(clean)) {
+    return '#' + clean[1] + clean[1] + clean[2] + clean[2] + clean[3] + clean[3];
+  }
+  if (COLOR_NAME_MAP[clean]) return COLOR_NAME_MAP[clean];
+  if (Array.isArray(variants)) {
+    const matched = variants.find(v => (v.color_name || '').toLowerCase() === clean);
+    if (matched && matched.color_hex) return matched.color_hex;
+  }
+  return '#cbd5e1';
+}
+
 // ==========================================================================
 // INICIALIZACIÓN
 // ==========================================================================
@@ -183,7 +209,6 @@ function renderProductsTable() {
 
   tbody.innerHTML = pagedProducts.map(p => {
     const anglesCount = (p.angle_images || []).length;
-    const colorsCount = (p.color_images || []).length;
     const hasVideo = !!p.product_video;
     const statusClass = p.is_active ? 'status-active' : 'status-inactive';
     const statusLabel = p.is_active ? 'Activo' : 'Inactivo';
@@ -207,17 +232,43 @@ function renderProductsTable() {
       </tr>
     `).join('');
 
-    // Sub-tabla de Colores (FOTO REAL + MUESTRA COLOR + NOMBRE + HEX)
-    const colorsRows = (p.color_images || []).map(c => `
+    // Sub-tabla de Colores (Color Principal de Portada + Variantes)
+    const baseColorName = (p.main_color || p.color_principal || '').trim();
+    const allColorsList = [];
+    if (baseColorName) {
+      allColorsList.push({
+        color_name: baseColorName,
+        color_hex: resolveColorHex(baseColorName, p.color_images),
+        color_image: p.product_image,
+        isBase: true
+      });
+    }
+    (p.color_images || []).forEach(c => {
+      const vName = (c.color_name || 'Variante').trim();
+      const vImg = c.color_image || c.image;
+      const isDuplicate = baseColorName && vImg === p.product_image && vName.toLowerCase() === baseColorName.toLowerCase();
+      if (!isDuplicate) {
+        allColorsList.push({
+          color_name: vName,
+          color_hex: c.color_hex || '#0272bc',
+          color_image: vImg,
+          isBase: false
+        });
+      }
+    });
+
+    const colorsCount = allColorsList.length;
+
+    const colorsRows = allColorsList.map(c => `
       <tr>
         <td style="width: 54px;">
           <button 
             type="button" 
             class="media-preview-btn btn-preview-image variant-thumb-btn" 
-            data-img-src="${escapeHtml(c.color_image || c.image)}" 
-            data-title="${escapeHtml(p.product_name)} — Color: ${escapeHtml(c.color_name)}" 
+            data-img-src="${escapeHtml(c.color_image)}" 
+            data-title="${escapeHtml(p.product_name)} — ${c.isBase ? 'Color Base: ' : 'Color: '}${escapeHtml(c.color_name)}" 
             title="Ver imagen en pantalla completa">
-            <img class="variant-img-thumb" src="${escapeHtml(c.color_image || c.image)}" alt="${escapeHtml(c.color_name)}" onerror="this.src='../../assets/images/logo.jpeg'">
+            <img class="variant-img-thumb" src="${escapeHtml(c.color_image)}" alt="${escapeHtml(c.color_name)}" onerror="this.src='../../assets/images/logo.jpeg'">
           </button>
         </td>
         <td style="width: 40px; text-align: center;">
@@ -225,6 +276,7 @@ function renderProductsTable() {
         </td>
         <td>
           <strong style="color: var(--text-main); font-size: 0.82rem;">${escapeHtml(c.color_name)}</strong>
+          ${c.isBase ? '<span style="font-size: 0.68rem; color: #0284c7; background: #e0f2fe; padding: 1px 6px; border-radius: 10px; margin-left: 6px; font-weight: 700;">Base Portada</span>' : ''}
         </td>
         <td>
           <span class="hex-code-badge">${escapeHtml(c.color_hex)}</span>

@@ -6,8 +6,19 @@ from apps.orders.models import (
     Order,
     OrderDetail,
     OrderProduct,
-    ManufacturingOrder
+    ManufacturingOrder,
+    ExchangeRate
 )
+
+
+@admin.register(ExchangeRate)
+class ExchangeRateAdmin(BaseAdmin):
+    """Panel de administración para las Tasas de Cambio oficiales (BCV)."""
+    list_display = ['date', 'rate', 'source', 'is_manual', 'created_at', 'updated_at']
+    list_filter = ['source', 'is_manual', 'date', 'is_deleted']
+    search_fields = ['date', 'source', 'notes']
+    ordering = ['-date']
+    readonly_fields = ['created_at', 'updated_at']
 
 
 class OrderDetailInline(admin.TabularInline):
@@ -30,9 +41,12 @@ class OrderAdmin(BaseAdmin):
 
     list_display = [
         'id',
+        'order_number',
         'user',
         'status',
         'total_price',
+        'bcv_rate',
+        'total_price_bs',
         'created_at',
         'updated_at',
     ]

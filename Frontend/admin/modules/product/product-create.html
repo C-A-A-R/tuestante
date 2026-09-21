@@ -347,7 +347,26 @@
                           <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
                         <span class="dropzone-text">Arrastra o <strong>haz clic para subir portada</strong></span>
-                        <span class="dropzone-hint">PNG, JPG, WEBP (Máx. 5MB)</span>
+                      </div>
+                    </div>
+
+                    <!-- Color Principal ligado a la Imagen de Portada -->
+                    <div class="main-color-group" id="main-color-group">
+                      <div class="main-color-header-row">
+                        <label class="main-color-label" for="input-main-color-name">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <circle cx="12" cy="12" r="4"></circle>
+                          </svg>
+                          Color Principal (Base Portada) <span class="required-mark">*</span>
+                        </label>
+                        <span class="main-color-badge-tag">Ligado a Portada</span>
+                      </div>
+                      <div class="main-color-edit-row">
+                        <div class="main-color-picker-wrapper" title="Seleccionar tono exacto">
+                          <input type="color" id="input-main-color-picker" value="#0272bc">
+                        </div>
+                        <input type="text" id="input-main-color-name" name="main_color" class="form-input main-color-name-input" placeholder="Nombre del color base (ej. Blanco, Roble Nórdico)" required>
                       </div>
                     </div>
                   </div>

@@ -14,7 +14,8 @@ import { getOfficialRate } from '../../js/service/exchange-rate.service.js';
 import { 
   getClientsList, 
   getProductsList, 
-  createOrder 
+  createOrder,
+  getDailyExchangeRate 
 } from './order.api.js';
 import { 
   getVenezuelaStates, 
@@ -727,6 +728,7 @@ async function handleCreateOrderSubmit(e) {
     total_amount: totalPriceUsd,
     notes: clientNotes,
     internal_notes: internalNotes,
+    bcv_rate: createState.exchangeRate,
     items: detailsPayload,
     details: detailsPayload,
     shipping_address: {
@@ -819,12 +821,17 @@ async function initOrderCreatePage() {
     // 1. Inicializar componentes compartidos (Navbar, Drawer y Footer)
     await loadAdminComponents({ title: 'Crear Pedido' });
 
-    // 2. Obtener Tasa de Cambio BCV
+    // 2. Obtener Tasa de Cambio BCV del día
     try {
-      createState.exchangeRate = await getOfficialRate();
+      const daily = await getDailyExchangeRate();
+      if (daily && daily.rate) {
+        createState.exchangeRate = Number(daily.rate);
+      } else {
+        createState.exchangeRate = await getOfficialRate();
+      }
     } catch (err) {
       console.warn('Usando tasa de contingencia:', err);
-      createState.exchangeRate = 791.32;
+      createState.exchangeRate = await getOfficialRate().catch(() => 849.56);
     }
 
     const rateBadge = document.getElementById('live-exchange-rate-badge');

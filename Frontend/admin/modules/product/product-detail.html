@@ -404,6 +404,35 @@
                         <span class="dropzone-hint edit-only-inline">Haz clic o arrastra para subir (PNG, JPG, WEBP)</span>
                       </div>
                     </div>
+
+                    <!-- Color Principal ligado a la Imagen de Portada -->
+                    <div class="main-color-group" id="main-color-group">
+                      <div class="main-color-header-row">
+                        <label class="main-color-label" for="input-main-color-name">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <circle cx="12" cy="12" r="4"></circle>
+                          </svg>
+                          Color Principal (Base Portada) <span class="required-mark">*</span>
+                        </label>
+                        <span class="main-color-badge-tag">Ligado a Portada</span>
+                      </div>
+
+                      <!-- Modo Lectura -->
+                      <div class="main-color-display" id="main-color-display">
+                        <span class="main-color-circle-swatch" id="main-color-view-swatch" style="background-color: #0272bc;"></span>
+                        <span class="main-color-text-val" id="main-color-view-name">Estándar</span>
+                        <span class="main-color-hex-tag" id="main-color-view-hex">#0272bc</span>
+                      </div>
+
+                      <!-- Modo Edición -->
+                      <div class="main-color-edit-row edit-only-flex hidden" id="main-color-edit-row">
+                        <div class="main-color-picker-wrapper" title="Seleccionar tono exacto">
+                          <input type="color" id="input-main-color-picker" value="#0272bc" disabled>
+                        </div>
+                        <input type="text" id="input-main-color-name" name="main_color" class="form-input main-color-name-input" placeholder="Nombre del color base (ej. Blanco, Roble Nórdico)" disabled>
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Video Demostrativo (Reproductor HTML5 Integrado) -->

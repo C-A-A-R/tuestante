@@ -492,27 +492,68 @@ function renderProductThumbnails(product, mainImageUrl) {
     });
 }
 
+const CLIENT_COLOR_NAME_MAP = {
+  'blanco': '#ffffff', 'white': '#ffffff', 'negro': '#111827', 'black': '#111827',
+  'gris': '#9ca3af', 'gris claro': '#d1d5db', 'gris oscuro': '#4b5563', 'gray': '#9ca3af',
+  'roble': '#b48a56', 'roble nórdico': '#c29b68', 'madera': '#a0714f', 'marron': '#78350f',
+  'café': '#652d0d', 'azul': '#0272bc', 'azul rey': '#0272bc', 'azul oscuro': '#3d5ead',
+  'morado': '#702c91', 'fuccia': '#b6217f', 'fucsia': '#b6217f', 'rojo': '#ef1c25',
+  'naranja': '#f15a21', 'amarillo': '#fff300', 'turqueza': '#00a28a', 'turquesa': '#00a28a',
+  'verde pasto': '#4eb043', 'verde': '#9ec536', 'mostaza': '#ffc20f', 'rosado': '#f472b6',
+  'rosa': '#f472b6'
+};
+
+function resolveClientColorHex(name, variants = []) {
+  if (!name) return '#ffffff';
+  const clean = String(name).trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/i.test(clean)) return clean;
+  if (/^#[0-9a-f]{3}$/i.test(clean)) {
+    return '#' + clean[1] + clean[1] + clean[2] + clean[2] + clean[3] + clean[3];
+  }
+  if (CLIENT_COLOR_NAME_MAP[clean]) return CLIENT_COLOR_NAME_MAP[clean];
+  if (Array.isArray(variants)) {
+    const matched = variants.find(v => (v.color_name || '').toLowerCase() === clean);
+    if (matched && matched.color_hex) return matched.color_hex;
+  }
+  return '#cbd5e1';
+}
+
 function renderProductColors(product, mainImageUrl) {
     const swatchListEl = document.getElementById('colors-swatch-list');
     const selectedNameEl = document.getElementById('selected-color-name');
     if (!swatchListEl) return;
 
-    let colors = [];
+    const baseColorRaw = (product.main_color || product.color_principal || '').trim();
+    const resolvedBaseName = baseColorRaw || 'Color Principal';
+    const resolvedBaseHex = resolveClientColorHex(baseColorRaw, product.color_images);
+
+    // 1. Color base / principal ligado obligatoriamente a la foto de portada (mainImageUrl)
+    let colors = [
+        {
+            name: resolvedBaseName,
+            hex: resolvedBaseHex,
+            image: mainImageUrl,
+            isBase: true
+        }
+    ];
+
+    // 2. Variantes de color secundarias registradas en product.color_images
     if (Array.isArray(product.color_images) && product.color_images.length > 0) {
-        colors = product.color_images.map(c => ({
-            name: c.color_name || 'Color',
-            hex: c.color_hex || '#005187',
-            image: resolveImageUrl(c.color_image, mainImageUrl)
-        }));
-    } else if (product.main_color) {
-        colors = [
-            { name: product.main_color, hex: '#005187', image: mainImageUrl }
-        ];
-    } else {
-        // Si no tiene variantes de color registradas en el backend, dejar estándar
-        colors = [
-            { name: 'Estándar', hex: '#64748b', image: mainImageUrl }
-        ];
+        product.color_images.forEach(c => {
+            const vName = (c.color_name || 'Variante').trim();
+            const vHex = c.color_hex || '#0272bc';
+            const vImg = resolveImageUrl(c.color_image, mainImageUrl);
+            // Evitar duplicar si es idéntico a la portada
+            const isDuplicate = (vImg === mainImageUrl && vName.toLowerCase() === resolvedBaseName.toLowerCase());
+            if (!isDuplicate) {
+                colors.push({
+                    name: vName,
+                    hex: vHex,
+                    image: vImg,
+                    isBase: false
+                });
+            }
+        });
     }
 
     if (selectedNameEl) selectedNameEl.textContent = colors[0].name;
@@ -521,11 +562,12 @@ function renderProductColors(product, mainImageUrl) {
     colors.forEach((c, idx) => {
         html += `
             <button type="button" 
-                    class="color-swatch-btn ${idx === 0 ? 'active' : ''}" 
+                    class="color-swatch-btn ${idx === 0 ? 'active' : ''} ${c.isBase ? 'is-base-color' : ''}" 
                     style="background-color: ${c.hex};" 
                     data-color-name="${c.name}" 
                     data-color-image="${c.image}" 
-                    title="${c.name}" 
+                    data-is-base="${c.isBase ? 'true' : 'false'}"
+                    title="${c.name}${c.isBase ? ' (Color Principal / Portada)' : ''}" 
                     aria-label="${c.name}">
             </button>
         `;
@@ -546,12 +588,17 @@ function renderProductColors(product, mainImageUrl) {
 
             const name = btn.getAttribute('data-color-name');
             const newImage = btn.getAttribute('data-color-image');
+            const isBase = btn.getAttribute('data-is-base') === 'true';
 
             if (selectedNameEl) selectedNameEl.textContent = name;
 
             const sidebarEl = document.getElementById('product-thumbnails-sidebar');
             if (sidebarEl) {
                 sidebarEl.querySelectorAll('.thumbnail-btn').forEach(b => b.classList.remove('active'));
+                if (isBase) {
+                    const firstThumb = sidebarEl.querySelector('.thumbnail-btn:not(.video-thumbnail-btn)');
+                    if (firstThumb) firstThumb.classList.add('active');
+                }
             }
 
             if (mainVideoEl) {
@@ -568,6 +615,7 @@ function renderProductColors(product, mainImageUrl) {
                 mirrorImgEl.src = newImage;
                 mirrorImgEl.alt = `${product.product_name} - ${name}`;
             }
+
 
             if (lightboxVideoEl) {
                 lightboxVideoEl.pause();

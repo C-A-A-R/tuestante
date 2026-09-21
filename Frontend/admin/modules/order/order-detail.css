@@ -1051,6 +1051,52 @@ html, body {
   color: var(--primary);
 }
 
+.btn-success {
+  background-color: #10b981;
+  color: #ffffff;
+  border: 1px solid #10b981;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
+}
+
+.btn-success:hover {
+  background-color: #059669;
+  border-color: #059669;
+}
+
+.btn-danger {
+  background-color: #ef4444;
+  color: #ffffff;
+  border: 1px solid #ef4444;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+.btn-outline-danger {
+  background: transparent;
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.btn-outline-danger:hover {
+  background-color: #fee2e2;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.timeline-step-item {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.timeline-step-item:hover {
+  background-color: var(--bg-secondary);
+}
+
 .text-right { text-align: right; }
 .text-center { text-align: center; }
 .text-primary { color: var(--primary); }

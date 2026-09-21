@@ -24,6 +24,8 @@ const state = {
   // Campos multimedia
   mainImage: '',
   mainImageFile: null,
+  mainColor: '',
+  mainColorHex: '#0272bc',
   videoUrl: '',
   videoFile: null,
 
@@ -33,6 +35,53 @@ const state = {
 
   isSubmitting: false
 };
+
+const COLOR_NAME_MAP = {
+  'blanco': '#ffffff',
+  'white': '#ffffff',
+  'negro': '#111827',
+  'black': '#111827',
+  'gris': '#9ca3af',
+  'gris claro': '#d1d5db',
+  'gris oscuro': '#4b5563',
+  'gray': '#9ca3af',
+  'roble': '#b48a56',
+  'roble nórdico': '#c29b68',
+  'madera': '#a0714f',
+  'marron': '#78350f',
+  'café': '#652d0d',
+  'azul': '#0272bc',
+  'azul rey': '#0272bc',
+  'azul oscuro': '#3d5ead',
+  'morado': '#702c91',
+  'fuccia': '#b6217f',
+  'fucsia': '#b6217f',
+  'rojo': '#ef1c25',
+  'naranja': '#f15a21',
+  'amarillo': '#fff300',
+  'turqueza': '#00a28a',
+  'turquesa': '#00a28a',
+  'verde pasto': '#4eb043',
+  'verde': '#9ec536',
+  'mostaza': '#ffc20f',
+  'rosado': '#f472b6',
+  'rosa': '#f472b6'
+};
+
+function resolveColorHex(name, variants = []) {
+  if (!name) return '#ffffff';
+  const clean = String(name).trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/i.test(clean)) return clean;
+  if (/^#[0-9a-f]{3}$/i.test(clean)) {
+    return '#' + clean[1] + clean[1] + clean[2] + clean[2] + clean[3] + clean[3];
+  }
+  if (COLOR_NAME_MAP[clean]) return COLOR_NAME_MAP[clean];
+  if (Array.isArray(variants)) {
+    const matched = variants.find(v => (v.color_name || '').toLowerCase() === clean);
+    if (matched && matched.color_hex) return matched.color_hex;
+  }
+  return '#cbd5e1';
+}
 
 // ==========================================================================
 // INICIALIZACIÓN DE LA PANTALLA
@@ -84,6 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupModeToggle();
     setupLightboxModal();
     setupMainImageControls();
+    setupMainColorControls();
     setupVideoControls();
     setupColorPresetButtons();
     setupAngleControls();
@@ -197,12 +247,18 @@ function populateProductData(p) {
   updatePriceVes(parseFloat(p.price) || 0);
 
   // Multimedia Principal: Imagen de portada
-  state.mainImage = p.product_image || '';
+  state.mainImage = p.product_image ? resolveImageUrl(p.product_image) : '';
   state.mainImageFile = null;
   renderMainImage();
 
+  // Multimedia Principal: Color principal (ligado a la portada)
+  const mainColorName = p.main_color || p.color_principal || '';
+  state.mainColor = mainColorName;
+  state.mainColorHex = resolveColorHex(mainColorName, p.color_images);
+  renderMainColor();
+
   // Multimedia Principal: Video demostrativo
-  state.videoUrl = p.product_video || '';
+  state.videoUrl = p.product_video ? resolveImageUrl(p.product_video) : '';
   state.videoFile = null;
   renderVideo();
 
@@ -306,6 +362,16 @@ function setEditMode(isEdit) {
   if (editMainImgActions) {
     editMainImgActions.classList.toggle('hidden', !isEdit);
   }
+
+  const mainColorDisplay = document.getElementById('main-color-display');
+  const mainColorEditRow = document.getElementById('main-color-edit-row');
+  const mainColorNameInput = document.getElementById('input-main-color-name');
+  const mainColorPickerInput = document.getElementById('input-main-color-picker');
+
+  if (mainColorDisplay) mainColorDisplay.classList.toggle('hidden', isEdit);
+  if (mainColorEditRow) mainColorEditRow.classList.toggle('hidden', !isEdit);
+  if (mainColorNameInput) mainColorNameInput.disabled = !isEdit;
+  if (mainColorPickerInput) mainColorPickerInput.disabled = !isEdit;
 
   const videoEditActions = document.getElementById('video-edit-actions');
   if (videoEditActions) {
@@ -446,6 +512,57 @@ function setupMainImageControls() {
 }
 
 // ==========================================================================
+// RENDERIZADO Y CONTROL DE COLOR PRINCIPAL (BASE DE PORTADA)
+// ==========================================================================
+
+function renderMainColor() {
+  const swatchEl = document.getElementById('main-color-view-swatch');
+  const nameEl = document.getElementById('main-color-view-name');
+  const hexEl = document.getElementById('main-color-view-hex');
+  const nameInput = document.getElementById('input-main-color-name');
+  const pickerInput = document.getElementById('input-main-color-picker');
+
+  const displayName = state.mainColor || 'Blanco';
+  const displayHex = state.mainColorHex || '#ffffff';
+
+  if (swatchEl) swatchEl.style.backgroundColor = displayHex;
+  if (nameEl) nameEl.textContent = displayName;
+  if (hexEl) hexEl.textContent = displayHex;
+
+  if (nameInput && !nameInput.matches(':focus')) {
+    nameInput.value = state.mainColor || '';
+  }
+  if (pickerInput) {
+    pickerInput.value = displayHex.startsWith('#') && displayHex.length === 7 ? displayHex : '#0272bc';
+  }
+}
+
+function setupMainColorControls() {
+  const nameInput = document.getElementById('input-main-color-name');
+  const pickerInput = document.getElementById('input-main-color-picker');
+  if (!nameInput || !pickerInput) return;
+
+  pickerInput.addEventListener('input', (e) => {
+    state.mainColorHex = e.target.value;
+    if (!nameInput.value.trim()) {
+      nameInput.value = e.target.value;
+      state.mainColor = e.target.value;
+    }
+    renderMainColor();
+  });
+
+  nameInput.addEventListener('input', (e) => {
+    state.mainColor = e.target.value.trim();
+    const guessedHex = resolveColorHex(state.mainColor);
+    if (guessedHex && guessedHex.startsWith('#') && guessedHex.length === 7) {
+      state.mainColorHex = guessedHex;
+      pickerInput.value = guessedHex;
+    }
+    renderMainColor();
+  });
+}
+
+// ==========================================================================
 // RENDERIZADO Y CONTROL DE VIDEO DEMOSTRATIVO
 // ==========================================================================
 
@@ -459,14 +576,19 @@ function renderVideo() {
   if (!emptyBox || !previewBox || !player) return;
 
   if (state.videoUrl) {
-    player.src = state.videoUrl;
+    if (player.src !== state.videoUrl) {
+      player.src = state.videoUrl;
+      player.load();
+    }
     emptyBox.classList.add('hidden');
     previewBox.classList.remove('hidden');
     if (filenameEl) {
-      filenameEl.textContent = state.videoFile ? state.videoFile.name : 'video-demostrativo.mp4';
+      filenameEl.textContent = state.videoFile 
+        ? state.videoFile.name 
+        : (state.videoUrl ? state.videoUrl.split('/').pop().split('?')[0] : 'video-demostrativo.mp4');
     }
     if (filesizeEl) {
-      filesizeEl.textContent = state.videoFile ? formatBytes(state.videoFile.size) : 'Video del producto';
+      filesizeEl.textContent = state.videoFile ? formatBytes(state.videoFile.size) : 'Video Demostrativo';
     }
   } else {
     player.src = '';
@@ -477,15 +599,46 @@ function renderVideo() {
 
 function setupVideoControls() {
   const dropzone = document.getElementById('video-dropzone');
+  const player = document.getElementById('video-preview-player');
+  const playerContainer = document.querySelector('.video-player-container');
   const fileInput = document.getElementById('input-product-video-file');
   const btnChange = document.getElementById('btn-change-video');
   const btnRemove = document.getElementById('btn-remove-video');
 
   if (!dropzone || !fileInput) return;
 
+  // Clic interactivo en el reproductor de video para alternar play / pause
+  if (player) {
+    player.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (player.paused) {
+        player.play().catch(err => console.warn('Error al reproducir video:', err));
+      } else {
+        player.pause();
+      }
+    });
+
+    player.addEventListener('error', () => {
+      console.warn('[Video Player] Error de carga o formato no compatible:', player.error, player.src);
+    });
+  }
+
+  if (playerContainer) {
+    playerContainer.addEventListener('click', (e) => {
+      if (e.target === player) return;
+      if (player && player.src) {
+        if (player.paused) {
+          player.play().catch(err => console.warn('Error al reproducir video:', err));
+        } else {
+          player.pause();
+        }
+      }
+    });
+  }
+
   dropzone.addEventListener('click', (e) => {
     if (!state.isEditMode) return;
-    if (e.target.closest('#btn-change-video') || e.target.closest('#btn-remove-video') || e.target.closest('video')) return;
+    if (e.target.closest('#btn-change-video') || e.target.closest('#btn-remove-video') || e.target.closest('video') || e.target.closest('.video-player-container')) return;
     if (e.target === fileInput) return;
     if (!state.videoUrl) {
       fileInput.click();
@@ -1129,10 +1282,9 @@ function setupFormSubmit() {
     formData.append('is_feature_product', is_feature_product);
 
     // Color principal
-    const mainColor = state.colors.length > 0 ? (state.colors[0].color_name || state.colors[0].color_hex) : '';
-    if (mainColor) {
-      formData.append('main_color', mainColor);
-    }
+    const mainColorInput = document.getElementById('input-main-color-name')?.value.trim();
+    const mainColor = mainColorInput || state.mainColor || (state.colors.length > 0 ? (state.colors[0].color_name || state.colors[0].color_hex) : 'Blanco');
+    formData.append('main_color', mainColor);
 
     // Imagen de Portada (solo si se seleccionó un nuevo archivo File)
     if (state.mainImageFile instanceof File) {
