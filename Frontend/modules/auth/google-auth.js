@@ -18,20 +18,30 @@ function setupOriginErrorDetection(onError) {
     if (window.__gsiOriginMonitored__) return;
     window.__gsiOriginMonitored__ = true;
 
-    const originalConsoleError = console.error;
-    console.error = function (...args) {
-        originalConsoleError.apply(console, args);
+    const checkText = (args) => {
         try {
             const fullText = args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a || ""))).join(" ");
-            if (fullText.includes("The given origin is not allowed for the given client ID")) {
+            if (fullText.toLowerCase().includes("origin is not allowed for the given client id")) {
                 originErrorLogged = true;
                 const currentOrigin = window.location.origin;
-                const msg = `Aviso de configuración en Google Cloud: El origen actual (${currentOrigin}) no está en los "Orígenes de JavaScript autorizados" del Client ID en Google Cloud Console. Por favor agrégalo para que el inicio de sesión funcione.`;
+                const msg = `El origen actual (${currentOrigin}) no está registrado en los "Orígenes de JavaScript autorizados" en Google Cloud Console para este Client ID. Agrégalo en Google Cloud Console para permitir el inicio de sesión.`;
                 if (typeof onError === "function") {
                     onError(msg);
                 }
             }
         } catch (_) {}
+    };
+
+    const originalConsoleError = console.error;
+    console.error = function (...args) {
+        originalConsoleError.apply(console, args);
+        checkText(args);
+    };
+
+    const originalConsoleWarn = console.warn;
+    console.warn = function (...args) {
+        originalConsoleWarn.apply(console, args);
+        checkText(args);
     };
 }
 

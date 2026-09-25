@@ -358,9 +358,14 @@ def verify_google_id_token(credential):
     # Validar client_id si está configurado en settings
     google_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', None)
     if google_client_id and str(google_client_id).strip():
-        aud = payload.get('aud')
-        azp = payload.get('azp')
-        if aud != google_client_id and azp != google_client_id:
+        if isinstance(google_client_id, (list, tuple, set)):
+            valid_client_ids = [str(cid).strip() for cid in google_client_id if str(cid).strip()]
+        else:
+            valid_client_ids = [cid.strip() for cid in str(google_client_id).split(',') if cid.strip()]
+
+        aud = str(payload.get('aud') or '').strip()
+        azp = str(payload.get('azp') or '').strip()
+        if aud not in valid_client_ids and azp not in valid_client_ids:
             raise serializers.ValidationError({"credential": "El token no corresponde al Client ID configurado para esta aplicación."})
 
     return payload
@@ -373,6 +378,17 @@ class GoogleAuthView(APIView):
     """
 
     permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        """
+        Retorna el Client ID configurado en el backend para sincronización dinámica con el frontend.
+        """
+        raw_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '') or ''
+        client_ids = [cid.strip() for cid in str(raw_client_id).split(',') if cid.strip()]
+        return Response({
+            "client_id": client_ids[0] if client_ids else "",
+            "client_ids": client_ids
+        }, status=status.HTTP_200_OK)
 
     def post(self, request):
         serializer = GoogleAuthSerializer(data=request.data)
