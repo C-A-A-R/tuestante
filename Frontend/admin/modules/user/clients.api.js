@@ -136,6 +136,8 @@ export async function crearCliente(payload) {
   });
 }
 
+export { crearCliente as createClient };
+
 /**
  * Actualiza los datos de un cliente existente.
  * @param {number|string} id

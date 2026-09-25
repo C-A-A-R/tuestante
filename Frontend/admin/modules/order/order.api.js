@@ -864,6 +864,22 @@ export async function updateOrderDetails(orderId, payload) {
 }
 
 /**
+ * Crea un nuevo cliente rápido para asociarlo a un nuevo pedido.
+ * @param {Object} payload Datos del cliente
+ * @returns {Promise<Object>}
+ */
+export async function createClient(payload) {
+  return await postRequest('/user/', {
+    ...payload,
+    is_staff: false,
+    is_superuser: false,
+    is_registered: true
+  }, { auth: true });
+}
+
+export { createClient as crearCliente };
+
+/**
  * Obtiene la lista de clientes disponibles para asociar a nuevos pedidos.
  * @returns {Promise<Array>}
  */
