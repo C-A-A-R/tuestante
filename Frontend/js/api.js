@@ -68,11 +68,21 @@ export async function apiRequest({
     finalHeaders["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(buildUrl(path, params), {
-    method,
-    headers: finalHeaders,
-    body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
-  });
+  let response;
+  try {
+    response = await fetch(buildUrl(path, params), {
+      method,
+      headers: finalHeaders,
+      body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
+    });
+  } catch (networkError) {
+    const error = new Error("Error de conexión: No se pudo contactar con el servidor. Verifica tu conexión a internet.");
+    error.status = 0;
+    error.data = null;
+    error.isNetworkError = true;
+    error.originalError = networkError;
+    throw error;
+  }
 
   if (response.status === 204) {
     return null;
@@ -116,12 +126,13 @@ export async function apiRequest({
   }
 
   // ==========================================
-  // NUEVO CAMBIO: Captura de errores del Backend
+  // Captura y formateo de errores del Backend (DRF / HTTP)
   // ==========================================
   if (!response.ok) {
-    const apiError = new Error("API request failed");
+    const errorMessage = formatBackendErrorMessage(data, response.status);
+    const apiError = new Error(errorMessage);
     apiError.status = response.status;
-    apiError.data = data; // <--- Aquí inyectamos el JSON con los errores ("Este campo ya existe", etc.)
+    apiError.data = data; // Inyectamos el JSON con los errores completos
     throw apiError;
   }
 
@@ -205,8 +216,8 @@ export { backendOrigin, API_BASE_URL } from "./config.js";
 export function extractList(apiResult) {
   if (!apiResult) return [];
   if (Array.isArray(apiResult)) return apiResult;
-  if (Array.isArray(apiResult.distributors)) return apiResult.distributors;
   if (Array.isArray(apiResult.results)) return apiResult.results;
+  if (Array.isArray(apiResult.distributors)) return apiResult.distributors;
   if (Array.isArray(apiResult.data)) return apiResult.data;
   if (Array.isArray(apiResult.items)) return apiResult.items;
   return [];
@@ -236,3 +247,82 @@ export function resolveImageUrl(path, fallback = '') {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return `${origin}${cleanPath}`;
 }
+
+/**
+ * Extrae y formatea mensajes de error claros provenientes de DRF o respuestas HTTP.
+ * @param {*} data Objeto, arreglo o texto con el error retornado por el backend
+ * @param {number} status Código de estado HTTP
+ * @returns {string}
+ */
+export function formatBackendErrorMessage(data, status = 0) {
+  if (!data) {
+    if (status === 404) return "El recurso solicitado no fue encontrado (404).";
+    if (status === 403) return "No tienes permisos para realizar esta acción (403).";
+    if (status === 401) return "Tu sesión ha expirado o no estás autenticado (401).";
+    if (status >= 500) return `Error interno del servidor (${status}). Intente más tarde.`;
+    return "Ocurrió un error al procesar la solicitud.";
+  }
+
+  if (typeof data === "string") {
+    if (data.includes("<html") || data.includes("<!DOCTYPE") || data.includes("<body")) {
+      return `Error del servidor (${status || 500}). Por favor intente más tarde.`;
+    }
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data
+      .map(item => (typeof item === "object" ? formatBackendErrorMessage(item, status) : String(item)))
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  if (typeof data === "object") {
+    if (data.detail && typeof data.detail === "string") return data.detail;
+    if (data.error && typeof data.error === "string") return data.error;
+    if (data.message && typeof data.message === "string") return data.message;
+
+    // Diccionario de nombres legibles en español para campos comunes de DRF
+    const FIELD_LABELS = {
+      amount: "Monto",
+      amount_ves: "Monto en Bolívares",
+      exchange_rate: "Tasa de cambio",
+      currency: "Moneda",
+      payment_stage: "Etapa de pago",
+      payment_method: "Método de pago",
+      reference_number: "N° de Referencia",
+      receipt_file: "Comprobante",
+      order: "Pedido",
+      status: "Estado",
+      notes: "Notas",
+      username: "Usuario",
+      email: "Correo electrónico",
+      password: "Contraseña",
+      phone: "Teléfono",
+      non_field_errors: ""
+    };
+
+    const messages = [];
+    for (const [key, val] of Object.entries(data)) {
+      const label = FIELD_LABELS[key] !== undefined ? FIELD_LABELS[key] : key;
+      let text = "";
+      if (Array.isArray(val)) {
+        text = val.map(v => typeof v === 'object' ? formatBackendErrorMessage(v, status) : String(v)).join(", ");
+      } else if (typeof val === "object" && val !== null) {
+        text = formatBackendErrorMessage(val, status);
+      } else {
+        text = String(val);
+      }
+      if (text) {
+        messages.push(label ? `${label}: ${text}` : text);
+      }
+    }
+
+    if (messages.length > 0) {
+      return messages.join(" | ");
+    }
+  }
+
+  return "Ocurrió un error inesperado al procesar los datos.";
+}
+

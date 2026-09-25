@@ -215,6 +215,7 @@ async function handleCompleteProfileSubmit(e) {
     const firstLastName = document.getElementById("first_last_name")?.value.trim();
     const secondLastName = document.getElementById("second_last_name")?.value.trim() || "";
     const city = document.getElementById("city")?.value.trim() || "";
+    const address = document.getElementById("address")?.value.trim() || "";
 
     // Validación de Cédula (Obligatoria, al menos 5 dígitos)
     if (!identityDoc) {
@@ -276,6 +277,7 @@ async function handleCompleteProfileSubmit(e) {
         first_last_name: firstLastName,
         second_last_name: secondLastName,
         city: city,
+        address: address,
     };
 
     try {

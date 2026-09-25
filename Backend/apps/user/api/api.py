@@ -118,9 +118,10 @@ class UserViewSet(BaseViewSet):
         # Filtro por Ciudad
         city_param = self.request.query_params.get("city") or self.request.query_params.get("ciudad")
         if city_param and city_param.lower() not in ["all", "todas", ""]:
+            c_term = city_param.strip()
             queryset = queryset.filter(
-                orders__shipments__city__iexact=city_param.strip(),
-                orders__shipments__is_deleted=False
+                Q(city__iexact=c_term) |
+                Q(orders__shipments__city__iexact=c_term, orders__shipments__is_deleted=False)
             ).distinct()
 
         # Subconsultas para la ciudad y estado del envío más reciente
@@ -143,8 +144,8 @@ class UserViewSet(BaseViewSet):
                 output_field=DecimalField(max_digits=12, decimal_places=2)
             ),
             last_order_date=Max('orders__created_at', filter=Q(orders__is_deleted=False)),
-            city=Subquery(latest_shipment_city),
-            state=Subquery(latest_shipment_state),
+            latest_shipment_city=Subquery(latest_shipment_city),
+            latest_shipment_state=Subquery(latest_shipment_state),
         )
 
         return queryset

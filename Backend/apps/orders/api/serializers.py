@@ -77,11 +77,12 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'unit_price',
             'final_price',
             'notes',
+            'technical_design',
             'order_products',
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'order', 'final_price', 'order_products', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'order', 'final_price', 'technical_design', 'order_products', 'created_at', 'updated_at']
 
 
 class ManufacturingOrderSerializer(serializers.ModelSerializer):
@@ -100,10 +101,12 @@ class ManufacturingOrderSerializer(serializers.ModelSerializer):
             'issued_at',
             'completed_at',
             'notes',
+            'technical_design',
+            'blueprint_svg',
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'order', 'iteration', 'issued_by', 'issued_at', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'order', 'iteration', 'issued_by', 'issued_at', 'technical_design', 'blueprint_svg', 'created_at', 'updated_at']
         
 
 class OrderSerializer(serializers.ModelSerializer):

@@ -4,9 +4,49 @@
  * ==========================================================================
  */
 
-.complete-card {
+/* Fondo Dividido 50/50: Superior Color Primario Corporativo (#005187), Inferior Claro (#ffffff) */
+.auth-bg-split {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(to bottom, var(--primary, #005187) 0 50%, #ffffff 50% 100%);
+    pointer-events: none;
+}
+
+/* Alineación Global del Cuerpo y Centrado */
+body.auth-body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 40px 16px;
+    background-color: #ffffff;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Contenedor Adaptativo Centrado */
+.auth-page-container.complete-page-container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 660px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Tarjeta Principal Centrada */
+.auth-card.complete-card {
     max-width: 620px;
     width: 100%;
+    margin: 0 auto;
+    background-color: var(--card-bg, #ffffff);
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    border-radius: var(--radius-lg, 20px);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 /* Indicador de Pasos */

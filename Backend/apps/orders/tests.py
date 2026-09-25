@@ -340,17 +340,22 @@ class OrderAPITest(TestCase):
             total_price=100.00
         )
 
-        # 1. Intentar PUT
+        # 1. Intentar PUT (Bloqueado 405)
         put_response = self.client.put(f'/api/orders/{order.id}/', {'notes': 'Nueva nota'}, format='json')
         self.assertEqual(put_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
         self.assertIn("no pueden ser actualizados", put_response.data['error'])
 
-        # 2. Intentar PATCH
-        patch_response = self.client.patch(f'/api/orders/{order.id}/', {'notes': 'Nueva nota'}, format='json')
-        self.assertEqual(patch_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertIn("no pueden ser actualizados", patch_response.data['error'])
+        # 2. Intentar PATCH por cliente no-staff (Bloqueado 403)
+        self.client.force_authenticate(user=self.user)
+        patch_cust_response = self.client.patch(f'/api/orders/{order.id}/', {'notes': 'Nueva nota'}, format='json')
+        self.assertEqual(patch_cust_response.status_code, status.HTTP_403_FORBIDDEN)
 
-        # 3. Intentar DELETE
+        # 3. PATCH permitido solo para staff (200 OK)
+        self.client.force_authenticate(user=admin)
+        patch_admin_response = self.client.patch(f'/api/orders/{order.id}/', {'notes': 'Nota admin'}, format='json')
+        self.assertEqual(patch_admin_response.status_code, status.HTTP_200_OK)
+
+        # 4. Intentar DELETE (Bloqueado 405)
         delete_response = self.client.delete(f'/api/orders/{order.id}/')
         self.assertEqual(delete_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
         self.assertIn("no pueden ser eliminados", delete_response.data['error'])

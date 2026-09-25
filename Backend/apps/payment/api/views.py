@@ -32,6 +32,8 @@ class PaymentViewSet(BaseViewSet):
     ordering_fields = ['created_at', 'amount', 'status', 'id']
 
     def get_permissions(self):
+        if self.action == 'exchange_rate':
+            return [permissions.AllowAny()]
         if self.action in ['list', 'retrieve', 'create']:
             return [permissions.IsAuthenticated()]
         return [permissions.IsAdminUser()]
@@ -88,6 +90,13 @@ class PaymentViewSet(BaseViewSet):
                 order.status = 'final_payment_review'
             order.save()
 
+    @action(detail=False, methods=['get'], url_path='exchange-rate', permission_classes=[permissions.AllowAny])
+    def exchange_rate(self, request, *args, **kwargs):
+        """Retorna la tasa oficial del BCV obtenida con pyBCV (con caché y contingencia)."""
+        from apps.base.services.exchange_rate import get_exchange_rate_details
+        details = get_exchange_rate_details()
+        return Response(details, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=['get'], url_path='statistics', permission_classes=[permissions.IsAdminUser])
     def statistics(self, request, *args, **kwargs):
         """Retorna los KPI agregados de pagos para el panel administrativo."""
@@ -100,12 +109,14 @@ class PaymentViewSet(BaseViewSet):
             final_stage_count=Count('id', filter=models.Q(payment_stage__in=['final', 'total'])),
         )
         total_revenue = float(aggregates['total_revenue'] or 0)
-        rate_ves = 36.50
+        from apps.base.services.exchange_rate import get_bcv_rate
+        rate_ves = float(get_bcv_rate())
         return Response({
             'totalRevenue': total_revenue,
             'totalRevenueVes': round(total_revenue * rate_ves, 2),
             'formattedTotalRevenue': f'${total_revenue:,.2f}',
             'formattedTotalRevenueVes': f'Bs. {total_revenue * rate_ves:,.2f}',
+            'exchangeRate': rate_ves,
             'totalVouchers': aggregates['total_vouchers'],
             'inReviewCount': aggregates['in_review_count'],
             'approvedCount': queryset.filter(status='approved').count(),
@@ -147,12 +158,20 @@ class PaymentViewSet(BaseViewSet):
             # 🛠️ Registrar SIEMPRE la orden en fabricación si no existe aún
             try:
                 from apps.production.models import ProductionOrder
+                from apps.production.services.parametric_service import ParametricDesignService
                 if not ProductionOrder.objects.filter(order=order, is_deleted=False).exists():
                     stage_label = payment.get_payment_stage_display() if hasattr(payment, 'get_payment_stage_display') else payment.payment_stage
+                    tech_design, svg_content = None, None
+                    try:
+                        tech_design, svg_content, _ = ParametricDesignService.build_order_blueprint(order)
+                    except Exception:
+                        pass
                     ProductionOrder.objects.create(
                         order=order,
                         status='queued',
-                        technical_notes=order.notes or f'Iniciada automáticamente por aprobación de pago ({stage_label})'
+                        technical_notes=order.notes or f'Iniciada automáticamente por aprobación de pago ({stage_label})',
+                        technical_design=tech_design,
+                        blueprint_svg=svg_content
                     )
             except Exception as ex:
                 print(f"[Payment Review] Error al registrar orden de fabricación: {ex}")

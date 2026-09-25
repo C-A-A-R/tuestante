@@ -111,6 +111,7 @@
                   <div class="client-results-dropdown" id="client-results-dropdown" role="listbox">
                     <!-- Inyectado dinámicamente -->
                   </div>
+                  <span class="field-error-text" id="error-order-client" style="display: none;"></span>
                 </div>
 
                 <!-- Ficha Informativa del Cliente Seleccionado -->
@@ -162,6 +163,7 @@
                       <select id="shipping-state" class="form-select font-bold" required>
                         <option value="" disabled>Seleccionar estado...</option>
                       </select>
+                      <span class="field-error-text" id="error-shipping-state" style="display: none;"></span>
                     </div>
 
                     <!-- Municipio (municipality) -->
@@ -170,6 +172,7 @@
                       <select id="shipping-municipality" class="form-select font-bold" required>
                         <option value="" disabled selected>Seleccione un estado primero...</option>
                       </select>
+                      <span class="field-error-text" id="error-shipping-municipality" style="display: none;"></span>
                     </div>
 
                     <!-- Ciudad / Localidad (city) -->
@@ -178,6 +181,7 @@
                       <select id="shipping-city" class="form-select font-bold" required>
                         <option value="" disabled selected>Seleccione un municipio primero...</option>
                       </select>
+                      <span class="field-error-text" id="error-shipping-city" style="display: none;"></span>
                     </div>
                   </div>
 
@@ -190,6 +194,7 @@
                       rows="2" 
                       placeholder="Indica la calle, avenida, urbanización, edificio o punto de referencia..." 
                       required></textarea>
+                    <span class="field-error-text" id="error-shipping-address" style="display: none;"></span>
                   </div>
                 </div>
               </section>
@@ -216,6 +221,7 @@
                 <div class="order-items-list-container" id="order-items-list-container">
                   <!-- Se inyectan las filas dinámicamente -->
                 </div>
+                <span class="field-error-text" id="error-order-products" style="display: none; margin-top: 10px;"></span>
 
                 <!-- Botón Agregar Línea de Producto -->
                 <div class="add-item-footer">
@@ -369,11 +375,11 @@
        MODAL: REGISTRO RÁPIDO DE CLIENTE (QUICK CLIENT MODAL)
        ======================================================================== -->
   <div id="quick-client-modal-backdrop" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="quick-client-title">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-lg">
       <div class="modal-header">
         <div>
           <h2 class="modal-title" id="quick-client-title">Registrar Nuevo Cliente</h2>
-          <span class="modal-subtitle">Ingrese los datos de usuario para asociarlo al pedido</span>
+          <span class="modal-subtitle">Ingrese los datos personales y de contacto para registrar y asociar al cliente</span>
         </div>
         <button type="button" class="modal-close-btn" id="btn-close-quick-client-modal" aria-label="Cerrar ventana">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -383,40 +389,154 @@
         </button>
       </div>
 
-      <form id="quick-client-form">
-        <div class="modal-body">
+      <form id="quick-client-form" novalidate>
+        <div class="modal-body modal-body-scrollable">
+          <!-- Fila 1: Nombres -->
           <div class="form-row">
             <div class="form-group col-half">
-              <label for="quick-client-name" class="form-label">Nombre y Apellido <span class="required-mark">*</span></label>
-              <input type="text" id="quick-client-name" class="form-input" placeholder="Ej: Roberto Blanco" required>
+              <label for="quick-client-first-name" class="form-label">Primer Nombre <span class="required-mark">*</span></label>
+              <input type="text" id="quick-client-first-name" class="form-input" placeholder="Ej: Roberto" maxlength="150" required>
+              <span class="field-error-text" id="error-quick-first-name" style="display: none;"></span>
             </div>
             <div class="form-group col-half">
-              <label for="quick-client-username" class="form-label">Usuario / RIF <span class="required-mark">*</span></label>
-              <input type="text" id="quick-client-username" class="form-input" placeholder="Ej: rblanco / V-18920111" required>
+              <label for="quick-client-second-name" class="form-label">Segundo Nombre <span class="optional-label">(opcional)</span></label>
+              <input type="text" id="quick-client-second-name" class="form-input" placeholder="Ej: Carlos" maxlength="150">
             </div>
           </div>
 
+          <!-- Fila 2: Apellidos -->
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="quick-client-first-last-name" class="form-label">Primer Apellido <span class="required-mark">*</span></label>
+              <input type="text" id="quick-client-first-last-name" class="form-input" placeholder="Ej: Blanco" maxlength="150" required>
+              <span class="field-error-text" id="error-quick-first-last-name" style="display: none;"></span>
+            </div>
+            <div class="form-group col-half">
+              <label for="quick-client-second-last-name" class="form-label">Segundo Apellido <span class="optional-label">(opcional)</span></label>
+              <input type="text" id="quick-client-second-last-name" class="form-input" placeholder="Ej: Gómez" maxlength="150">
+            </div>
+          </div>
+
+          <!-- Fila 3: Documento de Identidad & Fecha de Nacimiento -->
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="quick-client-doc" class="form-label">Documento de Identidad <span class="required-mark">*</span></label>
+              <div class="composite-input-row" style="display: flex; gap: 8px;">
+                <select id="quick-client-doc-type" class="form-select" style="width: 75px; flex-shrink: 0;" aria-label="Tipo de documento">
+                  <option value="V" selected>V</option>
+                  <option value="E">E</option>
+                  <option value="J">J</option>
+                  <option value="G">G</option>
+                  <option value="P">P</option>
+                </select>
+                <input type="text" id="quick-client-doc" class="form-input" placeholder="12345678" style="flex: 1;" inputmode="numeric" required>
+              </div>
+              <span class="field-error-text" id="error-quick-doc" style="display: none;"></span>
+            </div>
+            <div class="form-group col-half">
+              <label for="quick-client-birth-date" class="form-label">Fecha de Nacimiento <span class="required-mark">*</span></label>
+              <input type="date" id="quick-client-birth-date" class="form-input" required>
+              <span class="field-error-text" id="error-quick-birth-date" style="display: none;"></span>
+            </div>
+          </div>
+
+          <!-- Fila 4: Correo & Teléfono -->
           <div class="form-row">
             <div class="form-group col-half">
               <label for="quick-client-email" class="form-label">Correo Electrónico <span class="required-mark">*</span></label>
               <input type="email" id="quick-client-email" class="form-input" placeholder="cliente@correo.com" required>
+              <span class="field-error-text" id="error-quick-email" style="display: none;"></span>
             </div>
             <div class="form-group col-half">
-              <label for="quick-client-phone" class="form-label">Teléfono / WhatsApp <span class="required-mark">*</span></label>
-              <input type="tel" id="quick-client-phone" class="form-input" placeholder="+58 412 123 4567" required>
+              <label for="quick-client-phone" class="form-label">Teléfono de Contacto <span class="required-mark">*</span></label>
+              <input type="tel" id="quick-client-phone" class="form-input" placeholder="+584121234567" required>
+              <span class="field-error-text" id="error-quick-phone" style="display: none;"></span>
             </div>
+          </div>
+
+          <!-- Fila 5: Contraseña de Acceso y Confirmación -->
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="quick-client-password" class="form-label">Contraseña de Acceso <span class="required-mark">*</span></label>
+              <div class="input-password-wrapper" style="position: relative; display: flex; align-items: center;">
+                <input type="password" id="quick-client-password" class="form-input" placeholder="••••••••" autocomplete="new-password" style="padding-right: 42px;" required>
+                <button type="button" id="btn-toggle-quick-password" class="btn-toggle-password" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: #64748b; padding: 4px; display: flex; align-items: center;" title="Mostrar u ocultar contraseña">
+                  <svg id="icon-quick-eye-pwd" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+              <span class="field-error-text" id="error-quick-password" style="display: none;"></span>
+            </div>
+            <div class="form-group col-half">
+              <label for="quick-client-confirm-password" class="form-label">Confirmar Contraseña <span class="required-mark">*</span></label>
+              <div class="input-password-wrapper" style="position: relative; display: flex; align-items: center;">
+                <input type="password" id="quick-client-confirm-password" class="form-input" placeholder="••••••••" autocomplete="new-password" style="padding-right: 42px;" required>
+                <button type="button" id="btn-toggle-quick-confirm-password" class="btn-toggle-password" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: #64748b; padding: 4px; display: flex; align-items: center;" title="Mostrar u ocultar contraseña">
+                  <svg id="icon-quick-eye-confirm-pwd" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+              <span class="field-error-text" id="error-quick-confirm-password" style="display: none;"></span>
+            </div>
+          </div>
+
+          <!-- Checklist de Requisitos en Vivo -->
+          <div class="password-rules-checklist" id="quick-password-rules-box" style="margin-top: 4px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 5px; font-size: 0.815rem; background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 10px 14px;">
+            <span style="font-weight: 600; color: var(--text-muted, #475569); font-size: 0.785rem; margin-bottom: 2px;">Requisitos de seguridad obligatorios:</span>
+            <div id="quick-rule-len" class="rule-item" style="display: flex; align-items: center; gap: 8px; color: #64748b; transition: all 0.2s;">
+              <span class="rule-icon" style="font-size: 13px; font-weight: 700;">○</span>
+              <span class="rule-text">Mínimo 6 caracteres</span>
+            </div>
+            <div id="quick-rule-upper" class="rule-item" style="display: flex; align-items: center; gap: 8px; color: #64748b; transition: all 0.2s;">
+              <span class="rule-icon" style="font-size: 13px; font-weight: 700;">○</span>
+              <span class="rule-text">Al menos una letra mayúscula (A-Z)</span>
+            </div>
+            <div id="quick-rule-num" class="rule-item" style="display: flex; align-items: center; gap: 8px; color: #64748b; transition: all 0.2s;">
+              <span class="rule-icon" style="font-size: 13px; font-weight: 700;">○</span>
+              <span class="rule-text">Al menos un número (0-9)</span>
+            </div>
+            <div id="quick-rule-match" class="rule-item" style="display: flex; align-items: center; gap: 8px; color: #64748b; transition: all 0.2s;">
+              <span class="rule-icon" style="font-size: 13px; font-weight: 700;">○</span>
+              <span class="rule-text">Las contraseñas coinciden</span>
+            </div>
+          </div>
+
+          <!-- Fila 6: Ciudad & Estado -->
+          <div class="form-row">
+            <div class="form-group col-half">
+              <label for="quick-client-city" class="form-label">Ciudad <span class="optional-label">(opcional)</span></label>
+              <input type="text" id="quick-client-city" class="form-input" placeholder="Ej: San Cristóbal">
+            </div>
+            <div class="form-group col-half">
+              <label for="quick-client-state" class="form-label">Estado <span class="optional-label">(opcional)</span></label>
+              <input type="text" id="quick-client-state" class="form-input" placeholder="Ej: Táchira">
+            </div>
+          </div>
+
+          <!-- Fila 6: Dirección de Residencia / Entrega -->
+          <div class="form-group" style="margin-top: 4px;">
+            <label for="quick-client-address" class="form-label">Dirección de Residencia / Entrega <span class="optional-label">(opcional)</span></label>
+            <textarea id="quick-client-address" class="form-textarea" rows="2" placeholder="Calle, edificio, urbanización o punto de referencia..."></textarea>
           </div>
         </div>
 
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" id="btn-cancel-quick-client">Cancelar</button>
-          <button type="submit" class="btn btn-primary">
-            <span>Guardar y Seleccionar Cliente</span>
+          <button type="submit" class="btn btn-primary" id="btn-save-quick-client">
+            <span class="btn-spinner" id="quick-client-spinner" style="display: none;" aria-hidden="true"></span>
+            <span class="btn-text">Guardar y Seleccionar Cliente</span>
           </button>
         </div>
       </form>
     </div>
   </div>
+
+  <!-- Contenedor Global de Notificaciones Toast -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
   <!-- ========================================================================
        MODAL DE CONFIRMACIÓN REUTILIZABLE (CONFIRMATION DIALOG)

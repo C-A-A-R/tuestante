@@ -7,6 +7,8 @@
  * ==========================================================================
  */
 
+import { API_BASE_URL } from '../config.js';
+
 const CACHE_KEY = 'tuestante_exchange_rate_cache';
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutos de caché
 const FALLBACK_DEFAULT_RATE = 791.32; // Tasa de contingencia en caso de fallo de red
@@ -38,7 +40,34 @@ export async function getExchangeRateDetails(forceRefresh = false) {
         }
     }
 
-    // 2. Intentar consultar endpoint primario (ve.dolarapi.com - Oficial BCV)
+    // 2. Intentar consultar endpoint oficial de TuEstante Backend (pyBCV con caché Django)
+    try {
+        const backendEndpoint = `${API_BASE_URL}/payments/exchange-rate/`;
+        const response = await fetch(backendEndpoint, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const rate = parseFloat(data.rate || data.price || 0);
+
+            if (rate > 0) {
+                const details = {
+                    rate,
+                    source: data.source || 'BCV Oficial (pyBCV)',
+                    lastUpdated: data.lastUpdated || new Date().toISOString(),
+                    date: new Date()
+                };
+                saveRateToCache(details);
+                return { ...details, isCached: false };
+            }
+        }
+    } catch (err) {
+        console.warn('Error al consultar tasa del backend TuEstante, probando contingencia externa:', err);
+    }
+
+    // 3. Contingencia externa 1: ve.dolarapi.com - Oficial BCV
     try {
         const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial', {
             method: 'GET',

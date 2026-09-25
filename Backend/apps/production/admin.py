@@ -27,7 +27,15 @@ class ProductionOrderAdmin(BaseAdmin):
     ]
     date_hierarchy = 'created_at'
     ordering = ['-created_at', '-id']
+    readonly_fields = ['blueprint_preview']
     actions = ['mark_as_assembling', 'mark_as_painting', 'mark_as_quality_check', 'mark_as_completed']
+
+    def blueprint_preview(self, obj):
+        if obj.blueprint_svg:
+            from django.utils.safestring import mark_safe
+            return mark_safe(f'<div style="max-width: 500px; border-radius: 8px; overflow: hidden;">{obj.blueprint_svg}</div>')
+        return "Sin plano técnico generado"
+    blueprint_preview.short_description = "Plano Técnico SVG"
 
     @admin.display(description='Número de Pedido', ordering='order__order_number')
     def order_number_display(self, obj):

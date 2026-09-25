@@ -12,6 +12,7 @@ import {
   getProductionProducts, 
   getProductionMetrics, 
   getProductionOrder, 
+  getProductionBlueprint,
   createProductionOrder,
   getStageConfig,
   PRODUCTION_STAGES
@@ -478,9 +479,10 @@ function renderOrdersTable() {
       <tr class="order-row-main" data-row-order-id="${order.id}">
         <!-- Orden de Fabricación -->
         <td>
-          <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
             <span class="production-code-badge">${escapeHtml(order.production_code)}</span>
             ${order.iteration > 1 ? `<span class="iteration-pill" title="Orden de refabricación">Iteración #${order.iteration}</span>` : ''}
+            ${(order.blueprint_svg || order.technical_design) ? `<span class="blueprint-mini-tag" title="Plano técnico acotado en mm disponible">📐 Plano</span>` : ''}
           </div>
         </td>
 
@@ -771,11 +773,60 @@ export async function exportProductionWorksheet(orderId) {
     const order = await getProductionOrder(orderId);
     if (!order) throw new Error('No se encontró la orden de fabricación solicitada.');
 
-    const printWindow = window.open('', '_blank', 'width=900,height=750');
+    // Si no trae blueprint_svg, intentar consultar el endpoint de blueprint
+    if (!order.blueprint_svg) {
+      try {
+        const bpData = await getProductionBlueprint(orderId);
+        if (bpData && bpData.blueprint_svg) {
+          order.blueprint_svg = bpData.blueprint_svg;
+          if (bpData.technical_design) order.technical_design = bpData.technical_design;
+        }
+      } catch (e) {
+        // Fallback silencioso
+      }
+    }
+
+    const printWindow = window.open('', '_blank', 'width=950,height=800');
     if (!printWindow) {
       showToast('info', 'Permitir Ventanas Emergentes', 'Por favor permite ventanas emergentes para generar e imprimir la orden de fabricación.');
       return;
     }
+
+    const design = order.technical_design;
+    const dims = design?.dimensions_mm || { height: 1800, width: 900, depth: 400 };
+    const grid = design?.grid || { rows: 3, columns: 1 };
+    const color = design?.main_color || '#005187';
+
+    const blueprintSectionHtml = order.blueprint_svg ? `
+      <div style="margin-bottom: 24px; page-break-inside: avoid;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1.5px solid #005187; padding-bottom: 6px;">
+          <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
+            📐 Especificaciones Paramétricas y Plano Vectorial de Taller (Cotas en mm)
+          </h4>
+          <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
+            Tolerancia: ±1.5 mm
+          </span>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;">
+          <span><strong>Alto:</strong> ${dims.height || 1800} mm</span>
+          <span style="color: #cbd5e1;">|</span>
+          <span><strong>Ancho:</strong> ${dims.width || 900} mm</span>
+          <span style="color: #cbd5e1;">|</span>
+          <span><strong>Fondo:</strong> ${dims.depth || 400} mm</span>
+          <span style="color: #cbd5e1;">|</span>
+          <span><strong>Distribución:</strong> ${grid.rows || 1} Filas × ${grid.columns || 1} Columnas</span>
+          <span style="color: #cbd5e1;">|</span>
+          <span><strong>Color / Acabado:</strong> ${escapeHtml(color)}</span>
+        </div>
+
+        <div style="border: 1px solid #334155; border-radius: 6px; overflow: hidden; background: #0f172a; text-align: center; padding: 12px;">
+          <div style="max-height: 480px; display: flex; justify-content: center; align-items: center;">
+            ${order.blueprint_svg}
+          </div>
+        </div>
+      </div>
+    ` : '';
 
     const itemsHtml = (order.items || []).map((item, idx) => `
       <tr>
@@ -815,9 +866,11 @@ export async function exportProductionWorksheet(orderId) {
           .checklist-box { border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px; text-align: center; }
           .signature-section { margin-top: 50px; display: flex; justify-content: space-between; font-size: 12px; }
           .sig-line { width: 200px; border-top: 1px solid #000; text-align: center; padding-top: 6px; }
+          svg { max-width: 100%; max-height: 460px; height: auto; display: block; margin: 0 auto; }
           @media print {
-            body { padding: 0; }
+            body { padding: 10px; }
             .no-print { display: none; }
+            svg { max-height: 430px !important; }
           }
         </style>
       </head>
@@ -855,12 +908,14 @@ export async function exportProductionWorksheet(orderId) {
           </div>
         ` : ''}
 
+        ${blueprintSectionHtml}
+
         <table>
           <thead>
             <tr>
               <th style="width: 40px; text-align: center;">#</th>
               <th>Producto & SKU</th>
-              <th>Especificaciones / Dimensiones / Acabados</th>
+              <th>Especificaciones / Acabados</th>
               <th style="width: 70px; text-align: center;">Cant.</th>
               <th style="width: 150px; text-align: center;">Control Taller</th>
             </tr>

@@ -153,7 +153,7 @@ class PaymentAndInvoiceAutomationTest(TestCase):
         self.assertEqual(res_review.status_code, status.HTTP_200_OK)
 
         new_order.refresh_from_db()
-        self.assertEqual(new_order.status, 'shipped')
+        self.assertEqual(new_order.status, 'manufacturing')
 
         # Comprobar factura generada
         invoice = Invoice.objects.filter(order=new_order).first()

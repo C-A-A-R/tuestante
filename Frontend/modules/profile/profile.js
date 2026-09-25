@@ -7,7 +7,7 @@
  * ==========================================================================
  */
 
-import { getProfileData, updateProfileData, sendPasswordResetEmail } from './profile.api.js';
+import { getProfileData, fetchProfileFromAPI, updateProfileData, sendPasswordResetEmail } from './profile.api.js';
 import { logoutUser } from '../auth/auth.js';
 import { getAccessToken, getRefreshToken } from '../../js/storage.js';
 import { showToast, showSuccessToast, showErrorToast, showInfoToast } from '../../components/toast/toast.js';
@@ -52,17 +52,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     initNavbar();
     initFooter();
 
-    // 3. Renderizar Información en el Hero y en el Formulario
+    // 3. Renderizar Información en el Hero y en el Formulario (datos en caché)
     renderUserProfile(currentUser);
 
-    // 4. Configurar Eventos
+    // 4. Sincronizar en segundo plano con el Backend para traer los datos más recientes
+    fetchProfileFromAPI().then(freshUser => {
+        if (freshUser) {
+            currentUser = freshUser;
+            renderUserProfile(currentUser);
+        }
+    });
+
+    // 5. Configurar Eventos
     setupTabEvents();
     setupEditModeToggle();
     setupProfileForm();
     setupPasswordResetModal();
     setupLogoutAction();
 
-    // 5. Cargar miniatura de la última compra en 'Mis Compras'
+    // 6. Cargar miniatura de la última compra en 'Mis Compras'
     loadRecentOrderThumbnail();
 });
 
@@ -118,6 +126,7 @@ function renderUserProfile(user) {
     setInputValue('input-phone', user.phone);
     setInputValue('input-email', user.email);
     setInputValue('input-birth-date', user.birth_date);
+    setInputValue('input-address', user.address);
 }
 
 /**
@@ -156,7 +165,8 @@ function setEditingMode(enable) {
         'input-second-last-name',
         'input-identity-document',
         'input-phone',
-        'input-birth-date'
+        'input-birth-date',
+        'input-address'
     ];
 
     editableInputIds.forEach(id => {
@@ -198,7 +208,7 @@ function setupProfileForm() {
 
     if (!form) return;
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const firstName = document.getElementById('input-first-name')?.value.trim();
@@ -221,6 +231,7 @@ function setupProfileForm() {
             identity_document: document.getElementById('input-identity-document')?.value.trim(),
             phone: document.getElementById('input-phone')?.value.trim(),
             birth_date: document.getElementById('input-birth-date')?.value || null,
+            address: document.getElementById('input-address')?.value.trim() || '',
         };
 
         if (btnSave) {
@@ -229,13 +240,13 @@ function setupProfileForm() {
         }
 
         try {
-            currentUser = updateProfileData(updatedData);
+            currentUser = await updateProfileData(updatedData);
             renderUserProfile(currentUser);
             setEditingMode(false); // Volver al estado bloqueado seguro
-            showSuccessToast('Perfil Actualizado', 'Tus datos personales se han guardado con éxito.');
+            showSuccessToast('Perfil Actualizado', 'Tus datos personales y dirección se han guardado con éxito.');
         } catch (err) {
             console.error('Error al guardar datos del perfil:', err);
-            showErrorToast('Error', 'No se pudieron guardar los cambios.');
+            showErrorToast('Error', err?.data?.error || err?.message || 'No se pudieron guardar los cambios.');
         } finally {
             if (btnSave) {
                 btnSave.disabled = false;

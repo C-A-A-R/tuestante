@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo – Carta de Producto | TuEstante</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+
+    <!-- Base & componente -->
+    <link rel="stylesheet" href="../../index.css">
+    <link rel="stylesheet" href="product-cart.css">
+
+    <style>
+        body {
+            background-color: var(--bg-secondary);
+            padding: 40px 24px;
+        }
+
+        .demo-title {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 24px;
+        }
+
+        /* Grid demo de 5 columnas como en el index */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 1100px) {
+            .products-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .products-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .products-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+    <p class="demo-title">Demo – Componente product-cart</p>
+
+    <div class="products-grid" id="demo-container">
+        <!-- Las cartas se inyectan dinámicamente desde demo-script -->
+    </div>
+
+    <script type="module">
+        import { renderProductsInContainer } from './product-cart.js';
+
+        // Datos de ejemplo (simulan la respuesta de la API)
+        const sampleProducts = [
+            {
+                id: 1,
+                product_name: 'L6 Cuerpo Negro Puertas Azul y Amarillo',
+                price: 193.72,
+                product_image: '../../assets/images/carrusel-index/LocekrL4Gris.jpg',
+                is_feature_product: true,
+                is_favorite: false,
+            },
+            {
+                id: 2,
+                product_name: 'Locker Metálico 4 Puertas',
+                price: 145.00,
+                description: 'Locker con cerradura para gimnasios, oficinas y vestuarios.',
+                product_image: null,
+                is_feature_product: true,
+                is_favorite: true,
+                is_outlet: true,
+                quantity: 3,
+                color_images: [
+                    { color_hex: '#6b7280', color_name: 'Gris' },
+                ],
+            },
+            {
+                id: 3,
+                product_name: 'Archivador Metálico 4 Gavetas',
+                price: 118.50,
+                description: 'Organiza documentos con seguridad y estilo profesional.',
+                product_image: null,
+                is_feature_product: false,
+                is_favorite: false,
+                color_images: [],
+            },
+            {
+                id: 4,
+                product_name: 'Gabinete Metálico de Taller',
+                price: 210.00,
+                description: 'Gabinete de alta resistencia con puertas batientes.',
+                product_image: null,
+                is_feature_product: true,
+                is_favorite: false,
+                color_images: [
+                    { color_hex: '#dc2626', color_name: 'Rojo' },
+                    { color_hex: '#6b7280', color_name: 'Gris' },
+                    { color_hex: '#1f2937', color_name: 'Negro' },
+                    { color_hex: '#fff', color_name: 'Blanco' },
+                    { color_hex: '#fbbf24', color_name: 'Amarillo' },
+                ],
+            },
+            {
+                id: 5,
+                product_name: 'Estante Liviano para Cocina',
+                price: 55.00,
+                description: 'Compacto, versátil y fácil de armar. Ideal para cocina o baño.',
+                product_image: null,
+                is_feature_product: false,
+                is_favorite: true,
+                color_images: [],
+            },
+        ];
+
+        const container = document.getElementById('demo-container');
+        renderProductsInContainer(container, sampleProducts, {
+            detailBaseUrl: '../../modules/product/product-details.html',
+            showWishlistBtn: true,
+            showCartBtn: true,
+        });
+    </script>
+</body>
+
+</html>

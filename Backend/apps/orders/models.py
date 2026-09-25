@@ -236,6 +236,12 @@ class OrderDetail(BaseModel):
         null=True,
         help_text='Especificaciones personalizadas del producto (color, dimensiones, etc.)'
     )
+    technical_design = models.JSONField(
+        'Diseño Técnico Paramétrico (JSON)',
+        null=True,
+        blank=True,
+        help_text='Snapshot inmutable definitivo del diseño en milímetros para fabricación'
+    )
 
     class Meta:
         verbose_name = 'Detalle de pedido'
@@ -339,6 +345,18 @@ class ManufacturingOrder(BaseModel):
         blank=True,
         null=True,
         help_text='Instrucciones especiales para la fábrica'
+    )
+    technical_design = models.JSONField(
+        'Diseño Técnico Paramétrico (JSON)',
+        null=True,
+        blank=True,
+        help_text='Snapshot del diseño técnico paramétrico del pedido para fabricación'
+    )
+    blueprint_svg = models.TextField(
+        'Plano Gráfico SVG',
+        null=True,
+        blank=True,
+        help_text='Plano 2D generado en formato SVG con cotas técnicas en milímetros'
     )
 
     class Meta:

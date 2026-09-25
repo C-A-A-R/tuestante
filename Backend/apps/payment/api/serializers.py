@@ -30,6 +30,9 @@ class PaymentSerializer(serializers.ModelSerializer):
             'payment_stage',
             'payment_stage_label',
             'amount',
+            'amount_ves',
+            'exchange_rate',
+            'currency',
             'payment_method',
             'payment_method_label',
             'status',
@@ -153,7 +156,7 @@ class PaymentSerializer(serializers.ModelSerializer):
                 {"order": "No se pueden registrar pagos en un pedido cancelado."}
             )
 
-        # 3. Validar monto positivo
+        # 3. Validar y normalizar montos según moneda (USD vs VES / Bolívares)
         if amount is not None:
             if amount <= Decimal('0'):
                 raise serializers.ValidationError(
@@ -162,40 +165,76 @@ class PaymentSerializer(serializers.ModelSerializer):
 
             total_order = order.total_price or Decimal('0.00')
 
+            from apps.base.services.exchange_rate import get_bcv_rate
+            official_bcv_rate = get_bcv_rate()
+
+            currency_sent = (
+                attrs.get('currency')
+                or (request.data.get('currency') if request else None)
+                or ('VES' if (attrs.get('payment_method') in ['mobile_payment', 'transfer'] and amount > (total_order * Decimal('5'))) else 'USD')
+            )
+
+            # Detección inteligente: Si el monto recibido supera 5 veces el total del pedido, es en Bolívares (VES)
+            is_ves = (currency_sent == 'VES') or (amount > (total_order * Decimal('5')) and total_order > 0)
+
+            if is_ves:
+                raw_ves = amount
+                client_rate = request.data.get('exchange_rate') if request else None
+                rate_to_use = official_bcv_rate
+                if client_rate:
+                    try:
+                        c_rate = Decimal(str(client_rate))
+                        if (official_bcv_rate * Decimal('0.95')) <= c_rate <= (official_bcv_rate * Decimal('1.05')):
+                            rate_to_use = c_rate
+                    except Exception:
+                        pass
+
+                amount_usd = (raw_ves / rate_to_use).quantize(Decimal('0.01'))
+                attrs['amount'] = amount_usd
+                attrs['amount_ves'] = raw_ves
+                attrs['exchange_rate'] = rate_to_use
+                attrs['currency'] = 'VES'
+            else:
+                amount_usd = amount
+                rate_to_use = official_bcv_rate
+                attrs['amount'] = amount_usd
+                attrs['amount_ves'] = (amount_usd * rate_to_use).quantize(Decimal('0.01'))
+                attrs['exchange_rate'] = rate_to_use
+                attrs['currency'] = 'USD'
+
+            # Tolerancia de redondeo y pequeñas diferencias de tasa intradía (1.50 USD o 1.5%)
+            tolerance = max(Decimal('1.50'), total_order * Decimal('0.015'))
+
             # Calcular pagos ya aprobados para este pedido (excluyendo la instancia actual si es edición)
             approved_query = Payment.objects.filter(order=order, status='approved', is_deleted=False)
             if self.instance:
                 approved_query = approved_query.exclude(pk=self.instance.pk)
             approved_paid = approved_query.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
-            # 4. Validaciones específicas por etapa de pago
+            # 4. Validaciones específicas por etapa de pago (en USD normalizado con tolerancia)
             if payment_stage == 'total':
                 if approved_paid >= total_order and total_order > 0:
                     raise serializers.ValidationError(
                         {"payment_stage": "Este pedido ya ha sido pagado en su totalidad."}
                     )
-                if amount < (total_order - Decimal('0.02')):
+                if amount_usd < (total_order - tolerance):
+                    ves_msg = f" (~Bs. {(total_order * rate_to_use):,.2f})" if is_ves else ""
                     raise serializers.ValidationError(
-                        {"amount": f"Para un pago único o total, el monto debe cubrir el 100% del pedido (${total_order} USD). Monto recibido: ${amount} USD."}
+                        {"amount": f"Para un pago total, el monto debe cubrir el 100% del pedido (${total_order}{ves_msg}). Monto recibido: ${amount_usd}."}
                     )
-                elif amount < total_order:
-                    attrs['amount'] = total_order
 
             elif payment_stage == 'initial':
                 min_initial = (total_order * Decimal('0.50')).quantize(Decimal('0.01'))
-                if amount < (min_initial - Decimal('0.02')):
+                if amount_usd < (min_initial - tolerance):
+                    ves_msg = f" (~Bs. {(min_initial * rate_to_use):,.2f})" if is_ves else ""
                     raise serializers.ValidationError(
-                        {"amount": f"El pago inicial debe ser de al menos el 50% del total (${min_initial} USD). Monto recibido: ${amount} USD."}
+                        {"amount": f"El pago inicial debe ser de al menos el 50% del total (${min_initial}{ves_msg}). Monto recibido: ${amount_usd}."}
                     )
-                elif amount < min_initial:
-                    attrs['amount'] = min_initial
-
-                if amount > (total_order + Decimal('0.02')):
+                if amount_usd > (total_order + tolerance):
+                    ves_msg = f" (~Bs. {(total_order * rate_to_use):,.2f})" if is_ves else ""
                     raise serializers.ValidationError(
-                        {"amount": f"El monto del pago inicial (${amount} USD) no puede exceder el total del pedido (${total_order} USD). Asegúrate de registrar el monto equivalente en USD."}
+                        {"amount": f"El monto del pago inicial no puede exceder el total del pedido (${total_order}{ves_msg})."}
                     )
-                elif amount > total_order:
-                    attrs['amount'] = total_order
 
             elif payment_stage == 'final':
                 remaining = max(Decimal('0.00'), total_order - approved_paid)
@@ -203,11 +242,10 @@ class PaymentSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         {"payment_stage": "Este pedido ya no tiene saldo pendiente por pagar."}
                     )
-                if amount < (remaining - Decimal('0.02')):
+                if amount_usd < (remaining - tolerance):
+                    ves_msg = f" (~Bs. {(remaining * rate_to_use):,.2f})" if is_ves else ""
                     raise serializers.ValidationError(
-                        {"amount": f"El pago final debe cubrir el saldo pendiente restante (${remaining} USD). Monto recibido: ${amount} USD."}
+                        {"amount": f"El pago final debe cubrir el saldo pendiente restante (${remaining}{ves_msg}). Monto recibido: ${amount_usd}."}
                     )
-                elif amount < remaining:
-                    attrs['amount'] = remaining
 
         return attrs

@@ -63,6 +63,18 @@ class ProductionOrder(BaseModel):
         verbose_name="Notas técnicas",
         help_text="Medidas especiales, colores de puertas, especificaciones de corte, etc."
     )
+    technical_design = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="Diseño Técnico Paramétrico (JSON)",
+        help_text="Snapshot del diseño técnico paramétrico del pedido para el taller"
+    )
+    blueprint_svg = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Plano Gráfico SVG",
+        help_text="Plano 2D en formato SVG con cotas técnicas en milímetros"
+    )
 
     class Meta:
         verbose_name = "Orden de Fabricación"

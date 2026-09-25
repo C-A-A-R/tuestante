@@ -33,7 +33,7 @@ class ProductionOrderViewSet(BaseViewSet):
     ordering_fields = ['created_at', 'status', 'iteration', 'id']
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'by_order', 'my_orders']:
+        if self.action in ['list', 'retrieve', 'by_order', 'my_orders', 'blueprint']:
             return [permissions.IsAuthenticated()]
         return [permissions.IsAdminUser()]
 
@@ -92,6 +92,65 @@ class ProductionOrderViewSet(BaseViewSet):
             )
 
         return queryset
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retorna los detalles de la orden de producción. Si aún no cuenta con plano SVG
+        o diseño técnico paramétrico, lo genera automáticamente.
+        """
+        instance = self.get_object()
+        if not instance.blueprint_svg and instance.order:
+            try:
+                from apps.production.services.parametric_service import ParametricDesignService
+                design, svg_content, _ = ParametricDesignService.build_order_blueprint(
+                    instance.order,
+                    custom_notes=instance.technical_notes or ''
+                )
+                if svg_content:
+                    instance.technical_design = design
+                    instance.blueprint_svg = svg_content
+                    instance.save(update_fields=['technical_design', 'blueprint_svg'])
+            except Exception:
+                pass
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='blueprint', permission_classes=[permissions.IsAuthenticated])
+    def blueprint(self, request, pk=None):
+        """
+        Retorna el plano técnico SVG y diseño técnico de la orden de producción.
+        Soporta ?format=svg para renderizado/descarga directa de la imagen vectorial.
+        """
+        po = self.get_object()
+        svg_content = po.blueprint_svg
+        design = po.technical_design
+
+        if not svg_content and po.order:
+            try:
+                from apps.production.services.parametric_service import ParametricDesignService
+                design, svg_content, _ = ParametricDesignService.build_order_blueprint(
+                    po.order,
+                    custom_notes=po.technical_notes or ''
+                )
+                if svg_content:
+                    po.technical_design = design
+                    po.blueprint_svg = svg_content
+                    po.save(update_fields=['technical_design', 'blueprint_svg'])
+            except Exception:
+                pass
+
+        if request.query_params.get('format') == 'svg' or 'image/svg+xml' in request.META.get('HTTP_ACCEPT', ''):
+            from django.http import HttpResponse
+            return HttpResponse(svg_content or '<svg></svg>', content_type='image/svg+xml')
+
+        return Response({
+            "production_order_id": po.id,
+            "order_id": po.order_id,
+            "order_number": po.order.order_number if po.order else "",
+            "technical_design": design,
+            "blueprint_svg": svg_content
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     @transaction.atomic

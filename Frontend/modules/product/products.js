@@ -4,6 +4,7 @@ import { obtenerProductos, obtenerTiposProducto, alternarFavoritoProducto } from
 import { getAccessToken } from '../../js/storage.js';
 import { showCartModal } from '../../components/cart-modal/cart-modal.js';
 import { showSuccessToast, showInfoToast, showErrorToast } from '../../components/toast/toast.js';
+import { createProductCartHTML } from '../../components/product-cart/product-cart.js';
 
 /* ==========================================================================
    CARGA DE COMPONENTES ESTRUCTURALES
@@ -449,76 +450,10 @@ function initFilters(types, products) {
    ========================================================================== */
 
 function createUnifiedCardHTML(p) {
-    const starBadgeHTML = p.is_feature_product ? `
-        <div class="badge-destacado-star" title="Producto Destacado">
-            <svg class="star-icon" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="1.5">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
-            <span class="star-label">Producto Destacado</span>
-        </div>
-    ` : '';
-
-    const outletBadgeHTML = p.is_outlet ? `
-        <div class="badge-outlet-flag" style="position: absolute; top: 12px; left: 12px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35); z-index: 3; display: flex; align-items: center; gap: 4px;">
-            <span>⚡ OUTLET</span>
-            ${p.quantity > 0 ? `<span style="background: rgba(0,0,0,0.25); padding: 1px 6px; border-radius: 10px; font-size: 0.68rem;">${p.quantity} disp.</span>` : ''}
-        </div>
-    ` : '';
-
-    const prodImg = resolveImageUrl(p.product_image, '../../assets/images/productos/estante-blanco.jpeg');
-    const priceFormatted = parseFloat(p.price || 0).toFixed(2);
-
-    let swatchesHTML = '';
-    if (Array.isArray(p.color_images) && p.color_images.length > 0) {
-        const visibleColors = p.color_images.slice(0, 4);
-        const remaining = p.color_images.length - 4;
-        const dots = visibleColors.map(c => `
-            <span class="swatch-dot" style="background-color: ${c.color_hex || '#cbd5e1'};" title="${c.color_name || 'Color'}"></span>
-        `).join('');
-        const more = remaining > 0 ? `<span class="swatch-more">+${remaining}</span>` : '';
-        swatchesHTML = `<div class="unified-card-swatches">${dots}${more}</div>`;
-    }
-
-    return `
-        <div class="unified-product-card">
-            <div class="unified-card-media" style="position: relative;">
-                <a href="product-details.html?id=${p.id}" class="unified-card-img-link">
-                    <img src="${prodImg}" alt="${p.product_name}" class="unified-card-img" loading="lazy">
-                </a>
-                
-                ${outletBadgeHTML}
-                ${starBadgeHTML}
-                
-                <button class="unified-wishlist-btn ${p.is_favorite ? 'active' : ''}" data-id="${p.id}" title="${p.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos'}" aria-label="Añadir a favoritos">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                </button>
-            </div>
-
-            <div class="unified-card-body">
-                <div>
-                    <div class="unified-card-header">
-                        <h3 class="unified-card-title">
-                            <a href="product-details.html?id=${p.id}">${p.product_name}</a>
-                        </h3>
-                        <span class="unified-card-price">$${priceFormatted}</span>
-                    </div>
-
-                    <p class="unified-card-desc">${p.description || ''}</p>
-
-                    ${swatchesHTML}
-                </div>
-
-                <div class="unified-card-actions">
-                    <a href="product-details.html?id=${p.id}" class="unified-btn btn-details">Ver Detalle</a>
-                    <button class="unified-btn btn-card-add-cart" data-id="${p.id}" data-name="${p.product_name}" data-price="${p.price}" data-image="${prodImg}">
-                        + Carrito
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
+    return createProductCartHTML(p, {
+        detailBaseUrl: 'product-details.html',
+        fallbackImage: '../../assets/images/productos/estante-blanco.jpeg',
+    });
 }
 
 function renderUnifiedProducts(products) {

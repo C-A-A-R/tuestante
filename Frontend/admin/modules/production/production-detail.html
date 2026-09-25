@@ -104,6 +104,54 @@
         <div class="detail-content-grid">
           <!-- Columna Izquierda: Productos e Instrucciones -->
           <div class="detail-col-left">
+            <!-- Plano Técnico y Diseño Paramétrico Vectorial (SVG) -->
+            <section class="detail-card blueprint-card" id="detail-blueprint-section">
+              <div class="card-header-clean" style="flex-direction: row; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+                    <span class="blueprint-badge-indicator" id="blueprint-origin-badge">📐 Plano Técnico Oficial</span>
+                    <span class="badge-stage-quality" id="blueprint-ai-badge" style="display: none; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; font-weight: 700;">✨ Personalizado con IA</span>
+                  </div>
+                  <h3 class="card-title">Especificación de Estructura y Taller</h3>
+                  <p class="card-caption">Cotas técnicas acotadas en milímetros (mm), cuadrícula y tolerancias</p>
+                </div>
+                <div class="blueprint-actions-header" style="display: flex; gap: 8px;">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-download-svg" title="Descargar plano en formato SVG vectorial">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Descargar SVG</span>
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-open-blueprint-tab" title="Abrir plano en nueva pestaña para inspección en pantalla completa">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                    <span>Ver Completo</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Resumen Paramétrico Superior (Badges Técnicos) -->
+              <div class="parametric-specs-pills" id="parametric-specs-pills">
+                <!-- Inyectado dinámicamente: Altura, Ancho, Fondo, Filas x Columnas, Acabado -->
+              </div>
+
+              <!-- Contenedor del Visor SVG del Plano -->
+              <div class="blueprint-viewer-wrapper" id="blueprint-viewer-wrapper">
+                <div class="blueprint-loading-spinner" id="blueprint-loading-spinner">
+                  <div class="spinner"></div>
+                  <p>Cargando plano técnico vectorial de fabricación...</p>
+                </div>
+                <div class="blueprint-svg-container" id="blueprint-svg-container" style="display: none;">
+                  <!-- Inyectado dinámicamente con el SVG de taller -->
+                </div>
+              </div>
+            </section>
+
             <section class="detail-card">
               <div class="card-header-clean" style="flex-direction: row; justify-content: space-between; align-items: center;">
                 <div>

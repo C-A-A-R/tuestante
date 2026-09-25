@@ -10,8 +10,34 @@ from apps.base.utils.videos import rename_video_upload_to, compress_and_save_vid
 class ProductType(BaseModel):
     """Modelo para representar los Tipos de Productos."""
 
+    ARCHETYPE_CHOICES = [
+        ('caja_cerrada', 'Caja Cerrada / Locker con Puertas'),
+        ('estante_abierto', 'Estante Abierto / Sin Puertas'),
+        ('banca', 'Banca / Asiento Tubular'),
+        ('compuesto_locker_banca', 'Compuesto: Locker sobre Banca'),
+        ('generico_modular', 'Genérico / Personalizado Modular'),
+    ]
+
     product_type_name = models.CharField('Nombre del Tipo', max_length=100, unique=True)
     description = models.TextField('Descripción', null=True, blank=True)
+    archetype = models.CharField(
+        'Arquetipo Constructivo',
+        max_length=35,
+        choices=ARCHETYPE_CHOICES,
+        default='caja_cerrada',
+        help_text='Familia geométrica base para el motor de fabricación'
+    )
+    layout_template = models.JSONField(
+        'Plantilla Arquitectónica de Secciones (JSON)',
+        null=True,
+        blank=True,
+        help_text='Plantilla base de bloques y secciones apiladas inferida por IA o configurada'
+    )
+    default_has_doors = models.BooleanField(
+        'Tiene Puertas por Defecto',
+        default=False,
+        help_text='Indica si los compartimentos llevan puertas por defecto según el tipo'
+    )
     product_type_image = models.ImageField('Imagen del Tipo', upload_to=rename_image_upload_to, null=True, blank=True)
 
     class Meta:
@@ -46,6 +72,9 @@ class Product(BaseModel):
     height_cm = models.DecimalField('Alto (cm)', max_digits=10, decimal_places=2, default=0)
     depth_cm = models.DecimalField('Profundo (cm)', max_digits=10, decimal_places=2, default=0)
     width_cm = models.DecimalField('Ancho (cm)', max_digits=10, decimal_places=2, default=0)
+    columns_count = models.PositiveIntegerField('Cantidad de Columnas', default=1, help_text='Número de columnas de compartimentos en el mueble')
+    rows_count = models.PositiveIntegerField('Cantidad de Filas / Niveles', default=1, help_text='Número de filas o niveles de compartimentos')
+    has_doors = models.BooleanField('Tiene Puertas por Defecto', default=False, help_text='Indica si los compartimentos tienen puertas por defecto')
     security = models.CharField('Seguridad', max_length=255, default='', blank=True)
     price = models.DecimalField('Precio', max_digits=12, decimal_places=2, default=0)
     main_color = models.CharField(
@@ -73,6 +102,22 @@ class Product(BaseModel):
     @color_principal.setter
     def color_principal(self, value):
         self.main_color = value
+
+    @property
+    def columns(self):
+        return self.columns_count
+
+    @columns.setter
+    def columns(self, value):
+        self.columns_count = value
+
+    @property
+    def rows(self):
+        return self.rows_count
+
+    @rows.setter
+    def rows(self, value):
+        self.rows_count = value
 
     class Meta:
         verbose_name = 'Producto'

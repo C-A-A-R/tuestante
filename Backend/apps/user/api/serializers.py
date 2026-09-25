@@ -16,6 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
     last_order_date = serializers.DateField(read_only=True, default=None, allow_null=True)
     city = serializers.SerializerMethodField()
     state = serializers.SerializerMethodField()
+    address = serializers.SerializerMethodField()
     is_employee = serializers.SerializerMethodField()
 
     class Meta:
@@ -34,6 +35,7 @@ class UserSerializer(serializers.ModelSerializer):
             "full_name",
             "birth_date",
             "phone",
+            "address",
             "google_id",
             "avatar_url",
             "last_login",
@@ -60,6 +62,8 @@ class UserSerializer(serializers.ModelSerializer):
     def get_city(self, obj):
         if hasattr(obj, 'city') and obj.city:
             return obj.city
+        if hasattr(obj, 'latest_shipment_city') and obj.latest_shipment_city:
+            return obj.latest_shipment_city
         try:
             from apps.shipment.models import Shipment
             sh = Shipment.objects.filter(order__user=obj, is_deleted=False).order_by('-created_at').first()
@@ -70,10 +74,22 @@ class UserSerializer(serializers.ModelSerializer):
     def get_state(self, obj):
         if hasattr(obj, 'state') and obj.state:
             return obj.state
+        if hasattr(obj, 'latest_shipment_state') and obj.latest_shipment_state:
+            return obj.latest_shipment_state
         try:
             from apps.shipment.models import Shipment
             sh = Shipment.objects.filter(order__user=obj, is_deleted=False).order_by('-created_at').first()
             return sh.state if sh else ''
+        except Exception:
+            return ''
+
+    def get_address(self, obj):
+        if hasattr(obj, 'address') and obj.address:
+            return obj.address
+        try:
+            from apps.shipment.models import Shipment
+            sh = Shipment.objects.filter(order__user=obj, is_deleted=False).order_by('-created_at').first()
+            return sh.address if sh else ''
         except Exception:
             return ''
 
@@ -140,6 +156,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
             "identity_document",
             "birth_date",
             "phone",
+            "address",
             "password",
             "confirm_password",
             "city",
@@ -273,6 +290,15 @@ class UserCreateSerializer(serializers.ModelSerializer):
             user = User.objects.create_user(password=password, **validated_data)
 
         if city or state:
+            updated_fields = []
+            if city:
+                user.city = city
+                updated_fields.append('city')
+            if state:
+                user.state = state
+                updated_fields.append('state')
+            if updated_fields:
+                user.save(update_fields=updated_fields)
             try:
                 from apps.shipment.models import Shipment
                 from apps.orders.models import Order
@@ -306,6 +332,15 @@ class UserCreateSerializer(serializers.ModelSerializer):
         instance.save()
 
         if city or state:
+            updated_fields = []
+            if city:
+                instance.city = city
+                updated_fields.append('city')
+            if state:
+                instance.state = state
+                updated_fields.append('state')
+            if updated_fields:
+                instance.save(update_fields=updated_fields)
             try:
                 from apps.shipment.models import Shipment
                 from apps.orders.models import Order
@@ -424,6 +459,7 @@ class CompleteProfileSerializer(serializers.ModelSerializer):
     second_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
     first_last_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
     second_last_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
+    address = serializers.CharField(required=False, allow_blank=True)
     city = serializers.CharField(required=False, allow_blank=True, max_length=100)
     state = serializers.CharField(required=False, allow_blank=True, max_length=100)
 
@@ -438,6 +474,7 @@ class CompleteProfileSerializer(serializers.ModelSerializer):
             "second_name",
             "first_last_name",
             "second_last_name",
+            "address",
             "city",
             "state",
         ]
@@ -483,8 +520,6 @@ class CompleteProfileSerializer(serializers.ModelSerializer):
             if len(doc_str) >= 2 and doc_str[1] == '-' and doc_str[0] in dict(User.DocumentType.choices):
                 validated_data['document_type'] = doc_str[0]
 
-        validated_data.pop('city', None)
-        validated_data.pop('state', None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

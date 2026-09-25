@@ -13,7 +13,17 @@ class ProductTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductType
-        fields = ['id', 'product_type_name', 'description', 'product_type_image', 'created_at', 'updated_at']
+        fields = [
+            'id',
+            'product_type_name',
+            'description',
+            'archetype',
+            'layout_template',
+            'default_has_doors',
+            'product_type_image',
+            'created_at',
+            'updated_at'
+        ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
@@ -47,6 +57,8 @@ class ProductSerializer(serializers.ModelSerializer):
     stock = serializers.IntegerField(source='quantity', required=False)
     main_color = serializers.CharField(required=False, allow_blank=True)
     color_principal = serializers.CharField(source='main_color', required=False, allow_blank=True)
+    columns = serializers.IntegerField(source='columns_count', required=False)
+    rows = serializers.IntegerField(source='rows_count', required=False)
     product_image = serializers.ImageField(required=False, allow_null=True)
     product_video = serializers.FileField(required=False, allow_null=True)
 
@@ -90,6 +102,11 @@ class ProductSerializer(serializers.ModelSerializer):
             'height_cm',
             'depth_cm',
             'width_cm',
+            'columns_count',
+            'columns',
+            'rows_count',
+            'rows',
+            'has_doors',
             'security',
             'price',
             'product_image',

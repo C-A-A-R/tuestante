@@ -36,6 +36,55 @@ class ProductTypeViewSet(BaseViewSet):
             return [permissions.AllowAny()]
         return [permissions.IsAdminUser()]
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        # Si no se definió plantilla arquitectónica previa, invocar a la IA para inferir arquitectura base
+        if not instance.layout_template or self.request.data.get('auto_infer_architecture', True):
+            try:
+                from apps.product.services.architecture_service import ProductTypeArchitectureService
+                ProductTypeArchitectureService.auto_populate_product_type(instance)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Error al auto-inferir arquitectura de ProductType {instance.id}: {e}")
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        # Si se solicita explícitamente re-inferir o falta la plantilla, regenerarla
+        if self.request.data.get('reinfer_architecture', False) or not instance.layout_template:
+            try:
+                from apps.product.services.architecture_service import ProductTypeArchitectureService
+                force = bool(self.request.data.get('reinfer_architecture', False))
+                ProductTypeArchitectureService.auto_populate_product_type(instance, force=force)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Error al actualizar arquitectura de ProductType {instance.id}: {e}")
+
+    @action(detail=True, methods=['post'], url_path='infer-architecture', permission_classes=[permissions.IsAdminUser])
+    def infer_architecture(self, request, pk=None):
+        """
+        Endpoint para forzar la re-inferencia por IA de la arquitectura de este tipo de producto.
+        """
+        product_type = self.get_object()
+        from apps.product.services.architecture_service import ProductTypeArchitectureService
+        ProductTypeArchitectureService.auto_populate_product_type(product_type, force=True)
+        serializer = self.get_serializer(product_type)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='preview-architecture', permission_classes=[permissions.IsAdminUser])
+    def preview_architecture(self, request):
+        """
+        Permite previsualizar la inferencia arquitectónica y plantilla de secciones
+        para un nombre y descripción propuestos antes de crear el tipo.
+        """
+        name = request.data.get('product_type_name', '')
+        desc = request.data.get('description', '')
+        if not name:
+            return Response({"error": "Debe especificar 'product_type_name'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        from apps.product.services.architecture_service import ProductTypeArchitectureService
+        inference = ProductTypeArchitectureService.infer_architecture(name=name, description=desc)
+        return Response(inference.model_dump(mode='json'), status=status.HTTP_200_OK)
+
 
 class FeaturedProductsAPIView(generics.ListAPIView):
     """

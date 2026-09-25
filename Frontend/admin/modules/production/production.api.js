@@ -32,6 +32,192 @@ export function getStageConfig(statusKey) {
 }
 
 // ==========================================================================
+// ==========================================================================
+// GENERADOR DE PLANO TÉCNICO SVG VECTORIAL (ESTÁNDAR ARQUITECTÓNICO TUESTANTE)
+// ==========================================================================
+
+export function generateMockBlueprintSVG(technicalDesign = {}, title = "PLANO TÉCNICO DE FABRICACIÓN") {
+  const dims = technicalDesign.dimensions_mm || { height: 1800, width: 900, depth: 400 };
+  const height_mm = dims.height || 1800;
+  const width_mm = dims.width || 900;
+  const depth_mm = dims.depth || 400;
+
+  const grid = technicalDesign.grid || { rows: 3, columns: 1 };
+  const rows = Math.max(1, grid.rows || 1);
+  const cols = Math.max(1, grid.columns || 1);
+
+  const main_color = technicalDesign.main_color || '#005187';
+  const prod_name = technicalDesign.product_name || 'Estantería Modular';
+  const furniture_type = technicalDesign.furniture_type || 'Estante Metálico';
+  const compartments = technicalDesign.compartments || [];
+
+  const comp_map = {};
+  compartments.forEach(comp => {
+    const r = comp.row || 1;
+    const c = comp.col || 1;
+    comp_map[`${r}_${c}`] = comp;
+  });
+
+  const canvas_w = 800;
+  const canvas_h = 950;
+  const margin_left = 140;
+  const margin_top = 110;
+  const available_w = 520;
+  const available_h = 660;
+
+  const aspect_ratio = width_mm / Math.max(1, height_mm);
+  let cab_w, cab_h;
+  if (aspect_ratio > (available_w / available_h)) {
+    cab_w = available_w;
+    cab_h = available_w / aspect_ratio;
+  } else {
+    cab_h = available_h;
+    cab_w = available_h * aspect_ratio;
+  }
+
+  const cab_x = margin_left + (available_w - cab_w) / 2;
+  const cab_y = margin_top + (available_h - cab_h) / 2;
+  const cell_w = cab_w / cols;
+  const cell_h = cab_h / rows;
+
+  const parts = [];
+  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvas_w} ${canvas_h}" width="100%" height="100%" style="background-color: #0F172A; font-family: Inter, system-ui, -apple-system, sans-serif;">`);
+  
+  parts.push(`
+    <defs>
+      <marker id="arrow-start" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 10 0 L 0 5 L 10 10 z" fill="#38BDF8" />
+      </marker>
+      <marker id="arrow-end" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#38BDF8" />
+      </marker>
+      <pattern id="grid-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
+        <rect width="20" height="20" fill="none" stroke="#1E293B" stroke-width="0.5" />
+      </pattern>
+    </defs>
+    <rect width="${canvas_w}" height="${canvas_h}" fill="url(#grid-pattern)" />
+  `);
+
+  parts.push(`
+    <rect x="25" y="20" width="${canvas_w - 50}" height="60" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1.5" />
+    <text x="45" y="46" fill="#F8FAFC" font-size="16" font-weight="700" letter-spacing="1">${title.toUpperCase()}</text>
+    <text x="45" y="66" fill="#94A3B8" font-size="13">${prod_name} | ${furniture_type}</text>
+    <rect x="${canvas_w - 225}" y="32" width="190" height="36" rx="4" fill="#0F172A" stroke="#38BDF8" stroke-width="1" />
+    <text x="${canvas_w - 130}" y="55" fill="#38BDF8" font-size="12" font-weight="600" text-anchor="middle">ESPECIFICACIÓN OFICIAL</text>
+  `);
+
+  const wall_thick = Math.max(3.0, Math.min(8.0, cab_w * 0.02));
+  parts.push(`
+    <rect x="${cab_x + 6}" y="${cab_y + 6}" width="${cab_w}" height="${cab_h}" rx="4" fill="#000000" opacity="0.4" />
+    <rect x="${cab_x}" y="${cab_y}" width="${cab_w}" height="${cab_h}" rx="4" fill="#182234" stroke="${main_color}" stroke-width="${wall_thick}" />
+  `);
+
+  for (let r = 1; r <= rows; r++) {
+    for (let c = 1; c <= cols; c++) {
+      const cx = cab_x + (c - 1) * cell_w;
+      const cy = cab_y + (r - 1) * cell_h;
+      const comp = comp_map[`${r}_${c}`] || { has_door: false, door_color: main_color, has_ventilation: false };
+
+      const has_door = comp.has_door || false;
+      const door_color = comp.door_color || main_color;
+      const has_vent = comp.has_ventilation || false;
+
+      parts.push(`<rect x="${cx + 1.5}" y="${cy + 1.5}" width="${cell_w - 3}" height="${cell_h - 3}" fill="#0F172A" stroke="${main_color}" stroke-width="1.5" opacity="0.9" />`);
+
+      if (has_door) {
+        parts.push(`<rect x="${cx + 3}" y="${cy + 3}" width="${cell_w - 6}" height="${cell_h - 6}" rx="3" fill="${door_color}" stroke="#0F172A" stroke-width="2" opacity="0.92" />`);
+        const handle_x = c % 2 === 1 ? cx + cell_w - 14 : cx + 14;
+        const handle_y = cy + (cell_h / 2);
+        parts.push(`<circle cx="${handle_x}" cy="${handle_y}" r="3.5" fill="#E2E8F0" stroke="#475569" stroke-width="1" />`);
+      }
+
+      if (has_vent) {
+        const vent_w = Math.min(cell_w * 0.5, 40);
+        const vent_x = cx + (cell_w - vent_w) / 2;
+        for (let v_i = 0; v_i < 3; v_i++) {
+          const vy = cy + 12 + (v_i * 4);
+          parts.push(`<line x1="${vent_x}" y1="${vy}" x2="${vent_x + vent_w}" y2="${vy}" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" />`);
+        }
+      }
+
+      parts.push(`<text x="${cx + 6}" y="${cy + 14}" fill="#64748B" font-size="9" font-family="monospace">R${r}C${c}</text>`);
+    }
+  }
+
+  const cota_top_y = cab_y - 35;
+  parts.push(`
+    <line x1="${cab_x}" y1="${cab_y - 5}" x2="${cab_x}" y2="${cota_top_y - 10}" stroke="#38BDF8" stroke-width="1" stroke-dasharray="2 2" />
+    <line x1="${cab_x + cab_w}" y1="${cab_y - 5}" x2="${cab_x + cab_w}" y2="${cota_top_y - 10}" stroke="#38BDF8" stroke-width="1" stroke-dasharray="2 2" />
+    <line x1="${cab_x + 8}" y1="${cota_top_y}" x2="${cab_x + cab_w - 8}" y2="${cota_top_y}" stroke="#38BDF8" stroke-width="1.5" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)" />
+    <rect x="${cab_x + (cab_w / 2) - 55}" y="${cota_top_y - 12}" width="110" height="22" rx="3" fill="#0F172A" stroke="#38BDF8" stroke-width="1" />
+    <text x="${cab_x + (cab_w / 2)}" y="${cota_top_y + 3}" fill="#38BDF8" font-size="12" font-weight="700" text-anchor="middle">ANCHO ${width_mm} mm</text>
+  `);
+
+  const cota_left_x = cab_x - 45;
+  parts.push(`
+    <line x1="${cab_x - 5}" y1="${cab_y}" x2="${cota_left_x - 10}" y2="${cab_y}" stroke="#38BDF8" stroke-width="1" stroke-dasharray="2 2" />
+    <line x1="${cab_x - 5}" y1="${cab_y + cab_h}" x2="${cota_left_x - 10}" y2="${cab_y + cab_h}" stroke="#38BDF8" stroke-width="1" stroke-dasharray="2 2" />
+    <line x1="${cota_left_x}" y1="${cab_y + 8}" x2="${cota_left_x}" y2="${cab_y + cab_h - 8}" stroke="#38BDF8" stroke-width="1.5" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)" />
+    <g transform="translate(${cota_left_x}, ${cab_y + (cab_h / 2)}) rotate(-90)">
+      <rect x="-60" y="-12" width="120" height="22" rx="3" fill="#0F172A" stroke="#38BDF8" stroke-width="1" />
+      <text x="0" y="3" fill="#38BDF8" font-size="12" font-weight="700" text-anchor="middle">ALTO ${height_mm} mm</text>
+    </g>
+  `);
+
+  const footer_y = canvas_h - 95;
+  parts.push(`
+    <rect x="25" y="${footer_y}" width="${canvas_w - 50}" height="75" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1" />
+    <text x="45" y="${footer_y + 26}" fill="#94A3B8" font-size="11" font-weight="600">PROFUNDIDAD (FONDO):</text>
+    <text x="190" y="${footer_y + 26}" fill="#F8FAFC" font-size="12" font-weight="700">${depth_mm} mm</text>
+    <text x="320" y="${footer_y + 26}" fill="#94A3B8" font-size="11" font-weight="600">DISTRIBUCIÓN:</text>
+    <text x="415" y="${footer_y + 26}" fill="#F8FAFC" font-size="12" font-weight="700">${rows} Filas × ${cols} Columnas (${rows * cols} Casillas)</text>
+    <text x="45" y="${footer_y + 55}" fill="#94A3B8" font-size="11" font-weight="600">COLOR ESTRUCTURAL:</text>
+    <rect x="190" y="${footer_y + 43}" width="16" height="16" rx="2" fill="${main_color}" stroke="#CBD5E1" stroke-width="1" />
+    <text x="215" y="${footer_y + 56}" fill="#F8FAFC" font-size="12" font-weight="700">${main_color}</text>
+    <text x="320" y="${footer_y + 55}" fill="#94A3B8" font-size="11" font-weight="600">TOLERANCIA TALLER:</text>
+    <text x="445" y="${footer_y + 55}" fill="#10B981" font-size="12" font-weight="700">± 1.5 mm (Norma TuEstante)</text>
+    </svg>
+  `);
+
+  return parts.join('\n');
+}
+
+// Diseños paramétricos mock para visualización y pruebas inmediatas
+const mockDesign1 = {
+  product_name: "Estante Modular Industrial Modelo A",
+  furniture_type: "Estante Metálico Ranurado",
+  dimensions_mm: { height: 1800, width: 900, depth: 400 },
+  grid: { rows: 4, columns: 2 },
+  main_color: "#005187",
+  compartments: [
+    { row: 1, col: 1, has_door: false },
+    { row: 1, col: 2, has_door: false },
+    { row: 2, col: 1, has_door: false },
+    { row: 2, col: 2, has_door: false },
+    { row: 3, col: 1, has_door: true, door_color: "#4D82BC" },
+    { row: 3, col: 2, has_door: true, door_color: "#4D82BC" },
+    { row: 4, col: 1, has_door: true, door_color: "#005187" },
+    { row: 4, col: 2, has_door: true, door_color: "#005187" }
+  ]
+};
+
+const mockDesign2 = {
+  product_name: "Casillero Locker de Taller",
+  furniture_type: "Locker Metálico con Ventilación",
+  dimensions_mm: { height: 1900, width: 600, depth: 450 },
+  grid: { rows: 3, columns: 2 },
+  main_color: "#334155",
+  compartments: [
+    { row: 1, col: 1, has_door: true, door_color: "#005187", has_ventilation: true },
+    { row: 1, col: 2, has_door: true, door_color: "#005187", has_ventilation: true },
+    { row: 2, col: 1, has_door: true, door_color: "#005187", has_ventilation: true },
+    { row: 2, col: 2, has_door: true, door_color: "#005187", has_ventilation: true },
+    { row: 3, col: 1, has_door: true, door_color: "#4D82BC", has_ventilation: true },
+    { row: 3, col: 2, has_door: true, door_color: "#4D82BC", has_ventilation: true }
+  ]
+};
+
+// ==========================================================================
 // BANCO DE DATOS MOCK DE CONTINGENCIA (EN CASO DE FALLO DE RED O MODO LOCAL)
 // ==========================================================================
 
@@ -50,6 +236,8 @@ let mockProductionOrders = [
     estimated_completion_date: "2026-09-05T18:00:00Z",
     actual_completion_date: null,
     technical_notes: "Corte biselado en esquinas superiores. Verificar espesor de melamina de 18mm.",
+    technical_design: mockDesign1,
+    blueprint_svg: generateMockBlueprintSVG(mockDesign1, "PLANO OFICIAL DE FABRICACIÓN - OF-00018"),
     created_at: "2026-08-31T11:00:00Z",
     items: [
       {
@@ -86,6 +274,8 @@ let mockProductionOrders = [
     estimated_completion_date: "2026-09-02T17:00:00Z",
     actual_completion_date: null,
     technical_notes: "Acabado en negro satinado. Bisagras de cierre suave requeridas.",
+    technical_design: mockDesign2,
+    blueprint_svg: generateMockBlueprintSVG(mockDesign2, "PLANO OFICIAL DE FABRICACIÓN - OF-00017"),
     created_at: "2026-08-31T09:00:00Z",
     items: [
       {
@@ -525,6 +715,8 @@ function normalizeBackendProductionOrder(backendObj) {
     estimated_completion_date: backendObj.estimated_completion_date,
     actual_completion_date: backendObj.actual_completion_date,
     technical_notes: backendObj.technical_notes || '',
+    technical_design: backendObj.technical_design || null,
+    blueprint_svg: backendObj.blueprint_svg || null,
     created_at: backendObj.created_at,
     items: items.length > 0 ? items : [
       {
@@ -538,6 +730,41 @@ function normalizeBackendProductionOrder(backendObj) {
       }
     ]
   };
+}
+
+/**
+ * Obtiene el plano técnico SVG y diseño paramétrico de una orden
+ * @param {number|string} productionOrderId ID de la orden de producción
+ */
+export async function getProductionBlueprint(productionOrderId) {
+  try {
+    const res = await getRequest(`/production-orders/${productionOrderId}/blueprint/`, {}, { auth: true });
+    if (res && res.blueprint_svg) {
+      return res;
+    }
+  } catch (err) {
+    console.warn(`[TuEstante Production API] Error al obtener blueprint para orden #${productionOrderId}:`, err);
+  }
+
+  // Contingencia mock
+  const found = mockProductionOrders.find(o => o.id === parseInt(productionOrderId, 10));
+  if (found) {
+    if (!found.blueprint_svg && found.technical_design) {
+      found.blueprint_svg = generateMockBlueprintSVG(found.technical_design, `PLANO TÉCNICO - ${found.production_code}`);
+    } else if (!found.blueprint_svg) {
+      found.technical_design = mockDesign1;
+      found.blueprint_svg = generateMockBlueprintSVG(mockDesign1, `PLANO TÉCNICO - ${found.production_code}`);
+    }
+    return {
+      production_order_id: found.id,
+      order_id: found.order_id,
+      order_number: found.order_number,
+      technical_design: found.technical_design,
+      blueprint_svg: found.blueprint_svg
+    };
+  }
+
+  return null;
 }
 
 /**

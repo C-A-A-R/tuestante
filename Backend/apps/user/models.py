@@ -190,6 +190,26 @@ class User(AbstractUser, PermissionsMixin, BaseModel):
         blank=True,
         help_text='Número de teléfono del usuario'
     )
+    address = models.TextField(
+        'Dirección',
+        blank=True,
+        default='',
+        help_text='Dirección de residencia o entrega del usuario'
+    )
+    city = models.CharField(
+        'Ciudad',
+        max_length=100,
+        blank=True,
+        default='',
+        help_text='Ciudad de residencia del usuario'
+    )
+    state = models.CharField(
+        'Estado',
+        max_length=100,
+        blank=True,
+        default='',
+        help_text='Estado de residencia del usuario'
+    )
 
     # Campos de integración externa (Google OAuth)
     google_id = models.CharField(

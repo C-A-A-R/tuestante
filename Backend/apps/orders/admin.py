@@ -81,12 +81,20 @@ class OrderAdmin(BaseAdmin):
             existing_mo = ManufacturingOrder.objects.filter(order=order, status__in=['pending', 'in_progress']).first()
             if not existing_mo:
                 last_iteration = ManufacturingOrder.objects.filter(order=order).count()
+                tech_design, svg_content = None, None
+                try:
+                    from apps.production.services.parametric_service import ParametricDesignService
+                    tech_design, svg_content, _ = ParametricDesignService.build_order_blueprint(order)
+                except Exception:
+                    pass
                 ManufacturingOrder.objects.create(
                     order=order,
                     status='in_progress',
                     iteration=last_iteration + 1,
                     issued_by=request.user,
-                    notes=f"Generada automáticamente por {request.user.username} desde el Admin"
+                    notes=f"Generada automáticamente por {request.user.username} desde el Admin",
+                    technical_design=tech_design,
+                    blueprint_svg=svg_content
                 )
         self.message_user(request, f"{queryset.count()} pedido(s) actualizados a 'En fabricación'.")
 
@@ -142,9 +150,16 @@ class ManufacturingOrderAdmin(BaseAdmin):
     list_filter = ['status', 'iteration', 'issued_at', 'completed_at']
     search_fields = ['id', 'order__id', 'notes', 'issued_by__username']
     autocomplete_fields = ['order', 'issued_by']
-    readonly_fields = ['issued_at']
+    readonly_fields = ['issued_at', 'blueprint_preview']
     ordering = ['-issued_at']
     actions = ['mark_as_completed']
+
+    def blueprint_preview(self, obj):
+        if obj.blueprint_svg:
+            from django.utils.safestring import mark_safe
+            return mark_safe(f'<div style="max-width: 500px; border-radius: 8px; overflow: hidden;">{obj.blueprint_svg}</div>')
+        return "Sin plano técnico generado"
+    blueprint_preview.short_description = "Plano Técnico SVG"
 
     @admin.action(description="Marcar como Completada")
     def mark_as_completed(self, request, queryset):

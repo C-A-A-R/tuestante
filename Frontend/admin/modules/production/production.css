@@ -864,6 +864,20 @@ html, body {
   margin-left: 6px;
 }
 
+.blueprint-mini-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
 /* Fila anidada expandida */
 .order-nested-subtable-row {
   display: none;

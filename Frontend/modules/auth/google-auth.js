@@ -70,7 +70,7 @@ export function initGoogleAuth(options = {}) {
                     cancel_on_tap_outside: true,
                 });
 
-                // Renderizar botón oficial de Google si existe el contenedor
+                // Renderizar botón oficial de Google en el overlay interactivo
                 const container = document.getElementById(btnContainerId);
                 if (container) {
                     window.google.accounts.id.renderButton(container, {
@@ -80,61 +80,29 @@ export function initGoogleAuth(options = {}) {
                         shape: "rectangular",
                         text: "continue_with",
                         logo_alignment: "left",
-                        width: 320,
+                        width: 380,
                     });
-
-                    // Si el botón oficial se renderizó, ocultar el botón personalizado fallback
-                    const observer = new MutationObserver(() => {
-                        if (container.querySelector("iframe")) {
-                            const customBtn = document.getElementById(customBtnId);
-                            if (customBtn) customBtn.style.display = "none";
-                        }
-                    });
-                    observer.observe(container, { childList: true, subtree: true });
                 }
             }
         } catch (err) {
             console.error("Error al inicializar Google Identity Services:", err);
-            setupDemoFallback([customBtnId, "topGoogleRegisterBtn", "customGoogleBtnFallback"], onError);
+            setupDemoFallback(["topGoogleRegisterBtn"], onError);
         }
     });
 
-    // Vincular botones personalizados (tanto el botón principal como links de registro rápido)
-    const triggerGoogleSignIn = () => {
-        if (!clientId || !hasValidClientId) {
-            setupDemoFallback([customBtnId, "topGoogleRegisterBtn", "customGoogleBtnFallback"], onError);
-            return;
-        }
-
-        if (originErrorLogged) {
-            const currentOrigin = window.location.origin;
-            const msg = `Aviso de configuración en Google Cloud: El origen actual (${currentOrigin}) no está registrado en los "Orígenes de JavaScript autorizados" de tu Client ID en Google Cloud Console.`;
-            if (typeof onError === "function") onError(msg);
-            else alert(msg);
-            return;
-        }
-
-        if (window.google?.accounts?.id) {
-            window.google.accounts.id.prompt((notification) => {
-                if (notification.isNotDisplayed()) {
-                    const reason = notification.getNotDisplayedReason();
-                    console.warn("[Google Identity] Not displayed reason:", reason);
-                    if (reason === "unregistered_origin" || reason === "origin_mismatch") {
-                        const currentOrigin = window.location.origin;
-                        const msg = `Aviso: El origen actual (${currentOrigin}) no está registrado en los "Orígenes de JavaScript autorizados" de Google Cloud Console.`;
-                        if (typeof onError === "function") onError(msg);
-                    }
-                }
-            });
-        }
-    };
-
-    [customBtnId, "topGoogleRegisterBtn", "customGoogleBtnFallback"].forEach((btnId) => {
-        const btn = document.getElementById(btnId);
-        if (btn) {
-            btn.addEventListener("click", triggerGoogleSignIn);
-        }
-    });
+    // Enlace de registro rápido en register.html: desplaza suavemente hacia el botón de Google
+    const topRegisterBtn = document.getElementById("topGoogleRegisterBtn");
+    if (topRegisterBtn) {
+        topRegisterBtn.addEventListener("click", () => {
+            const googleWrapper = document.querySelector(".google-auth-container");
+            if (googleWrapper) {
+                googleWrapper.scrollIntoView({ behavior: "smooth", block: "center" });
+                const btnBox = googleWrapper.querySelector(".google-auth-btn-wrapper") || googleWrapper;
+                btnBox.classList.add("btn-pulse-highlight");
+                setTimeout(() => btnBox.classList.remove("btn-pulse-highlight"), 1400);
+            }
+        });
+    }
 
     // Configurar listener del botón Continuar en el modal de éxito
     setupGoogleModalContinue();

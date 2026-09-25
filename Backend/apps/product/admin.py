@@ -27,13 +27,15 @@ class ProductTypeAdmin(BaseAdmin):
 
     list_display = (
         'product_type_name',
+        'archetype',
+        'default_has_doors',
         'description',
         'product_type_image',
         'created_at',
         'updated_at'
     )
     search_fields = ('product_type_name', 'description')
-    list_filter = ('created_at',)
+    list_filter = ('archetype', 'default_has_doors', 'created_at')
     ordering = ('id',)
 
 
@@ -53,13 +55,16 @@ class ProductAdmin(BaseAdmin):
         'height_cm',
         'depth_cm',
         'width_cm',
+        'columns_count',
+        'rows_count',
+        'has_doors',
         'product_image',
         'product_video',
         'created_at'
     )
-    list_editable = ('is_active', 'is_outlet', 'is_feature_product', 'quantity')
+    list_editable = ('is_active', 'is_outlet', 'is_feature_product', 'quantity', 'columns_count', 'rows_count', 'has_doors')
     search_fields = ('product_name', 'description', 'product_type__product_type_name', 'security')
-    list_filter = ('is_active', 'is_outlet', 'is_feature_product', 'product_type', 'created_at')
+    list_filter = ('is_active', 'is_outlet', 'is_feature_product', 'has_doors', 'product_type', 'created_at')
     ordering = ('id',)
 
 

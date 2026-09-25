@@ -6,6 +6,7 @@ import { extractList, resolveImageUrl } from './js/api.js';
 import { getAccessToken } from './js/storage.js';
 import { showCartModal } from './components/cart-modal/cart-modal.js';
 import { showSuccessToast, showInfoToast, showErrorToast } from './components/toast/toast.js';
+import { createProductCartHTML } from './components/product-cart/product-cart.js';
 
 /**
  * Genera el HTML para un mensaje de error amigable cuando la API no responde.
@@ -97,36 +98,17 @@ async function loadHomeOutlet() {
     // Mostrar sección ya que hay disponibilidad
     outletSection.style.display = 'block';
 
-    container.innerHTML = outletProducts.slice(0, 5).map((prod, idx) => {
-      const id = prod.id;
-      const name = prod.product_name || prod.name || 'Producto Outlet';
-      const price = typeof prod.price === 'number' ? prod.price : parseFloat(prod.price) || 0;
-      const img = resolveImageUrl(prod.product_image || prod.image, 'assets/images/gallery/real_space_1.jpg');
-      const qty = prod.quantity !== undefined ? prod.quantity : 1;
-      const link = `modules/product/product-details.html?id=${id}`;
-
-      return `
-        <div class="catalog-product-card" data-index="${idx}">
-          <a href="${link}" class="catalog-product-img-wrapper">
-            <div class="badge-outlet-tag" title="Stock disponible para entrega inmediata">
-              <span>⚡ OUTLET (${qty} disp.)</span>
-            </div>
-            <img src="${img}" alt="${name}" class="catalog-product-img" loading="lazy">
-          </a>
-
-          <div class="catalog-product-body">
-            <div>
-              <h3 class="catalog-product-name">
-                <a href="${link}" style="color: inherit; text-decoration: none;">${name}</a>
-              </h3>
-            </div>
-            <div class="catalog-product-footer">
-              <span class="catalog-product-price">$${price.toFixed(2)}</span>
-              <a href="${link}" class="catalog-product-btn">Ver Detalle</a>
-            </div>
-          </div>
-        </div>
-      `;
+    container.innerHTML = outletProducts.slice(0, 5).map(prod => {
+      // Normalizar campos para que el componente los reconozca
+      const normalized = {
+        ...prod,
+        is_outlet: true,
+        quantity: prod.quantity !== undefined ? prod.quantity : 1,
+      };
+      return createProductCartHTML(normalized, {
+        detailBaseUrl: 'modules/product/product-details.html',
+        fallbackImage: 'assets/images/gallery/real_space_1.jpg',
+      });
     }).join('');
 
   } catch (error) {
@@ -220,43 +202,12 @@ async function loadHomeFeaturedProducts() {
     // Si no hay suficientes para llenar ambas filas, se deja el espacio vacío naturalmente sin repetir productos.
     displayProducts = displayProducts.slice(0, 10);
 
-    container.innerHTML = displayProducts.map(prod => {
-      const id = prod.id;
-      const name = prod.product_name || prod.name || 'Producto Destacado';
-      const price = typeof prod.price === 'number' ? prod.price : parseFloat(prod.price) || 0;
-      const img = resolveImageUrl(prod.product_image || prod.image, 'assets/images/gallery/real_space_1.jpg');
-      const isFeatured = !!(prod.rating === 5.0 || prod.badge === 'Destacado' || prod.is_feature_product !== false);
-      const link = `modules/product/product-details.html?id=${id}`;
-
-      const starBadgeHTML = isFeatured ? `
-        <div class="badge-destacado-star" title="Producto Destacado">
-          <svg class="star-icon" viewBox="0 0 24 24" fill="#94A3B8" stroke="#64748B" stroke-width="1.5">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-          </svg>
-          <span class="star-label">Producto Destacado</span>
-        </div>
-      ` : '';
-
-      return `
-        <div class="catalog-product-card">
-          <a href="${link}" class="catalog-product-img-wrapper">
-            ${starBadgeHTML}
-            <img src="${img}" alt="${name}" class="catalog-product-img" loading="lazy">
-          </a>
-          <div class="catalog-product-body">
-            <div>
-              <h3 class="catalog-product-name">
-                <a href="${link}" style="color: inherit; text-decoration: none;">${name}</a>
-              </h3>
-            </div>
-            <div class="catalog-product-footer">
-              <span class="catalog-product-price">$${price.toFixed(2)}</span>
-              <a href="${link}" class="catalog-product-btn">Ver Detalle</a>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
+    container.innerHTML = displayProducts.map(prod =>
+      createProductCartHTML(prod, {
+        detailBaseUrl: 'modules/product/product-details.html',
+        fallbackImage: 'assets/images/gallery/real_space_1.jpg',
+      })
+    ).join('');
 
   } catch (error) {
     console.error('Error al cargar productos destacados en el home:', error);
@@ -509,6 +460,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const res = await alternarFavoritoProducto(id);
         if (res && typeof res.is_favorite === 'boolean') {
           wishlistBtn.classList.toggle('active', res.is_favorite);
+          const heartSvg = wishlistBtn.querySelector('svg');
+          if (heartSvg) {
+            heartSvg.setAttribute('fill', res.is_favorite ? '#ef4444' : 'none');
+          }
           wishlistBtn.setAttribute('title', res.is_favorite ? 'Quitar de lista de deseos' : 'Añadir a lista de deseos');
           if (res.is_favorite) {
             showSuccessToast('Lista de Deseos', res.message || 'Producto agregado a tus favoritos.');

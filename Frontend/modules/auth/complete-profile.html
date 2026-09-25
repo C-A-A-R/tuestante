@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Culmina tu Registro | TuEstante</title>
     <meta name="description" content="Completa tus datos de identidad y contacto para comenzar a disfrutar de TuEstante.">
-    <link rel="icon" href="../../assets/icons/favicon.ico" />
+    <link rel="icon" href="../../assets/images/logo.svg" />
 
     <!-- Google Fonts: Inter & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,6 +21,8 @@
 </head>
 
 <body class="auth-body">
+    <!-- Fondo Dividido: Mitad superior color primario, mitad inferior clara -->
+    <div class="auth-bg-split" aria-hidden="true"><div class="left"></div><div class="right"></div></div>
     <!-- Fondo Decorativo -->
     <div class="auth-bg-decoration">
         <div class="glow-sphere glow-1"></div>
@@ -33,7 +35,7 @@
             <!-- Encabezado -->
             <div class="auth-header">
                 <a href="../../index.html" class="auth-logo-link" title="Ir al Inicio">
-                    <img class="auth-logo-img" src="../../assets/images/logo.png" alt="TuEstante Logo" onerror="this.style.display='none'">
+                    <img class="auth-logo-img" src="../../assets/images/logo.svg" alt="TuEstante Logo">
                 </a>
                 <div class="stepper-badge">
                     <span class="stepper-dot"></span>
@@ -217,6 +219,21 @@
                         </div>
                         <span class="field-error-message" id="second_last_nameError"></span>
                     </div>
+                </div>
+
+                <!-- Fila 5: Dirección de Entrega (opcional) -->
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label for="address" class="form-label">Dirección <span class="opt-label">(opcional)</span></label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                        </span>
+                        <input type="text" id="address" name="address" class="form-input" placeholder="Ej. Av. Bolívar, Calle 5, Casa #12, Urb. Los Mangos">
+                    </div>
+                    <span class="field-error-message" id="addressError"></span>
                 </div>
 
                 <!-- Botón de Completar Registro -->

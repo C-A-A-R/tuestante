@@ -1,0 +1,416 @@
+/**
+ * ==========================================================================
+ * TUESTANTE – PRODUCT CART COMPONENT STYLES
+ * Estilos del componente de carta de producto para la tienda pública.
+ * Extiende las clases unificadas de index.css sin duplicarlas.
+ * ==========================================================================
+ */
+
+
+/* ─── Contenedor de la Tarjeta Unificada ─────────────────────────────────── */
+.unified-product-card {
+    background-color: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    position: relative;
+    animation: pcCardFadeIn 0.3s ease both;
+}
+
+.unified-product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 81, 135, 0.12);
+    border-color: #cbd5e1;
+}
+
+/* ─── Media / Imagen de la tarjeta ───────────────────────────────────────── */
+.unified-card-media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background-color: #f3f4f6;
+    overflow: hidden;
+}
+
+.unified-card-img-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.unified-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.4s ease;
+}
+
+.unified-product-card:hover .unified-card-img {
+    transform: scale(1.06);
+}
+
+/* ─── Badges de producto (Outlet y Destacado sin colisión) ──────────────── */
+.unified-card-badges {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    pointer-events: none;
+    max-width: calc(100% - 64px);
+}
+
+.unified-card-badges .badge-outlet-tag,
+.unified-card-badges .badge-destacado-star {
+    position: relative;
+    top: auto;
+    left: auto;
+    pointer-events: auto;
+}
+
+/* Badge Outlet */
+.badge-outlet-tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 25;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+    letter-spacing: 0.02em;
+}
+
+/* Badge Destacado */
+.badge-destacado-star {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 25;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    padding: 5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
+    max-width: 32px;
+    height: 32px;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.badge-destacado-star .star-icon {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    flex-shrink: 0;
+    transition: transform 0.4s ease;
+}
+
+.badge-destacado-star .star-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    transition: opacity 0.35s ease, max-width 0.4s ease, margin-left 0.35s ease;
+    margin-left: 0;
+    white-space: nowrap;
+}
+
+.badge-destacado-star:hover {
+    max-width: min(175px, calc(100% - 56px));
+    padding: 5px 12px 5px 6px;
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+}
+
+.badge-destacado-star:hover .star-icon {
+    transform: rotate(72deg) scale(1.15);
+}
+
+.badge-destacado-star:hover .star-label {
+    opacity: 1;
+    max-width: 140px;
+    margin-left: 6px;
+}
+
+/* Fallback si se renderizan directamente en unified-card-media sin contenedor */
+.unified-card-media:has(.badge-outlet-tag) > .badge-destacado-star {
+    top: 44px;
+}
+
+/* ─── Botón de Wishlist (corazón flotante superior derecho) ──────────────── */
+.unified-wishlist-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 20;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 50%;
+    cursor: pointer;
+    color: #94a3b8;
+    transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 0;
+    outline: none;
+}
+
+.unified-wishlist-btn svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+    transition: fill 0.2s ease, stroke 0.2s ease, transform 0.2s ease;
+}
+
+.unified-wishlist-btn:hover {
+    color: #ef4444;
+    background: #ffffff;
+    border-color: #fca5a5;
+    transform: scale(1.12);
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2);
+}
+
+.unified-wishlist-btn:active {
+    transform: scale(0.92);
+}
+
+.unified-wishlist-btn.active {
+    color: #ef4444;
+    background: #fff5f5;
+    border-color: #fca5a5;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.22);
+}
+
+.unified-wishlist-btn.active svg {
+    fill: #ef4444;
+    stroke: #ef4444;
+    animation: heartBeat 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.unified-wishlist-btn.active:hover {
+    color: #dc2626;
+    background: #fee2e2;
+    border-color: #f87171;
+    transform: scale(1.14);
+}
+
+@keyframes heartBeat {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.28); }
+    100% { transform: scale(1); }
+}
+
+/* ─── Body de la tarjeta ─────────────────────────────────────────────────── */
+.unified-card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px 14px 12px 14px;
+    background-color: #ffffff;
+    border-radius: 0 0 var(--radius-md, 14px) var(--radius-md, 14px);
+    flex-grow: 1;
+    box-sizing: border-box;
+}
+
+/* ─── Header dentro del body (precio arriba, nombre abajo) ───────────────── */
+.unified-card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+}
+
+.unified-card-price {
+    font-family: var(--font-heading, 'Outfit', sans-serif);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #002b49;
+    white-space: nowrap;
+    line-height: 1.1;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.unified-card-title {
+    font-family: var(--font-heading, 'Outfit', sans-serif);
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0;
+    width: 100%;
+}
+
+.unified-card-title a {
+    color: #0f172a;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.unified-card-title a:hover {
+    color: var(--primary, #005187);
+}
+
+/* ─── Línea divisoria sutil (reducida para eliminar espacio blanco) ─────── */
+.unified-card-divider {
+    width: 100%;
+    height: 1px;
+    background-color: #eef2f6;
+    border: none;
+    margin: 8px 0 10px 0;
+}
+
+/* ─── Botones de acción: Ver Detalle y Añadir al Carrito ─────────────────── */
+.unified-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border-top: none;
+}
+
+/* Botón "Ver Detalle" (estilo claro con borde sutil como en la referencia) */
+.btn-details,
+.unified-btn.btn-details {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    padding: 0 10px;
+    background-color: #f8fafc;
+    color: #0f172a;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.btn-details:hover,
+.unified-btn.btn-details:hover {
+    background-color: #f1f5f9;
+    border-color: #94a3b8;
+    color: var(--primary, #005187);
+    transform: translateY(-1px);
+}
+
+/* Botón "+ Carrito" (estilo sólido azul primario como en la referencia) */
+.btn-card-add-cart,
+.unified-btn.btn-card-add-cart {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    padding: 0 10px;
+    background-color: #005187;
+    color: #ffffff;
+    border: 1.5px solid #005187;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.btn-card-add-cart:hover,
+.unified-btn.btn-card-add-cart:hover {
+    background-color: #003d66;
+    border-color: #003d66;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 81, 135, 0.25);
+}
+
+.btn-card-add-cart.added {
+    background-color: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+}
+
+/* ─── Estado vacío cuando no hay productos ───────────────────────────────── */
+.pc-empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 60px 20px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.pc-empty-state svg {
+    opacity: 0.45;
+}
+
+.pc-empty-state p {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #64748b;
+    max-width: 340px;
+}
+
+/* ─── Animación de entrada al aparecer en pantalla ───────────────────────── */
+@keyframes pcCardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.unified-product-card {
+    animation: pcCardFadeIn 0.3s ease both;
+}

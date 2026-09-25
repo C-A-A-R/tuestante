@@ -11,6 +11,7 @@ import {
   getProductionOrder, 
   updateProductionOrderStatus, 
   advanceProductionOrderStage,
+  getProductionBlueprint,
   getStageConfig,
   PRODUCTION_STAGES 
 } from './production.api.js';
@@ -153,6 +154,9 @@ function renderAllOrderDetails(order) {
   if (orderNotesText) {
     orderNotesText.textContent = order.order_notes || order.technical_notes || 'Sin notas especiales registradas para este pedido.';
   }
+
+  // 7. Plano Técnico Vectorial y Diseño Paramétrico
+  renderBlueprintCard(order);
 }
 
 /**
@@ -273,16 +277,294 @@ function setupDetailEvents() {
   }
 }
 
+/**
+ * Renderiza la sección de plano técnico SVG vectorial y parámetros de taller
+ */
+async function renderBlueprintCard(order) {
+  const section = document.getElementById('detail-blueprint-section');
+  if (!section) return;
+
+  const spinner = document.getElementById('blueprint-loading-spinner');
+  const svgContainer = document.getElementById('blueprint-svg-container');
+  const pillsContainer = document.getElementById('parametric-specs-pills');
+  const btnDownloadSvg = document.getElementById('btn-download-svg');
+  const btnOpenTab = document.getElementById('btn-open-blueprint-tab');
+
+  let blueprintSvg = order.blueprint_svg;
+  let technicalDesign = order.technical_design;
+
+  // Si no viene en el payload inicial, consultar endpoint específico
+  if (!blueprintSvg && order.id) {
+    if (spinner) spinner.style.display = 'flex';
+    if (svgContainer) svgContainer.style.display = 'none';
+
+    try {
+      const bpData = await getProductionBlueprint(order.id);
+      if (bpData && bpData.blueprint_svg) {
+        blueprintSvg = bpData.blueprint_svg;
+        order.blueprint_svg = bpData.blueprint_svg;
+        if (bpData.technical_design) {
+          technicalDesign = bpData.technical_design;
+          order.technical_design = bpData.technical_design;
+        }
+      }
+    } catch (e) {
+      console.warn('No se pudo cargar el plano vectorial:', e);
+    }
+  }
+
+  // Configurar badge de personalización con IA
+  const aiBadge = document.getElementById('blueprint-ai-badge');
+  if (aiBadge) {
+    const isCustom = technicalDesign?.is_custom || order.iteration > 1 || (technicalDesign?.furniture_type && technicalDesign.furniture_type.toLowerCase().includes('personaliz'));
+    aiBadge.style.display = isCustom ? 'inline-block' : 'none';
+  }
+
+  // Renderizar píldoras paramétricas de especificaciones
+  if (pillsContainer) {
+    const dims = technicalDesign?.dimensions_mm || { height: 1800, width: 900, depth: 400 };
+    const grid = technicalDesign?.grid || { rows: 3, columns: 1 };
+    const color = technicalDesign?.main_color || '#005187';
+    const compartmentsCount = technicalDesign?.compartments?.length || (grid.rows * grid.columns);
+
+    pillsContainer.innerHTML = `
+      <div class="param-pill" title="Altura total acotada">
+        <span>Altura:</span> <strong>${dims.height || 1800} mm</strong>
+      </div>
+      <div class="param-pill-divider"></div>
+      <div class="param-pill" title="Ancho frontal acotado">
+        <span>Ancho:</span> <strong>${dims.width || 900} mm</strong>
+      </div>
+      <div class="param-pill-divider"></div>
+      <div class="param-pill" title="Profundidad acotada">
+        <span>Fondo:</span> <strong>${dims.depth || 400} mm</strong>
+      </div>
+      <div class="param-pill-divider"></div>
+      <div class="param-pill" title="Distribución de cuadrícula">
+        <span>Cuadrícula:</span> <strong>${grid.rows || 1} filas × ${grid.columns || 1} col</strong>
+      </div>
+      <div class="param-pill-divider"></div>
+      <div class="param-pill" title="Compartimentos y divisiones">
+        <span>Módulos:</span> <strong>${compartmentsCount}</strong>
+      </div>
+      <div class="param-pill-divider"></div>
+      <div class="param-pill" title="Color y acabado electrostático">
+        <span>Acabado:</span>
+        <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${escapeHtml(color)}; border:1px solid #94a3b8; vertical-align:middle; margin: 0 2px;"></span>
+        <strong>${escapeHtml(color)}</strong>
+      </div>
+      <div class="param-pill-divider"></div>
+      <div class="param-pill" title="Tolerancia de corte y ensamblaje">
+        <span>Tolerancia:</span> <strong>±1.5 mm</strong>
+      </div>
+    `;
+  }
+
+  // Ocultar spinner y mostrar SVG
+  if (spinner) spinner.style.display = 'none';
+
+  if (blueprintSvg && svgContainer) {
+    svgContainer.style.display = 'flex';
+    svgContainer.innerHTML = blueprintSvg;
+
+    if (btnDownloadSvg) {
+      btnDownloadSvg.onclick = () => {
+        downloadSvgFile(blueprintSvg, `${order.production_code || 'orden'}-plano-taller.svg`);
+      };
+    }
+
+    if (btnOpenTab) {
+      btnOpenTab.onclick = () => {
+        openBlueprintInNewTab(order, blueprintSvg, technicalDesign);
+      };
+    }
+  } else if (svgContainer) {
+    svgContainer.style.display = 'flex';
+    svgContainer.innerHTML = `
+      <div class="blueprint-empty-notice">
+        <p style="font-weight: 600; margin-bottom: 6px; color: #f1f5f9;">Plano técnico en cola de procesamiento</p>
+        <p style="font-size: 0.8rem; color: #94a3b8;">El plano vectorial se generará en cuanto se confirmen las cotas exactas en taller.</p>
+      </div>
+    `;
+  }
+}
+
+function downloadSvgFile(svgContent, filename) {
+  try {
+    const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('success', 'Descarga Iniciada', `Archivo vectorial guardado como ${filename}`);
+  } catch (err) {
+    showToast('error', 'Error de Descarga', err.message);
+  }
+}
+
+function openBlueprintInNewTab(order, svgContent, technicalDesign) {
+  const viewerWindow = window.open('', '_blank');
+  if (!viewerWindow) {
+    showToast('info', 'Ventana Bloqueada', 'Por favor habilita las ventanas emergentes para abrir el plano a pantalla completa.');
+    return;
+  }
+
+  const dims = technicalDesign?.dimensions_mm || { height: 1800, width: 900, depth: 400 };
+
+  viewerWindow.document.open();
+  viewerWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Plano Técnico - ${escapeHtml(order.production_code || 'TuEstante')}</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+          background-color: #0b1120;
+          color: #f8fafc;
+          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+        .header {
+          background-color: #0f172a;
+          border-bottom: 1px solid #1e293b;
+          padding: 14px 24px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .header h1 {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: #38bdf8;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .header .meta {
+          font-size: 0.85rem;
+          color: #94a3b8;
+          display: flex;
+          gap: 16px;
+        }
+        .header .meta strong {
+          color: #f1f5f9;
+        }
+        .actions {
+          display: flex;
+          gap: 10px;
+        }
+        .btn-action {
+          background-color: #1e293b;
+          color: #f8fafc;
+          border: 1px solid #334155;
+          padding: 8px 16px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .btn-action:hover {
+          background-color: #0284c7;
+          border-color: #0284c7;
+        }
+        .blueprint-canvas {
+          flex: 1;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 30px;
+          overflow: auto;
+        }
+        .blueprint-canvas svg {
+          max-width: 90vw;
+          max-height: 84vh;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+          border-radius: 8px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div>
+          <h1>📐 Plano Técnico Oficial de Fabricación — ${escapeHtml(order.production_code || '')}</h1>
+          <div class="meta" style="margin-top: 4px;">
+            <span>Pedido: <strong>${escapeHtml(order.order_number || '')}</strong></span>
+            <span>Cliente: <strong>${escapeHtml(order.client_name || '')}</strong></span>
+            <span>Dimensiones: <strong>${dims.height} × ${dims.width} × ${dims.depth} mm</strong></span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn-action" onclick="window.print()">🖨️ Imprimir</button>
+          <button class="btn-action" onclick="window.close()">✕ Cerrar</button>
+        </div>
+      </div>
+      <div class="blueprint-canvas">
+        ${svgContent}
+      </div>
+    </body>
+    </html>
+  `);
+  viewerWindow.document.close();
+}
+
 // ==========================================================================
 // GENERACIÓN DE HOJA DE ORDEN DE FABRICACIÓN (IMPRESIÓN / EXPORTACIÓN)
 // ==========================================================================
 
 function exportProductionWorksheet(order) {
-  const printWindow = window.open('', '_blank', 'width=900,height=750');
+  const printWindow = window.open('', '_blank', 'width=950,height=800');
   if (!printWindow) {
     showToast('info', 'Permitir Ventanas Emergentes', 'Por favor permite ventanas emergentes para generar e imprimir la orden de fabricación.');
     return;
   }
+
+  const design = order.technical_design;
+  const dims = design?.dimensions_mm || { height: 1800, width: 900, depth: 400 };
+  const grid = design?.grid || { rows: 3, columns: 1 };
+  const color = design?.main_color || '#005187';
+
+  const blueprintSectionHtml = order.blueprint_svg ? `
+    <div style="margin-bottom: 24px; page-break-inside: avoid;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1.5px solid #005187; padding-bottom: 6px;">
+        <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
+          📐 Especificaciones Paramétricas y Plano Vectorial de Taller (Cotas en mm)
+        </h4>
+        <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
+          Tolerancia: ±1.5 mm
+        </span>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;">
+        <span><strong>Alto:</strong> ${dims.height || 1800} mm</span>
+        <span style="color: #cbd5e1;">|</span>
+        <span><strong>Ancho:</strong> ${dims.width || 900} mm</span>
+        <span style="color: #cbd5e1;">|</span>
+        <span><strong>Fondo:</strong> ${dims.depth || 400} mm</span>
+        <span style="color: #cbd5e1;">|</span>
+        <span><strong>Distribución:</strong> ${grid.rows || 1} Filas × ${grid.columns || 1} Columnas</span>
+        <span style="color: #cbd5e1;">|</span>
+        <span><strong>Color / Acabado:</strong> ${escapeHtml(color)}</span>
+      </div>
+
+      <div style="border: 1px solid #334155; border-radius: 6px; overflow: hidden; background: #0f172a; text-align: center; padding: 12px;">
+        <div style="max-height: 480px; display: flex; justify-content: center; align-items: center;">
+          ${order.blueprint_svg}
+        </div>
+      </div>
+    </div>
+  ` : '';
 
   const itemsHtml = (order.items || []).map((item, idx) => `
     <tr>
@@ -322,9 +604,11 @@ function exportProductionWorksheet(order) {
         .checklist-box { border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px; text-align: center; }
         .signature-section { margin-top: 50px; display: flex; justify-content: space-between; font-size: 12px; }
         .sig-line { width: 200px; border-top: 1px solid #000; text-align: center; padding-top: 6px; }
+        svg { max-width: 100%; max-height: 460px; height: auto; display: block; margin: 0 auto; }
         @media print {
-          body { padding: 0; }
+          body { padding: 10px; }
           .no-print { display: none; }
+          svg { max-height: 430px !important; }
         }
       </style>
     </head>
@@ -362,12 +646,14 @@ function exportProductionWorksheet(order) {
         </div>
       ` : ''}
 
+      ${blueprintSectionHtml}
+
       <table>
         <thead>
           <tr>
             <th style="width: 40px; text-align: center;">#</th>
             <th>Producto & SKU</th>
-            <th>Especificaciones / Dimensiones / Acabados</th>
+            <th>Especificaciones / Acabados</th>
             <th style="width: 70px; text-align: center;">Cant.</th>
             <th style="width: 150px; text-align: center;">Control Taller</th>
           </tr>

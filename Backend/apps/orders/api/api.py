@@ -32,7 +32,7 @@ class OrderViewSet(BaseViewSet):
 
     def get_permissions(self):
         """Define permisos dinámicos según la acción."""
-        if self.action in ['list', 'retrieve', 'create', 'my_orders', 'user_orders', 'receive']:
+        if self.action in ['list', 'retrieve', 'create', 'my_orders', 'user_orders', 'receive', 'blueprint']:
             return [permissions.IsAuthenticated()]
         return [permissions.IsAdminUser()]
 
@@ -368,6 +368,8 @@ class OrderViewSet(BaseViewSet):
             # Si es un producto de Outlet, descontar el inventario del producto
             if product.is_outlet:
                 product.quantity = max(0, product.quantity - quantity)
+                if product.quantity == 0:
+                    product.is_active = False
                 product.save()
 
             total_price += detail.final_price
@@ -401,13 +403,28 @@ class OrderViewSet(BaseViewSet):
         """
         order = self.get_object()
         last_iteration = ManufacturingOrder.objects.filter(order=order).count()
+        notes = request.data.get('notes', 'Generada desde el panel API por administración')
+
+        # Generar snapshot técnico paramétrico y plano SVG para taller
+        technical_design = None
+        blueprint_svg = None
+        try:
+            from apps.production.services.parametric_service import ParametricDesignService
+            technical_design, blueprint_svg, summary = ParametricDesignService.build_order_blueprint(
+                order,
+                custom_notes=notes
+            )
+        except Exception:
+            pass
 
         mo = ManufacturingOrder.objects.create(
             order=order,
             status='pending',
             iteration=last_iteration + 1,
             issued_by=request.user,
-            notes=request.data.get('notes', 'Generada desde el panel API por administración')
+            notes=notes,
+            technical_design=technical_design,
+            blueprint_svg=blueprint_svg
         )
 
         try:
@@ -415,13 +432,54 @@ class OrderViewSet(BaseViewSet):
                 order=order,
                 status='queued',
                 iteration=last_iteration + 1,
-                technical_notes=request.data.get('notes', 'Generada desde el panel API por administración')
+                technical_notes=notes,
+                technical_design=technical_design,
+                blueprint_svg=blueprint_svg
             )
         except Exception:
             pass
 
         serializer = ManufacturingOrderSerializer(mo)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['get'], url_path='blueprint', permission_classes=[permissions.IsAuthenticated])
+    def blueprint(self, request, pk=None):
+        """
+        Devuelve el plano técnico SVG y el diseño paramétrico del pedido.
+        Soporta ?format=svg para visualización/impresión directa como imagen vectorial.
+        """
+        order = self.get_object()
+
+        # Validación de permisos: cliente dueño o staff
+        if not (request.user.is_staff or order.user == request.user):
+            return Response(
+                {"error": "No tienes permiso para ver el plano técnico de este pedido."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        mo = order.manufacturing_orders.filter(is_deleted=False).order_by('-iteration', '-id').first()
+        po = order.production_orders.filter(is_deleted=False).order_by('-iteration', '-id').first() if hasattr(order, 'production_orders') else None
+
+        svg_content = (mo and mo.blueprint_svg) or (po and po.blueprint_svg)
+        design = (mo and mo.technical_design) or (po and po.technical_design)
+
+        if not svg_content:
+            try:
+                from apps.production.services.parametric_service import ParametricDesignService
+                design, svg_content, _ = ParametricDesignService.build_order_blueprint(order)
+            except Exception:
+                pass
+
+        if request.query_params.get('format') == 'svg' or 'image/svg+xml' in request.META.get('HTTP_ACCEPT', ''):
+            from django.http import HttpResponse
+            return HttpResponse(svg_content or '<svg></svg>', content_type='image/svg+xml')
+
+        return Response({
+            "order_id": order.id,
+            "order_number": order.order_number or f"#{order.id:05d}",
+            "technical_design": design,
+            "blueprint_svg": svg_content
+        }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='my-orders', permission_classes=[permissions.IsAuthenticated])
     def my_orders(self, request):
@@ -541,7 +599,7 @@ class OrderViewSet(BaseViewSet):
     def update(self, request, *args, **kwargs):
         """Bloquea la sobrescritura completa (PUT) de pedidos."""
         return Response(
-            {"error": "Utilice actualización parcial (PATCH) para modificar el estado u observaciones."},
+            {"error": "Los pedidos no pueden ser actualizados. Utilice actualización parcial (PATCH) para modificar el estado u observaciones."},
             status=status.HTTP_405_METHOD_NOT_ALLOWED
         )
 

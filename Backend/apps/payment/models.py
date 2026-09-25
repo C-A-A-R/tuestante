@@ -51,10 +51,33 @@ class Payment(BaseModel):
         help_text='Indica si es el pago inicial, el pago final o el pago total / único'
     )
     amount = models.DecimalField(
-        'Monto pagado',
+        'Monto pagado (USD)',
         max_digits=12,
         decimal_places=2,
-        help_text='Monto que el cliente indica haber transferido/pagado'
+        help_text='Monto equivalente en Dólares ($) registrado en el pedido'
+    )
+    amount_ves = models.DecimalField(
+        'Monto en Bolívares (Bs.)',
+        max_digits=16,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Monto real pagado/transferido en Bolívares (VES)'
+    )
+    exchange_rate = models.DecimalField(
+        'Tasa de cambio aplicada',
+        max_digits=12,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text='Tasa oficial BCV utilizada para la conversión en la fecha del pago'
+    )
+    currency = models.CharField(
+        'Moneda del pago',
+        max_length=5,
+        default='USD',
+        choices=[('USD', 'Dólares ($)'), ('VES', 'Bolívares (Bs.)')],
+        help_text='Moneda en la que se realizó la transferencia'
     )
     payment_method = models.CharField(
         'Método de pago',

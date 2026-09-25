@@ -903,12 +903,6 @@ function renderCategoriesNavbar(categoriesData) {
   const prefix = getBasePathPrefix();
   const desktopContainer = document.getElementById('nav-categories-container');
 
-  console.log(LOG_TAG, '🏷️ Renderizando sub-barra de categorías conectada al backend...', {
-    containerFound: Boolean(desktopContainer),
-    categoriesCount: categoriesData?.length || 0,
-    windowWidth: window.innerWidth
-  });
-
   if (!desktopContainer || !Array.isArray(categoriesData) || !categoriesData.length) {
     return;
   }
@@ -924,20 +918,26 @@ function renderCategoriesNavbar(categoriesData) {
 
     if (items.length > 0) {
       const featuredProduct = items.find((product) => product.is_featured) || items[items.length - 1];
-      const regularProducts = items.filter((product) => product !== featuredProduct).slice(0, 3);
+      const regularProducts = items.filter((product) => product !== featuredProduct).slice(0, 4);
       const productsCards = regularProducts.map((prod) => {
         const prodId = prod.id;
         const prodName = prod.name || prod.product_name || 'Producto TuEstante';
         const rawImg = prod.image || prod.product_image || `${prefix}assets/images/categoria/estante.png`;
         const prodImg = (rawImg.startsWith('http') || rawImg.startsWith('/') || rawImg.startsWith('.')) ? rawImg : `${prefix}${rawImg}`;
         const prodLink = `${prefix}modules/product/product-details.html?id=${prodId}`;
+        const prodPrice = (prod.price !== undefined && prod.price !== null)
+          ? `$${Number(prod.price).toFixed(2)}`
+          : '';
 
         return `
           <a href="${prodLink}" class="catalog-card">
             <div class="catalog-img-wrapper">
               <img src="${prodImg}" alt="${prodName}" class="catalog-img" loading="lazy" onerror="this.src='${prefix}assets/images/categoria/estante.png'">
             </div>
-            <span class="catalog-title">${prodName}</span>
+            <div class="catalog-card-info">
+              <span class="catalog-title">${prodName}</span>
+              ${prodPrice ? `<strong class="catalog-price">${prodPrice}</strong>` : ''}
+            </div>
           </a>
         `;
       }).join('');
@@ -946,10 +946,6 @@ function renderCategoriesNavbar(categoriesData) {
       const featuredImgUrl = (featuredImg.startsWith('http') || featuredImg.startsWith('/') || featuredImg.startsWith('.')) ? featuredImg : `${prefix}${featuredImg}`;
       const featuredLink = `${prefix}modules/product/product-details.html?id=${featuredProduct.id}`;
       const featuredName = featuredProduct.name || featuredProduct.product_name || 'Producto destacado';
-      const featuredDescriptionSource = featuredProduct.description || 'Descubre este modelo destacado de TuEstante.';
-      const featuredDescription = featuredDescriptionSource.length > 110
-        ? `${featuredDescriptionSource.slice(0, 110).trimEnd()}...`
-        : featuredDescriptionSource;
       const featuredPrice = featuredProduct.price !== undefined && featuredProduct.price !== null
         ? `$${Number(featuredProduct.price).toFixed(2)}`
         : 'Consultar precio';
@@ -960,14 +956,13 @@ function renderCategoriesNavbar(categoriesData) {
             ${productsCards}
           </div>
           <a href="${featuredLink}" class="catalog-featured-product">
-            <div class="catalog-featured-heading">Popular</div>
+            <div class="catalog-featured-heading">Destacado</div>
             <div class="catalog-featured-body">
               <div class="catalog-featured-img-wrapper">
                 <img src="${featuredImgUrl}" alt="${featuredName}" class="catalog-featured-img" loading="lazy" onerror="this.src='${prefix}assets/images/categoria/estante.png'">
               </div>
               <div class="catalog-featured-info">
                 <div class="catalog-featured-name">${featuredName}</div>
-                <p class="catalog-featured-description">${featuredDescription}</p>
                 <strong class="catalog-featured-price">${featuredPrice}</strong>
               </div>
             </div>
@@ -999,7 +994,6 @@ function renderCategoriesNavbar(categoriesData) {
     `;
   }).join('');
 
-  console.log(LOG_TAG, `✅ Sub-barra de categorías conectada y renderizada con éxito (${categoriesData.length} categorías de la BD).`);
 }
 
 /**
@@ -1008,9 +1002,7 @@ function renderCategoriesNavbar(categoriesData) {
  */
 async function loadDynamicCategoriesFromApi() {
   const prefix = getBasePathPrefix();
-  try {
-    console.log(LOG_TAG, '📡 Consultando tipos de producto y productos del backend con { auth: false }...');
-    
+  try {    
     const [catResponse, prodResponse] = await Promise.allSettled([
       getRequest('/products/product-types/', {}, { auth: false }),
       getRequest('/products/products/', {}, { auth: false })
@@ -1026,10 +1018,6 @@ async function loadDynamicCategoriesFromApi() {
       products = extractList(prodResponse.value);
     }
 
-    console.log(LOG_TAG, `📦 Datos recibidos del backend:`, {
-      categoriesCount: categories.length,
-      productsCount: products.length
-    });
 
     if (categories && categories.length > 0) {
       // Mapear cada tipo real con sus productos correspondientes
@@ -1042,7 +1030,7 @@ async function loadDynamicCategoriesFromApi() {
           return String(productTypeId) === String(typeId);
         });
 
-        const items = matchingProducts.slice(0, 5).map((prod) => {
+        const items = matchingProducts.slice(0, 6).map((prod) => {
           const rawImg = prod.product_image || prod.image || (Array.isArray(prod.images) && prod.images[0]?.image) || '';
           return {
             id: prod.id,
@@ -1090,8 +1078,6 @@ function setupSearchHandler() {
     searchForm.onsubmit = (e) => {
       e.preventDefault();
       const term = searchInput.value.trim();
-      console.log(LOG_TAG, `🔍 Búsqueda ejecutada: "${term}"`);
-
       const isProductsPage = window.location.pathname.includes('/product/products.html') || window.location.pathname.endsWith('products.html');
 
       if (isProductsPage) {

@@ -7,9 +7,10 @@
 
 import { requestPasswordReset } from '../auth/password-reset.api.js';
 import { getCurrentUser, setCurrentUser } from '../../js/storage.js';
+import { apiRequest } from '../../js/api.js';
 
 /**
- * Obtiene la información del perfil del usuario autenticado actualmente.
+ * Obtiene la información del perfil del usuario autenticado en la sesión local.
  * @returns {Object|null} Datos del usuario en sesión.
  */
 export function getProfileData() {
@@ -17,12 +18,58 @@ export function getProfileData() {
 }
 
 /**
- * Actualiza los datos del perfil en el almacenamiento local de sesión.
- * @param {Object} updatedFields Campos a actualizar.
- * @returns {Object} Usuario con datos actualizados.
+ * Consulta los datos más recientes del perfil desde la API del backend (/users/profile/).
+ * @returns {Promise<Object|null>} Datos del usuario actualizados.
  */
-export function updateProfileData(updatedFields) {
+export async function fetchProfileFromAPI() {
+    try {
+        const data = await apiRequest({
+            path: '/users/profile/',
+            method: 'GET',
+            auth: true
+        });
+        if (data && typeof data === 'object') {
+            const current = getCurrentUser() || {};
+            const merged = { ...current, ...data };
+            setCurrentUser(merged);
+            return merged;
+        }
+    } catch (err) {
+        console.warn('[Profile API] No se pudo consultar /users/profile/, usando datos locales:', err);
+    }
+    return getCurrentUser();
+}
+
+/**
+ * Actualiza los datos del perfil tanto en el backend como en el almacenamiento local de sesión.
+ * @param {Object} updatedFields Campos a actualizar.
+ * @returns {Promise<Object>} Usuario con datos actualizados.
+ */
+export async function updateProfileData(updatedFields) {
     const current = getCurrentUser() || {};
+    try {
+        const response = await apiRequest({
+            path: '/users/profile/',
+            method: 'PATCH',
+            body: updatedFields,
+            auth: true
+        });
+
+        const serverUser = response?.user || response;
+        if (serverUser && typeof serverUser === 'object') {
+            const merged = {
+                ...current,
+                ...serverUser,
+                full_name: `${serverUser.first_name || ''} ${serverUser.first_last_name || ''}`.trim() || serverUser.username
+            };
+            setCurrentUser(merged);
+            return merged;
+        }
+    } catch (err) {
+        console.warn('[Profile API] Error al actualizar perfil en servidor:', err);
+        throw err;
+    }
+
     const updatedUser = {
         ...current,
         ...updatedFields,

@@ -371,11 +371,39 @@
 
 /* Inputs bloqueados / modo lectura */
 .form-input:disabled,
-.form-input[readonly] {
+.form-input[readonly],
+.form-textarea:disabled,
+.form-textarea[readonly] {
     background-color: #f8fafc;
     color: #475569;
     border-color: #e2e8f0;
     cursor: default;
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: var(--dark-text);
+    background-color: #ffffff;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 70px;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 81, 135, 0.12);
+}
+
+.full-width-group {
+    grid-column: 1 / -1;
+    margin-top: 4px;
 }
 
 .form-help-text {
