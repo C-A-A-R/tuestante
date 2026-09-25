@@ -192,6 +192,21 @@ function populateProductTypesSelect(types) {
     opt.textContent = t.product_type_name;
     select.appendChild(opt);
   });
+
+  select.addEventListener('change', () => {
+    const selectedId = parseInt(select.value, 10);
+    const matched = state.productTypes.find(t => t.id === selectedId);
+    if (matched) {
+      const badgeType = document.getElementById('badge-product-type');
+      if (badgeType) badgeType.textContent = matched.product_type_name;
+      if (state.isEditMode && typeof matched.default_has_doors === 'boolean') {
+        const hasDoorsSwitch = document.getElementById('switch-has-doors');
+        if (hasDoorsSwitch) {
+          hasDoorsSwitch.checked = matched.default_has_doors;
+        }
+      }
+    }
+  });
 }
 
 function populateProductData(p) {
@@ -237,11 +252,27 @@ function populateProductData(p) {
   setInputValue('input-product-height', p.height_cm ? parseFloat(p.height_cm) : '');
   setInputValue('input-product-width', p.width_cm ? parseFloat(p.width_cm) : '');
   setInputValue('input-product-depth', p.depth_cm ? parseFloat(p.depth_cm) : '');
+  setInputValue('input-product-columns', p.columns_count !== undefined ? p.columns_count : (p.columns !== undefined ? p.columns : 1));
+  setInputValue('input-product-rows', p.rows_count !== undefined ? p.rows_count : (p.rows !== undefined ? p.rows : 1));
   setInputValue('input-product-security', p.security);
 
   setCheckboxValue('switch-is-active', p.is_active);
   setCheckboxValue('switch-is-outlet', p.is_outlet);
   setCheckboxValue('switch-is-featured', p.is_feature_product);
+  setCheckboxValue('switch-has-doors', p.has_doors ?? false);
+
+  // Actualizar badges técnicos en el header
+  const badgeGrid = document.getElementById('badge-product-grid');
+  if (badgeGrid) {
+    const cols = p.columns_count !== undefined ? p.columns_count : (p.columns || 1);
+    const rows = p.rows_count !== undefined ? p.rows_count : (p.rows || 1);
+    badgeGrid.textContent = `${cols} ${cols === 1 ? 'col' : 'cols'} × ${rows} ${rows === 1 ? 'nivel' : 'niveles'}`;
+  }
+
+  const badgeDoors = document.getElementById('badge-product-doors');
+  if (badgeDoors) {
+    badgeDoors.textContent = p.has_doors ? 'Con Puertas' : 'Sin Puertas (Abierto)';
+  }
 
   // Conversión de precio a Bolívares
   updatePriceVes(parseFloat(p.price) || 0);
@@ -393,6 +424,8 @@ function setEditMode(isEdit) {
 
   if (isEdit) {
     showToast('info', 'Modo Edición Activado', 'Ahora puedes modificar datos, reemplazar fotos, agregar colores y ángulos.');
+  } else if (state.product) {
+    populateProductData(state.product);
   }
 }
 
@@ -570,28 +603,46 @@ function renderVideo() {
   const emptyBox = document.getElementById('video-dropzone-empty');
   const previewBox = document.getElementById('video-dropzone-preview');
   const player = document.getElementById('video-preview-player');
-  const filenameEl = document.getElementById('video-filename');
   const filesizeEl = document.getElementById('video-filesize');
+  const openLink = document.getElementById('btn-open-video-link');
+  const fallbackLink = document.getElementById('btn-open-fallback-video');
+  const errorOverlay = document.getElementById('video-error-overlay');
 
   if (!emptyBox || !previewBox || !player) return;
 
   if (state.videoUrl) {
-    if (player.src !== state.videoUrl) {
-      player.src = state.videoUrl;
+    if (errorOverlay) errorOverlay.classList.add('hidden');
+    if (openLink) {
+      openLink.href = state.videoUrl;
+      openLink.style.display = 'inline-flex';
+    }
+    if (fallbackLink) {
+      fallbackLink.href = state.videoUrl;
+    }
+
+    if (player.getAttribute('data-active-src') !== state.videoUrl) {
+      player.setAttribute('data-active-src', state.videoUrl);
+      player.innerHTML = `
+        <source src="${state.videoUrl}" type="video/mp4">
+        <source src="${state.videoUrl}" type="video/webm">
+        Tu navegador no soporta la reproducción directa de este video.
+      `;
       player.load();
     }
     emptyBox.classList.add('hidden');
     previewBox.classList.remove('hidden');
-    if (filenameEl) {
-      filenameEl.textContent = state.videoFile 
-        ? state.videoFile.name 
-        : (state.videoUrl ? state.videoUrl.split('/').pop().split('?')[0] : 'video-demostrativo.mp4');
-    }
+
     if (filesizeEl) {
-      filesizeEl.textContent = state.videoFile ? formatBytes(state.videoFile.size) : 'Video Demostrativo';
+      filesizeEl.textContent = state.videoFile 
+        ? `Video cargado (${formatBytes(state.videoFile.size)})` 
+        : 'Video Demostrativo del Producto';
     }
   } else {
-    player.src = '';
+    player.innerHTML = '';
+    player.removeAttribute('src');
+    player.removeAttribute('data-active-src');
+    if (errorOverlay) errorOverlay.classList.add('hidden');
+    if (openLink) openLink.style.display = 'none';
     emptyBox.classList.remove('hidden');
     previewBox.classList.add('hidden');
   }
@@ -619,7 +670,26 @@ function setupVideoControls() {
     });
 
     player.addEventListener('error', () => {
-      console.warn('[Video Player] Error de carga o formato no compatible:', player.error, player.src);
+      const err = player.error;
+      console.warn('[Video Player] Error de carga o formato no compatible:', err ? `Código ${err.code}: ${err.message}` : 'Error desconocido', player.currentSrc || state.videoUrl);
+      const errorOverlay = document.getElementById('video-error-overlay');
+      if (errorOverlay && state.videoUrl) {
+        errorOverlay.classList.remove('hidden');
+      }
+    });
+
+    player.addEventListener('loadeddata', () => {
+      const errorOverlay = document.getElementById('video-error-overlay');
+      if (errorOverlay) {
+        errorOverlay.classList.add('hidden');
+      }
+    });
+
+    player.addEventListener('canplay', () => {
+      const errorOverlay = document.getElementById('video-error-overlay');
+      if (errorOverlay) {
+        errorOverlay.classList.add('hidden');
+      }
     });
   }
 
@@ -1260,8 +1330,23 @@ function setupFormSubmit() {
     const height_cm = parseFloat(document.getElementById('input-product-height')?.value) || 0;
     const width_cm = parseFloat(document.getElementById('input-product-width')?.value) || 0;
     const depth_cm = parseFloat(document.getElementById('input-product-depth')?.value) || 0;
+    const columns_count = parseInt(document.getElementById('input-product-columns')?.value, 10) || 1;
+    const rows_count = parseInt(document.getElementById('input-product-rows')?.value, 10) || 1;
+    const has_doors = document.getElementById('switch-has-doors')?.checked ?? false;
     const security = document.getElementById('input-product-security')?.value.trim() || '';
     const description = document.getElementById('textarea-product-desc')?.value.trim() || '';
+
+    if (columns_count < 1) {
+      showToast('error', 'Campo inválido', 'La cantidad de columnas debe ser al menos 1.');
+      document.getElementById('input-product-columns')?.focus();
+      return;
+    }
+
+    if (rows_count < 1) {
+      showToast('error', 'Campo inválido', 'La cantidad de filas o niveles debe ser al menos 1.');
+      document.getElementById('input-product-rows')?.focus();
+      return;
+    }
 
     const is_active = document.getElementById('switch-is-active')?.checked ?? true;
     const is_outlet = document.getElementById('switch-is-outlet')?.checked ?? false;
@@ -1276,6 +1361,9 @@ function setupFormSubmit() {
     formData.append('height_cm', height_cm);
     formData.append('width_cm', width_cm);
     formData.append('depth_cm', depth_cm);
+    formData.append('columns_count', columns_count);
+    formData.append('rows_count', rows_count);
+    formData.append('has_doors', has_doors);
     formData.append('security', security);
     formData.append('is_active', is_active);
     formData.append('is_outlet', is_outlet);

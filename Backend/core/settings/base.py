@@ -180,6 +180,11 @@ SIMPLE_JWT = {
 
 CORS_EXPOSE_HEADERS = [
     "Content-Disposition",
+    "Content-Range",
+    "Content-Length",
+    "Accept-Ranges",
+    "ETag",
+    "Last-Modified",
 ]
 
 # Configuración del correo

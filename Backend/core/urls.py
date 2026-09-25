@@ -54,6 +54,9 @@ import re
 from django.http import HttpResponse, StreamingHttpResponse, Http404
 
 
+from django.utils.http import http_date
+
+
 def ranged_media_serve(request, path, document_root=None):
     """
     Sirve archivos estáticos y multimedia en desarrollo con soporte completo para
@@ -71,9 +74,13 @@ def ranged_media_serve(request, path, document_root=None):
     if not os.path.exists(full_path) or os.path.isdir(full_path):
         raise Http404("File not found")
 
-    file_size = os.path.getsize(full_path)
+    statobj = os.stat(full_path)
+    file_size = statobj.st_size
     content_type, encoding = mimetypes.guess_type(full_path)
     content_type = content_type or 'application/octet-stream'
+
+    etag = f'"{int(statobj.st_mtime)}-{file_size}"'
+    last_modified = http_date(statobj.st_mtime)
 
     range_header = request.headers.get('range', '').strip()
     range_match = re.match(r'bytes=(\d+)-(\d*)', range_header)
@@ -124,6 +131,13 @@ def ranged_media_serve(request, path, document_root=None):
         response['Content-Length'] = str(file_size)
 
     response['Accept-Ranges'] = 'bytes'
+    response['Last-Modified'] = last_modified
+    response['ETag'] = etag
+    origin = request.headers.get('origin')
+    if origin:
+        response['Access-Control-Allow-Origin'] = origin
+        response['Access-Control-Allow-Credentials'] = 'true'
+    response['Access-Control-Expose-Headers'] = 'Content-Disposition, Content-Range, Content-Length, Accept-Ranges, ETag, Last-Modified'
     if encoding:
         response['Content-Encoding'] = encoding
     return response

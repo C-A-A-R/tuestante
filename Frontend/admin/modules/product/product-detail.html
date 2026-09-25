@@ -67,6 +67,8 @@
               <span class="detail-tag tag-outlet hidden" id="badge-product-outlet">OUTLET</span>
               <span class="detail-tag tag-featured hidden" id="badge-product-featured">DESTACADO</span>
               <span class="detail-tag tag-stock" id="badge-product-stock">Stock: 0 uds.</span>
+              <span class="detail-tag tag-grid" id="badge-product-grid" style="background:#f1f5f9; color:#334155; border:1px solid #e2e8f0;">1 col × 1 nivel</span>
+              <span class="detail-tag tag-doors" id="badge-product-doors" style="background:#f1f5f9; color:#334155; border:1px solid #e2e8f0;">Sin puertas</span>
             </div>
           </div>
 
@@ -324,6 +326,72 @@
                   </div>
                 </div>
 
+                <!-- Estructura Modular y Fabricación (Columnas, Filas y Puertas) -->
+                <div class="form-grid-3">
+                  <div class="form-group">
+                    <label for="input-product-columns" class="form-label">
+                      Cantidad de Columnas <span class="required-mark">*</span>
+                    </label>
+                    <div class="input-unit-wrapper">
+                      <input 
+                        type="number" 
+                        id="input-product-columns" 
+                        name="columns_count" 
+                        class="form-input" 
+                        step="1" 
+                        min="1" 
+                        value="1" 
+                        disabled 
+                        placeholder="1" 
+                        required>
+                      <span class="unit-label">cols.</span>
+                    </div>
+                    <span class="form-hint" style="font-size:0.75rem; color:#64748b;">
+                      Módulos o divisiones verticales
+                    </span>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-product-rows" class="form-label">
+                      Cantidad de Filas / Niveles <span class="required-mark">*</span>
+                    </label>
+                    <div class="input-unit-wrapper">
+                      <input 
+                        type="number" 
+                        id="input-product-rows" 
+                        name="rows_count" 
+                        class="form-input" 
+                        step="1" 
+                        min="1" 
+                        value="1" 
+                        disabled 
+                        placeholder="1" 
+                        required>
+                      <span class="unit-label">filas</span>
+                    </div>
+                    <span class="form-hint" style="font-size:0.75rem; color:#64748b;">
+                      Niveles o divisiones en altura
+                    </span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" style="display: flex; align-items: center; justify-content: space-between;">
+                      <span>Puertas por Defecto</span>
+                      <span class="outlet-badge-tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd; font-size: 0.65rem; padding: 2px 6px;">FABRICACIÓN</span>
+                    </label>
+                    <div class="toggle-card" style="margin: 0; padding: 0 14px; height: 42px; display: flex; align-items: center; justify-content: space-between; border-radius: 8px;">
+                      <span style="font-size: 0.82rem; color: #334155; font-weight: 600;">Incluye Puertas</span>
+                      <label class="switch-toggle" for="switch-has-doors">
+                        <input type="checkbox" id="switch-has-doors" name="has_doors" disabled>
+                        <span class="switch-slider"></span>
+                      </label>
+                    </div>
+                    <span class="form-hint" style="font-size:0.75rem; color:#64748b;">
+                      ¿Compartimentos con puertas?
+                    </span>
+                  </div>
+                </div>
+
                 <!-- Seguridad / Instrucciones Técnicas -->
                 <div class="form-group">
                   <label for="input-product-security" class="form-label">Seguridad, Anclaje o Capacidad de Carga</label>
@@ -460,20 +528,45 @@
                       <!-- Estado con Reproductor HTML5 Activo -->
                       <div class="video-dropzone-preview hidden" id="video-dropzone-preview">
                         <div class="video-player-container">
-                          <video id="video-preview-player" controls preload="metadata" class="video-player-frame"></video>
+                          <video id="video-preview-player" controls preload="metadata" playsinline class="video-player-frame"></video>
+
+                          <!-- Fallback informativo en caso de que el navegador no soporte los códecs de video -->
+                          <div class="video-error-overlay hidden" id="video-error-overlay">
+                            <div class="video-error-box">
+                              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#f59e0b" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                              </svg>
+                              <div class="video-error-text">
+                                <strong>No se pudo reproducir en este navegador</strong>
+                                <span>Es posible que su navegador en este sistema no admita directamente el códec de este video.</span>
+                              </div>
+                              <a href="#" target="_blank" id="btn-open-fallback-video" class="btn-fallback-video">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                Abrir video en pestaña nueva
+                              </a>
+                            </div>
+                          </div>
                         </div>
+
                         <div class="video-info-bar">
                           <div class="video-meta">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                               <polygon points="23 7 16 12 23 17 23 7"></polygon>
                               <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
                             </svg>
-                            <span class="video-filename" id="video-filename">video-demostrativo.mp4</span>
-                            <span class="video-filesize" id="video-filesize">Video del producto</span>
+                            <span class="video-filesize" id="video-filesize" style="font-weight: 600; color: var(--text-main);">Video Demostrativo del Producto</span>
                           </div>
-                          <div class="video-actions edit-only-flex hidden" id="video-edit-actions">
-                            <button type="button" class="btn-change-video" id="btn-change-video" title="Reemplazar video">Cambiar</button>
-                            <button type="button" class="btn-remove-video" id="btn-remove-video" title="Quitar video">Quitar</button>
+                          <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
+                            <a href="#" target="_blank" class="btn-open-video-link" id="btn-open-video-link" title="Abrir video en nueva pestaña">
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                              Ver en pestaña nueva
+                            </a>
+                            <div class="video-actions edit-only-flex hidden" id="video-edit-actions">
+                              <button type="button" class="btn-change-video" id="btn-change-video" title="Reemplazar video">Cambiar</button>
+                              <button type="button" class="btn-remove-video" id="btn-remove-video" title="Quitar video">Quitar</button>
+                            </div>
                           </div>
                         </div>
                       </div>
