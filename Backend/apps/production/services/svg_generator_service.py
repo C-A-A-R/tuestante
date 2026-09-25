@@ -6,7 +6,7 @@ proyección de profundidad con caras sombreadas, biseles de puertas, ranuras de 
 placas metálicas de cerradura y cotas normalizadas en milímetros (mm).
 """
 
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 import math
 
 
@@ -52,9 +52,149 @@ class SVGBlueprintGenerator:
     """
 
     @classmethod
+    def _get_svg_defs(cls) -> str:
+        """Retorna las definiciones vectoriales comunes (marcadores, gradientes y trama)."""
+        return '''
+          <defs>
+            <!-- Marcadores para flechas de cotas DIN/ISO -->
+            <marker id="arrow-start" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 10 0 L 0 5 L 10 10 z" fill="#38BDF8" />
+            </marker>
+            <marker id="arrow-end" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#38BDF8" />
+            </marker>
+            <!-- Gradiente metálico para placa de cerradura y tirador -->
+            <linearGradient id="metal-handle-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#94A3B8" />
+              <stop offset="35%" stop-color="#F1F5F9" />
+              <stop offset="70%" stop-color="#CBD5E1" />
+              <stop offset="100%" stop-color="#64748B" />
+            </linearGradient>
+            <!-- Gradiente para patas tubulares -->
+            <linearGradient id="tubular-leg-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#334155" />
+              <stop offset="40%" stop-color="#94A3B8" />
+              <stop offset="70%" stop-color="#64748B" />
+              <stop offset="100%" stop-color="#1E293B" />
+            </linearGradient>
+            <!-- Cuadrícula técnica milimetrada de fondo -->
+            <pattern id="grid-pattern" width="24" height="24" patternUnits="userSpaceOnUse">
+              <rect width="24" height="24" fill="none" stroke="#162032" stroke-width="0.6" />
+            </pattern>
+          </defs>
+        '''
+
+    @classmethod
     def generate_svg(cls, technical_design: Dict[str, Any], title: str = "PLANO TÉCNICO DE FABRICACIÓN") -> str:
         """
         Genera el string SVG con el plano técnico acotado en proyección 2.5D.
+        Soporta automáticamente diseños multi-producto si technical_design contiene 'items'.
+        """
+        if technical_design.get('is_multi_product') and technical_design.get('items'):
+            return cls.generate_multi_product_svg(technical_design['items'], order_title=title)
+
+        canvas_w = 880
+        canvas_h = 1020
+
+        svg_parts = [
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {canvas_w} {canvas_h}" '
+            f'width="100%" height="100%" style="background-color: #0B1120; font-family: Inter, system-ui, -apple-system, sans-serif;">',
+            cls._get_svg_defs(),
+            f'<rect width="{canvas_w}" height="{canvas_h}" fill="url(#grid-pattern)" />'
+        ]
+
+        cls._render_product_content(
+            svg_parts=svg_parts,
+            technical_design=technical_design,
+            title=title,
+            canvas_w=canvas_w
+        )
+
+        svg_parts.append('</svg>')
+        return "\n".join(svg_parts)
+
+    @classmethod
+    def generate_multi_product_svg(cls, items_list: List[Dict[str, Any]], order_title: str = "PLANO TÉCNICO MULTI-PRODUCTO") -> str:
+        """
+        Genera una lámina vectorial SVG consolidada que contiene los planos técnicos 2.5D
+        acotados de TODOS los productos incluidos en la orden de fabricación.
+        """
+        if not items_list:
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 300"><text x="440" y="150" fill="#fff" text-anchor="middle">Sin productos en la orden</text></svg>'
+
+        if len(items_list) == 1:
+            first = items_list[0]
+            design = first.get('technical_design') or first
+            pname = first.get('product_name') or design.get('product_name', 'Mueble')
+            qty = first.get('quantity', 1)
+            title = f"{order_title} — {pname.upper()} (CANT: {qty} UDS)"
+            return cls.generate_svg(design, title=title)
+
+        canvas_w = 880
+        master_header_h = 105
+        item_block_h = 1020
+        n_items = len(items_list)
+        total_canvas_h = master_header_h + (n_items * item_block_h) + 20
+        total_units = sum(it.get('quantity', 1) for it in items_list)
+
+        svg_parts = [
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {canvas_w} {total_canvas_h}" '
+            f'width="100%" height="100%" style="background-color: #0B1120; font-family: Inter, system-ui, -apple-system, sans-serif;">',
+            cls._get_svg_defs(),
+            f'<rect width="{canvas_w}" height="{total_canvas_h}" fill="url(#grid-pattern)" />',
+            f'''
+            <!-- Encabezado Master Consolidado Multi-Producto -->
+            <rect x="25" y="18" width="{canvas_w - 50}" height="72" rx="8" fill="#131D31" stroke="#38BDF8" stroke-width="2" />
+            <text x="45" y="46" fill="#F8FAFC" font-size="16" font-weight="900" letter-spacing="1">{order_title.upper()}</text>
+            <text x="45" y="70" fill="#94A3B8" font-size="13">DOSSIER TALLER: {n_items} MODELOS DISTINTOS | {total_units} UNIDADES EN TOTAL A FABRICAR</text>
+            <rect x="{canvas_w - 245}" y="30" width="210" height="46" rx="6" fill="#0B1120" stroke="#10B981" stroke-width="1.5" />
+            <text x="{canvas_w - 140}" y="51" fill="#10B981" font-size="11" font-weight="800" text-anchor="middle">HOJA MULTI-PRODUCTO</text>
+            <text x="{canvas_w - 140}" y="67" fill="#F8FAFC" font-size="12" font-weight="700" text-anchor="middle">{n_items} MODELOS / {total_units} UDS</text>
+            '''
+        ]
+
+        for i, item in enumerate(items_list):
+            item_design = item.get('technical_design') or item
+            qty = item.get('quantity', 1)
+            pname = item.get('product_name') or item_design.get('product_name', f'Modelo #{i+1}')
+            item_title = f"[ÍTEM {i+1} DE {n_items}] {pname.upper()} — CANTIDAD: {qty} UDS."
+            y_offset = master_header_h + (i * item_block_h)
+
+            svg_parts.append(f'''
+              <g transform="translate(0, {y_offset})" id="blueprint_item_{i+1}">
+                <!-- Separador de Ítem de Producción -->
+                <line x1="25" y1="0" x2="{canvas_w - 25}" y2="0" stroke="#334155" stroke-width="2" stroke-dasharray="6 4" />
+            ''')
+
+            cls._render_product_content(
+                svg_parts=svg_parts,
+                technical_design=item_design,
+                title=item_title,
+                canvas_w=canvas_w,
+                item_num=i + 1,
+                total_items=n_items,
+                quantity=qty
+            )
+
+            svg_parts.append('</g>')
+
+        svg_parts.append('</svg>')
+        return "\n".join(svg_parts)
+
+    @classmethod
+    def _render_product_content(
+        cls,
+        svg_parts: List[str],
+        technical_design: Dict[str, Any],
+        title: str,
+        canvas_w: int = 880,
+        item_num: Optional[int] = None,
+        total_items: Optional[int] = None,
+        quantity: Optional[int] = None
+    ):
+        """
+        Renderiza la cabecera, dibujo axonométrico 2.5D, cotas acotadas y cajetín
+        técnico de un producto individual dentro del flujo de piezas de la orden.
         """
         dims_total = technical_design.get('dimensions_total_mm') or technical_design.get('dimensions_mm', {})
         height_mm = int(dims_total.get('height', 1800))
@@ -71,15 +211,10 @@ class SVGBlueprintGenerator:
         archetype = technical_design.get('archetype', 'caja_cerrada')
         sections = technical_design.get('sections', [])
 
-        # Dimensiones del lienzo SVG
-        canvas_w = 880
-        canvas_h = 1020
-
         # Parámetros de proyección 2.5D Oblicua (Cabinet / Cavalier suave)
-        # Vector oblicuo hacia arriba e izquierda (-dx, -dy)
         proj_angle_deg = 36.0
         proj_angle_rad = math.radians(proj_angle_deg)
-        proj_scale_k = 0.22  # Escorzo de profundidad
+        proj_scale_k = 0.22
 
         # Escalar dimensiones físicas (mm) al viewport visual disponible
         max_draw_w = 460
@@ -109,53 +244,18 @@ class SVGBlueprintGenerator:
         bevel_light = lighten_color(main_color, 0.22)
         bevel_dark = darken_color(main_color, 0.40)
 
-        svg_parts = []
-        svg_parts.append(
-            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {canvas_w} {canvas_h}" '
-            f'width="100%" height="100%" style="background-color: #0B1120; font-family: Inter, system-ui, -apple-system, sans-serif;">'
-        )
+        # Cabecera técnica del ítem
+        badge_text = f"CANTIDAD: {quantity} UDS." if quantity is not None else "ESPECIFICACIÓN 2.5D OFICIAL"
+        sub_text = f"{prod_name} | {furniture_type.upper()} ({archetype})"
+        if item_num and total_items:
+            sub_text += f" | MODELO {item_num} DE {total_items}"
 
-        # Definiciones de estilos, marcadores y gradientes
-        svg_parts.append(f'''
-          <defs>
-            <!-- Marcadores para flechas de cotas DIN/ISO -->
-            <marker id="arrow-start" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M 10 0 L 0 5 L 10 10 z" fill="#38BDF8" />
-            </marker>
-            <marker id="arrow-end" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#38BDF8" />
-            </marker>
-            <!-- Gradiente metálico para placa de cerradura y tirador -->
-            <linearGradient id="metal-handle-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#94A3B8" />
-              <stop offset="35%" stop-color="#F1F5F9" />
-              <stop offset="70%" stop-color="#CBD5E1" />
-              <stop offset="100%" stop-color="#64748B" />
-            </linearGradient>
-            <!-- Gradiente para patas tubulares -->
-            <linearGradient id="tubular-leg-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#334155" />
-              <stop offset="40%" stop-color="#94A3B8" />
-              <stop offset="70%" stop-color="#64748B" />
-              <stop offset="100%" stop-color="#1E293B" />
-            </linearGradient>
-            <!-- Cuadrícula técnica milimetrada de fondo -->
-            <pattern id="grid-pattern" width="24" height="24" patternUnits="userSpaceOnUse">
-              <rect width="24" height="24" fill="none" stroke="#162032" stroke-width="0.6" />
-            </pattern>
-          </defs>
-        ''')
-
-        # Cuadrícula técnica de fondo
-        svg_parts.append(f'<rect width="{canvas_w}" height="{canvas_h}" fill="url(#grid-pattern)" />')
-
-        # Cabecera técnica del plano
         svg_parts.append(f'''
           <rect x="25" y="20" width="{canvas_w - 50}" height="66" rx="6" fill="#131D31" stroke="#25354E" stroke-width="1.5" />
-          <text x="45" y="47" fill="#F8FAFC" font-size="16" font-weight="800" letter-spacing="1">{title.upper()}</text>
-          <text x="45" y="69" fill="#94A3B8" font-size="13">{prod_name} | {furniture_type.upper()} ({archetype})</text>
+          <text x="45" y="47" fill="#F8FAFC" font-size="15" font-weight="800" letter-spacing="1">{title.upper()}</text>
+          <text x="45" y="69" fill="#94A3B8" font-size="13">{sub_text}</text>
           <rect x="{canvas_w - 235}" y="33" width="200" height="38" rx="4" fill="#0B1120" stroke="#38BDF8" stroke-width="1.2" />
-          <text x="{canvas_w - 135}" y="57" fill="#38BDF8" font-size="12" font-weight="700" text-anchor="middle">ESPECIFICACIÓN 2.5D OFICIAL</text>
+          <text x="{canvas_w - 135}" y="57" fill="#38BDF8" font-size="12" font-weight="700" text-anchor="middle">{badge_text}</text>
         ''')
 
         # =====================================================================
@@ -173,7 +273,6 @@ class SVGBlueprintGenerator:
 
         if is_compound and isinstance(sections, list) and len(sections) >= 2:
             # Renderizado de Bloques Compuestos (Stacking Layout Engine)
-            # Sección 1: Banca Inferior saliente
             sec_bench = sections[0]
             sec_locker = sections[1]
 
@@ -207,7 +306,7 @@ class SVGBlueprintGenerator:
               <ellipse cx="{bx + (cab_w / 2)}" cy="{by + bench_h_px + 8}" rx="{cab_w * 0.52}" ry="10" fill="#000000" opacity="0.45" />
             ''')
 
-            # 2. Cara lateral de la banca (proyectada con bench_dx, bench_dy)
+            # 2. Cara lateral de la banca
             svg_parts.append(f'''
               <!-- Cara lateral sombreada de banca -->
               <polygon points="{bx},{by} {bx - bench_dx},{by - bench_dy} {bx - bench_dx},{by + bench_h_px - bench_dy} {bx},{by + bench_h_px}" 
@@ -219,16 +318,15 @@ class SVGBlueprintGenerator:
             svg_parts.append(f'''
               <!-- Frente de la banca -->
               <rect x="{bx}" y="{by}" width="{cab_w}" height="{bench_h_px}" rx="3" fill="#2C3E50" stroke="#1E293B" stroke-width="2" />
-              <!-- Tabla de asiento superior de la banca (Madera/Acabado) -->
+              <!-- Tabla de asiento superior de la banca -->
               <polygon points="{bx},{by} {bx - bench_dx},{by - bench_dy} {bx + cab_w - bench_dx},{by - bench_dy} {bx + cab_w},{by}" 
                        fill="{seat_color}" stroke="#0F172A" stroke-width="1.5" />
             ''')
 
-            # 4. Cuerpo de casilleros montado sobre la banca (elevado)
+            # 4. Cuerpo de casilleros montado sobre la banca
             lx = bx
             ly = cab_y
 
-            # Cara lateral sombreada del cuerpo de casilleros
             svg_parts.append(f'''
               <!-- Cara lateral sombreada casillero -->
               <polygon points="{lx},{ly} {lx - locker_dx},{ly - locker_dy} {lx - locker_dx},{ly + locker_h_px - locker_dy} {lx},{ly + locker_h_px}" 
@@ -238,7 +336,6 @@ class SVGBlueprintGenerator:
                        fill="{top_color}" stroke="#1E293B" stroke-width="1.5" />
             ''')
 
-            # Frente del casillero con puertas y biseles
             cls._render_cabinet_front(
                 svg_parts=svg_parts,
                 x=lx, y=ly, w=cab_w, h=locker_h_px,
@@ -251,27 +348,26 @@ class SVGBlueprintGenerator:
             )
 
         else:
-            # Renderizado estándar de mueble unitario 2.5D (Locker, Estante o Banca)
-            # 1. Sombra en el suelo
+            # Renderizado estándar de mueble unitario 2.5D
             svg_parts.append(f'''
               <ellipse cx="{cab_x + (cab_w / 2) - (dx / 2)}" cy="{cab_y + cab_h + 12}" rx="{cab_w * 0.52}" ry="12" fill="#000000" opacity="0.5" />
             ''')
 
-            # 2. Cara lateral sombreada (Lateral Shade)
+            # Cara lateral sombreada
             svg_parts.append(f'''
               <!-- Cara Lateral Sombreada 2.5D -->
               <polygon points="{cab_x},{cab_y} {cab_x - dx},{cab_y - dy} {cab_x - dx},{cab_y + cab_h - dy} {cab_x},{cab_y + cab_h}" 
                        fill="{side_color}" stroke="#0F172A" stroke-width="1.8" />
             ''')
 
-            # 3. Cara superior (Top Surface Light)
+            # Cara superior
             svg_parts.append(f'''
               <!-- Cara Superior Iluminada 2.5D -->
               <polygon points="{cab_x},{cab_y} {cab_x - dx},{cab_y - dy} {cab_x + cab_w - dx},{cab_y - dy} {cab_x + cab_w},{cab_y}" 
                        fill="{top_color}" stroke="#0F172A" stroke-width="1.8" />
             ''')
 
-            # 4. Cara frontal del mueble
+            # Cara frontal del mueble
             has_doors = (archetype != 'estante_abierto')
             has_vents = (archetype in ['caja_cerrada', 'compuesto_locker_banca'])
 
@@ -335,7 +431,17 @@ class SVGBlueprintGenerator:
         ''')
 
         # Cuadro de datos técnicos / Pie de plano oficial (Cajetín de Fábrica)
-        footer_y = canvas_h - 105
+        footer_y = 1020 - 105
+        qty_block = f'''
+          <rect x="{canvas_w - 235}" y="{footer_y + 16}" width="195" height="52" rx="4" fill="#0B1120" stroke="#10B981" stroke-width="1" />
+          <text x="{canvas_w - 137}" y="{footer_y + 35}" fill="#10B981" font-size="12" font-weight="800" text-anchor="middle">CANTIDAD: {quantity} UDS.</text>
+          <text x="{canvas_w - 137}" y="{footer_y + 55}" fill="#94A3B8" font-size="11" font-weight="600" text-anchor="middle">TOLERANCIA: ± 1.5 mm</text>
+        ''' if quantity is not None else f'''
+          <rect x="{canvas_w - 235}" y="{footer_y + 16}" width="195" height="52" rx="4" fill="#0B1120" stroke="#10B981" stroke-width="1" />
+          <text x="{canvas_w - 137}" y="{footer_y + 36}" fill="#94A3B8" font-size="10" font-weight="600" text-anchor="middle">TOLERANCIA DIMENSIONAL</text>
+          <text x="{canvas_w - 137}" y="{footer_y + 56}" fill="#10B981" font-size="13" font-weight="800" text-anchor="middle">± 1.5 mm (Norma ISO)</text>
+        '''
+
         svg_parts.append(f'''
           <rect x="25" y="{footer_y}" width="{canvas_w - 50}" height="85" rx="6" fill="#131D31" stroke="#25354E" stroke-width="1.2" />
           
@@ -355,9 +461,7 @@ class SVGBlueprintGenerator:
           <text x="510" y="{footer_y + 55}" fill="#F8FAFC" font-size="12" font-weight="700">{main_color}</text>
 
           <!-- Columna 3: Norma de Taller -->
-          <rect x="{canvas_w - 235}" y="{footer_y + 16}" width="195" height="52" rx="4" fill="#0B1120" stroke="#10B981" stroke-width="1" />
-          <text x="{canvas_w - 137}" y="{footer_y + 36}" fill="#94A3B8" font-size="10" font-weight="600" text-anchor="middle">TOLERANCIA DIMENSIONAL</text>
-          <text x="{canvas_w - 137}" y="{footer_y + 56}" fill="#10B981" font-size="13" font-weight="800" text-anchor="middle">± 1.5 mm (Norma ISO)</text>
+          {qty_block}
         ''')
 
         svg_parts.append('</svg>')

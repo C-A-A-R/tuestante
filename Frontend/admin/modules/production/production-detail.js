@@ -281,6 +281,61 @@ function setupDetailEvents() {
 /**
  * Renderiza la sección de plano técnico SVG vectorial y parámetros de taller
  */
+function renderParametricPills(pillsContainer, design, quantity = null) {
+  if (!pillsContainer) return;
+  const dims = design?.dimensions_total_mm || design?.dimensions_mm || { height: 1800, width: 900, depth: 400 };
+  const grid = design?.grid || { rows: 3, columns: 1 };
+  const color = design?.main_color || '#005187';
+  const compartmentsCount = design?.compartments?.length || (grid.rows * grid.columns);
+
+  let qtyHtml = '';
+  if (quantity !== null && quantity !== undefined) {
+    qtyHtml = `
+      <div class="param-pill" style="border-color: #10b981; background: rgba(16, 185, 129, 0.08);" title="Cantidad requerida en la orden">
+        <span style="color: #10b981;">Cantidad:</span> <strong style="color: #10b981;">${quantity} Uds.</strong>
+      </div>
+      <div class="param-pill-divider"></div>
+    `;
+  }
+
+  pillsContainer.innerHTML = `
+    ${qtyHtml}
+    <div class="param-pill" title="Altura total acotada">
+      <span>Altura:</span> <strong>${dims.height || 1800} mm</strong>
+    </div>
+    <div class="param-pill-divider"></div>
+    <div class="param-pill" title="Ancho frontal acotado">
+      <span>Ancho:</span> <strong>${dims.width || 900} mm</strong>
+    </div>
+    <div class="param-pill-divider"></div>
+    <div class="param-pill" title="Profundidad acotada">
+      <span>Fondo:</span> <strong>${dims.max_depth || dims.depth || 400} mm</strong>
+    </div>
+    <div class="param-pill-divider"></div>
+    <div class="param-pill" title="Distribución de cuadrícula">
+      <span>Cuadrícula:</span> <strong>${grid.rows || 1} filas × ${grid.columns || 1} col</strong>
+    </div>
+    <div class="param-pill-divider"></div>
+    <div class="param-pill" title="Compartimentos y divisiones">
+      <span>Módulos:</span> <strong>${compartmentsCount}</strong>
+    </div>
+    <div class="param-pill-divider"></div>
+    <div class="param-pill" title="Color y acabado electrostático">
+      <span>Acabado:</span>
+      <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${escapeHtml(color)}; border:1px solid #94a3b8; vertical-align:middle; margin: 0 2px;"></span>
+      <strong>${escapeHtml(color)}</strong>
+    </div>
+    <div class="param-pill-divider"></div>
+    <div class="param-pill" title="Tolerancia de corte y ensamblaje">
+      <span>Tolerancia:</span> <strong>±1.5 mm</strong>
+    </div>
+  `;
+}
+
+/**
+ * Renderiza la sección de plano técnico SVG vectorial y parámetros de taller
+ * con soporte para órdenes individuales o compuestas multi-producto.
+ */
 async function renderBlueprintCard(order) {
   const section = document.getElementById('detail-blueprint-section');
   if (!section) return;
@@ -288,6 +343,7 @@ async function renderBlueprintCard(order) {
   const spinner = document.getElementById('blueprint-loading-spinner');
   const svgContainer = document.getElementById('blueprint-svg-container');
   const pillsContainer = document.getElementById('parametric-specs-pills');
+  const tabsBar = document.getElementById('blueprint-product-tabs-bar');
   const btnDownloadSvg = document.getElementById('btn-download-svg');
   const btnOpenTab = document.getElementById('btn-open-blueprint-tab');
 
@@ -321,72 +377,145 @@ async function renderBlueprintCard(order) {
     aiBadge.style.display = isCustom ? 'inline-block' : 'none';
   }
 
-  // Renderizar píldoras paramétricas de especificaciones
-  if (pillsContainer) {
-    const dims = technicalDesign?.dimensions_mm || { height: 1800, width: 900, depth: 400 };
-    const grid = technicalDesign?.grid || { rows: 3, columns: 1 };
-    const color = technicalDesign?.main_color || '#005187';
-    const compartmentsCount = technicalDesign?.compartments?.length || (grid.rows * grid.columns);
-
-    pillsContainer.innerHTML = `
-      <div class="param-pill" title="Altura total acotada">
-        <span>Altura:</span> <strong>${dims.height || 1800} mm</strong>
-      </div>
-      <div class="param-pill-divider"></div>
-      <div class="param-pill" title="Ancho frontal acotado">
-        <span>Ancho:</span> <strong>${dims.width || 900} mm</strong>
-      </div>
-      <div class="param-pill-divider"></div>
-      <div class="param-pill" title="Profundidad acotada">
-        <span>Fondo:</span> <strong>${dims.depth || 400} mm</strong>
-      </div>
-      <div class="param-pill-divider"></div>
-      <div class="param-pill" title="Distribución de cuadrícula">
-        <span>Cuadrícula:</span> <strong>${grid.rows || 1} filas × ${grid.columns || 1} col</strong>
-      </div>
-      <div class="param-pill-divider"></div>
-      <div class="param-pill" title="Compartimentos y divisiones">
-        <span>Módulos:</span> <strong>${compartmentsCount}</strong>
-      </div>
-      <div class="param-pill-divider"></div>
-      <div class="param-pill" title="Color y acabado electrostático">
-        <span>Acabado:</span>
-        <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${escapeHtml(color)}; border:1px solid #94a3b8; vertical-align:middle; margin: 0 2px;"></span>
-        <strong>${escapeHtml(color)}</strong>
-      </div>
-      <div class="param-pill-divider"></div>
-      <div class="param-pill" title="Tolerancia de corte y ensamblaje">
-        <span>Tolerancia:</span> <strong>±1.5 mm</strong>
-      </div>
-    `;
-  }
-
-  // Ocultar spinner y mostrar SVG
+  // Ocultar spinner
   if (spinner) spinner.style.display = 'none';
 
-  if (blueprintSvg && svgContainer) {
-    svgContainer.style.display = 'flex';
-    svgContainer.innerHTML = blueprintSvg;
+  const isMulti = Boolean(technicalDesign?.is_multi_product && Array.isArray(technicalDesign.items) && technicalDesign.items.length > 1);
+
+  let activeSvg = blueprintSvg;
+  let activeDesign = technicalDesign;
+  let activeLabel = 'plano-taller';
+
+  function updateActiveView(svgToShow, designToShow, labelName) {
+    activeSvg = svgToShow;
+    activeDesign = designToShow;
+    activeLabel = labelName;
+
+    if (svgContainer) {
+      if (svgToShow) {
+        svgContainer.style.display = 'flex';
+        svgContainer.innerHTML = svgToShow;
+      } else {
+        svgContainer.style.display = 'flex';
+        svgContainer.innerHTML = `
+          <div class="blueprint-empty-notice">
+            <p style="font-weight: 600; margin-bottom: 6px; color: #f1f5f9;">Plano técnico en cola de procesamiento</p>
+            <p style="font-size: 0.8rem; color: #94a3b8;">El plano vectorial se generará en cuanto se confirmen las cotas exactas en taller.</p>
+          </div>
+        `;
+      }
+    }
 
     if (btnDownloadSvg) {
       btnDownloadSvg.onclick = () => {
-        downloadSvgFile(blueprintSvg, `${order.production_code || 'orden'}-plano-taller.svg`);
+        if (activeSvg) {
+          downloadSvgFile(activeSvg, `${order.production_code || 'orden'}-${activeLabel}.svg`);
+        } else {
+          showToast('info', 'Plano no disponible', 'No hay plano vectorial para descargar.');
+        }
       };
     }
 
     if (btnOpenTab) {
       btnOpenTab.onclick = () => {
-        openBlueprintInNewTab(order, blueprintSvg, technicalDesign);
+        if (activeSvg) {
+          openBlueprintInNewTab(order, activeSvg, activeDesign);
+        } else {
+          showToast('info', 'Plano no disponible', 'No hay plano vectorial para visualizar.');
+        }
       };
     }
-  } else if (svgContainer) {
-    svgContainer.style.display = 'flex';
-    svgContainer.innerHTML = `
-      <div class="blueprint-empty-notice">
-        <p style="font-weight: 600; margin-bottom: 6px; color: #f1f5f9;">Plano técnico en cola de procesamiento</p>
-        <p style="font-size: 0.8rem; color: #94a3b8;">El plano vectorial se generará en cuanto se confirmen las cotas exactas en taller.</p>
-      </div>
+  }
+
+  if (isMulti && tabsBar) {
+    tabsBar.style.display = 'flex';
+    const items = technicalDesign.items;
+    const totalUnits = technicalDesign.total_units || items.reduce((acc, it) => acc + (it.quantity || 1), 0);
+
+    tabsBar.innerHTML = `
+      <button type="button" class="blueprint-tab-btn active" data-idx="-1">
+        <span>📋 Todos los Modelos</span>
+        <span class="blueprint-tab-badge">${items.length} modelos (${totalUnits} uds)</span>
+      </button>
+      ${items.map((it, idx) => `
+        <button type="button" class="blueprint-tab-btn" data-idx="${idx}">
+          <span>[${idx + 1}] ${escapeHtml(it.product_name)}</span>
+          <span class="blueprint-tab-badge">${it.quantity || 1} uds</span>
+        </button>
+      `).join('')}
     `;
+
+    // Renderizar resumen consolidado en las píldoras
+    if (pillsContainer) {
+      pillsContainer.innerHTML = `
+        <div class="param-pill" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.08);" title="Total de modelos distintos">
+          <span style="color: #38bdf8;">Dossier:</span> <strong style="color: #38bdf8;">${items.length} Modelos</strong>
+        </div>
+        <div class="param-pill-divider"></div>
+        <div class="param-pill" style="border-color: #10b981; background: rgba(16, 185, 129, 0.08);" title="Volumen total de fabricación">
+          <span style="color: #10b981;">Total Fabricar:</span> <strong style="color: #10b981;">${totalUnits} Unidades</strong>
+        </div>
+        <div class="param-pill-divider"></div>
+        <div class="param-pill" title="Tolerancia normalizada">
+          <span>Tolerancia:</span> <strong>±1.5 mm (ISO)</strong>
+        </div>
+        <div class="param-pill-divider"></div>
+        <div class="param-pill" title="Formato técnico">
+          <span>Lámina:</span> <strong>Multi-Producto Consolidada</strong>
+        </div>
+      `;
+    }
+
+    updateActiveView(blueprintSvg, technicalDesign, 'dossier-consolidado');
+
+    // Event listeners para las pestañas de producto
+    tabsBar.querySelectorAll('.blueprint-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabsBar.querySelectorAll('.blueprint-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const idx = parseInt(btn.getAttribute('data-idx'), 10);
+        if (idx === -1) {
+          // Vista Consolidada
+          if (pillsContainer) {
+            pillsContainer.innerHTML = `
+              <div class="param-pill" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.08);" title="Total de modelos distintos">
+                <span style="color: #38bdf8;">Dossier:</span> <strong style="color: #38bdf8;">${items.length} Modelos</strong>
+              </div>
+              <div class="param-pill-divider"></div>
+              <div class="param-pill" style="border-color: #10b981; background: rgba(16, 185, 129, 0.08);" title="Volumen total de fabricación">
+                <span style="color: #10b981;">Total Fabricar:</span> <strong style="color: #10b981;">${totalUnits} Unidades</strong>
+              </div>
+              <div class="param-pill-divider"></div>
+              <div class="param-pill" title="Tolerancia normalizada">
+                <span>Tolerancia:</span> <strong>±1.5 mm (ISO)</strong>
+              </div>
+              <div class="param-pill-divider"></div>
+              <div class="param-pill" title="Formato técnico">
+                <span>Lámina:</span> <strong>Multi-Producto Consolidada</strong>
+              </div>
+            `;
+          }
+          updateActiveView(blueprintSvg, technicalDesign, 'dossier-consolidado');
+        } else {
+          // Vista de Ítem Individual
+          const selectedItem = items[idx];
+          if (selectedItem) {
+            const itemDesign = selectedItem.technical_design || {};
+            const itemSvg = selectedItem.blueprint_svg || blueprintSvg;
+            renderParametricPills(pillsContainer, itemDesign, selectedItem.quantity);
+            const safeName = (selectedItem.product_name || `item-${idx+1}`).toLowerCase().replace(/[^a-z0-9]/g, '-');
+            updateActiveView(itemSvg, itemDesign, `item-${idx + 1}-${safeName}`);
+          }
+        }
+      });
+    });
+
+  } else {
+    // Orden de un solo producto
+    if (tabsBar) tabsBar.style.display = 'none';
+    renderParametricPills(pillsContainer, technicalDesign, order.items?.[0]?.quantity);
+    updateActiveView(blueprintSvg, technicalDesign, 'plano-taller');
   }
 }
 
@@ -536,36 +665,92 @@ function exportProductionWorksheet(order) {
   const grid = design?.grid || { rows: 3, columns: 1 };
   const color = design?.main_color || '#005187';
 
-  const blueprintSectionHtml = order.blueprint_svg ? `
-    <div style="margin-bottom: 24px; page-break-inside: avoid;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1.5px solid #005187; padding-bottom: 6px;">
-        <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
-          📐 Especificaciones Paramétricas y Plano Vectorial de Taller (Cotas en mm)
-        </h4>
-        <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
-          Tolerancia: ±1.5 mm
-        </span>
-      </div>
+  const isMulti = Boolean(design?.is_multi_product && Array.isArray(design.items) && design.items.length > 1);
 
-      <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;">
-        <span><strong>Alto:</strong> ${dims.height || 1800} mm</span>
-        <span style="color: #cbd5e1;">|</span>
-        <span><strong>Ancho:</strong> ${dims.width || 900} mm</span>
-        <span style="color: #cbd5e1;">|</span>
-        <span><strong>Fondo:</strong> ${dims.depth || 400} mm</span>
-        <span style="color: #cbd5e1;">|</span>
-        <span><strong>Distribución:</strong> ${grid.rows || 1} Filas × ${grid.columns || 1} Columnas</span>
-        <span style="color: #cbd5e1;">|</span>
-        <span><strong>Color / Acabado:</strong> ${escapeHtml(color)}</span>
-      </div>
+  let blueprintSectionHtml = '';
+  if (isMulti) {
+    blueprintSectionHtml = `
+      <div style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #005187; padding-bottom: 6px;">
+          <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
+            📐 Dossier Técnico de Fabricación Multi-Producto (${design.items.length} Modelos Distintos)
+          </h4>
+          <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
+            Tolerancia: ±1.5 mm | Norma ISO
+          </span>
+        </div>
+        ${design.items.map((item, idx) => {
+          const itDesign = item.technical_design || {};
+          const itDims = itDesign.dimensions_total_mm || itDesign.dimensions_mm || { height: 1800, width: 900, depth: 400 };
+          const itGrid = itDesign.grid || { rows: 1, columns: 1 };
+          const itColor = itDesign.main_color || '#334155';
+          const itSvg = item.blueprint_svg || '';
 
-      <div style="border: 1px solid #334155; border-radius: 6px; overflow: hidden; background: #0f172a; text-align: center; padding: 12px;">
-        <div style="max-height: 480px; display: flex; justify-content: center; align-items: center;">
-          ${order.blueprint_svg}
+          return `
+            <div style="margin-bottom: 24px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
+              <div style="background: #f1f5f9; padding: 8px 14px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="font-weight: 800; font-size: 12px; color: #0f172a;">
+                  [MODELO ${idx + 1} DE ${design.items.length}] ${escapeHtml(item.product_name.toUpperCase())}
+                </div>
+                <div style="background: #0284c7; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">
+                  CANTIDAD: ${item.quantity} UDS.
+                </div>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; padding: 8px 14px; font-size: 11px; border-bottom: 1px solid #e2e8f0;">
+                <span><strong>Alto:</strong> ${itDims.height || 1800} mm</span>
+                <span style="color: #cbd5e1;">|</span>
+                <span><strong>Ancho:</strong> ${itDims.width || 900} mm</span>
+                <span style="color: #cbd5e1;">|</span>
+                <span><strong>Fondo:</strong> ${itDims.max_depth || itDims.depth || 400} mm</span>
+                <span style="color: #cbd5e1;">|</span>
+                <span><strong>Distribución:</strong> ${itGrid.rows || 1}F × ${itGrid.columns || 1}C</span>
+                <span style="color: #cbd5e1;">|</span>
+                <span><strong>Color:</strong> ${escapeHtml(itColor)}</span>
+              </div>
+              ${itSvg ? `
+                <div style="background: #0b1120; padding: 12px; text-align: center;">
+                  <div style="max-height: 440px; display: flex; justify-content: center; align-items: center;">
+                    ${itSvg}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  } else if (order.blueprint_svg) {
+    blueprintSectionHtml = `
+      <div style="margin-bottom: 24px; page-break-inside: avoid;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1.5px solid #005187; padding-bottom: 6px;">
+          <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
+            📐 Especificaciones Paramétricas y Plano Vectorial de Taller (Cotas en mm)
+          </h4>
+          <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
+            Tolerancia: ±1.5 mm
+          </span>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;">
+          <span><strong>Alto:</strong> ${dims.height || 1800} mm</span>
+          <span style="color: #cbd5e1;">|</span>
+          <span><strong>Ancho:</strong> ${dims.width || 900} mm</span>
+          <span style="color: #cbd5e1;">|</span>
+          <span><strong>Fondo:</strong> ${dims.depth || 400} mm</span>
+          <span style="color: #cbd5e1;">|</span>
+          <span><strong>Distribución:</strong> ${grid.rows || 1} Filas × ${grid.columns || 1} Columnas</span>
+          <span style="color: #cbd5e1;">|</span>
+          <span><strong>Color / Acabado:</strong> ${escapeHtml(color)}</span>
+        </div>
+
+        <div style="border: 1px solid #334155; border-radius: 6px; overflow: hidden; background: #0f172a; text-align: center; padding: 12px;">
+          <div style="max-height: 480px; display: flex; justify-content: center; align-items: center;">
+            ${order.blueprint_svg}
+          </div>
         </div>
       </div>
-    </div>
-  ` : '';
+    `;
+  }
 
   const itemsHtml = (order.items || []).map((item, idx) => `
     <tr>

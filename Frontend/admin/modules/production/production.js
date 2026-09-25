@@ -798,36 +798,92 @@ export async function exportProductionWorksheet(orderId) {
     const grid = design?.grid || { rows: 3, columns: 1 };
     const color = design?.main_color || '#005187';
 
-    const blueprintSectionHtml = order.blueprint_svg ? `
-      <div style="margin-bottom: 24px; page-break-inside: avoid;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1.5px solid #005187; padding-bottom: 6px;">
-          <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
-            📐 Especificaciones Paramétricas y Plano Vectorial de Taller (Cotas en mm)
-          </h4>
-          <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
-            Tolerancia: ±1.5 mm
-          </span>
-        </div>
+    const isMulti = Boolean(design?.is_multi_product && Array.isArray(design.items) && design.items.length > 1);
 
-        <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;">
-          <span><strong>Alto:</strong> ${dims.height || 1800} mm</span>
-          <span style="color: #cbd5e1;">|</span>
-          <span><strong>Ancho:</strong> ${dims.width || 900} mm</span>
-          <span style="color: #cbd5e1;">|</span>
-          <span><strong>Fondo:</strong> ${dims.depth || 400} mm</span>
-          <span style="color: #cbd5e1;">|</span>
-          <span><strong>Distribución:</strong> ${grid.rows || 1} Filas × ${grid.columns || 1} Columnas</span>
-          <span style="color: #cbd5e1;">|</span>
-          <span><strong>Color / Acabado:</strong> ${escapeHtml(color)}</span>
-        </div>
+    let blueprintSectionHtml = '';
+    if (isMulti) {
+      blueprintSectionHtml = `
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #005187; padding-bottom: 6px;">
+            <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
+              📐 Dossier Técnico de Fabricación Multi-Producto (${design.items.length} Modelos Distintos)
+            </h4>
+            <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
+              Tolerancia: ±1.5 mm | Norma ISO
+            </span>
+          </div>
+          ${design.items.map((item, idx) => {
+            const itDesign = item.technical_design || {};
+            const itDims = itDesign.dimensions_total_mm || itDesign.dimensions_mm || { height: 1800, width: 900, depth: 400 };
+            const itGrid = itDesign.grid || { rows: 1, columns: 1 };
+            const itColor = itDesign.main_color || '#334155';
+            const itSvg = item.blueprint_svg || '';
 
-        <div style="border: 1px solid #334155; border-radius: 6px; overflow: hidden; background: #0f172a; text-align: center; padding: 12px;">
-          <div style="max-height: 480px; display: flex; justify-content: center; align-items: center;">
-            ${order.blueprint_svg}
+            return `
+              <div style="margin-bottom: 24px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
+                <div style="background: #f1f5f9; padding: 8px 14px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <div style="font-weight: 800; font-size: 12px; color: #0f172a;">
+                    [MODELO ${idx + 1} DE ${design.items.length}] ${escapeHtml(item.product_name.toUpperCase())}
+                  </div>
+                  <div style="background: #0284c7; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">
+                    CANTIDAD: ${item.quantity} UDS.
+                  </div>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; padding: 8px 14px; font-size: 11px; border-bottom: 1px solid #e2e8f0;">
+                  <span><strong>Alto:</strong> ${itDims.height || 1800} mm</span>
+                  <span style="color: #cbd5e1;">|</span>
+                  <span><strong>Ancho:</strong> ${itDims.width || 900} mm</span>
+                  <span style="color: #cbd5e1;">|</span>
+                  <span><strong>Fondo:</strong> ${itDims.max_depth || itDims.depth || 400} mm</span>
+                  <span style="color: #cbd5e1;">|</span>
+                  <span><strong>Distribución:</strong> ${itGrid.rows || 1}F × ${itGrid.columns || 1}C</span>
+                  <span style="color: #cbd5e1;">|</span>
+                  <span><strong>Color:</strong> ${escapeHtml(itColor)}</span>
+                </div>
+                ${itSvg ? `
+                  <div style="background: #0b1120; padding: 12px; text-align: center;">
+                    <div style="max-height: 440px; display: flex; justify-content: center; align-items: center;">
+                      ${itSvg}
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    } else if (order.blueprint_svg) {
+      blueprintSectionHtml = `
+        <div style="margin-bottom: 24px; page-break-inside: avoid;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1.5px solid #005187; padding-bottom: 6px;">
+            <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
+              📐 Especificaciones Paramétricas y Plano Vectorial de Taller (Cotas en mm)
+            </h4>
+            <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
+              Tolerancia: ±1.5 mm
+            </span>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;">
+            <span><strong>Alto:</strong> ${dims.height || 1800} mm</span>
+            <span style="color: #cbd5e1;">|</span>
+            <span><strong>Ancho:</strong> ${dims.width || 900} mm</span>
+            <span style="color: #cbd5e1;">|</span>
+            <span><strong>Fondo:</strong> ${dims.depth || 400} mm</span>
+            <span style="color: #cbd5e1;">|</span>
+            <span><strong>Distribución:</strong> ${grid.rows || 1} Filas × ${grid.columns || 1} Columnas</span>
+            <span style="color: #cbd5e1;">|</span>
+            <span><strong>Color / Acabado:</strong> ${escapeHtml(color)}</span>
+          </div>
+
+          <div style="border: 1px solid #334155; border-radius: 6px; overflow: hidden; background: #0f172a; text-align: center; padding: 12px;">
+            <div style="max-height: 480px; display: flex; justify-content: center; align-items: center;">
+              ${order.blueprint_svg}
+            </div>
           </div>
         </div>
-      </div>
-    ` : '';
+      `;
+    }
 
     const itemsHtml = (order.items || []).map((item, idx) => `
       <tr>

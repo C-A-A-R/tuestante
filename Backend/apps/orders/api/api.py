@@ -641,6 +641,62 @@ class OrderViewSet(BaseViewSet):
         order.save()
         if hasattr(order, '_prefetched_objects_cache'):
             order._prefetched_objects_cache.clear()
+
+        # ── Auto-generación de Orden de Fabricación ─────────────────────────
+        # Cuando el pedido pasa a estado 'manufacturing' se crea automáticamente
+        # el registro en ManufacturingOrder y ProductionOrder con su plano SVG,
+        # evitando que el admin deba emitirlo manualmente por separado.
+        if new_status == 'manufacturing':
+            try:
+                last_iteration = ManufacturingOrder.objects.filter(order=order).count()
+
+                # Generar blueprint paramétrico multi-producto
+                technical_design = None
+                blueprint_svg = None
+                try:
+                    from apps.production.services.parametric_service import ParametricDesignService
+                    technical_design, blueprint_svg, _ = ParametricDesignService.build_order_blueprint(
+                        order,
+                        custom_notes=notes or 'Generada automáticamente al pasar a fabricación'
+                    )
+                except Exception as bp_err:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        f'[AutoBlueprint] No se pudo generar el blueprint para orden #{order.id}: {bp_err}'
+                    )
+
+                mo_notes = notes or 'Generada automáticamente al pasar a fabricación'
+
+                ManufacturingOrder.objects.create(
+                    order=order,
+                    status='pending',
+                    iteration=last_iteration + 1,
+                    issued_by=request.user,
+                    notes=mo_notes,
+                    technical_design=technical_design,
+                    blueprint_svg=blueprint_svg,
+                )
+
+                # También crear/actualizar ProductionOrder si aplica
+                try:
+                    ProductionOrder.objects.create(
+                        order=order,
+                        status='queued',
+                        iteration=last_iteration + 1,
+                        technical_notes=mo_notes,
+                        technical_design=technical_design,
+                        blueprint_svg=blueprint_svg,
+                    )
+                except Exception:
+                    pass  # ProductionOrder es opcional; no bloquear la respuesta
+
+            except Exception as mo_err:
+                import logging
+                logging.getLogger(__name__).error(
+                    f'[AutoManufacturing] Error al crear orden de fabricación para orden #{order.id}: {mo_err}'
+                )
+        # ────────────────────────────────────────────────────────────────────
+
         serializer = self.get_serializer(order)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

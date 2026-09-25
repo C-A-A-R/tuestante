@@ -115,7 +115,24 @@ async function loadProductTypesSelect() {
       select.value = types[0].id;
       const previewType = document.getElementById('preview-mockup-type');
       if (previewType) previewType.textContent = types[0].product_type_name;
+      
+      const hasDoorsSwitch = document.getElementById('switch-has-doors');
+      if (hasDoorsSwitch && typeof types[0].default_has_doors === 'boolean') {
+        hasDoorsSwitch.checked = types[0].default_has_doors;
+      }
     }
+
+    // Reaccionar al cambio de tipo de producto para sugerir default_has_doors
+    select.addEventListener('change', () => {
+      const selectedId = parseInt(select.value, 10);
+      const matched = state.productTypes.find(t => t.id === selectedId);
+      if (matched && typeof matched.default_has_doors === 'boolean') {
+        const hasDoorsSwitch = document.getElementById('switch-has-doors');
+        if (hasDoorsSwitch) {
+          hasDoorsSwitch.checked = matched.default_has_doors;
+        }
+      }
+    });
   } catch (err) {
     console.error('Error al cargar tipos de producto:', err);
   }
@@ -855,9 +872,24 @@ function setupFormEvents() {
     const height_cm = parseFloat(document.getElementById('input-product-height')?.value) || 0;
     const width_cm = parseFloat(document.getElementById('input-product-width')?.value) || 0;
     const depth_cm = parseFloat(document.getElementById('input-product-depth')?.value) || 0;
+    const columns_count = parseInt(document.getElementById('input-product-columns')?.value, 10) || 1;
+    const rows_count = parseInt(document.getElementById('input-product-rows')?.value, 10) || 1;
+    const has_doors = document.getElementById('switch-has-doors')?.checked ?? false;
     const security = document.getElementById('input-product-security')?.value.trim() || '';
     const description = document.getElementById('textarea-product-desc')?.value.trim() || '';
     
+    if (columns_count < 1) {
+      showToast('error', 'Campo inválido', 'La cantidad de columnas debe ser al menos 1.');
+      document.getElementById('input-product-columns')?.focus();
+      return;
+    }
+
+    if (rows_count < 1) {
+      showToast('error', 'Campo inválido', 'La cantidad de filas o niveles debe ser al menos 1.');
+      document.getElementById('input-product-rows')?.focus();
+      return;
+    }
+
     const is_active = document.getElementById('switch-is-active')?.checked ?? true;
     const is_outlet = document.getElementById('switch-is-outlet')?.checked ?? false;
     const is_feature_product = document.getElementById('switch-is-featured')?.checked ?? false;
@@ -871,6 +903,9 @@ function setupFormEvents() {
     formData.append('height_cm', height_cm);
     formData.append('width_cm', width_cm);
     formData.append('depth_cm', depth_cm);
+    formData.append('columns_count', columns_count);
+    formData.append('rows_count', rows_count);
+    formData.append('has_doors', has_doors);
     formData.append('security', security);
     formData.append('is_active', is_active);
     formData.append('is_outlet', is_outlet);

@@ -888,6 +888,62 @@ html, body {
   background: var(--border-color);
 }
 
+.blueprint-product-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 12px;
+  background: #0b1120;
+  border-radius: var(--radius-sm);
+  border: 1px solid #1e293b;
+  margin-bottom: 12px;
+  scrollbar-width: thin;
+}
+
+.blueprint-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.blueprint-tab-btn:hover {
+  color: #f8fafc;
+  background: rgba(56, 189, 248, 0.1);
+  border-color: rgba(56, 189, 248, 0.2);
+}
+
+.blueprint-tab-btn.active {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+.blueprint-tab-badge {
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.blueprint-tab-btn.active .blueprint-tab-badge {
+  background: #38bdf8;
+  color: #0b1120;
+}
+
 .blueprint-viewer-wrapper {
   background: #0f172a;
   border-radius: var(--radius-md);
@@ -904,18 +960,17 @@ html, body {
 .blueprint-svg-container {
   width: 100%;
   height: auto;
-  max-height: 600px;
+  max-height: 700px;
   overflow: auto;
   padding: 16px;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .blueprint-svg-container svg {
   max-width: 100%;
   height: auto;
-  max-height: 560px;
   display: block;
   border-radius: 6px;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));

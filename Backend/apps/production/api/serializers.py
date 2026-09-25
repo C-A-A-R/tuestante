@@ -108,12 +108,14 @@ class ProductionOrderSerializer(serializers.ModelSerializer):
                         pass
 
                 items_data.append({
+                    'detail_id': detail.id,
                     'product_id': prod.id if prod else None,
                     'product_name': prod.product_name if prod else 'Producto',
                     'sku': f"PROD-{prod.id}" if prod else "",
                     'image': img_url,
                     'quantity': detail.quantity,
                     'notes': detail.notes or '',
+                    'technical_design': detail.technical_design,
                 })
         return items_data
 

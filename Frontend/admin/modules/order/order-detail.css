@@ -67,7 +67,7 @@ html, body {
 
 .app-main-content {
   flex: 1;
-  padding: 22px 24px 32px;
+  padding: 0;
 }
 
 .order-detail-container {
@@ -1572,7 +1572,7 @@ html, body {
 
 @media (max-width: 768px) {
   .app-main-content {
-    padding: 16px 14px 28px;
+    padding: 0;
   }
 
   .order-header-section {

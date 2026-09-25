@@ -191,6 +191,10 @@ html, body {
   .products-kpi-grid {
     grid-template-columns: 1fr;
   }
+
+  .app-main-content {
+    padding: 5px 10px 6px;
+  }
 }
 
 .kpi-card {

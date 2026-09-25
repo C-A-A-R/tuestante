@@ -396,3 +396,73 @@ class ProductionOrderTests(TestCase):
         self.assertIn('ALTO 1800 mm', svg)
         self.assertIn('FONDO 450 mm', svg)
 
+    def test_multi_product_order_blueprint_generation(self):
+        """Verifica que un pedido con múltiples productos genere un plano y diseño técnico multi-producto consolidado."""
+        from apps.production.services.parametric_service import ParametricDesignService
+        from apps.production.api.serializers import ProductionOrderSerializer
+
+        # Segundo tipo de producto y segundo producto en la misma orden
+        pt2 = ProductType.objects.create(product_type_name='Casillero Metálico')
+        prod2 = Product.objects.create(
+            product_name='Locker 4 Puertas',
+            product_type=pt2,
+            price=220.00,
+            height_cm=180.0,
+            width_cm=80.0,
+            depth_cm=50.0,
+            columns_count=2,
+            rows_count=2,
+            has_doors=True,
+            main_color='#005187'
+        )
+        detail2 = OrderDetail.objects.create(
+            order=self.order,
+            quantity=3,
+            unit_price=220.00,
+            final_price=660.00,
+            notes='Pintura epoxi azul corporativo'
+        )
+        OrderProduct.objects.create(
+            order_detail=detail2,
+            product=prod2,
+            price_at_order=220.00
+        )
+
+        # Generar blueprint del pedido multi-producto
+        composite_design, multi_svg, summary = ParametricDesignService.build_order_blueprint(self.order)
+
+        self.assertIsNotNone(composite_design)
+        self.assertTrue(composite_design.get('is_multi_product'))
+        self.assertEqual(composite_design.get('total_products'), 2)
+        self.assertEqual(composite_design.get('total_units'), 5)  # 2 + 3 unidades
+        self.assertEqual(len(composite_design.get('items')), 2)
+
+        # Verificar que cada detalle guardó su propio diseño técnico
+        self.order_detail.refresh_from_db()
+        detail2.refresh_from_db()
+        self.assertIsNotNone(self.order_detail.technical_design)
+        self.assertIsNotNone(detail2.technical_design)
+
+        # Verificar contenido de la lámina vectorial multi-producto
+        self.assertIn('DOSSIER TALLER: 2 MODELOS DISTINTOS', multi_svg)
+        self.assertIn('5 UNIDADES EN TOTAL A FABRICAR', multi_svg)
+        self.assertIn('ESTANTE ROBLE', multi_svg.upper())
+        self.assertIn('LOCKER 4 PUERTAS', multi_svg.upper())
+        self.assertIn('CANTIDAD: 2 UDS.', multi_svg)
+        self.assertIn('CANTIDAD: 3 UDS.', multi_svg)
+
+        # Verificar serializer
+        po = ProductionOrder.objects.create(
+            order=self.order,
+            status='queued',
+            technical_design=composite_design,
+            blueprint_svg=multi_svg
+        )
+        serializer = ProductionOrderSerializer(po)
+        items_summary = serializer.data.get('order_items_summary', [])
+        self.assertEqual(len(items_summary), 2)
+        self.assertEqual(items_summary[0]['detail_id'], self.order_detail.id)
+        self.assertEqual(items_summary[1]['detail_id'], detail2.id)
+        self.assertIsNotNone(items_summary[0]['technical_design'])
+        self.assertIsNotNone(items_summary[1]['technical_design'])
+

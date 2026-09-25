@@ -184,6 +184,12 @@ class AICustomizerService:
             raise RuntimeError("No se encontró texto en la respuesta de Gemini.")
 
         parsed = json.loads(raw_text)
+        if isinstance(parsed, dict) and 'technical_design' not in parsed and ('dimensions_total_mm' in parsed or 'archetype' in parsed or 'grid' in parsed or 'dimensions_mm' in parsed):
+            parsed = {
+                "technical_design": parsed,
+                "has_physical_changes": True,
+                "summary_of_changes": "Ajustes paramétricos aplicados según notas de pedido."
+            }
         validated_response = AICustomizationResponse.model_validate(parsed)
 
         custom_dict = validated_response.technical_design.to_dict()

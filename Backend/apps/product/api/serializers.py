@@ -56,6 +56,7 @@ class ProductSerializer(serializers.ModelSerializer):
     quantity = serializers.IntegerField(required=False)
     stock = serializers.IntegerField(source='quantity', required=False)
     main_color = serializers.CharField(required=False, allow_blank=True)
+    main_color_hex = serializers.CharField(required=False, allow_blank=True)
     color_principal = serializers.CharField(source='main_color', required=False, allow_blank=True)
     columns = serializers.IntegerField(source='columns_count', required=False)
     rows = serializers.IntegerField(source='rows_count', required=False)
@@ -80,6 +81,14 @@ class ProductSerializer(serializers.ModelSerializer):
             elif isinstance(val, str) and (val.startswith('blob:') or val.startswith('http://') or val.startswith('https://')):
                 data.pop(field, None)
 
+        # El frontend puede enviar 'columns_count' / 'rows_count' directamente
+        # (nombres reales del modelo). Los remapeamos al nombre del campo del
+        # serializer ('columns' / 'rows') para que source= funcione correctamente.
+        if 'columns_count' in data and 'columns' not in data:
+            data['columns'] = data.pop('columns_count')
+        if 'rows_count' in data and 'rows' not in data:
+            data['rows'] = data.pop('rows_count')
+
         return super().to_internal_value(data)
 
     class Meta:
@@ -96,6 +105,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'quantity',
             'stock',
             'main_color',
+            'main_color_hex',
             'color_principal',
             'is_favorite',
             'favorites_count',

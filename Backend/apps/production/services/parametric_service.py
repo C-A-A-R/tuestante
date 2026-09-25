@@ -71,7 +71,13 @@ class ParametricDesignService:
         default_has_doors = bool(getattr(product, 'has_doors', False))
 
         # 3. Colores y tipología
-        main_color = cls.normalize_color(product.main_color)
+        # Preferir el hex guardado directamente; si no, normalizarlo del nombre
+        saved_hex = str(getattr(product, 'main_color_hex', '') or '').strip()
+        if saved_hex and saved_hex.startswith('#'):
+            main_color = saved_hex
+        else:
+            main_color = cls.normalize_color(product.main_color)
+        main_color_hex = main_color  # garantizamos que siempre sea hex
 
         product_type = getattr(product, 'product_type', None)
         furniture_type = getattr(product_type, 'product_type_name', 'Mobiliario Modular') if product_type else 'Mobiliario Modular'
@@ -139,6 +145,7 @@ class ParametricDesignService:
             },
             "sections": sections,
             "compartments": compartments,
+            "main_color_hex": main_color_hex,
             "original_notes": detail_notes
         }
 
@@ -372,57 +379,122 @@ class ParametricDesignService:
     def build_order_blueprint(cls, order, custom_notes: str = ""):
         """
         Genera el snapshot de diseño técnico paramétrico (JSON) y el plano SVG
-        a partir de los productos y notas asociados a una orden.
-        Persiste inmutablemente en OrderDetail.technical_design.
+        a partir de TODOS los productos y notas asociados a una orden.
+        Para pedidos de un solo producto, genera la ficha estándar.
+        Para pedidos con múltiples productos, genera un dossier técnico consolidado
+        multi-producto con planos 2.5D acotados individuales y colectivos.
+        Persiste inmutablemente en cada OrderDetail.technical_design.
         """
         from apps.production.services.ai_customizer_service import AICustomizerService
         from apps.production.services.svg_generator_service import SVGBlueprintGenerator
 
-        # Buscar el producto del pedido a partir de los detalles
+        # Buscar todos los productos del pedido a partir de los detalles
         details = order.details.filter(is_deleted=False).prefetch_related('order_products__product')
-        target_product = None
-        target_detail = None
+        
+        items_designs = []
+        overall_notes = [str(order.notes).strip()] if order.notes else []
+        if custom_notes:
+            overall_notes.append(str(custom_notes).strip())
+        global_notes_str = " | ".join([n for n in overall_notes if n])
 
         for detail in details:
+            # Buscar el producto activo del detalle
+            target_product = None
             for op in detail.order_products.filter(is_deleted=False):
                 if op.product and not op.product.is_deleted:
                     target_product = op.product
-                    target_detail = detail
                     break
-            if target_product:
-                break
+            
+            if not target_product:
+                continue
 
-        if not target_product:
+            # Consolidar notas específicas para este ítem
+            item_notes_parts = []
+            if detail.notes:
+                item_notes_parts.append(str(detail.notes).strip())
+            if global_notes_str:
+                item_notes_parts.append(global_notes_str)
+            item_combined_notes = " | ".join([p for p in item_notes_parts if p])
+
+            # 1. Generar diseño base en milímetros (0 tokens si no hay notas de personalización)
+            base_design = cls.build_base_parametric_design(target_product, detail, custom_notes=item_combined_notes)
+
+            # 2. Aplicar IA para personalizaciones si existen notas físicas
+            final_design, has_changes, item_summary = AICustomizerService.apply_customizations(base_design, item_combined_notes)
+
+            # 3. Persistir inmutabilidad en OrderDetail
+            if not detail.technical_design:
+                try:
+                    detail.technical_design = final_design
+                    detail.save(update_fields=['technical_design'])
+                except Exception:
+                    pass
+
+            # 4. Generar plano individual para este producto
+            item_title = f"{target_product.product_name.upper()} — CANTIDAD: {detail.quantity} UDS."
+            item_svg = SVGBlueprintGenerator.generate_svg(final_design, title=item_title)
+
+            items_designs.append({
+                'detail_id': detail.id,
+                'product_id': target_product.id,
+                'product_name': target_product.product_name,
+                'sku': f"PROD-{target_product.id}",
+                'quantity': detail.quantity,
+                'notes': detail.notes or '',
+                'technical_design': final_design,
+                'blueprint_svg': item_svg,
+                'has_customizations': has_changes,
+                'customization_summary': item_summary if has_changes else None,
+            })
+
+        if not items_designs:
             return None, None, "El pedido no contiene productos válidos para fabricación."
 
-        # Consolidar notas (detalle + pedido + notas del admin/taller)
-        notes_parts = []
-        if target_detail and target_detail.notes:
-            notes_parts.append(str(target_detail.notes).strip())
-        if order.notes:
-            notes_parts.append(str(order.notes).strip())
-        if custom_notes:
-            notes_parts.append(str(custom_notes).strip())
-
-        combined_notes = " | ".join([p for p in notes_parts if p])
-
-        # 1. Generar diseño base en milímetros (0 tokens)
-        base_design = cls.build_base_parametric_design(target_product, target_detail, custom_notes=combined_notes)
-
-        # 2. Aplicar IA para personalizaciones si existen notas físicas
-        final_design, has_changes, summary = AICustomizerService.apply_customizations(base_design, combined_notes)
-
-        # 3. Persistir inmutabilidad en OrderDetail
-        if target_detail and not target_detail.technical_design:
-            try:
-                target_detail.technical_design = final_design
-                target_detail.save(update_fields=['technical_design'])
-            except Exception:
-                pass
-
-        # 4. Generar plano SVG 2.5D acotado
         order_ref = order.order_number or f"#{order.id:05d}"
-        title = f"PLANO TÉCNICO DE FABRICACIÓN - PEDIDO {order_ref}"
-        blueprint_svg = SVGBlueprintGenerator.generate_svg(final_design, title=title)
 
-        return final_design, blueprint_svg, summary
+        # Caso 1: Orden con Producto Único
+        if len(items_designs) == 1:
+            single_item = items_designs[0]
+            final_design = dict(single_item['technical_design'])
+            final_design['is_multi_product'] = False
+            final_design['items'] = items_designs
+
+            title = f"PLANO TÉCNICO DE FABRICACIÓN - PEDIDO {order_ref}"
+            blueprint_svg = SVGBlueprintGenerator.generate_svg(final_design, title=title)
+            summary = single_item.get('customization_summary') or "Diseño paramétrico estándar de catálogo calculado sin consumo de tokens."
+            return final_design, blueprint_svg, summary
+
+        # Caso 2: Orden Multi-Producto (Todos los productos del pedido incluidos)
+        total_units = sum(it['quantity'] for it in items_designs)
+        custom_summaries = [
+            f"[{it['product_name']}]: {it['customization_summary']}"
+            for it in items_designs if it.get('customization_summary')
+        ]
+        summary = (
+            " | ".join(custom_summaries)
+            if custom_summaries
+            else f"Dossier técnico multi-producto ({len(items_designs)} modelos, {total_units} unidades) generado sin consumo de tokens."
+        )
+
+        composite_design = {
+            'is_multi_product': True,
+            'order_id': order.id,
+            'order_number': order_ref,
+            'total_products': len(items_designs),
+            'total_units': total_units,
+            'items': items_designs,
+            # Fallback root fields mapped to the primary/first item
+            'archetype': items_designs[0]['technical_design'].get('archetype', 'caja_cerrada'),
+            'furniture_type': f"Orden Multi-Producto ({len(items_designs)} modelos)",
+            'product_name': f"Conjunto Técnico de Producción ({len(items_designs)} modelos)",
+            'dimensions_total_mm': items_designs[0]['technical_design'].get('dimensions_total_mm', {}),
+            'dimensions_mm': items_designs[0]['technical_design'].get('dimensions_mm', {}),
+            'grid': items_designs[0]['technical_design'].get('grid', {}),
+            'main_color': items_designs[0]['technical_design'].get('main_color', '#334155'),
+            'sections': items_designs[0]['technical_design'].get('sections', []),
+        }
+
+        master_title = f"PLANO TÉCNICO MULTI-PRODUCTO - PEDIDO {order_ref}"
+        blueprint_svg = SVGBlueprintGenerator.generate_multi_product_svg(items_designs, order_title=master_title)
+
+        return composite_design, blueprint_svg, summary

@@ -293,6 +293,70 @@
                   </div>
                 </div>
 
+                <!-- Estructura Modular y Fabricación (Columnas, Filas y Puertas) -->
+                <div class="form-grid-3">
+                  <div class="form-group">
+                    <label for="input-product-columns" class="form-label">
+                      Cantidad de Columnas <span class="required-mark">*</span>
+                    </label>
+                    <div class="input-unit-wrapper">
+                      <input 
+                        type="number" 
+                        id="input-product-columns" 
+                        name="columns_count" 
+                        class="form-input" 
+                        step="1" 
+                        min="1" 
+                        value="1" 
+                        placeholder="1" 
+                        required>
+                      <span class="unit-label">cols.</span>
+                    </div>
+                    <span class="form-hint" style="font-size:0.75rem; color:#64748b;">
+                      Módulos o divisiones verticales
+                    </span>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="input-product-rows" class="form-label">
+                      Cantidad de Filas / Niveles <span class="required-mark">*</span>
+                    </label>
+                    <div class="input-unit-wrapper">
+                      <input 
+                        type="number" 
+                        id="input-product-rows" 
+                        name="rows_count" 
+                        class="form-input" 
+                        step="1" 
+                        min="1" 
+                        value="1" 
+                        placeholder="1" 
+                        required>
+                      <span class="unit-label">filas</span>
+                    </div>
+                    <span class="form-hint" style="font-size:0.75rem; color:#64748b;">
+                      Niveles o divisiones en altura
+                    </span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" style="display: flex; align-items: center; justify-content: space-between;">
+                      <span>Puertas por Defecto</span>
+                      <span class="outlet-badge-tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd; font-size: 0.65rem; padding: 2px 6px;">FABRICACIÓN</span>
+                    </label>
+                    <div class="toggle-card" style="margin: 0; padding: 0 14px; height: 42px; display: flex; align-items: center; justify-content: space-between; border-radius: 8px;">
+                      <span style="font-size: 0.82rem; color: #334155; font-weight: 600;">Incluye Puertas</span>
+                      <label class="switch-toggle" for="switch-has-doors">
+                        <input type="checkbox" id="switch-has-doors" name="has_doors">
+                        <span class="switch-slider"></span>
+                      </label>
+                    </div>
+                    <span class="form-hint" style="font-size:0.75rem; color:#64748b;">
+                      ¿Compartimentos con puertas?
+                    </span>
+                  </div>
+                </div>
+
                 <!-- Seguridad / Instrucciones Técnicas -->
                 <div class="form-group">
                   <label for="input-product-security" class="form-label">Seguridad, Anclaje o Carga Máxima</label>

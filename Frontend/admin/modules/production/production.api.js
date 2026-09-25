@@ -708,16 +708,31 @@ export async function getProductionMetrics() {
 function normalizeBackendProductionOrder(backendObj) {
   const stage = getStageConfig(backendObj.status);
   
+  // Mapeo de diseños técnicos individuales si están en technical_design.items
+  const designItemsMap = new Map();
+  if (backendObj.technical_design?.items && Array.isArray(backendObj.technical_design.items)) {
+    backendObj.technical_design.items.forEach(dit => {
+      if (dit.detail_id) designItemsMap.set(String(dit.detail_id), dit);
+      else if (dit.product_id) designItemsMap.set(String(dit.product_id), dit);
+    });
+  }
+
   // Transformar resumen de ítems si viene de order_items_summary
-  const items = (backendObj.order_items_summary || []).map(it => ({
-    product_id: it.product_id,
-    product_name: it.product_name,
-    sku: it.sku || `PROD-${it.product_id}`,
-    image: getProductImageUrl(it.image),
-    specs: it.notes || '',
-    quantity: it.quantity || 1,
-    notes: it.notes || ''
-  }));
+  const items = (backendObj.order_items_summary || []).map(it => {
+    const linkedDesign = designItemsMap.get(String(it.detail_id)) || designItemsMap.get(String(it.product_id)) || null;
+    return {
+      detail_id: it.detail_id || null,
+      product_id: it.product_id,
+      product_name: it.product_name,
+      sku: it.sku || `PROD-${it.product_id}`,
+      image: getProductImageUrl(it.image),
+      specs: it.notes || '',
+      quantity: it.quantity || 1,
+      notes: it.notes || '',
+      technical_design: it.technical_design || linkedDesign?.technical_design || null,
+      blueprint_svg: linkedDesign?.blueprint_svg || null,
+    };
+  });
 
   return {
     id: backendObj.id,
