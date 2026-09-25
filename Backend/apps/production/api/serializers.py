@@ -70,15 +70,43 @@ class ProductionOrderSerializer(serializers.ModelSerializer):
         if not obj.order:
             return []
         items_data = []
+        request = self.context.get('request')
         for detail in obj.order.details.filter(is_deleted=False):
             for op in detail.order_products.filter(is_deleted=False):
                 prod = op.product
                 img_url = None
-                if prod and prod.product_image:
+                if prod:
+                    if prod.product_image:
+                        try:
+                            img_url = prod.product_image.url
+                        except Exception:
+                            pass
+                    if not img_url:
+                        first_color = prod.color_images.filter(is_deleted=False).first()
+                        if first_color and first_color.color_image:
+                            try:
+                                img_url = first_color.color_image.url
+                            except Exception:
+                                pass
+                    if not img_url:
+                        first_angle = prod.angle_images.filter(is_deleted=False).first()
+                        if first_angle and first_angle.image:
+                            try:
+                                img_url = first_angle.image.url
+                            except Exception:
+                                pass
+                    if not img_url and prod.product_type and prod.product_type.product_type_image:
+                        try:
+                            img_url = prod.product_type.product_type_image.url
+                        except Exception:
+                            pass
+
+                if img_url and request:
                     try:
-                        img_url = prod.product_image.url
+                        img_url = request.build_absolute_uri(img_url)
                     except Exception:
                         pass
+
                 items_data.append({
                     'product_id': prod.id if prod else None,
                     'product_name': prod.product_name if prod else 'Producto',

@@ -339,6 +339,28 @@ const ORDER_STATUS_LABELS = {
   cancelled: 'Cancelado'
 };
 
+/**
+ * Resuelve la URL de imagen del producto buscando en todos los campos disponibles (product_image, color_images, angle_images, etc.)
+ * y convirtiendo rutas relativas a URLs absolutas del backend.
+ * @param {Object|string} prod 
+ * @returns {string}
+ */
+export function getProductImageUrl(prod) {
+  if (!prod) return '../../assets/images/logo.jpeg';
+  if (typeof prod === 'string') return resolveImageUrl(prod, '../../assets/images/logo.jpeg');
+
+  const raw = prod.product_image
+    || prod.image
+    || prod.image_url
+    || (Array.isArray(prod.color_images) && prod.color_images.length > 0 ? (prod.color_images[0].color_image || prod.color_images[0].image) : null)
+    || (Array.isArray(prod.angle_images) && prod.angle_images.length > 0 ? prod.angle_images[0].image : null)
+    || prod.product_type_detail?.product_type_image
+    || prod.product_type?.product_type_image
+    || '';
+
+  return raw ? resolveImageUrl(raw, '../../assets/images/logo.jpeg') : '../../assets/images/logo.jpeg';
+}
+
 export function normalizeOrder(order = {}) {
   const client = typeof order.user === 'string'
     ? { name: order.user, email: '', phone: '' }
@@ -353,7 +375,7 @@ export function normalizeOrder(order = {}) {
       quantity: detail.quantity || 1,
       unit_price: Number(detail.unit_price || orderProduct.price_at_order || 0),
       total_price: Number(detail.final_price || 0),
-      image: orderProduct.product?.image_url ? resolveImageUrl(orderProduct.product.image_url) : (orderProduct.product?.image ? resolveImageUrl(orderProduct.product.image) : '../../assets/images/logo.jpeg'),
+      image: getProductImageUrl(orderProduct.product),
       notes: detail.notes || ''
     }))
     : [{
@@ -951,7 +973,11 @@ export async function getClientsList() {
 export async function getProductsList() {
   try {
     const data = await getRequest('/products/products/', { is_active: true }, { auth: true });
-    return extractList(data);
+    const list = extractList(data);
+    return list.map(p => ({
+      ...p,
+      image: getProductImageUrl(p)
+    }));
   } catch (error) {
     throw error;
     return [

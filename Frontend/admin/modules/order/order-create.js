@@ -16,7 +16,8 @@ import {
   getProductsList, 
   createOrder,
   createClient,
-  getDailyExchangeRate 
+  getDailyExchangeRate,
+  getProductImageUrl
 } from './order.api.js';
 import { 
   getVenezuelaStates, 
@@ -571,7 +572,7 @@ function addOrderItem(initialData = null) {
     product_name: selectedProd ? (selectedProd.product_name || selectedProd.name) : '',
     sku: selectedProd ? (selectedProd.sku || 'EST-00') : '',
     category: selectedProd ? (selectedProd.category || 'Mobiliario') : '',
-    image: selectedProd ? (selectedProd.image || '../../assets/images/logo.jpeg') : '../../assets/images/logo.jpeg',
+    image: selectedProd ? getProductImageUrl(selectedProd) : '../../assets/images/logo.jpeg',
     quantity: initialData?.quantity || 1,
     unit_price: unitPrice,
     specs: initialData?.specs || ''
@@ -870,7 +871,7 @@ function openProductCombobox(rowId, filterQuery = '') {
     dropdown.innerHTML = filtered.map(p => {
       const isSelected = item && item.product_id === p.id;
       const pName = p.product_name || p.name || 'Producto';
-      const pImg = p.image || '../../assets/images/logo.jpeg';
+      const pImg = getProductImageUrl(p);
       const pPrice = parseFloat(p.price) || 0;
       const pSku = p.sku ? `SKU: ${p.sku}` : '';
       const pCat = p.category ? `• ${p.category}` : '';
@@ -927,7 +928,7 @@ function selectProductForRow(rowId, prodId) {
   item.product_name = prod.product_name || prod.name;
   item.sku = prod.sku || 'EST-00';
   item.category = prod.category || 'Mobiliario';
-  item.image = prod.image || '../../assets/images/logo.jpeg';
+  item.image = getProductImageUrl(prod);
   
   // AL ESCOGER EL PRODUCTO EL PRECIO DEBE DE ACTUALIZARSE DE FORMA AUTOMÁTICA
   item.unit_price = parseFloat(prod.price) || 0;

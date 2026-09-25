@@ -15,6 +15,7 @@ import {
   getProductionBlueprint,
   createProductionOrder,
   getStageConfig,
+  getProductImageUrl,
   PRODUCTION_STAGES
 } from './production.api.js';
 import { getRequest } from '../../js/api.js';
@@ -315,7 +316,7 @@ function renderProductsTable() {
         <td>
           <div class="product-cell-meta">
             <img 
-              src="${escapeHtml(item.image)}" 
+              src="${escapeHtml(getProductImageUrl(item.image))}" 
               alt="${escapeHtml(item.product_name)}" 
               class="product-cell-thumb" 
               onerror="this.src='../../assets/images/logo.jpeg'">
@@ -734,7 +735,7 @@ async function openProductionProductsModal(orderId) {
             <td>
               <div class="product-cell-meta">
                 <img 
-                  src="${escapeHtml(p.image)}" 
+                  src="${escapeHtml(getProductImageUrl(p.image))}" 
                   alt="${escapeHtml(p.product_name)}" 
                   class="product-cell-thumb" 
                   style="width: 38px; height: 38px;" 

@@ -13,6 +13,7 @@ import {
   advanceProductionOrderStage,
   getProductionBlueprint,
   getStageConfig,
+  getProductImageUrl,
   PRODUCTION_STAGES 
 } from './production.api.js';
 
@@ -208,7 +209,7 @@ function renderProductsList(items) {
   listEl.innerHTML = items.map(p => `
     <div class="product-detail-card">
       <img 
-        src="${escapeHtml(p.image)}" 
+        src="${escapeHtml(getProductImageUrl(p.image))}" 
         alt="${escapeHtml(p.product_name)}" 
         class="product-thumb-large"
         onerror="this.src='../../assets/images/logo.jpeg'">

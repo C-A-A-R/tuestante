@@ -6,7 +6,27 @@
  * ==========================================================================
  */
 
-import { getRequest, postRequest } from '../../js/api.js';
+import { getRequest, postRequest, resolveImageUrl } from '../../js/api.js';
+
+/**
+ * Resuelve la URL de imagen del producto buscando en todos los campos disponibles
+ * y convirtiendo rutas relativas a URLs absolutas del backend.
+ * @param {Object|string} prodOrUrl
+ * @returns {string}
+ */
+export function getProductImageUrl(prodOrUrl) {
+  if (!prodOrUrl) return '../../assets/images/logo.jpeg';
+  if (typeof prodOrUrl === 'string') return resolveImageUrl(prodOrUrl, '../../assets/images/logo.jpeg');
+  const raw = prodOrUrl.product_image
+    || prodOrUrl.image
+    || prodOrUrl.image_url
+    || (Array.isArray(prodOrUrl.color_images) && prodOrUrl.color_images.length > 0 ? (prodOrUrl.color_images[0].color_image || prodOrUrl.color_images[0].image) : null)
+    || (Array.isArray(prodOrUrl.angle_images) && prodOrUrl.angle_images.length > 0 ? prodOrUrl.angle_images[0].image : null)
+    || prodOrUrl.product_type_detail?.product_type_image
+    || prodOrUrl.product_type?.product_type_image
+    || '';
+  return raw ? resolveImageUrl(raw, '../../assets/images/logo.jpeg') : '../../assets/images/logo.jpeg';
+}
 
 /**
  * Mapeo oficial de fases de fabricación conforme a Backend/apps/production/models.py
@@ -535,7 +555,7 @@ export async function getProductionProducts(params = {}) {
         product_id: item.product_id,
         product_name: item.product_name,
         sku: item.sku,
-        image: item.image || '../../assets/images/logo.jpeg',
+        image: getProductImageUrl(item.image),
         specs: item.specs || '',
         notes: item.notes || order.technical_notes || '',
         quantity: item.quantity,
@@ -693,7 +713,7 @@ function normalizeBackendProductionOrder(backendObj) {
     product_id: it.product_id,
     product_name: it.product_name,
     sku: it.sku || `PROD-${it.product_id}`,
-    image: it.image || '../../assets/images/logo.jpeg',
+    image: getProductImageUrl(it.image),
     specs: it.notes || '',
     quantity: it.quantity || 1,
     notes: it.notes || ''
