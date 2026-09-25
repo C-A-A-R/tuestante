@@ -121,6 +121,13 @@ export function renderNavbar(placeholderId = 'navbar-placeholder') {
             </svg>
             <span>Mis Pedidos</span>
           </a>
+          <a href="${prefix}../index.html" class="nav-link nav-link-switch-client" data-nav="tienda-clientes" id="nav-link-tienda-clientes" title="Cambiar a la Tienda Principal de Clientes">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Tienda Principal</span>
+          </a>
         </nav>
 
         <!-- Acciones Derecha: Notificaciones, Carrito, Perfil de Usuario & Salir -->
@@ -235,6 +242,7 @@ function setupNavLinks(prefix) {
   const linkCatalogo = document.getElementById('nav-link-catalogo');
   const linkPedidos = document.getElementById('nav-link-pedidos');
   const linkPerfil = document.getElementById('nav-link-perfil');
+  const linkTiendaClientes = document.getElementById('nav-link-tienda-clientes');
   const brandLink = document.getElementById('nav-brand-link');
   const brandImg = document.getElementById('nav-brand-img');
   const cartBtn = document.getElementById('btn-cart-bubble');
@@ -245,6 +253,7 @@ function setupNavLinks(prefix) {
   if (linkCatalogo) linkCatalogo.href = `${prefix}index.html`;
   if (linkPedidos) linkPedidos.href = `${prefix}modules/order/orders.html`;
   if (linkPerfil) linkPerfil.href = `${prefix}modules/profile/profile.html`;
+  if (linkTiendaClientes) linkTiendaClientes.href = `${prefix}../index.html`;
   if (cartBtn) cartBtn.href = `${prefix}modules/cart/cart.html`;
 
   if (userNameEl) {

@@ -382,7 +382,8 @@ function normalizeNavbarRoutes() {
     'notifications': `${prefix}modules/notifications/notifications.html`,
     'wishlist': `${prefix}modules/product/wishlist.html`,
     'login': `${prefix}modules/auth/login.html`,
-    'register': `${prefix}modules/auth/login.html#registro`
+    'register': `${prefix}modules/auth/login.html#registro`,
+    'employee-store': `${prefix}employee/index.html`
   };
 
   document.querySelectorAll('[data-nav-link]').forEach((link) => {
@@ -452,6 +453,26 @@ function syncUserAuthState() {
   const token = getAccessToken();
   const user = getCurrentUser();
   const isAuth = Boolean(token && token !== 'null' && token !== 'undefined' && String(token).trim() !== '');
+  const isEmployee = Boolean(isAuth && (user?.is_employee === true || user?.is_employee === 'true' || user?.is_employee === 1));
+
+  // Si está autenticado pero is_employee aún no fue cacheado en el usuario, consultar al backend
+  if (isAuth && user && user.is_employee === undefined && !window._checkingEmployeeStatus) {
+    window._checkingEmployeeStatus = true;
+    getRequest('/user/profile/')
+      .then((profileData) => {
+        if (profileData && profileData.is_employee !== undefined) {
+          user.is_employee = Boolean(profileData.is_employee);
+          setCurrentUser(user);
+          if (user.is_employee) {
+            syncUserAuthState();
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        window._checkingEmployeeStatus = false;
+      });
+  }
 
   const desktopActions = document.querySelector('.desktop-actions');
   if (desktopActions) {
@@ -476,7 +497,33 @@ function syncUserAuthState() {
       desktopActions.appendChild(authDiv);
     }
 
-    // 2. Asegurar nav-user-dropdown-wrapper si no existe en el DOM
+    // 2. Asegurar nav-employee-switch-wrapper si no existe en el DOM
+    if (!document.getElementById('nav-employee-switch-wrapper')) {
+      const switchDiv = document.createElement('div');
+      switchDiv.className = 'nav-employee-switch-wrapper';
+      switchDiv.id = 'nav-employee-switch-wrapper';
+      switchDiv.style.display = 'none';
+      switchDiv.innerHTML = `
+        <a href="${prefix}employee/index.html" class="btn-employee-store-switch" id="nav-btn-employee-store" title="Cambiar a la Tienda de Empleados" data-nav-link="employee-store">
+          <span class="employee-switch-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+          </span>
+          <span class="employee-switch-label">Tienda Empleados</span>
+          <span class="employee-switch-badge">Empleado</span>
+        </a>
+      `;
+      const userDrop = document.getElementById('nav-user-dropdown-wrapper');
+      if (userDrop) {
+        desktopActions.insertBefore(switchDiv, userDrop);
+      } else {
+        desktopActions.appendChild(switchDiv);
+      }
+    }
+
+    // 3. Asegurar nav-user-dropdown-wrapper si no existe en el DOM
     if (!document.getElementById('nav-user-dropdown-wrapper')) {
       const userDrop = document.createElement('div');
       userDrop.className = 'action-dropdown-wrapper';
@@ -505,12 +552,20 @@ function syncUserAuthState() {
 
   const navAuthButtons = document.getElementById('nav-auth-buttons');
   const navUserDropdownWrapper = document.getElementById('nav-user-dropdown-wrapper');
+  const navEmployeeSwitchWrapper = document.getElementById('nav-employee-switch-wrapper');
 
   if (navAuthButtons) {
     navAuthButtons.style.display = isAuth ? 'none' : 'inline-flex';
   }
   if (navUserDropdownWrapper) {
     navUserDropdownWrapper.style.display = isAuth ? 'inline-flex' : 'none';
+  }
+  if (navEmployeeSwitchWrapper) {
+    navEmployeeSwitchWrapper.style.display = isEmployee ? 'inline-flex' : 'none';
+    const switchLink = navEmployeeSwitchWrapper.querySelector('a');
+    if (switchLink) {
+      switchLink.href = `${prefix}employee/index.html`;
+    }
   }
 
   const profileAvatarEl = document.getElementById('nav-profile-avatar');
@@ -558,7 +613,24 @@ function syncUserAuthState() {
 
   if (profileLinksContainer) {
     if (isAuth) {
+      const employeeItemHtml = isEmployee ? `
+        <a href="${prefix}employee/index.html" class="action-menu-item employee-store-menu-item" role="menuitem" data-nav-link="employee-store">
+          <span class="action-item-icon employee-store-icon">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+          </span>
+          <span class="action-item-text">
+            <strong>Tienda de Empleados</strong>
+            <span class="action-item-sub">Precios y crédito de nómina</span>
+          </span>
+          <span class="badge-employee-pill">Empleado</span>
+        </a>
+      ` : '';
+
       profileLinksContainer.innerHTML = `
+        ${employeeItemHtml}
         <a href="${prefix}modules/profile/profile.html" class="action-menu-item" role="menuitem">
           <span class="action-item-icon">
             <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -640,7 +712,23 @@ function syncUserAuthState() {
 
   if (drawerUserLinksList) {
     if (isAuth) {
+      const drawerEmployeeItemHtml = isEmployee ? `
+        <li class="drawer-nav-item drawer-item-employee-switch">
+          <a href="${prefix}employee/index.html" class="drawer-nav-link drawer-employee-switch-link" data-nav-link="employee-store">
+            <span class="drawer-link-left">
+              <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+              </svg>
+              Tienda de Empleados
+            </span>
+            <span class="drawer-employee-badge">Empleado</span>
+          </a>
+        </li>
+      ` : '';
+
       drawerUserLinksList.innerHTML = `
+        ${drawerEmployeeItemHtml}
         <li class="drawer-nav-item">
           <a href="${prefix}modules/profile/profile.html" class="drawer-nav-link">
             <span class="drawer-link-left">

@@ -665,6 +665,145 @@ body, body[class] {
 }
 
 /* ==========================================================================
+   Employee Store Switcher (Shown only for authenticated employees)
+   ========================================================================== */
+
+.nav-employee-switch-wrapper {
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-employee-store-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.85rem;
+  height: 44px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1.5px solid #93c5fd;
+  color: var(--color-brand-blue, #005187);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.2s ease);
+  box-shadow: 0 1px 3px rgba(0, 81, 135, 0.08);
+}
+
+.btn-employee-store-switch:hover {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: var(--color-brand-blue, #005187);
+  color: #00375c;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 8px rgba(0, 81, 135, 0.15);
+}
+
+.btn-employee-store-switch .employee-switch-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-employee-store-switch svg {
+  width: 17px;
+  height: 17px;
+  color: var(--color-brand-blue, #005187);
+  flex-shrink: 0;
+}
+
+.employee-switch-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background-color: var(--color-brand-blue, #005187);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 9999px;
+}
+
+/* User profile dropdown - employee store item */
+.action-menu-item.employee-store-menu-item {
+  background-color: #f0f7ff;
+  border: 1px solid #bfdbfe;
+  margin-bottom: 0.4rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+}
+
+.action-menu-item.employee-store-menu-item:hover {
+  background-color: #e0f2fe;
+  border-color: var(--color-brand-blue, #005187);
+  transform: translateX(3px);
+}
+
+.employee-store-menu-item .employee-store-icon {
+  background: rgba(0, 81, 135, 0.1);
+  color: var(--color-brand-blue, #005187);
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+}
+
+.employee-store-menu-item .action-item-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.employee-store-menu-item .action-item-sub {
+  font-size: 0.72rem;
+  color: var(--color-text-muted, #64748b);
+  font-weight: 500;
+}
+
+.badge-employee-pill {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--color-brand-blue, #005187);
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  margin-left: auto;
+}
+
+/* Mobile drawer - employee switch item */
+.drawer-item-employee-switch {
+  margin-bottom: 0.5rem;
+  padding: 0 0.75rem;
+}
+
+.drawer-employee-switch-link {
+  background: #f0f7ff !important;
+  border: 1.5px solid #bfdbfe !important;
+  border-radius: 12px !important;
+  color: var(--color-brand-blue, #005187) !important;
+  font-weight: 700 !important;
+  padding: 0.75rem 1rem !important;
+}
+
+.drawer-employee-switch-link:hover {
+  background: #e0f2fe !important;
+  border-color: var(--color-brand-blue, #005187) !important;
+}
+
+.drawer-employee-switch-link .drawer-icon {
+  color: var(--color-brand-blue, #005187) !important;
+}
+
+.drawer-employee-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: var(--color-brand-blue, #005187);
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  margin-left: auto;
+}
+
+/* ==========================================================================
    Action Icon Dropdown Menus (Contact & User Profile)
    ========================================================================== */
 

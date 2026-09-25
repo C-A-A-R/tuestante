@@ -197,6 +197,20 @@
           </a>
         </div>
 
+        <!-- Employee Store Switcher (Shown when logged in AND is employee) -->
+        <div class="nav-employee-switch-wrapper" id="nav-employee-switch-wrapper" style="display: none;">
+          <a href="employee/index.html" class="btn-employee-store-switch" id="nav-btn-employee-store" title="Cambiar a la Tienda de Empleados" data-nav-link="employee-store">
+            <span class="employee-switch-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+              </svg>
+            </span>
+            <span class="employee-switch-label">Tienda Empleados</span>
+            <span class="employee-switch-badge">Empleado</span>
+          </a>
+        </div>
+
         <!-- User Profile with Dropdown Menu (Shown when logged in) -->
         <div class="action-dropdown-wrapper" id="nav-user-dropdown-wrapper" style="display: none;">
           <button type="button" class="action-btn nav-profile-btn" id="nav-profile-btn" aria-label="Perfil de usuario" aria-haspopup="true" aria-expanded="false" title="Mi Cuenta">

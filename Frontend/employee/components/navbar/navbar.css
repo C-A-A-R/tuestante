@@ -175,6 +175,22 @@
   background-color: var(--color-bg-soft);
 }
 
+.nav-link.nav-link-switch-client {
+  color: var(--color-primary);
+  background-color: var(--color-bg-soft);
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-md);
+  margin-left: 0.25rem;
+}
+
+.nav-link.nav-link-switch-client:hover {
+  background-color: #e0f2fe;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 1px 3px rgba(0, 81, 135, 0.1);
+  transform: translateY(-1px);
+}
+
 /* Acciones Derecha (Notificaciones, Carrito, Perfil, Salir) */
 .navbar-actions {
   display: flex;
