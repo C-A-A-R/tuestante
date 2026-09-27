@@ -253,6 +253,7 @@ function normalizeBackendProduct(p) {
     favorites_count: p.favorites_count !== undefined ? p.favorites_count : (p.favorite_count || p.wishlist_count || 0),
     quantity: p.quantity !== undefined ? parseInt(p.quantity, 10) || 0 : (p.stock !== undefined ? parseInt(p.stock, 10) || 0 : 0),
     main_color: p.main_color || p.color_principal || '',
+    main_color_hex: p.main_color_hex || '',
     height_cm: parseFloat(p.height_cm) || 0,
     width_cm: parseFloat(p.width_cm) || 0,
     depth_cm: parseFloat(p.depth_cm) || 0,

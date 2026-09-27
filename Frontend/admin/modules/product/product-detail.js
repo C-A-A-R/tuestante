@@ -284,8 +284,9 @@ function populateProductData(p) {
 
   // Multimedia Principal: Color principal (ligado a la portada)
   const mainColorName = p.main_color || p.color_principal || '';
+  const mainColorHexRaw = p.main_color_hex || '';
   state.mainColor = mainColorName;
-  state.mainColorHex = resolveColorHex(mainColorName, p.color_images);
+  state.mainColorHex = mainColorHexRaw || resolveColorHex(mainColorName, p.color_images);
   renderMainColor();
 
   // Multimedia Principal: Video demostrativo
@@ -554,6 +555,7 @@ function renderMainColor() {
   const hexEl = document.getElementById('main-color-view-hex');
   const nameInput = document.getElementById('input-main-color-name');
   const pickerInput = document.getElementById('input-main-color-picker');
+  const hexHiddenInput = document.getElementById('input-main-color-hex');
 
   const displayName = state.mainColor || 'Blanco';
   const displayHex = state.mainColorHex || '#ffffff';
@@ -567,6 +569,10 @@ function renderMainColor() {
   }
   if (pickerInput) {
     pickerInput.value = displayHex.startsWith('#') && displayHex.length === 7 ? displayHex : '#0272bc';
+  }
+  // Mantener el hidden input sincronizado para que FormData lo capture
+  if (hexHiddenInput) {
+    hexHiddenInput.value = displayHex;
   }
 }
 
@@ -1372,7 +1378,9 @@ function setupFormSubmit() {
     // Color principal
     const mainColorInput = document.getElementById('input-main-color-name')?.value.trim();
     const mainColor = mainColorInput || state.mainColor || (state.colors.length > 0 ? (state.colors[0].color_name || state.colors[0].color_hex) : 'Blanco');
+    const mainColorHex = document.getElementById('input-main-color-hex')?.value || state.mainColorHex || '#ffffff';
     formData.append('main_color', mainColor);
+    formData.append('main_color_hex', mainColorHex);
 
     // Imagen de Portada (solo si se seleccionó un nuevo archivo File)
     if (state.mainImageFile instanceof File) {

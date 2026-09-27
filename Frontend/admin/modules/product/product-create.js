@@ -225,6 +225,7 @@ function setupMainImageEvents() {
 function setupMainColorEvents() {
   const nameInput = document.getElementById('input-main-color-name');
   const pickerInput = document.getElementById('input-main-color-picker');
+  const hexHiddenInput = document.getElementById('input-main-color-hex');
   if (!nameInput || !pickerInput) return;
 
   const colorMap = {
@@ -236,21 +237,27 @@ function setupMainColorEvents() {
     'verde pasto': '#4eb043', 'mostaza': '#ffc20f', 'rosado': '#f472b6', 'rosa': '#f472b6'
   };
 
+  const syncHex = (hex) => { if (hexHiddenInput) hexHiddenInput.value = hex; };
+
   pickerInput.addEventListener('input', (e) => {
     if (!nameInput.value.trim() || nameInput.value.startsWith('#')) {
       nameInput.value = e.target.value;
     }
+    syncHex(e.target.value);
   });
 
   nameInput.addEventListener('input', (e) => {
     const val = e.target.value.trim().toLowerCase();
     if (colorMap[val]) {
       pickerInput.value = colorMap[val];
+      syncHex(colorMap[val]);
     } else if (/^#[0-9a-f]{6}$/i.test(val)) {
       pickerInput.value = val;
+      syncHex(val);
     }
   });
 }
+
 
 
 // ==========================================================================
@@ -914,7 +921,11 @@ function setupFormEvents() {
     // Color principal
     const mainColorInput = document.getElementById('input-main-color-name')?.value.trim();
     const mainColor = mainColorInput || (state.colors.length > 0 ? (state.colors[0].color_name || state.colors[0].color_hex) : 'Blanco');
+    const mainColorHex = document.getElementById('input-main-color-hex')?.value
+      || document.getElementById('input-main-color-picker')?.value
+      || '#ffffff';
     formData.append('main_color', mainColor);
+    formData.append('main_color_hex', mainColorHex);
 
     // Imagen de portada: Enviar solo archivo File real si existe
     if (state.mainImageFile instanceof File) {
