@@ -916,12 +916,38 @@ function renderPagination() {
   infoEl.innerHTML = `Mostrando <strong>${start}</strong> a <strong>${end}</strong> de <strong>${total}</strong> productos`;
 
   let buttonsHtml = `
-    <button type="button" class="btn-pag" id="btn-prev-page" ${current === 1 ? 'disabled' : ''} aria-label="Página anterior">
-      &lsaquo; Anterior
+    <button type="button" class="btn-pag btn-pag-prev" id="btn-prev-page" ${current === 1 ? 'disabled' : ''} aria-label="Página anterior" title="Página anterior">
+      <span class="btn-pag-arrow">&lsaquo;</span><span class="btn-pag-text"> Anterior</span>
     </button>
   `;
 
-  for (let i = 1; i <= totalPages; i++) {
+  // Ventana de páginas para que no desborde en móvil
+  let startPage = 1;
+  let endPage = totalPages;
+
+  if (totalPages > 5) {
+    if (current <= 3) {
+      startPage = 1;
+      endPage = 4;
+    } else if (current >= totalPages - 2) {
+      startPage = totalPages - 3;
+      endPage = totalPages;
+    } else {
+      startPage = current - 1;
+      endPage = current + 1;
+    }
+  }
+
+  if (startPage > 1) {
+    buttonsHtml += `
+      <button type="button" class="btn-pag" data-page="1">1</button>
+    `;
+    if (startPage > 2) {
+      buttonsHtml += `<span class="pagination-ellipsis">&hellip;</span>`;
+    }
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
     buttonsHtml += `
       <button type="button" class="btn-pag ${i === current ? 'active' : ''}" data-page="${i}">
         ${i}
@@ -929,9 +955,18 @@ function renderPagination() {
     `;
   }
 
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      buttonsHtml += `<span class="pagination-ellipsis">&hellip;</span>`;
+    }
+    buttonsHtml += `
+      <button type="button" class="btn-pag" data-page="${totalPages}">${totalPages}</button>
+    `;
+  }
+
   buttonsHtml += `
-    <button type="button" class="btn-pag" id="btn-next-page" ${current === totalPages || totalPages === 0 ? 'disabled' : ''} aria-label="Página siguiente">
-      Siguiente &rsaquo;
+    <button type="button" class="btn-pag btn-pag-next" id="btn-next-page" ${current === totalPages || totalPages === 0 ? 'disabled' : ''} aria-label="Página siguiente" title="Página siguiente">
+      <span class="btn-pag-text">Siguiente </span><span class="btn-pag-arrow">&rsaquo;</span>
     </button>
   `;
 

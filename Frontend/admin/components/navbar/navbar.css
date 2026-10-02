@@ -1056,13 +1056,29 @@ body.drawer-hidden .navbar-hamburger-btn {
 
 @media (max-width: 768px) {
   .admin-navbar {
-    padding: 0 14px;
+    padding: 0 12px;
     left: 0 !important;
     width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box;
+  }
+
+  .navbar-left {
+    gap: 10px;
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .navbar-screen-title {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .navbar-right {
+    gap: 8px;
+    flex-shrink: 0;
   }
 
   .navbar-user-meta {
@@ -1071,6 +1087,12 @@ body.drawer-hidden .navbar-hamburger-btn {
 
   .navbar-chevron {
     display: none;
+  }
+
+  .navbar-user-btn {
+    padding: 2px;
+    gap: 0;
+    border: none;
   }
 
   /* Buscador en móvil: En reposo solo se ve la lupa. Al abrirse crece sobre el navbar sin desbordarse */
@@ -1114,5 +1136,82 @@ body.drawer-hidden .navbar-hamburger-btn {
 
   .navbar-search-input {
     font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-navbar {
+    padding: 0 10px;
+  }
+
+  .navbar-left {
+    gap: 8px;
+  }
+
+  .navbar-hamburger-btn {
+    width: 34px;
+    height: 34px;
+    padding: 4px;
+  }
+
+  .navbar-screen-title {
+    font-size: 0.96rem;
+  }
+
+  .navbar-right {
+    gap: 6px;
+  }
+
+  .navbar-icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .navbar-icon-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .navbar-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  .navbar-divider {
+    margin: 0 1px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 360px) {
+  .admin-navbar {
+    padding: 0 6px;
+  }
+
+  .navbar-left {
+    gap: 6px;
+  }
+
+  .navbar-screen-title {
+    font-size: 0.88rem;
+  }
+
+  .navbar-right {
+    gap: 4px;
+  }
+
+  .navbar-divider {
+    display: none;
+  }
+
+  .navbar-icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .navbar-avatar {
+    width: 30px;
+    height: 30px;
   }
 }

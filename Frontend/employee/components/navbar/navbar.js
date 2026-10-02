@@ -66,8 +66,16 @@ export function renderNavbar(placeholderId = 'navbar-placeholder') {
   container.innerHTML = `
     <header class="navbar-trabajador" id="navbar-trabajador" role="banner">
       <div class="navbar-container">
-        <!-- Brand / Logotipo -->
+        <!-- Brand / Logotipo y Toggle Móvil -->
         <div class="navbar-brand-group">
+          <button type="button" class="btn-mobile-nav-toggle" id="btn-mobile-nav-toggle" aria-label="Abrir menú de navegación" aria-expanded="false" title="Menú">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
           <a href="${prefix}index.html" class="navbar-brand" id="nav-brand-link" title="Ir al Catálogo de Empleados">
             <div class="navbar-logo-icon">
               <img id="nav-brand-img" src="${prefix}../assets/images/logo.jpeg" alt="Logo TuEstante">
@@ -80,7 +88,7 @@ export function renderNavbar(placeholderId = 'navbar-placeholder') {
         </div>
 
         <!-- Buscador Central -->
-        <div class="navbar-search-wrapper" role="search">
+        <div class="navbar-search-wrapper" role="search" id="navbar-search-wrapper">
           <div class="search-input-group">
             <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -132,6 +140,14 @@ export function renderNavbar(placeholderId = 'navbar-placeholder') {
 
         <!-- Acciones Derecha: Notificaciones, Carrito, Perfil de Usuario & Salir -->
         <div class="navbar-actions">
+          <!-- Botón Toggle Buscador en Móvil -->
+          <button type="button" class="btn-mobile-search-toggle" id="btn-mobile-search-toggle" aria-label="Abrir buscador" aria-expanded="false" title="Buscar productos">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+
           <!-- Icono de Notificaciones -->
           <div class="notification-dropdown-wrapper">
             <button type="button" class="btn-notification-icon" id="btn-notifications" aria-label="Notificaciones de nómina y consumos" title="Notificaciones" aria-expanded="false">
@@ -209,6 +225,87 @@ export function renderNavbar(placeholderId = 'navbar-placeholder') {
           </button>
         </div>
       </div>
+
+      <!-- Mobile Drawer / Menú Lateral Desplegable para Móvil -->
+      <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop" aria-hidden="true">
+        <div class="mobile-drawer-panel" id="mobile-drawer-panel">
+          <div class="mobile-drawer-header">
+            <div class="mobile-drawer-user">
+              <div class="navbar-user-avatar drawer-avatar">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <div class="mobile-drawer-user-info">
+                <span class="drawer-user-name" id="drawer-user-name">Colaborador</span>
+                <span class="drawer-user-role">Tienda de Trabajadores</span>
+              </div>
+            </div>
+            <button type="button" class="mobile-drawer-close" id="btn-mobile-drawer-close" aria-label="Cerrar menú">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <nav class="mobile-drawer-nav">
+            <a href="${prefix}index.html" class="drawer-nav-item" id="drawer-link-catalogo">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Catálogo de Productos</span>
+            </a>
+            <a href="${prefix}modules/order/orders.html" class="drawer-nav-item" id="drawer-link-pedidos">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Mis Pedidos</span>
+            </a>
+            <a href="${prefix}modules/cart/cart.html" class="drawer-nav-item" id="drawer-link-cart">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              <span>Carrito de Compras</span>
+            </a>
+            <a href="${prefix}modules/profile/profile.html" class="drawer-nav-item" id="drawer-link-perfil">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Mi Perfil y Estado de Cuenta</span>
+            </a>
+            <div class="drawer-divider"></div>
+            <a href="${prefix}../index.html" class="drawer-nav-item drawer-nav-switch" id="drawer-link-switch">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              <span>Ir a Tienda de Clientes</span>
+            </a>
+          </nav>
+
+          <div class="mobile-drawer-footer">
+            <button type="button" class="btn-drawer-logout" id="btn-drawer-logout">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              <span>Cerrar Sesión</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </header>
   `;
 }
@@ -228,6 +325,8 @@ export function initNavbar(placeholderId = 'navbar-placeholder') {
   const prefix = getEmployeeRootPrefix();
   setupNavLinks(prefix);
   setupSearch(prefix);
+  setupMobileSearch();
+  setupMobileMenu(prefix);
   setupNotifications();
   setupCartBadge();
   setupLogout();
@@ -248,6 +347,13 @@ function setupNavLinks(prefix) {
   const cartBtn = document.getElementById('btn-cart-bubble');
   const userNameEl = document.getElementById('navbar-user-name');
 
+  const drawerCatalogo = document.getElementById('drawer-link-catalogo');
+  const drawerPedidos = document.getElementById('drawer-link-pedidos');
+  const drawerCart = document.getElementById('drawer-link-cart');
+  const drawerPerfil = document.getElementById('drawer-link-perfil');
+  const drawerSwitch = document.getElementById('drawer-link-switch');
+  const drawerUserName = document.getElementById('drawer-user-name');
+
   if (brandLink) brandLink.href = `${prefix}index.html`;
   if (brandImg) brandImg.src = `${prefix}../assets/images/logo.jpeg`;
   if (linkCatalogo) linkCatalogo.href = `${prefix}index.html`;
@@ -256,14 +362,24 @@ function setupNavLinks(prefix) {
   if (linkTiendaClientes) linkTiendaClientes.href = `${prefix}../index.html`;
   if (cartBtn) cartBtn.href = `${prefix}modules/cart/cart.html`;
 
+  if (drawerCatalogo) drawerCatalogo.href = `${prefix}index.html`;
+  if (drawerPedidos) drawerPedidos.href = `${prefix}modules/order/orders.html`;
+  if (drawerCart) drawerCart.href = `${prefix}modules/cart/cart.html`;
+  if (drawerPerfil) drawerPerfil.href = `${prefix}modules/profile/profile.html`;
+  if (drawerSwitch) drawerSwitch.href = `${prefix}../index.html`;
+
   if (userNameEl) {
     const user = getCurrentUser();
     if (user && (user.first_name || user.username)) {
-      userNameEl.textContent = user.first_name || user.username;
+      const name = user.first_name || user.username;
+      userNameEl.textContent = name;
+      if (drawerUserName) drawerUserName.textContent = name;
     } else {
       obtenerPerfilEmpleado().then((profile) => {
         if (profile && profile.user && (profile.user.first_name || profile.user.username)) {
-          userNameEl.textContent = profile.user.first_name || profile.user.username;
+          const name = profile.user.first_name || profile.user.username;
+          userNameEl.textContent = name;
+          if (drawerUserName) drawerUserName.textContent = name;
         }
       }).catch(() => {});
     }
@@ -271,10 +387,114 @@ function setupNavLinks(prefix) {
 
   if (path.endsWith('index.html') || path.endsWith('/employee/') || path.endsWith('/employee')) {
     linkCatalogo?.classList.add('active');
+    drawerCatalogo?.classList.add('active');
   } else if (path.includes('/order/')) {
     linkPedidos?.classList.add('active');
+    drawerPedidos?.classList.add('active');
   } else if (path.includes('/profile/')) {
     linkPerfil?.classList.add('active');
+    drawerPerfil?.classList.add('active');
+  } else if (path.includes('/cart/')) {
+    drawerCart?.classList.add('active');
+  }
+}
+
+/**
+ * Control del desplegable de búsqueda en vista móvil
+ */
+function setupMobileSearch() {
+  const toggleBtn = document.getElementById('btn-mobile-search-toggle');
+  const searchWrapper = document.getElementById('navbar-search-wrapper');
+  const searchInput = document.getElementById('navbar-search-input');
+  if (!toggleBtn || !searchWrapper) return;
+
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = searchWrapper.classList.toggle('mobile-search-open');
+    toggleBtn.setAttribute('aria-expanded', String(isOpen));
+    if (isOpen && searchInput) {
+      setTimeout(() => searchInput.focus(), 80);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (searchWrapper.classList.contains('mobile-search-open')) {
+      if (!searchWrapper.contains(e.target) && !toggleBtn.contains(e.target)) {
+        searchWrapper.classList.remove('mobile-search-open');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+      }
+    }
+  });
+}
+
+/**
+ * Control del drawer lateral de navegación en móvil
+ */
+function setupMobileMenu(prefix) {
+  const toggleBtn = document.getElementById('btn-mobile-nav-toggle');
+  const backdrop = document.getElementById('mobile-drawer-backdrop');
+  const closeBtn = document.getElementById('btn-mobile-drawer-close');
+  const drawerLogout = document.getElementById('btn-drawer-logout');
+  if (!backdrop) return;
+
+  function openDrawer() {
+    backdrop.classList.add('is-open');
+    backdrop.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeDrawer() {
+    backdrop.classList.remove('is-open');
+    backdrop.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDrawer();
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeDrawer();
+    });
+  }
+
+  backdrop.addEventListener('click', (e) => {
+    if (e.target === backdrop) {
+      closeDrawer();
+    }
+  });
+
+  // Cerrar drawer al presionar Esc
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && backdrop.classList.contains('is-open')) {
+      closeDrawer();
+    }
+  });
+
+  if (drawerLogout) {
+    drawerLogout.addEventListener('click', async () => {
+      closeDrawer();
+      const confirmed = await showConfirmModal({
+        title: 'Cerrar Sesión',
+        message: '¿Estás seguro de que deseas cerrar tu sesión de colaborador?',
+        confirmText: 'Cerrar Sesión',
+        cancelText: 'Cancelar',
+        type: 'warning'
+      });
+      if (confirmed) {
+        clearTokens();
+        clearCurrentUser();
+        localStorage.removeItem('te_employee_cart');
+        window.location.replace(getLoginUrl());
+      }
+    });
   }
 }
 

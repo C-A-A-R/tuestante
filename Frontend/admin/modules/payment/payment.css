@@ -903,6 +903,7 @@ html, body {
   width: 100%;
   max-width: 640px;
   max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -929,6 +930,7 @@ html, body {
 }
 
 .modal-header {
+  flex-shrink: 0;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
@@ -964,12 +966,44 @@ html, body {
   color: var(--text-main);
 }
 
+/* Permitir que los formularios contenidos dentro del modal actúen como flex column para que el body pueda hacer scroll */
+.modal-window > form,
+.modal-form,
+#new-payment-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
 .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 20px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 /* Modal de Orden y Productos */
@@ -1176,6 +1210,7 @@ html, body {
 }
 
 .modal-footer {
+  flex-shrink: 0;
   padding: 14px 20px;
   background-color: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
@@ -1668,5 +1703,36 @@ html, body {
     right: 16px;
     left: 16px;
     width: auto;
+  }
+
+  /* Modales en pantallas pequeñas: optimización de padding, altura y botones */
+  .modal-backdrop {
+    padding: 10px;
+  }
+
+  .modal-window {
+    max-height: 94vh;
+    max-height: 94dvh;
+    border-radius: var(--radius-md);
+  }
+
+  .modal-header {
+    padding: 14px 16px;
+  }
+
+  .modal-body {
+    padding: 16px 14px;
+    gap: 14px;
+  }
+
+  .modal-footer {
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .modal-footer .btn {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
   }
 }

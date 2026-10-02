@@ -4,3 +4,8 @@ Pipfile.lock
 Backend/Pipfile
 Backend/Pipfile.lock
 .vscode/
+*.log
+*.pid
+__pycache__/
+*.pyc
+

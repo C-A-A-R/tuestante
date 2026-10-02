@@ -31,6 +31,7 @@
 .unified-card-media {
     position: relative;
     width: 100%;
+    height: 350px;
     aspect-ratio: 1 / 1;
     background-color: #f3f4f6;
     overflow: hidden;
@@ -413,4 +414,95 @@
 
 .unified-product-card {
     animation: pcCardFadeIn 0.3s ease both;
+}
+
+/* ─── Ajustes responsivos para móvil (2 cartas por fila) ─────────────────── */
+@media (max-width: 600px) {
+    .unified-card-media {
+        height: auto;
+    }
+
+    .unified-card-body {
+        padding: 8px 10px 10px 10px;
+    }
+
+    .unified-card-price {
+        font-size: 1.05rem;
+        margin-bottom: 1px;
+    }
+
+    .unified-card-title {
+        font-size: 0.85rem;
+        line-height: 1.22;
+    }
+
+    .unified-card-divider {
+        margin: 6px 0 8px 0;
+    }
+
+    .unified-card-actions {
+        gap: 6px;
+    }
+
+    .btn-details,
+    .unified-btn.btn-details,
+    .btn-card-add-cart,
+    .unified-btn.btn-card-add-cart {
+        height: 34px;
+        padding: 0 4px;
+        font-size: 0.74rem;
+    }
+
+    .unified-wishlist-btn {
+        width: 30px;
+        height: 30px;
+        top: 8px;
+        right: 8px;
+    }
+
+    .unified-wishlist-btn svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    .unified-card-badges {
+        top: 8px;
+        left: 8px;
+        gap: 4px;
+        max-width: calc(100% - 46px);
+    }
+
+    .badge-outlet-tag {
+        font-size: 0.65rem;
+        padding: 2px 7px;
+    }
+
+    .badge-destacado-star {
+        max-width: 28px;
+        height: 28px;
+        padding: 4px;
+    }
+
+    .badge-destacado-star .star-icon {
+        width: 18px;
+        height: 18px;
+        min-width: 18px;
+        min-height: 18px;
+    }
+}
+
+@media (max-width: 380px) {
+    .unified-card-actions {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .btn-details,
+    .unified-btn.btn-details,
+    .btn-card-add-cart,
+    .unified-btn.btn-card-add-cart {
+        width: 100%;
+        height: 30px;
+        font-size: 0.72rem;
+    }
 }

@@ -1664,6 +1664,8 @@ body, body[class] {
   cursor: pointer;
   font-family: inherit;
   text-align: left;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .drawer-accordion-btn[aria-expanded="true"] .drawer-chevron {
@@ -1678,7 +1680,7 @@ body, body[class] {
 }
 
 .drawer-submenu.is-open {
-  display: block;
+  display: block !important;
 }
 
 .drawer-sub-link {

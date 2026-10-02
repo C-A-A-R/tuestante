@@ -984,6 +984,15 @@ button.status-pill.status-toggle-btn:active {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
+}
+
+.pagination-ellipsis {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 0 4px;
+  user-select: none;
+  font-weight: 700;
 }
 
 .btn-pag {
@@ -1214,4 +1223,148 @@ button.status-pill.status-toggle-btn:active {
 .type-item-card small {
   font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (PANTALLAS MEDIANAS Y PEQUEÑAS - FILTROS Y PAGINACIÓN)
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .filters-dropdowns-group {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-main-content {
+    padding: 14px 10px 30px;
+  }
+
+  .products-module-container {
+    gap: 14px;
+  }
+
+  .products-filters-card {
+    padding: 12px 10px;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .filter-search-group {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Distribución en 2 columnas en tablets/móviles para que no desborde */
+  .filters-dropdowns-group {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    box-sizing: border-box;
+  }
+
+  .filter-select-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Destacado / Popular tiene etiqueta más ancha, ocupa fila completa */
+  .filter-select-wrapper:nth-child(2) {
+    grid-column: 1 / -1;
+  }
+
+  .filter-select {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* Botón Limpiar Filtros a ancho completo para evitar cortes */
+  .btn-clear-filters {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+    height: 38px;
+    margin-top: 4px;
+    box-sizing: border-box;
+  }
+
+  /* Paginación adaptativa en móvil */
+  .products-pagination-bar {
+    padding: 12px 10px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .pagination-info {
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  .pagination-controls {
+    justify-content: center;
+    width: 100%;
+    gap: 4px;
+  }
+
+  .btn-pag {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 6px;
+    font-size: 0.8rem;
+  }
+
+  .btn-pag-text {
+    display: none; /* Oculta texto "Anterior/Siguiente" en móvil dejando las flechas limpias */
+  }
+}
+
+@media (max-width: 480px) {
+  .app-main-content {
+    padding: 10px 8px 24px;
+  }
+
+  .filters-dropdowns-group {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .filter-select-wrapper:nth-child(2) {
+    grid-column: 1;
+  }
+
+  .pagination-controls {
+    gap: 3px;
+  }
+
+  .btn-pag {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 4px;
+    font-size: 0.76rem;
+  }
+
+  .pagination-ellipsis {
+    padding: 0 1px;
+    font-size: 0.76rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .btn-pag {
+    min-width: 26px;
+    height: 26px;
+    padding: 0 2px;
+    font-size: 0.72rem;
+  }
 }

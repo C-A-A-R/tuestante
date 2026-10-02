@@ -286,12 +286,6 @@ function renderProductsTable() {
                 ? 'No existen productos en taller que coincidan con los filtros de búsqueda o fechas seleccionados.' 
                 : 'Actualmente no hay artículos en proceso de corte, ensamblaje o acabado. Cuando se apruebe la fabricación de un pedido, aparecerá listado aquí.'}
             </p>
-            <div class="empty-state-actions">
-              ${isFiltered 
-                ? '<button type="button" class="btn btn-outline" id="btn-empty-clear-filters">Limpiar Filtros</button>' 
-                : '<button type="button" class="btn btn-primary" id="btn-empty-new-order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Crear Nueva Orden de Fabricación</span></button>'
-              }
-            </div>
           </div>
         </td>
       </tr>

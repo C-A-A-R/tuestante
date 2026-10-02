@@ -30,6 +30,7 @@
 html, body {
   min-height: 100%;
   width: 100%;
+  overflow-x: hidden;
   font-family: var(--font-sans);
   background-color: var(--bg-secondary);
   color: var(--text-main);
@@ -50,6 +51,7 @@ html, body {
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background-color: var(--bg-secondary);
+  overflow-x: hidden;
 }
 
 @media (max-width: 1023.98px) {
@@ -62,11 +64,16 @@ html, body {
 
 .app-main-content {
   flex: 1;
-  padding: 22px 26px 36px;
+  padding: 18px 16px 36px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .shipping-container {
   max-width: 1400px;
+  width: 100%;
+  min-width: 0;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -1097,6 +1104,8 @@ html, body {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+  width: 100%;
+  max-width: 100%;
 }
 
 .main-view-tabs {
@@ -1108,6 +1117,8 @@ html, body {
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .view-nav-tab {
@@ -1124,12 +1135,14 @@ html, body {
   cursor: pointer;
   transition: all 0.18s ease;
   font-family: inherit;
+  white-space: nowrap;
 }
 
 .view-nav-tab svg {
   width: 17px;
   height: 17px;
   color: currentColor;
+  flex-shrink: 0;
 }
 
 .view-nav-tab:hover {
@@ -1170,5 +1183,145 @@ html, body {
   background: var(--bg-light);
   color: var(--primary);
   border: 1px solid var(--accent);
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (PANTALLAS MEDIANAS Y PEQUEÑAS)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .app-main-content {
+    padding: 14px 12px 30px;
+  }
+
+  .shipping-container {
+    gap: 14px;
+  }
+
+  .screen-header-card {
+    padding: 16px 14px;
+    gap: 12px;
+  }
+
+  .screen-main-title {
+    font-size: 1.3rem;
+  }
+
+  .screen-header-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .screen-header-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* La caja de pestañas se adapta a 2 columnas completas sin desbordamiento */
+  .main-view-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .view-nav-tab {
+    justify-content: center;
+    padding: 9px 8px;
+    font-size: 0.82rem;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .tab-label-prefix {
+    display: none;
+  }
+
+  .shipping-filters-card {
+    padding: 14px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-main-content {
+    padding: 10px 8px 24px;
+  }
+
+  .shipping-container {
+    gap: 12px;
+  }
+
+  .screen-header-card {
+    padding: 14px 10px;
+  }
+
+  .screen-main-title {
+    font-size: 1.18rem;
+  }
+
+  .screen-main-desc {
+    font-size: 0.82rem;
+  }
+
+  .main-view-tabs {
+    padding: 3px;
+    gap: 3px;
+  }
+
+  .view-nav-tab {
+    padding: 8px 4px;
+    font-size: 0.78rem;
+    gap: 4px;
+  }
+
+  .view-nav-tab svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .tab-badge {
+    padding: 1px 5px;
+    font-size: 0.68rem;
+  }
+
+  .shipping-filters-card {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+
+  .filters-main-row {
+    gap: 8px;
+  }
+
+  .search-input-wrap {
+    min-width: 100%;
+  }
+
+  .filter-select-item {
+    flex: 1 1 100%;
+  }
+
+  .filter-date-item {
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  .btn-clear-filters {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 360px) {
+  .view-nav-tab {
+    padding: 7px 2px;
+    font-size: 0.72rem;
+    gap: 3px;
+  }
+
+  .view-nav-tab svg {
+    width: 13px;
+    height: 13px;
+  }
 }
 

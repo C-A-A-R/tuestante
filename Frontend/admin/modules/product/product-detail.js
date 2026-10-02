@@ -794,7 +794,7 @@ function renderColorVariants() {
   if (state.colors.length === 0) {
     container.innerHTML = `
       <div class="empty-state-notice">
-        No hay acabados de color registrados. ${state.isEditMode ? 'Presiona <strong>+ Agregar Color</strong> o haz clic en la <strong>Paleta rápida</strong> para añadir acabados.' : ''}
+        No hay acabados de color registrados. ${state.isEditMode ? 'Presiona <strong>Agregar Color</strong> o haz clic en la <strong>Paleta rápida</strong> para añadir acabados.' : ''}
       </div>
     `;
     return;
@@ -1046,7 +1046,7 @@ function renderAngleVariants() {
   if (state.angles.length === 0) {
     container.innerHTML = `
       <div class="empty-state-notice">
-        No hay ángulos fotográficos registrados. ${state.isEditMode ? 'Presiona <strong>+ Agregar Ángulo</strong> para añadir perspectivas fotográficas.' : ''}
+        No hay ángulos fotográficos registrados. ${state.isEditMode ? 'Presiona <strong>Agregar Ángulo</strong> para añadir perspectivas fotográficas.' : ''}
       </div>
     `;
     return;

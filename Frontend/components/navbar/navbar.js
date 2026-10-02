@@ -1199,6 +1199,9 @@ function setupSearchHandler() {
 function setupMobileDrawer() {
   ensureNavbarElementsExist();
 
+  if (window.__tuestanteDrawerListenersAttached) return;
+  window.__tuestanteDrawerListenersAttached = true;
+
   function getDrawerElements() {
     let hamburgerBtn = document.getElementById('hamburger-btn');
     let drawerCloseBtn = document.getElementById('drawer-close-btn');
@@ -1278,18 +1281,28 @@ function setupMobileDrawer() {
     }
 
     // 2. Acordeones en el drawer (ej. "Conócenos")
-    const accordionBtn = target.closest('.drawer-accordion-btn');
+    const accordionBtn = target.closest('.drawer-accordion-btn, [aria-controls="drawer-submenu-conocenos"]');
     if (accordionBtn) {
       e.preventDefault();
       e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') {
+        e.stopImmediatePropagation();
+      }
 
-      const isExpanded = accordionBtn.getAttribute('aria-expanded') === 'true';
-      const submenu = accordionBtn.parentElement ? accordionBtn.parentElement.querySelector('.drawer-submenu') : accordionBtn.nextElementSibling;
+      const controlsId = accordionBtn.getAttribute('aria-controls');
+      const submenu = (controlsId ? document.getElementById(controlsId) : null) ||
+        (accordionBtn.parentElement ? accordionBtn.parentElement.querySelector('.drawer-submenu') : null) ||
+        accordionBtn.nextElementSibling;
       const chevron = accordionBtn.querySelector('.drawer-chevron');
 
-      accordionBtn.setAttribute('aria-expanded', String(!isExpanded));
+      const isExpanded = accordionBtn.getAttribute('aria-expanded') === 'true' ||
+        (submenu && (submenu.classList.contains('is-open') || submenu.style.display === 'block'));
+
+      const willExpand = !isExpanded;
+      accordionBtn.setAttribute('aria-expanded', String(willExpand));
+
       if (submenu) {
-        if (!isExpanded) {
+        if (willExpand) {
           submenu.classList.add('is-open');
           submenu.style.display = 'block';
           if (chevron) chevron.style.transform = 'rotate(180deg)';
@@ -1324,6 +1337,9 @@ function setupMobileDrawer() {
  * Configura los menús desplegables de Contacto y Perfil en escritorio.
  */
 function setupActionDropdowns() {
+  if (window.__tuestanteDropdownListenersAttached) return;
+  window.__tuestanteDropdownListenersAttached = true;
+
   document.addEventListener('click', (e) => {
     // Si se presiona el botón o icono de notificaciones, redirigir a la pantalla de notificaciones
     const notifBtn = e.target.closest('.nav-notifications-btn');
@@ -1387,6 +1403,9 @@ function setupActionDropdowns() {
  * Configura la carga automática de notificaciones al pasar el ratón (hover) sobre el botón/menú.
  */
 function setupNavbarNotificationHover() {
+  if (window.__tuestanteHoverListenersAttached) return;
+  window.__tuestanteHoverListenersAttached = true;
+
   document.addEventListener('mouseover', (e) => {
     const wrapper = e.target.closest('.notifications-dropdown-wrapper');
     if (wrapper) {
@@ -1569,6 +1588,9 @@ function setupHeaderScrollShadow() {
   const header = document.querySelector('.site-header');
   if (!header) return;
 
+  if (window.__tuestanteScrollListenersAttached) return;
+  window.__tuestanteScrollListenersAttached = true;
+
   function onScroll() {
     if (window.scrollY > 10) {
       header.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.09)';
@@ -1585,6 +1607,9 @@ function setupHeaderScrollShadow() {
  * Escucha cambios en el carrito y almacenamiento para sincronizar en tiempo real.
  */
 function setupGlobalSyncListeners() {
+  if (window.__tuestanteSyncListenersAttached) return;
+  window.__tuestanteSyncListenersAttached = true;
+
   window.addEventListener('cart-updated', () => updateCartBadge());
   window.addEventListener('storage', (e) => {
     if (e.key === 'tuestante_cart') updateCartBadge();

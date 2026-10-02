@@ -850,7 +850,8 @@ body {
 
     .products-grid,
     .home-outlet-grid {
-        grid-template-columns: repeat(1, 1fr);
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
 }
 
@@ -1654,6 +1655,15 @@ body {
 
     .section-title {
         font-size: 1.75rem;
+    }
+
+    .section-container {
+        padding: 40px 14px;
+    }
+
+    .bg-light {
+        padding-left: 14px;
+        padding-right: 14px;
     }
 
     .catalog-product-card,

@@ -10,7 +10,10 @@ from django_settings_env import Env
 
 env = Env()
 
-if not bool(os.getenv('DEBUG', 'True')):
+# Obtener DEBUG como booleano de forma correcta usando django_settings_env
+is_debug = env.bool('DEBUG', default=True)
+
+if not is_debug:
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.production')
 else:
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.local')

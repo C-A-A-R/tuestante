@@ -47,7 +47,8 @@ const state = {
 
 document.addEventListener('DOMContentLoaded', async () => {
   // 1. Inicializar Drawer y Navbar con título "Envíos"
-  await loadAdminComponents({ title: 'Gestión de Envíos' });// 2. Resaltar enlace en el menú lateral
+  await loadAdminComponents({ title: 'Envíos' });
+  // 2. Resaltar enlace en el menú lateral
   highlightDrawerLink();
 
   // 3. Vincular eventos de filtros, pestañas y modales
