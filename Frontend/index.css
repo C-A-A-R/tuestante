@@ -975,7 +975,7 @@ body {
 }
 
 .badge-destacado-star:hover {
-    max-width: min(175px, calc(100% - 56px));
+    max-width: 160px;
     padding: 5px 12px 5px 6px;
     background: #f1f5f9;
     border-color: #94a3b8;

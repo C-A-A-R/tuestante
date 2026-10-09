@@ -6,7 +6,7 @@ from rest_framework import status
 
 from apps.orders.models import Order, OrderDetail, OrderProduct
 from apps.product.models import Product, ProductType
-from apps.production.models import ProductionOrder
+from apps.production.models import ProductionOrder, ProductionProduct
 
 User = get_user_model()
 
@@ -356,17 +356,17 @@ class ProductionOrderTests(TestCase):
         from apps.product.services.architecture_service import ProductTypeArchitectureService
 
         # 1. Producto tipo banca
-        inf_bench = ProductTypeArchitectureService.infer_architecture("Banca de vestuario para gimnasio", "Estructura metálica para sentarse")
+        inf_bench = ProductTypeArchitectureService._fallback_heuristic_inference("Banca de vestuario para gimnasio", "Estructura metálica para sentarse")
         self.assertEqual(inf_bench.archetype, 'banca')
         self.assertFalse(inf_bench.default_has_doors)
 
         # 2. Producto tipo estante
-        inf_shelf = ProductTypeArchitectureService.infer_architecture("Librero modular de 5 entrepaños", "Estantes abiertos para libros")
+        inf_shelf = ProductTypeArchitectureService._fallback_heuristic_inference("Librero modular de 5 entrepaños", "Estantes abiertos para libros")
         self.assertEqual(inf_shelf.archetype, 'estante_abierto')
         self.assertFalse(inf_shelf.default_has_doors)
 
         # 3. Compuesto locker-banca
-        inf_comp = ProductTypeArchitectureService.infer_architecture("Casillero metálico con banca integrada", "Locker con asiento inferior")
+        inf_comp = ProductTypeArchitectureService._fallback_heuristic_inference("Casillero metálico con banca integrada", "Locker con asiento inferior")
         self.assertEqual(inf_comp.archetype, 'compuesto_locker_banca')
         self.assertTrue(inf_comp.default_has_doors)
 
@@ -465,4 +465,149 @@ class ProductionOrderTests(TestCase):
         self.assertEqual(items_summary[1]['detail_id'], detail2.id)
         self.assertIsNotNone(items_summary[0]['technical_design'])
         self.assertIsNotNone(items_summary[1]['technical_design'])
+
+    def test_production_product_generation_and_numbering(self):
+        """Verifica la generación automática de productos independientes con número único y fechas."""
+        po = ProductionOrder.objects.create(
+            order=self.order,
+            status='queued'
+        )
+        products = po.ensure_production_products()
+        self.assertEqual(len(products), 2)  # self.order_detail.quantity = 2
+
+        p1, p2 = products[0], products[1]
+        self.assertNotEqual(p1.product_number, p2.product_number)
+        self.assertTrue(p1.product_number.startswith('PRD-'))
+        self.assertEqual(p1.unit_index, 1)
+        self.assertEqual(p2.unit_index, 2)
+        self.assertEqual(p1.status, 'queued')
+        self.assertIsNotNone(p1.queued_at)
+        self.assertIsNone(p1.assembling_at)
+        self.assertIsNone(p1.completed_at)
+
+    def test_production_product_stage_transition_and_history(self):
+        """Verifica que cada producto registre las fechas y bitácora de cada fase constructiva."""
+        po = ProductionOrder.objects.create(order=self.order, status='queued')
+        p = po.ensure_production_products()[0]
+
+        # Transición a ensamblaje
+        p.record_stage_transition('assembling', notes='Iniciando corte y armado')
+        p.save()
+        self.assertEqual(p.status, 'assembling')
+        self.assertIsNotNone(p.assembling_at)
+        self.assertEqual(len(p.stage_history), 2)
+        self.assertEqual(p.stage_history[-1]['to_status'], 'assembling')
+
+        # Transición a pintura
+        p.record_stage_transition('painting', notes='Aplicando sellador')
+        p.save()
+        self.assertEqual(p.status, 'painting')
+        self.assertIsNotNone(p.painting_at)
+
+        # Transición a control de calidad
+        p.record_stage_transition('quality_check', notes='Inspección visual')
+        p.save()
+        self.assertEqual(p.status, 'quality_check')
+        self.assertIsNotNone(p.quality_check_at)
+
+        # Transición a completado
+        p.record_stage_transition('completed', notes='Listo para despacho')
+        p.save()
+        self.assertEqual(p.status, 'completed')
+        self.assertIsNotNone(p.completed_at)
+
+    def test_production_product_api_single_update(self):
+        """Verifica el endpoint individual de actualización de estado de producto."""
+        po = ProductionOrder.objects.create(order=self.order, status='queued')
+        p = po.ensure_production_products()[0]
+
+        self.client.force_authenticate(user=self.admin)
+        url = f'/api/production-products/{p.id}/update_status/'
+        response = self.client.post(url, {'status': 'assembling', 'notes': 'Corte iniciado'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        p.refresh_from_db()
+        self.assertEqual(p.status, 'assembling')
+        self.assertIsNotNone(p.assembling_at)
+        self.assertEqual(p.notes, 'Corte iniciado')
+
+    def test_production_product_api_advance_stage(self):
+        """Verifica el endpoint para avanzar de fase un producto físico individual."""
+        po = ProductionOrder.objects.create(order=self.order, status='queued')
+        p = po.ensure_production_products()[0]
+
+        self.client.force_authenticate(user=self.admin)
+        url = f'/api/production-products/{p.id}/advance_stage/'
+        response = self.client.post(url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        p.refresh_from_db()
+        self.assertEqual(p.status, 'assembling')
+        self.assertIsNotNone(p.assembling_at)
+
+    def test_production_product_api_bulk_update_homogeneous(self):
+        """Verifica la actualización en lote de varios productos al mismo estado simultáneamente."""
+        po = ProductionOrder.objects.create(order=self.order, status='queued')
+        prods = po.ensure_production_products()
+        p1, p2 = prods[0], prods[1]
+
+        self.client.force_authenticate(user=self.admin)
+        url = '/api/production-products/bulk_update_status/'
+        response = self.client.post(url, {
+            'product_ids': [p1.id, p2.id],
+            'status': 'painting',
+            'notes': 'Pintura electrostática aplicada en lote'
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get('updated_count'), 2)
+
+        p1.refresh_from_db()
+        p2.refresh_from_db()
+        self.assertEqual(p1.status, 'painting')
+        self.assertEqual(p2.status, 'painting')
+        self.assertIsNotNone(p1.painting_at)
+        self.assertIsNotNone(p2.painting_at)
+
+    def test_production_product_api_bulk_update_heterogeneous(self):
+        """Verifica la actualización en lote con estados diferenciados por producto."""
+        po = ProductionOrder.objects.create(order=self.order, status='queued')
+        prods = po.ensure_production_products()
+        p1, p2 = prods[0], prods[1]
+
+        self.client.force_authenticate(user=self.admin)
+        url = '/api/production-products/bulk_update_status/'
+        response = self.client.post(url, {
+            'items': [
+                {'id': p1.id, 'status': 'completed', 'notes': 'Finalizado'},
+                {'id': p2.id, 'status': 'quality_check', 'notes': 'En revisión'}
+            ]
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get('updated_count'), 2)
+
+        p1.refresh_from_db()
+        p2.refresh_from_db()
+        self.assertEqual(p1.status, 'completed')
+        self.assertEqual(p2.status, 'quality_check')
+        self.assertIsNotNone(p1.completed_at)
+        self.assertIsNotNone(p2.quality_check_at)
+
+    def test_production_order_sync_from_products(self):
+        """Verifica que la orden de producción se sincronice al completar todos sus productos."""
+        po = ProductionOrder.objects.create(order=self.order, status='queued')
+        prods = po.ensure_production_products()
+
+        for p in prods:
+            p.record_stage_transition('completed')
+            p.save()
+
+        po.sync_from_products()
+        po.refresh_from_db()
+        self.order.refresh_from_db()
+
+        self.assertEqual(po.status, 'completed')
+        self.assertIsNotNone(po.actual_completion_date)
+        self.assertEqual(self.order.status, 'waiting_final_payment')
 

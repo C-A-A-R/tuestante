@@ -106,26 +106,32 @@
           <div class="detail-col-left">
             <!-- Plano Técnico y Diseño Paramétrico Vectorial (SVG) -->
             <section class="detail-card blueprint-card" id="detail-blueprint-section">
-              <div class="card-header-clean" style="flex-direction: row; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+              <div class="card-header-clean blueprint-card-header">
                 <div>
-                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+                  <div class="blueprint-header-badges">
                     <span class="blueprint-badge-indicator" id="blueprint-origin-badge">📐 Plano Técnico Oficial</span>
-                    <span class="badge-stage-quality" id="blueprint-ai-badge" style="display: none; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; font-weight: 700;">✨ Personalizado con IA</span>
+                    <span class="badge-stage-quality" id="blueprint-ai-badge" style="display: none;">✨ Personalizado con IA</span>
                   </div>
                   <h3 class="card-title">Especificación de Estructura y Taller</h3>
                   <p class="card-caption">Cotas técnicas acotadas en milímetros (mm), cuadrícula y tolerancias</p>
                 </div>
-                <div class="blueprint-actions-header" style="display: flex; gap: 8px;">
-                  <button type="button" class="btn btn-secondary btn-sm" id="btn-download-svg" title="Descargar plano en formato SVG vectorial">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="blueprint-actions-header">
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-fit" title="Alternar entre tamaño real y ajuste al marco">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    </svg>
+                    <span id="btn-toggle-fit-text">Ajustar al Marco</span>
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-download-svg" title="Descargar plano en formato SVG vectorial">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                       <polyline points="7 10 12 15 17 10"></polyline>
                       <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
                     <span>Descargar SVG</span>
                   </button>
-                  <button type="button" class="btn btn-secondary btn-sm" id="btn-open-blueprint-tab" title="Abrir plano en nueva pestaña para inspección en pantalla completa">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-open-blueprint-tab" title="Abrir plano en nueva pestaña para inspección en pantalla completa">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                       <polyline points="15 3 21 3 21 9"></polyline>
                       <line x1="10" y1="14" x2="21" y2="3"></line>
@@ -161,33 +167,47 @@
               <div class="card-header-clean" style="flex-direction: row; justify-content: space-between; align-items: center;">
                 <div>
                   <h3 class="card-title">Productos en Fabricación</h3>
-                  <p class="card-caption">Artículos y piezas asignadas a esta orden de trabajo</p>
+                  <p class="card-caption">Artículos individuales con estado independiente y trazabilidad cronológica</p>
                 </div>
-                <span class="badge-count" id="detail-products-count">0 productos</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <button type="button" class="btn btn-sm btn-outline" id="btn-select-all-products" style="height: 32px; font-size: 0.78rem; padding: 4px 10px;">
+                    Seleccionar Todos
+                  </button>
+                  <span class="badge-count" id="detail-products-count">0 productos</span>
+                </div>
               </div>
+
+              <!-- Barra flotante de acciones por lote para productos -->
+              <div class="batch-product-actions-bar" id="batch-product-actions-bar" style="display: none;">
+                <div class="batch-selection-info">
+                  <span class="batch-selection-count-badge" id="batch-selected-count">0</span>
+                  <span>productos seleccionados</span>
+                </div>
+                <div class="batch-actions-controls">
+                  <select id="batch-select-stage" class="form-select">
+                    <option value="">-- Cambiar fase al lote --</option>
+                    <option value="queued">En cola de espera</option>
+                    <option value="assembling">En corte y ensamblaje</option>
+                    <option value="painting">En pintura y acabado</option>
+                    <option value="quality_check">En control de calidad</option>
+                    <option value="completed">Fabricación completada</option>
+                  </select>
+                  <button type="button" class="btn btn-sm btn-primary" id="btn-apply-batch-stage" style="height: 34px; padding: 6px 14px;">
+                    Aplicar
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline" id="btn-cancel-batch-selection" style="height: 34px; padding: 6px 10px; color: #cbd5e1; border-color: #475569;">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+
               <div class="products-detail-list" id="detail-products-list">
                 <!-- Rellenado dinámicamente por renderProductsList() -->
               </div>
             </section>
-
-            <!-- Observaciones del Pedido -->
-            <section class="detail-card">
-              <div class="card-header-clean">
-                <h3 class="card-title">Observaciones Técnicas y del Pedido</h3>
-                <p class="card-caption">Requerimientos especiales, acabados o notas proporcionadas por el cliente</p>
-              </div>
-              <div class="tech-instructions-box">
-                <div class="instruction-item">
-                  <span class="instruction-icon">📋</span>
-                  <div style="flex: 1;">
-                    <p id="detail-order-notes-text">Sin notas especiales registradas.</p>
-                  </div>
-                </div>
-              </div>
-            </section>
           </div>
 
-          <!-- Columna Derecha: Control de Fase y Metadatos -->
+          <!-- Columna Derecha: Control de Fase, Metadatos y Notas -->
           <div class="detail-col-right">
             <!-- Formulario de Fase y Notas Técnicas -->
             <section class="detail-card">
@@ -250,6 +270,22 @@
                 <div class="meta-info-row">
                   <span class="meta-label">Compromiso Entrega:</span>
                   <span class="meta-val" id="meta-est-date" style="font-weight: 700; color: var(--primary);">-</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- Observaciones del Pedido -->
+            <section class="detail-card">
+              <div class="card-header-clean">
+                <h3 class="card-title">Observaciones Técnicas y del Pedido</h3>
+                <p class="card-caption">Requerimientos especiales, acabados o notas proporcionadas por el cliente</p>
+              </div>
+              <div class="tech-instructions-box">
+                <div class="instruction-item">
+                  <span class="instruction-icon">📋</span>
+                  <div style="flex: 1;">
+                    <p id="detail-order-notes-text">Sin notas especiales registradas.</p>
+                  </div>
                 </div>
               </div>
             </section>

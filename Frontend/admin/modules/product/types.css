@@ -177,6 +177,8 @@ body {
   justify-content: center;
   gap: 8px;
   white-space: nowrap;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .modal-footer .btn svg,
@@ -713,6 +715,8 @@ body {
   flex-direction: column;
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
   animation: modalSlideUp 0.22s ease-out;
 }
 
@@ -793,9 +797,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 12px;
   border-bottom-left-radius: var(--radius-lg);
   border-bottom-right-radius: var(--radius-lg);
+  box-sizing: border-box;
 }
 
 /* Formulario */
@@ -1324,6 +1330,48 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 12px;
+  }
+
+  .modal-backdrop {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 540px) {
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .modal-card {
+    max-height: 94vh;
+    border-radius: var(--radius-md);
+  }
+
+  .modal-header {
+    padding: 16px 16px 12px;
+  }
+
+  .modal-title {
+    font-size: 1.12rem;
+  }
+
+  .modal-body {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .modal-footer {
+    padding: 14px 16px;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    height: 42px;
   }
 }
 

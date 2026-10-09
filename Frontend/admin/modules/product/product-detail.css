@@ -259,10 +259,21 @@
   position: absolute;
   top: 10px;
   right: 10px;
+  max-width: calc(100% - 20px);
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
   z-index: 10;
+}
+
+.video-controls-cluster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
 }
 
 .edit-media-buttons-overlay .btn-change-preview,
@@ -753,15 +764,24 @@
    ========================================================================== */
 
 @media (max-width: 768px) {
+  .product-detail-container,
+  .create-product-container {
+    width: 100%;
+    min-width: 0;
+  }
+
   .screen-header-card {
     flex-direction: column;
     align-items: flex-start;
+    padding: 16px 14px;
+    gap: 14px;
   }
 
   .screen-header-actions {
     width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;
+    gap: 8px;
   }
 
   .title-with-mode-row {
@@ -777,6 +797,157 @@
   .lightbox-btn-close {
     top: 8px;
     right: 8px;
+  }
+
+  /* Cabecera con botón de acción (Agregar Color / Agregar Ángulo) */
+  .form-section-header.header-with-action {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .header-with-action .header-left-flex {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* Barra de Información y Acciones de Video */
+  .video-info-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .video-controls-cluster {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* Botones del Footer (Guardar Cambios / Volver) */
+  .form-footer-flex {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .form-footer-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .screen-header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .screen-header-actions .btn {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  /* Botón Agregar Color / Ángulo a ancho completo en móviles */
+  .form-section-header.header-with-action {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .header-with-action .btn {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  /* Video controls en bloque para no desbordar */
+  .video-info-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .video-controls-cluster {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .video-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  /* Botones del footer a ancho completo en móvil */
+  .form-footer-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .form-footer-buttons .btn {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  /* Tarjetas con espaciado móvil óptimo */
+  .screen-header-card {
+    padding: 14px 12px;
+  }
+
+  .form-section-header {
+    padding: 12px 14px;
+  }
+
+  .form-body {
+    padding: 14px 12px;
+  }
+
+  .form-footer-card {
+    padding: 14px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .edit-media-buttons-overlay {
+    top: 6px;
+    right: 6px;
+    max-width: calc(100% - 12px);
+    gap: 4px;
+  }
+
+  .edit-media-buttons-overlay .btn-change-preview,
+  .edit-media-buttons-overlay .btn-remove-preview {
+    padding: 5px 8px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .btn-change-video,
+  .btn-remove-video {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+  }
+
+  .btn-open-video-link {
+    font-size: 0.74rem;
   }
 }
 

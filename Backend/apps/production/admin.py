@@ -1,10 +1,18 @@
 from django.contrib import admin
 from apps.base.admin import BaseAdmin
-from apps.production.models import ProductionOrder
+from apps.production.models import ProductionOrder, ProductionProduct
+
+
+class ProductionProductInline(admin.TabularInline):
+    model = ProductionProduct
+    extra = 0
+    fields = ['product_number', 'product', 'unit_index', 'status', 'queued_at', 'assembling_at', 'painting_at', 'quality_check_at', 'completed_at']
+    readonly_fields = ['product_number', 'queued_at', 'assembling_at', 'painting_at', 'quality_check_at', 'completed_at']
 
 
 @admin.register(ProductionOrder)
 class ProductionOrderAdmin(BaseAdmin):
+    inlines = [ProductionProductInline]
     list_display = [
         'id',
         'order_number_display',
@@ -74,4 +82,71 @@ class ProductionOrderAdmin(BaseAdmin):
             po.status = 'completed'
             po.save()
         self.message_user(request, f"{queryset.count()} orden(es) completadas y pedidos sincronizados a 'Esperando pago final'.")
+
+
+@admin.register(ProductionProduct)
+class ProductionProductAdmin(BaseAdmin):
+    list_display = [
+        'id',
+        'product_number',
+        'product_name_display',
+        'order_number_display',
+        'unit_index',
+        'status',
+        'queued_at',
+        'assembling_at',
+        'painting_at',
+        'quality_check_at',
+        'completed_at',
+        'created_at',
+    ]
+    list_filter = ['status', 'is_deleted', 'created_at']
+    search_fields = [
+        'product_number',
+        'product__product_name',
+        'production_order__order__order_number',
+        'production_order__order__user__username',
+        'notes',
+    ]
+    ordering = ['-created_at', '-id']
+    actions = ['bulk_mark_assembling', 'bulk_mark_painting', 'bulk_mark_quality_check', 'bulk_mark_completed']
+
+    @admin.display(description='Producto', ordering='product__product_name')
+    def product_name_display(self, obj):
+        return obj.product.product_name if obj.product else "Producto"
+
+    @admin.display(description='Pedido', ordering='production_order__order__order_number')
+    def order_number_display(self, obj):
+        if obj.production_order and obj.production_order.order:
+            return obj.production_order.order.order_number or f"Pedido #{obj.production_order.order.id}"
+        return "-"
+
+    @admin.action(description='Marcar lote seleccionado: En Corte y Ensamblaje')
+    def bulk_mark_assembling(self, request, queryset):
+        for p in queryset:
+            p.record_stage_transition('assembling')
+            p.save()
+        self.message_user(request, f"{queryset.count()} producto(s) actualizados a 'En Corte y Ensamblaje'.")
+
+    @admin.action(description='Marcar lote seleccionado: En Pintura y Acabado')
+    def bulk_mark_painting(self, request, queryset):
+        for p in queryset:
+            p.record_stage_transition('painting')
+            p.save()
+        self.message_user(request, f"{queryset.count()} producto(s) actualizados a 'En Pintura y Acabado'.")
+
+    @admin.action(description='Marcar lote seleccionado: En Control de Calidad')
+    def bulk_mark_quality_check(self, request, queryset):
+        for p in queryset:
+            p.record_stage_transition('quality_check')
+            p.save()
+        self.message_user(request, f"{queryset.count()} producto(s) actualizados a 'En Control de Calidad'.")
+
+    @admin.action(description='Marcar lote seleccionado: Fabricación Completada')
+    def bulk_mark_completed(self, request, queryset):
+        for p in queryset:
+            p.record_stage_transition('completed')
+            p.save()
+        self.message_user(request, f"{queryset.count()} producto(s) completados.")
+
 

@@ -405,9 +405,16 @@ function setupPaymentFormState(order, payments, paymentBreakdown = null) {
 
     if (!formSection || !amountInput) return;
 
-    const hasPendingReviewPayment = payments.some(p => p.status === 'pending');
-    const hasApprovedInitial = payments.some(p => p.payment_stage === 'initial' && p.status === 'approved');
-    const hasApprovedFinal = payments.some(p => p.payment_stage === 'final' && p.status === 'approved');
+    const validPayments = (payments || []).filter(p => p.status !== 'rejected');
+    const hasPendingReviewPayment = (payments || []).some(p => p.status === 'pending');
+    const hasInitialRegistered = validPayments.some(p => p.payment_stage === 'initial');
+    const hasApprovedFinal = validPayments.some(p => p.payment_stage === 'final' && p.status === 'approved');
+
+    const totalOrderUsd = parseFloat(order.total_price || 0);
+    const totalPaidUsd = validPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    const exchangeRate = paymentBreakdown?.exchangeRate || (currentPaymentBreakdown?.exchangeRate || 1);
+    const remainingUsd = Math.max(0, Number((totalOrderUsd - totalPaidUsd).toFixed(2)));
+    const remainingVes = Number((remainingUsd * exchangeRate).toFixed(2));
 
     let deducedStage = 'initial';
     let stageTitleText = 'Pago Inicial (50% Requerido)';
@@ -416,55 +423,106 @@ function setupPaymentFormState(order, payments, paymentBreakdown = null) {
     let suggestedVes = 0;
 
     // Deducción automática de la etapa de pago
-    if (order.status === 'waiting_final_payment' || order.status === 'final_payment_review' || hasApprovedInitial) {
+    if (hasInitialRegistered || order.status === 'waiting_final_payment' || order.status === 'final_payment_review') {
         deducedStage = 'final';
-        stageTitleText = 'Pago Final (Saldo Restante 50%)';
-        if (formTitle) formTitle.textContent = 'Registrar Comprobante de Pago Final (50%)';
+        stageTitleText = 'Pago Final (Saldo Restante)';
+        if (formTitle) formTitle.textContent = 'Registrar Comprobante de Pago Final (Saldo Restante)';
         
-        if (paymentBreakdown) {
-            minAllowedVes = paymentBreakdown.finalPayment.rawVes;
-            maxAllowedVes = paymentBreakdown.finalPayment.rawVes;
-            suggestedVes = paymentBreakdown.finalPayment.rawVes;
-        }
+        minAllowedVes = remainingVes;
+        maxAllowedVes = remainingVes;
+        suggestedVes = remainingVes;
     } else {
         deducedStage = 'initial';
         stageTitleText = 'Pago Inicial (50% Requerido)';
         if (formTitle) formTitle.textContent = 'Registrar Comprobante de Pago Inicial (50%)';
         
-        if (paymentBreakdown) {
-            minAllowedVes = paymentBreakdown.initialPayment.rawVes;
-            maxAllowedVes = paymentBreakdown.total.rawVes;
-            suggestedVes = paymentBreakdown.initialPayment.rawVes;
-        }
+        const initialRequiredUsd = Number((totalOrderUsd * 0.5).toFixed(2));
+        const initialRequiredVes = Number((initialRequiredUsd * exchangeRate).toFixed(2));
+        minAllowedVes = initialRequiredVes;
+        maxAllowedVes = Number((totalOrderUsd * exchangeRate).toFixed(2));
+        suggestedVes = initialRequiredVes;
     }
 
     if (stageHiddenInput) stageHiddenInput.value = deducedStage;
     if (stageTextEl) stageTextEl.textContent = stageTitleText;
 
-    // Llenar monto sugerido en Bolívares (50%) y configurar límites de validación
+    // Llenar monto sugerido en Bolívares y configurar límites de validación
     if (suggestedVes > 0) {
         amountInput.value = suggestedVes.toFixed(2);
-        amountInput.min = minAllowedVes.toFixed(2);
-        amountInput.max = maxAllowedVes.toFixed(2);
+        amountInput.min = minAllowedVes > 0 ? minAllowedVes.toFixed(2) : '0.01';
+        amountInput.max = maxAllowedVes > 0 ? maxAllowedVes.toFixed(2) : '';
         amountInput.dataset.minVes = String(minAllowedVes);
         amountInput.dataset.maxVes = String(maxAllowedVes);
+        amountInput.dataset.remainingUsd = String(remainingUsd);
+        amountInput.dataset.remainingVes = String(remainingVes);
+        amountInput.dataset.exchangeRate = String(exchangeRate);
     }
 
-    if (suggestedHint && paymentBreakdown) {
+    if (suggestedHint) {
         if (deducedStage === 'final') {
-            suggestedHint.textContent = `Monto restante exacto (50%): ${paymentBreakdown.finalPayment.formattedVes} (Equivalente: ${paymentBreakdown.finalPayment.formattedUsd})`;
+            const formattedRemainingVes = `Bs. ${remainingVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            suggestedHint.className = 'form-helper-hint';
+            suggestedHint.textContent = `Monto restante exacto: ${formattedRemainingVes} (Equivalente: $${remainingUsd.toFixed(2)} USD)`;
         } else {
-            suggestedHint.textContent = `Monto inicial (50%): ${paymentBreakdown.initialPayment.formattedVes} (${paymentBreakdown.initialPayment.formattedUsd}) | Máximo permitido (100%): ${paymentBreakdown.total.formattedVes}`;
+            const formattedInitialVes = `Bs. ${minAllowedVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const formattedTotalVes = `Bs. ${maxAllowedVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            suggestedHint.className = 'form-helper-hint';
+            suggestedHint.textContent = `Monto inicial (50%): ${formattedInitialVes} ($${(totalOrderUsd * 0.5).toFixed(2)} USD) | Máximo permitido (100%): ${formattedTotalVes}`;
         }
     }
 
-    // Actualización dinámica de equivalencia mientras el usuario escribe
+    const btnSubmit = document.getElementById('btn-submit-payment');
+
+    // Actualización dinámica y control estricto para evitar superar el saldo restante
     amountInput.oninput = () => {
         const val = parseFloat(amountInput.value);
-        if (!isNaN(val) && paymentBreakdown && paymentBreakdown.exchangeRate > 0) {
-            const usdEquiv = (val / paymentBreakdown.exchangeRate).toFixed(2);
+        const maxLimit = parseFloat(amountInput.dataset.maxVes || '0');
+        const rate = parseFloat(amountInput.dataset.exchangeRate || String(exchangeRate));
+
+        if (isNaN(val) || val <= 0) {
+            amountInput.classList.remove('input-error');
             if (suggestedHint) {
+                suggestedHint.className = 'form-helper-hint';
+                suggestedHint.textContent = 'Por favor ingresa un monto válido.';
+            }
+            if (btnSubmit) btnSubmit.disabled = false;
+            return;
+        }
+
+        if (maxLimit > 0 && val > (maxLimit + 0.05)) {
+            amountInput.classList.add('input-error');
+            const maxFormatted = `Bs. ${maxLimit.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const maxUsdFormatted = rate > 0 ? (maxLimit / rate).toFixed(2) : '0.00';
+            const currentUsd = rate > 0 ? (val / rate).toFixed(2) : '0.00';
+            if (suggestedHint) {
+                suggestedHint.className = 'form-helper-hint error-hint';
+                suggestedHint.textContent = `⚠️ El monto no puede superar el saldo restante: ${maxFormatted} (~$${maxUsdFormatted} USD). Ingresaste: Bs. ${val.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (~$${currentUsd} USD)`;
+            }
+            if (btnSubmit) btnSubmit.disabled = true;
+        } else {
+            amountInput.classList.remove('input-error');
+            const usdEquiv = rate > 0 ? (val / rate).toFixed(2) : '0.00';
+            if (suggestedHint) {
+                suggestedHint.className = 'form-helper-hint';
                 suggestedHint.textContent = `Monto ingresado: Bs. ${val.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (Aprox. $${usdEquiv} USD)`;
+            }
+            if (btnSubmit) btnSubmit.disabled = false;
+        }
+    };
+
+    amountInput.onblur = () => {
+        const val = parseFloat(amountInput.value);
+        const maxLimit = parseFloat(amountInput.dataset.maxVes || '0');
+        const rate = parseFloat(amountInput.dataset.exchangeRate || String(exchangeRate));
+
+        if (!isNaN(val) && maxLimit > 0 && val > (maxLimit + 0.05)) {
+            amountInput.value = maxLimit.toFixed(2);
+            amountInput.classList.remove('input-error');
+            if (btnSubmit) btnSubmit.disabled = false;
+            if (suggestedHint) {
+                const usdEquiv = rate > 0 ? (maxLimit / rate).toFixed(2) : '0.00';
+                suggestedHint.className = 'form-helper-hint';
+                suggestedHint.textContent = `Monto ajustado al saldo restante: Bs. ${maxLimit.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (Aprox. $${usdEquiv} USD)`;
             }
         }
     };
@@ -476,10 +534,17 @@ function setupPaymentFormState(order, payments, paymentBreakdown = null) {
         if (reviewNotice) reviewNotice.style.display = 'none';
     }
 
-    // Si ya completó todos los pagos requeridos
-    if (hasApprovedFinal || order.status === 'finalized' || order.status === 'shipped') {
-        formSection.style.display = 'none';
+    const paymentForm = document.getElementById('payment-submission-form');
+    // Si ya completó todos los pagos requeridos o no queda saldo pendiente
+    if (hasApprovedFinal || order.status === 'finalized' || order.status === 'shipped' || remainingUsd <= 0.01) {
+        if (paymentForm) paymentForm.style.display = 'none';
+        if (!hasPendingReviewPayment && reviewNotice) {
+            formSection.style.display = 'none';
+        } else {
+            formSection.style.display = 'block';
+        }
     } else {
+        if (paymentForm) paymentForm.style.display = 'block';
         formSection.style.display = 'block';
     }
 }
@@ -607,6 +672,19 @@ function setupDropzone() {
     function handleFileSelect(file) {
         if (!file) return;
 
+        // Validar que sea estrictamente una imagen (no PDF ni otros tipos de archivos)
+        const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+        const isImage = (file.type && file.type.startsWith('image/')) || /\.(jpe?g|png|webp|jfif|bmp)$/i.test(file.name);
+
+        if (isPdf || !isImage) {
+            showErrorToast(
+                'Formato no permitido',
+                'Solo se permiten imágenes (JPG, PNG o WEBP). No se admiten documentos PDF.'
+            );
+            resetFileInput();
+            return;
+        }
+
         // Validar tamaño máximo (10 MB)
         if (file.size > 10 * 1024 * 1024) {
             showErrorToast('Archivo demasiado pesado', 'El comprobante no debe superar los 10 MB.');
@@ -620,15 +698,11 @@ function setupDropzone() {
         if (previewFilename) previewFilename.textContent = fileName;
         if (previewFilesize) previewFilesize.textContent = `${fileSizeMB} MB`;
 
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                if (previewImg) previewImg.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        } else {
-            if (previewImg) previewImg.src = '../../assets/images/productos/estante-blanco.jpeg';
-        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (previewImg) previewImg.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
 
         if (placeholder) placeholder.style.display = 'none';
         if (preview) preview.style.display = 'flex';
@@ -671,6 +745,7 @@ function setupPaymentFormSubmit(orderId) {
         const amountInput = document.getElementById('payment-amount');
         const minVes = parseFloat(amountInput?.dataset?.minVes || '0');
         const maxVes = parseFloat(amountInput?.dataset?.maxVes || '0');
+        const remainingUsd = parseFloat(amountInput?.dataset?.remainingUsd || '0');
         const amountNum = parseFloat(amount);
 
         // Validaciones del cliente
@@ -683,15 +758,17 @@ function setupPaymentFormSubmit(orderId) {
         // Validación de monto mínimo (50%)
         if (minVes > 0 && amountNum < (minVes - 0.05)) {
             const minFormatted = `Bs. ${minVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            showWarningToast('Monto Insuficiente', `El monto mínimo de pago requerido es del 50% (${minFormatted}).`);
+            showWarningToast('Monto Insuficiente', `El monto mínimo de pago requerido es de ${minFormatted}.`);
             amountInput?.focus();
             return;
         }
 
-        // Validación de monto máximo (100%)
+        // Validación de monto máximo (saldo restante)
         if (maxVes > 0 && amountNum > (maxVes + 0.05)) {
             const maxFormatted = `Bs. ${maxVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            showWarningToast('Monto Excedido', `El monto ingresado no puede superar el total de la orden (${maxFormatted}).`);
+            showWarningToast('Monto Excedido', `El monto ingresado no puede superar el saldo restante (${maxFormatted}).`);
+            amountInput.value = maxVes.toFixed(2);
+            amountInput.classList.remove('input-error');
             amountInput?.focus();
             return;
         }
@@ -703,7 +780,23 @@ function setupPaymentFormSubmit(orderId) {
         }
 
         if (!fileInput.files || fileInput.files.length === 0) {
-            showWarningToast('Comprobante Obligatorio', 'Debes adjuntar una foto o documento del comprobante de pago.');
+            showWarningToast('Comprobante Obligatorio', 'Debes adjuntar una foto o imagen del comprobante de pago.');
+            return;
+        }
+
+        const selectedFile = fileInput.files[0];
+        const isFilePdf = selectedFile.type === 'application/pdf' || /\.pdf$/i.test(selectedFile.name);
+        const isFileImage = (selectedFile.type && selectedFile.type.startsWith('image/')) || /\.(jpe?g|png|webp|jfif|bmp)$/i.test(selectedFile.name);
+
+        if (isFilePdf || !isFileImage) {
+            showWarningToast('Formato no permitido', 'El comprobante debe ser una imagen (JPG, PNG o WEBP). No se admiten archivos PDF.');
+            fileInput.value = '';
+            const placeholder = document.getElementById('dropzone-placeholder');
+            const preview = document.getElementById('dropzone-preview');
+            const previewImg = document.getElementById('preview-img');
+            if (placeholder) placeholder.style.display = 'flex';
+            if (preview) preview.style.display = 'none';
+            if (previewImg) previewImg.src = '';
             return;
         }
 
@@ -712,52 +805,44 @@ function setupPaymentFormSubmit(orderId) {
         let amountUsd = 0;
         const exchangeRate = currentPaymentBreakdown?.exchangeRate || 1;
 
-        if (currentPaymentBreakdown) {
-            if (stage === 'initial') {
-                if (Math.abs(amountNum - currentPaymentBreakdown.initialPayment.rawVes) <= 0.05) {
-                    amountUsd = currentPaymentBreakdown.initialPayment.rawUsd;
-                } else if (Math.abs(amountNum - currentPaymentBreakdown.total.rawVes) <= 0.05) {
-                    amountUsd = currentPaymentBreakdown.total.rawUsd;
-                } else if (exchangeRate > 0 && amountNum > totalOrderUsd) {
-                    amountUsd = Number((amountNum / exchangeRate).toFixed(2));
-                    const minInitialUsd = currentPaymentBreakdown.initialPayment.rawUsd;
-                    if (amountUsd < minInitialUsd && (minInitialUsd - amountUsd) <= 0.05) {
-                        amountUsd = minInitialUsd;
-                    }
-                    if (amountUsd > totalOrderUsd) {
-                        amountUsd = totalOrderUsd;
-                    }
-                } else {
-                    amountUsd = amountNum;
-                }
-            } else if (stage === 'final') {
-                if (Math.abs(amountNum - currentPaymentBreakdown.finalPayment.rawVes) <= 0.05) {
-                    amountUsd = currentPaymentBreakdown.finalPayment.rawUsd;
-                } else if (exchangeRate > 0 && amountNum > totalOrderUsd) {
-                    amountUsd = Number((amountNum / exchangeRate).toFixed(2));
-                    const remainingUsd = currentPaymentBreakdown.finalPayment.rawUsd;
-                    if (Math.abs(amountUsd - remainingUsd) <= 0.05) {
-                        amountUsd = remainingUsd;
-                    }
-                } else {
-                    amountUsd = amountNum;
+        if (stage === 'final') {
+            if (remainingUsd > 0 && Math.abs(amountNum - (remainingUsd * exchangeRate)) <= 0.1) {
+                amountUsd = remainingUsd;
+            } else if (exchangeRate > 0 && amountNum > totalOrderUsd) {
+                amountUsd = Number((amountNum / exchangeRate).toFixed(2));
+                if (remainingUsd > 0 && amountUsd > remainingUsd) {
+                    amountUsd = remainingUsd;
                 }
             } else {
-                if (Math.abs(amountNum - currentPaymentBreakdown.total.rawVes) <= 0.05) {
-                    amountUsd = currentPaymentBreakdown.total.rawUsd;
-                } else if (exchangeRate > 0 && amountNum > totalOrderUsd) {
-                    amountUsd = Number((amountNum / exchangeRate).toFixed(2));
-                    if (Math.abs(amountUsd - totalOrderUsd) <= 0.05) {
-                        amountUsd = totalOrderUsd;
-                    }
-                } else {
-                    amountUsd = amountNum;
+                amountUsd = amountNum;
+            }
+            if (remainingUsd > 0 && amountUsd > remainingUsd) {
+                amountUsd = remainingUsd;
+            }
+        } else if (stage === 'initial') {
+            const minInitialUsd = Number((totalOrderUsd * 0.5).toFixed(2));
+            if (currentPaymentBreakdown && Math.abs(amountNum - currentPaymentBreakdown.initialPayment.rawVes) <= 0.05) {
+                amountUsd = currentPaymentBreakdown.initialPayment.rawUsd;
+            } else if (exchangeRate > 0 && amountNum > totalOrderUsd) {
+                amountUsd = Number((amountNum / exchangeRate).toFixed(2));
+                if (amountUsd < minInitialUsd && (minInitialUsd - amountUsd) <= 0.05) {
+                    amountUsd = minInitialUsd;
                 }
+                if (amountUsd > totalOrderUsd) {
+                    amountUsd = totalOrderUsd;
+                }
+            } else {
+                amountUsd = amountNum;
             }
         } else {
-            amountUsd = (totalOrderUsd > 0 && amountNum > totalOrderUsd && exchangeRate > 0)
-                ? Number((amountNum / exchangeRate).toFixed(2))
-                : amountNum;
+            if (exchangeRate > 0 && amountNum > totalOrderUsd) {
+                amountUsd = Number((amountNum / exchangeRate).toFixed(2));
+                if (Math.abs(amountUsd - totalOrderUsd) <= 0.05) {
+                    amountUsd = totalOrderUsd;
+                }
+            } else {
+                amountUsd = amountNum;
+            }
         }
 
         // Construir nota con auditoría de conversión en Bolívares

@@ -388,7 +388,7 @@ function renderColorVariants() {
   if (state.colors.length === 0) {
     container.innerHTML = `
       <div class="empty-state-notice" style="text-align: center; padding: 20px; color: #64748b; font-size: 0.85rem; border: 1px dashed #cbd5e1; border-radius: 8px;">
-        No hay colores registrados. Presiona <strong>+ Agregar Color</strong> o haz clic en la <strong>Paleta rápida</strong> para añadir acabados.
+        No hay colores registrados. Presiona <strong>Agregar Color</strong> o haz clic en la <strong>Paleta rápida</strong> para añadir acabados.
       </div>
     `;
     updateLivePreview();
@@ -593,7 +593,7 @@ function renderAngleVariants() {
   if (state.angles.length === 0) {
     container.innerHTML = `
       <div class="empty-state-notice" style="text-align: center; padding: 20px; color: #64748b; font-size: 0.85rem; border: 1px dashed #cbd5e1; border-radius: 8px;">
-        No hay ángulos registrados. Presiona <strong>+ Agregar Ángulo</strong> para añadir perspectivas fotográficas.
+        No hay ángulos registrados. Presiona <strong>Agregar Ángulo</strong> para añadir perspectivas fotográficas.
       </div>
     `;
     updateLivePreview();

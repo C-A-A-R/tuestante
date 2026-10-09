@@ -52,7 +52,7 @@ function setupOriginErrorDetection(onError) {
 export function initGoogleAuth(options = {}) {
     const {
         btnContainerId = "googleBtn",
-        customBtnId = "customGoogleBtn",
+        customBtnId = "customGoogleBtnVisual",
         onSuccess = null,
         onError = null,
     } = options;
@@ -61,11 +61,26 @@ export function initGoogleAuth(options = {}) {
 
     const clientId = GOOGLE_CLIENT_ID || window.__GOOGLE_CLIENT_ID__ || "";
     const hasValidClientId = clientId.endsWith(".apps.googleusercontent.com");
+    const isRegisterPage = window.location.pathname.includes("register");
+
+    // Asignar listener de fallback y click inmediato mientras carga el SDK
+    const fallbackBtn = document.getElementById(customBtnId) || document.getElementById("customGoogleBtn");
+    if (fallbackBtn) {
+        fallbackBtn.addEventListener("click", () => {
+            if (window.google?.accounts?.id?.prompt) {
+                window.google.accounts.id.prompt();
+            } else if (!hasValidClientId) {
+                const msg = "Para habilitar el inicio de sesión con Google, por favor configura la variable GOOGLE_CLIENT_ID en el archivo .env del backend o en Frontend/js/config.js";
+                if (typeof onError === "function") onError(msg);
+                else alert(msg);
+            }
+        });
+    }
 
     // Cargar SDK de Google si aún no existe
     loadGoogleScript(() => {
         if (!hasValidClientId) {
-            setupDemoFallback([customBtnId, "topGoogleRegisterBtn", "customGoogleBtnFallback"], onError);
+            setupDemoFallback([customBtnId, "customGoogleBtn", "topGoogleRegisterBtn"], onError);
             return;
         }
 
@@ -78,38 +93,50 @@ export function initGoogleAuth(options = {}) {
                     },
                     auto_select: false,
                     cancel_on_tap_outside: true,
+                    itp_support: true,
+                    use_fedcm_for_prompt: true,
                 });
 
-                // Renderizar botón oficial de Google en el overlay interactivo
+                // Renderizar botón oficial de Google de forma interactiva
                 const container = document.getElementById(btnContainerId);
                 if (container) {
+                    container.innerHTML = "";
+                    const targetWidth = Math.min(Math.max(container.offsetWidth || 380, 280), 400);
+
                     window.google.accounts.id.renderButton(container, {
                         theme: "outline",
                         size: "large",
                         type: "standard",
                         shape: "rectangular",
-                        text: "continue_with",
+                        text: isRegisterPage ? "signup_with" : "signin_with",
                         logo_alignment: "left",
-                        width: 380,
+                        width: targetWidth,
                     });
                 }
+
+                // Intentar One Tap con FedCM en segundo plano sin métodos de estado obsoletos
+                try {
+                    window.google.accounts.id.prompt();
+                } catch (_) {}
             }
         } catch (err) {
             console.error("Error al inicializar Google Identity Services:", err);
-            setupDemoFallback(["topGoogleRegisterBtn"], onError);
+            setupDemoFallback([customBtnId, "customGoogleBtn", "topGoogleRegisterBtn"], onError);
         }
     });
 
-    // Enlace de registro rápido en register.html: desplaza suavemente hacia el botón de Google
+    // Enlace de registro rápido en register.html: desplaza suavemente hacia el botón de Google y activa el prompt
     const topRegisterBtn = document.getElementById("topGoogleRegisterBtn");
     if (topRegisterBtn) {
         topRegisterBtn.addEventListener("click", () => {
-            const googleWrapper = document.querySelector(".google-auth-container");
-            if (googleWrapper) {
-                googleWrapper.scrollIntoView({ behavior: "smooth", block: "center" });
-                const btnBox = googleWrapper.querySelector(".google-auth-btn-wrapper") || googleWrapper;
-                btnBox.classList.add("btn-pulse-highlight");
-                setTimeout(() => btnBox.classList.remove("btn-pulse-highlight"), 1400);
+            if (window.google?.accounts?.id?.prompt) {
+                window.google.accounts.id.prompt();
+            }
+            const googleContainer = document.getElementById(btnContainerId) || document.querySelector(".google-auth-container");
+            if (googleContainer) {
+                googleContainer.scrollIntoView({ behavior: "smooth", block: "center" });
+                googleContainer.classList.add("btn-pulse-highlight");
+                setTimeout(() => googleContainer.classList.remove("btn-pulse-highlight"), 1400);
             }
         });
     }
@@ -119,7 +146,7 @@ export function initGoogleAuth(options = {}) {
 }
 
 /**
- * Carga dinámicamente el script de Google Identity Services.
+ * Carga dinámicamente el script de Google Identity Services con verificación activa.
  */
 function loadGoogleScript(callback) {
     if (window.google?.accounts?.id) {
@@ -127,9 +154,23 @@ function loadGoogleScript(callback) {
         return;
     }
 
-    const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    const existingScript = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
     if (existingScript) {
-        existingScript.addEventListener("load", callback);
+        let attempts = 0;
+        const checkInterval = setInterval(() => {
+            attempts++;
+            if (window.google?.accounts?.id) {
+                clearInterval(checkInterval);
+                callback();
+            } else if (attempts > 30) {
+                clearInterval(checkInterval);
+            }
+        }, 100);
+
+        existingScript.addEventListener("load", () => {
+            clearInterval(checkInterval);
+            callback();
+        });
         return;
     }
 
@@ -137,7 +178,13 @@ function loadGoogleScript(callback) {
     script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
     script.defer = true;
-    script.onload = callback;
+    script.onload = () => {
+        if (window.google?.accounts?.id) {
+            callback();
+        } else {
+            setTimeout(callback, 100);
+        }
+    };
     script.onerror = () => {
         console.warn("No se pudo cargar el SDK de Google Identity Services.");
     };
@@ -255,12 +302,14 @@ function redirectToCompleteProfile() {
  */
 function showGoogleLoading(isLoading) {
     const customBtns = [
+        document.getElementById("customGoogleBtnVisual"),
         document.getElementById("customGoogleBtn"),
         document.getElementById("topGoogleRegisterBtn"),
+        document.getElementById("googleBtn"),
     ];
     customBtns.forEach((btn) => {
         if (btn) {
-            btn.disabled = isLoading;
+            btn.style.pointerEvents = isLoading ? "none" : "auto";
             btn.style.opacity = isLoading ? "0.6" : "1";
         }
     });

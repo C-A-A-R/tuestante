@@ -382,7 +382,7 @@ function normalizeNavbarRoutes() {
     'notifications': `${prefix}modules/notifications/notifications.html`,
     'wishlist': `${prefix}modules/product/wishlist.html`,
     'login': `${prefix}modules/auth/login.html`,
-    'register': `${prefix}modules/auth/login.html#registro`,
+    'register': `${prefix}modules/auth/register.html`,
     'employee-store': `${prefix}employee/index.html`
   };
 
@@ -490,7 +490,7 @@ function syncUserAuthState() {
           </svg>
           <span>Iniciar Sesión</span>
         </a>
-        <a href="${prefix}modules/auth/login.html#registro" class="nav-btn-register" data-nav-link="register">
+        <a href="${prefix}modules/auth/register.html" class="nav-btn-register" data-nav-link="register">
           <span>Registrarse</span>
         </a>
       `;
@@ -695,7 +695,7 @@ function syncUserAuthState() {
           <span class="action-item-text">Iniciar Sesión</span>
         </a>
 
-        <a href="${prefix}modules/auth/login.html#registro" class="action-menu-item" role="menuitem">
+        <a href="${prefix}modules/auth/register.html" class="action-menu-item" role="menuitem">
           <span class="action-item-icon">
             <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -789,7 +789,7 @@ function syncUserAuthState() {
     } else {
       drawerUserLinksList.innerHTML = `
         <li class="drawer-nav-item">
-          <a href="${prefix}modules/auth/login.html" class="drawer-nav-link">
+          <a href="${prefix}modules/auth/register.html" class="drawer-nav-link">
             <span class="drawer-link-left">
               <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
@@ -801,7 +801,7 @@ function syncUserAuthState() {
           </a>
         </li>
         <li class="drawer-nav-item">
-          <a href="${prefix}modules/auth/login.html#registro" class="drawer-nav-link">
+          <a href="${prefix}modules/auth/register.html" class="drawer-nav-link">
             <span class="drawer-link-left">
               <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>

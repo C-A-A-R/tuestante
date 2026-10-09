@@ -270,9 +270,9 @@
 
                                 <!-- Subida de Archivo Comprobante -->
                                 <div class="form-group full-width">
-                                    <label class="form-label">Comprobante de Pago (Imagen o PDF) <span class="required">*</span></label>
+                                    <label class="form-label">Comprobante de Pago (Solo Imagen) <span class="required">*</span></label>
                                     <div class="receipt-dropzone" id="receipt-dropzone">
-                                        <input type="file" id="payment-receipt-file" name="receipt_file" class="file-input-hidden" accept="image/jpeg,image/png,image/webp,application/pdf" required>
+                                        <input type="file" id="payment-receipt-file" name="receipt_file" class="file-input-hidden" accept="image/jpeg,image/png,image/webp,image/*" required>
                                         <div class="dropzone-content" id="dropzone-placeholder">
                                             <svg class="dropzone-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -280,7 +280,7 @@
                                                 <polyline points="21 15 16 10 5 21"></polyline>
                                             </svg>
                                             <p class="dropzone-text"><strong>Haz clic para seleccionar</strong> o arrastra aquí tu comprobante</p>
-                                            <span class="dropzone-hint">Formatos válidos: JPG, PNG, WEBP o PDF (Máx. 10MB)</span>
+                                            <span class="dropzone-hint">Formatos válidos: JPG, PNG o WEBP (Máx. 10MB)</span>
                                         </div>
 
                                         <!-- Previsualización del archivo seleccionado -->

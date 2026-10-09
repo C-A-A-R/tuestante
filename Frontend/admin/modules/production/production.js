@@ -16,6 +16,9 @@ import {
   createProductionOrder,
   getStageConfig,
   getProductImageUrl,
+  updateProductionProductStatus,
+  bulkUpdateProductionProductsStatus,
+  advanceProductionProductStage,
   PRODUCTION_STAGES
 } from './production.api.js';
 import { getRequest } from '../../js/api.js';
@@ -25,6 +28,7 @@ const state = {
   activeView: 'products', // 'products' | 'orders'
   orders: [],
   products: [],
+  selectedProductIds: new Set(),
   metrics: null,
   filters: {
     search: '',
@@ -55,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupViewTabs();
   setupFilters();
   setupModals();
+  setupMainBatchControls();
 
   // 4. Cargar datos iniciales y métricas KPI
   await Promise.all([
@@ -300,12 +305,32 @@ function renderProductsTable() {
 
   tbody.innerHTML = pagedItems.map(item => {
     const stage = getStageConfig(item.status);
-    const startDateFormatted = formatDate(item.start_date || 'En espera');
-    const estDateFormatted = formatDate(item.estimated_completion_date);
     const prodOrderId = item.production_order_id || item.order_id || 1;
+    const isChecked = state.selectedProductIds.has(item.id);
+    const prodNumber = item.product_number || item.sku || `PRD-${item.id}`;
+
+    const dates = item.stage_dates || {};
+    const dQueued = item.queued_at || dates.queued;
+    const dAssembling = item.assembling_at || dates.assembling;
+    const dPainting = item.painting_at || dates.painting;
+    const dQuality = item.quality_check_at || dates.quality_check;
+    const dCompleted = item.completed_at || dates.completed;
 
     return `
       <tr>
+        <!-- Checkbox de Selección -->
+        <td style="text-align: center;">
+          <input type="checkbox" class="main-product-check product-select-check" data-id="${item.id}" ${isChecked ? 'checked' : ''} title="Seleccionar para lote">
+        </td>
+
+        <!-- Número de Producto -->
+        <td>
+          <span class="product-number-badge">🏷️ ${escapeHtml(prodNumber)}</span>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+            Unidad ${item.unit_index || 1}
+          </div>
+        </td>
+
         <!-- Producto -->
         <td>
           <div class="product-cell-meta">
@@ -334,70 +359,56 @@ function renderProductsTable() {
           <span class="client-name-text">${escapeHtml(item.client_name)}</span>
         </td>
 
-        <!-- Cantidad (Solo número) -->
-        <td style="text-align: center;">
-          <span class="qty-pill">${item.quantity}</span>
-        </td>
-
         <!-- Estado de Fabricación -->
         <td>
-          <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
-            <span class="status-stage-badge ${stage.badgeClass}">
-              <span class="stage-dot"></span>
-              <span>${stage.label}</span>
-            </span>
-            ${item.order_status && ['delivered', 'completed', 'shipped'].includes(item.order_status) ? `
-              <span class="delivery-status-tag ${item.order_status === 'shipped' ? 'tag-shipped' : 'tag-delivered'}" title="Estado del pedido: ${escapeHtml(item.order_status)}">
-                ✓ ${item.order_status === 'shipped' ? 'Enviado' : 'Entregado'}
-              </span>
-            ` : ''}
+          <span class="status-stage-badge ${stage.badgeClass}">
+            <span class="stage-dot"></span>
+            <span>${stage.label}</span>
+          </span>
+        </td>
+
+        <!-- Fechas por Fase de Fabricación -->
+        <td>
+          <div style="display: flex; flex-direction: column; gap: 2px; font-size: 0.74rem; color: #475569;">
+            ${dQueued ? `<span><strong>Cola:</strong> ${formatDate(dQueued)}</span>` : ''}
+            ${dAssembling ? `<span><strong>Corte:</strong> ${formatDate(dAssembling)}</span>` : ''}
+            ${dPainting ? `<span><strong>Pintura:</strong> ${formatDate(dPainting)}</span>` : ''}
+            ${dQuality ? `<span><strong>Calidad:</strong> ${formatDate(dQuality)}</span>` : ''}
+            ${dCompleted ? `<span style="color:#16a34a; font-weight:700;"><strong>Fin:</strong> ${formatDate(dCompleted)}</span>` : ''}
+            ${!dQueued && !dAssembling && !dPainting && !dQuality && !dCompleted ? '<span style="color:#94a3b8;">En espera</span>' : ''}
           </div>
         </td>
 
-        <!-- Fecha Inicio -->
-        <td>
-          <span class="date-cell-text">${startDateFormatted}</span>
-        </td>
-
-        <!-- Entrega Estimada -->
-        <td>
-          <span class="date-cell-text">${estDateFormatted}</span>
-        </td>
-
-        <!-- Acciones con Exportar Orden y Ver Detalle -->
+        <!-- Acciones con Cambio Rápido de Fase y Ver Detalle -->
         <td style="text-align: center;">
-          <div class="table-actions-cell">
+          <div class="table-actions-cell" style="gap: 6px;">
+            <select class="select-main-product-stage" data-id="${item.id}" title="Cambiar fase de este producto" style="font-size: 0.76rem; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border-color); background: #ffffff;">
+              <option value="queued" ${item.status === 'queued' ? 'selected' : ''}>Cola</option>
+              <option value="assembling" ${item.status === 'assembling' ? 'selected' : ''}>Corte/Ensamble</option>
+              <option value="painting" ${item.status === 'painting' ? 'selected' : ''}>Pintura</option>
+              <option value="quality_check" ${item.status === 'quality_check' ? 'selected' : ''}>Calidad</option>
+              <option value="completed" ${item.status === 'completed' ? 'selected' : ''}>Completado</option>
+            </select>
             <button 
               type="button" 
-              class="btn-action-icon btn-action-export" 
-              data-order-id="${prodOrderId}" 
-              title="Exportar / Imprimir Orden de Fabricación" 
-              aria-label="Exportar Orden de Fabricación">
+              class="btn-action-icon btn-advance-main-product" 
+              data-id="${item.id}" 
+              ${item.status === 'completed' ? 'disabled' : ''}
+              title="Avanzar a siguiente fase" 
+              aria-label="Avanzar etapa">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                <rect x="6" y="14" width="12" height="8"></rect>
+                <polyline points="13 17 18 12 13 7"></polyline>
+                <polyline points="6 17 11 12 6 7"></polyline>
               </svg>
             </button>
             <a 
               href="production-detail.html?id=${prodOrderId}" 
               class="btn-action-icon" 
-              title="Ver detalle completo de fabricación" 
-              aria-label="Ver detalle de fabricación">
+              title="Ver orden en taller" 
+              aria-label="Ver orden en taller">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-            </a>
-            <a 
-              href="../order/order-detail.html?id=${item.order_id}" 
-              class="btn-action-icon" 
-              title="Ver detalle del pedido" 
-              aria-label="Ver detalle pedido">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
               </svg>
             </a>
           </div>
@@ -406,15 +417,145 @@ function renderProductsTable() {
     `;
   }).join('');
 
-  // Vincular eventos de exportación
-  tbody.querySelectorAll('.btn-action-export').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const pId = parseInt(btn.getAttribute('data-order-id'), 10);
-      exportProductionWorksheet(pId);
+  bindMainProductEvents(tbody);
+}
+
+/**
+ * Vincula los eventos interactivos de la tabla principal de productos
+ */
+function bindMainProductEvents(tbody) {
+  // Checkboxes de producto
+  tbody.querySelectorAll('.main-product-check').forEach(chk => {
+    chk.addEventListener('change', (e) => {
+      const id = parseInt(e.target.getAttribute('data-id'), 10);
+      if (e.target.checked) {
+        state.selectedProductIds.add(id);
+      } else {
+        state.selectedProductIds.delete(id);
+      }
+      updateMainBatchBar();
     });
   });
+
+  // Select de cambio rápido de estado
+  tbody.querySelectorAll('.select-main-product-stage').forEach(sel => {
+    sel.addEventListener('change', async (e) => {
+      const id = parseInt(e.target.getAttribute('data-id'), 10);
+      const newStatus = e.target.value;
+      try {
+        await updateProductionProductStatus(id, newStatus);
+        showToast('success', 'Fase Actualizada', 'El estado del producto se actualizó con éxito.');
+        await loadProductionData();
+        await loadProductionMetrics();
+      } catch (err) {
+        showToast('error', 'Error', err.message);
+      }
+    });
+  });
+
+  // Botón de avance rápido de etapa
+  tbody.querySelectorAll('.btn-advance-main-product').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      try {
+        await advanceProductionProductStage(id);
+        showToast('success', 'Fase Avanzada', 'El producto avanzó a su siguiente fase.');
+        await loadProductionData();
+        await loadProductionMetrics();
+      } catch (err) {
+        showToast('error', 'Error al avanzar', err.message);
+      }
+    });
+  });
+
+  updateMainBatchBar();
 }
+
+/**
+ * Actualiza la barra flotante de lote en la vista principal
+ */
+function updateMainBatchBar() {
+  const batchBar = document.getElementById('main-batch-bar');
+  const countBadge = document.getElementById('main-batch-count');
+  const headerCheck = document.getElementById('check-all-main-products');
+
+  const count = state.selectedProductIds.size;
+  if (countBadge) countBadge.textContent = count;
+  if (batchBar) batchBar.style.display = count > 0 ? 'flex' : 'none';
+
+  if (headerCheck) {
+    const currentPageIds = state.products.slice(
+      (state.pagination.currentPage - 1) * state.pagination.itemsPerPage,
+      state.pagination.currentPage * state.pagination.itemsPerPage
+    ).map(p => p.id);
+
+    headerCheck.checked = currentPageIds.length > 0 && currentPageIds.every(id => state.selectedProductIds.has(id));
+  }
+}
+
+/**
+ * Configura los eventos de acciones por lote de la vista principal
+ */
+function setupMainBatchControls() {
+  const headerCheck = document.getElementById('check-all-main-products');
+  if (headerCheck) {
+    headerCheck.addEventListener('change', (e) => {
+      const currentPageItems = state.products.slice(
+        (state.pagination.currentPage - 1) * state.pagination.itemsPerPage,
+        state.pagination.currentPage * state.pagination.itemsPerPage
+      );
+      if (e.target.checked) {
+        currentPageItems.forEach(p => state.selectedProductIds.add(p.id));
+      } else {
+        currentPageItems.forEach(p => state.selectedProductIds.delete(p.id));
+      }
+      renderProductsTable();
+    });
+  }
+
+  const btnApply = document.getElementById('btn-main-apply-batch');
+  if (btnApply) {
+    btnApply.addEventListener('click', async () => {
+      const selectStage = document.getElementById('main-batch-select-stage');
+      const targetStatus = selectStage?.value;
+
+      if (!targetStatus) {
+        showToast('warning', 'Seleccione una fase', 'Debe elegir la fase a aplicar al lote seleccionado.');
+        return;
+      }
+
+      if (state.selectedProductIds.size === 0) {
+        showToast('warning', 'Sin productos', 'Seleccione al menos un producto.');
+        return;
+      }
+
+      try {
+        const ids = Array.from(state.selectedProductIds);
+        await bulkUpdateProductionProductsStatus({
+          productIds: ids,
+          status: targetStatus,
+          notes: `Actualización en lote a '${getStageConfig(targetStatus).label}'`
+        });
+
+        showToast('success', 'Lote Actualizado', `Se actualizaron ${ids.length} producto(s) a '${getStageConfig(targetStatus).label}'.`);
+        state.selectedProductIds.clear();
+        await loadProductionData();
+        await loadProductionMetrics();
+      } catch (err) {
+        showToast('error', 'Error por lote', err.message);
+      }
+    });
+  }
+
+  const btnCancel = document.getElementById('btn-main-cancel-batch');
+  if (btnCancel) {
+    btnCancel.addEventListener('click', () => {
+      state.selectedProductIds.clear();
+      renderProductsTable();
+    });
+  }
+}
+
 
 /**
  * Renderiza la Tabla 2: Órdenes de fabricación (Con botón interactivo de productos)
@@ -599,8 +740,67 @@ function renderOrdersTable() {
 }
 
 // ==========================================================================
-// PAGINACIÓN
+// PAGINACIÓN TRUNCADA INTELIGENTE
 // ==========================================================================
+
+/**
+ * Calcula el rango de páginas a mostrar con elipsis (...)
+ * para evitar desbordar la pantalla cuando existen muchas páginas.
+ * Garantiza mostrar siempre los primeros números, el rango de la página actual,
+ * y los últimos números.
+ */
+function getPaginationRange(current, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const pagesSet = new Set();
+  pagesSet.add(1);
+  pagesSet.add(totalPages);
+
+  if (current <= 4) {
+    // Cerca del inicio: mostrar los primeros 5 y los últimos 2
+    for (let i = 1; i <= Math.min(5, totalPages); i++) {
+      pagesSet.add(i);
+    }
+    pagesSet.add(totalPages - 1);
+    pagesSet.add(totalPages);
+  } else if (current >= totalPages - 3) {
+    // Cerca del final: mostrar los primeros 2 y los últimos 5
+    pagesSet.add(1);
+    pagesSet.add(2);
+    for (let i = Math.max(1, totalPages - 4); i <= totalPages; i++) {
+      pagesSet.add(i);
+    }
+  } else {
+    // En el centro: mostrar los primeros 2, la página actual con +-1, y los últimos 2
+    pagesSet.add(1);
+    pagesSet.add(2);
+    pagesSet.add(current - 1);
+    pagesSet.add(current);
+    pagesSet.add(current + 1);
+    pagesSet.add(totalPages - 1);
+    pagesSet.add(totalPages);
+  }
+
+  const sorted = Array.from(pagesSet).sort((a, b) => a - b);
+  const result = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    result.push(sorted[i]);
+    if (i < sorted.length - 1) {
+      const diff = sorted[i + 1] - sorted[i];
+      if (diff === 2) {
+        // Si solo falta un número para completar el salto, es más claro mostrar el número en vez de '...'
+        result.push(sorted[i] + 1);
+      } else if (diff > 2) {
+        result.push('...');
+      }
+    }
+  }
+
+  return result;
+}
 
 function renderPagination() {
   const infoEl = document.getElementById('pagination-info');
@@ -618,21 +818,27 @@ function renderPagination() {
   infoEl.innerHTML = `Mostrando <strong>${start}</strong> a <strong>${end}</strong> de <strong>${total}</strong> elementos`;
 
   let buttonsHtml = `
-    <button type="button" class="btn-pag" id="btn-pag-prev" ${current <= 1 ? 'disabled' : ''}>
+    <button type="button" class="btn-pag btn-pag-prev" id="btn-pag-prev" ${current <= 1 ? 'disabled' : ''} aria-label="Página anterior" title="Página anterior">
       &lt; Anterior
     </button>
   `;
 
-  for (let i = 1; i <= totalPages; i++) {
-    buttonsHtml += `
-      <button type="button" class="btn-pag ${i === current ? 'active' : ''}" data-page="${i}">
-        ${i}
-      </button>
-    `;
+  const pageRange = getPaginationRange(current, totalPages);
+
+  for (const pageItem of pageRange) {
+    if (pageItem === '...') {
+      buttonsHtml += `<span class="pagination-ellipsis" aria-hidden="true">&hellip;</span>`;
+    } else {
+      buttonsHtml += `
+        <button type="button" class="btn-pag ${pageItem === current ? 'active' : ''}" data-page="${pageItem}" aria-label="Página ${pageItem}">
+          ${pageItem}
+        </button>
+      `;
+    }
   }
 
   buttonsHtml += `
-    <button type="button" class="btn-pag" id="btn-pag-next" ${current >= totalPages ? 'disabled' : ''}>
+    <button type="button" class="btn-pag btn-pag-next" id="btn-pag-next" ${current >= totalPages ? 'disabled' : ''} aria-label="Página siguiente" title="Página siguiente">
       Siguiente &gt;
     </button>
   `;

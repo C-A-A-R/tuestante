@@ -291,7 +291,7 @@ function populateProductDetails(product) {
             localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
             window.dispatchEvent(new Event('cart-updated'));
 
-            showCartModal({ id, name, price, image });
+            showCartModal({ id, name, price, image, color: selectedColor, stock: product.stock });
         };
     }
 

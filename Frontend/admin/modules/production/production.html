@@ -51,15 +51,6 @@
               Gestiona y realiza el seguimiento de la producción de los pedidos en el taller.
             </p>
           </div>
-          <!-- <div class="screen-header-actions">
-            <button type="button" class="btn btn-primary" id="btn-new-production-order">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span>Nueva Orden</span>
-            </button>
-          </div> -->
         </section>
 
         <!-- 2. KPIs de Fabricación (Métricas del Taller) -->
@@ -209,18 +200,44 @@
 
         <!-- Vista 1: Productos en Fabricación -->
         <section class="production-table-section active-view" id="section-products-view">
+          <!-- Barra flotante de acciones por lote para vista principal -->
+          <div class="batch-product-actions-bar" id="main-batch-bar" style="display: none; margin-bottom: 14px;">
+            <div class="batch-selection-info">
+              <span class="batch-selection-count-badge" id="main-batch-count">0</span>
+              <span>productos seleccionados</span>
+            </div>
+            <div class="batch-actions-controls">
+              <select id="main-batch-select-stage" class="form-select">
+                <option value="">-- Cambiar fase al lote --</option>
+                <option value="queued">En cola de espera</option>
+                <option value="assembling">En corte y ensamblaje</option>
+                <option value="painting">En pintura y acabado</option>
+                <option value="quality_check">En control de calidad</option>
+                <option value="completed">Fabricación completada</option>
+              </select>
+              <button type="button" class="btn btn-sm btn-primary" id="btn-main-apply-batch" style="height: 34px; padding: 6px 14px;">
+                Aplicar a lote
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btn-main-cancel-batch" style="height: 34px; padding: 6px 10px; color: #cbd5e1; border-color: #475569;">
+                Cancelar
+              </button>
+            </div>
+          </div>
+
           <div class="table-card">
             <div class="table-responsive">
               <table class="production-table" id="table-products">
                 <thead>
                   <tr>
+                    <th style="width: 40px; text-align: center;">
+                      <input type="checkbox" id="check-all-main-products" class="product-select-check" title="Seleccionar todos">
+                    </th>
+                    <th>Nº Producto</th>
                     <th>Producto</th>
                     <th>Pedido</th>
                     <th>Cliente</th>
-                    <th style="text-align: center;">Cant.</th>
                     <th>Fase Actual</th>
-                    <th>Fecha Inicio</th>
-                    <th>Entrega Estimada</th>
+                    <th>Fechas por Fase</th>
                     <th style="text-align: center;">Acciones</th>
                   </tr>
                 </thead>

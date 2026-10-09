@@ -22,9 +22,9 @@ class GalleryViewSet(BaseViewSet):
 
     def get_permissions(self):
         """Asigna permisos según la acción solicitada."""
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve', 'create']:
             permission_classes = [permissions.AllowAny]
-        elif self.action in ['create', 'my_uploads']:
+        elif self.action in ['my_uploads']:
             permission_classes = [permissions.IsAuthenticated]
         else:
             permission_classes = [permissions.IsAdminUser]

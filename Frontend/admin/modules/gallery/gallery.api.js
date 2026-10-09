@@ -6,7 +6,7 @@
  * con contingencia enriquecida según los bocetos aprobados.
  */
 
-import { getRequest, postRequest, patchRequest, deleteRequest } from '../../js/api.js';
+import { getRequest, postRequest, patchRequest, deleteRequest, resolveImageUrl } from '../../js/api.js';
 
 // Clave para persistencia local de items adicionales
 const STORAGE_KEY_GALLERY = 'tu_admin_gallery_items';
@@ -213,12 +213,12 @@ export async function getClientsList() {
 
   // Fallback con clientes del sistema y documentos de identidad
   return [
-    { id: 1, name: 'Juan Pérez', identity_document: 'V-18.452.369', email: 'juan@email.com' },
-    { id: 2, name: 'María López', identity_document: 'V-22.134.567', email: 'maria.lopez@gmail.com' },
-    { id: 3, name: 'Pedro Díaz', identity_document: 'V-19.876.543', email: 'pedro.diaz@hotmail.com' },
-    { id: 4, name: 'Ana Torres', identity_document: 'V-25.678.901', email: 'ana.torres@outlook.com' },
-    { id: 5, name: 'Luis Ramírez', identity_document: 'V-17.234.890', email: 'luis.ramirez@empresa.com' },
-    { id: 6, name: 'Carmen Silva', identity_document: 'V-21.456.789', email: 'carmen.silva@gmail.com' }
+    { id: 5, name: 'Juan Pérez', identity_document: 'V-18.452.369', email: 'juan@email.com' },
+    { id: 6, name: 'María López', identity_document: 'V-22.134.567', email: 'maria.lopez@gmail.com' },
+    { id: 7, name: 'Pedro Díaz', identity_document: 'V-19.876.543', email: 'pedro.diaz@hotmail.com' },
+    { id: 8, name: 'Ana Torres', identity_document: 'V-25.678.901', email: 'ana.torres@outlook.com' },
+    { id: 9, name: 'Luis Ramírez', identity_document: 'V-17.234.890', email: 'luis.ramirez@empresa.com' },
+    { id: 10, name: 'Carmen Silva', identity_document: 'V-21.456.789', email: 'carmen.silva@gmail.com' }
   ];
 }
 
@@ -226,60 +226,60 @@ export async function getClientsList() {
  * Obtiene todos los items de galería (publicados y solicitudes).
  */
 export async function getGalleryData() {
+  let backendItems = null;
   try {
     const data = await getRequest('/gallery/', {}, { auth: true });
-    let backendItems = [];
     if (Array.isArray(data)) {
       backendItems = data;
     } else if (data && Array.isArray(data.results)) {
       backendItems = data.results;
     }
-
-    if (Array.isArray(backendItems) && backendItems.length > 0) {
-      const localItems = getLocalGalleryItems();
-      return backendItems.map(bItem => {
-        const matchLocal = localItems.find(l => l.id === bItem.id);
-        
-        let displayStatus = 'Aprobada';
-        if (bItem.status === 'pending' || bItem.status === 'pendiente') {
-          displayStatus = 'Pendiente';
-        } else if (bItem.status === 'rejected' || bItem.status === 'rechazado' || bItem.status === 'rechazada') {
-          displayStatus = 'Rechazada';
-        } else if (bItem.status === 'approved' || bItem.status === 'aprobado' || bItem.status === 'aprobada') {
-          displayStatus = 'Aprobada';
-        } else if (matchLocal?.status) {
-          displayStatus = matchLocal.status;
-        }
-
-        const hasUserDetail = Boolean(bItem.user_detail);
-        const userFullName = hasUserDetail
-          ? (bItem.user_detail.full_name || bItem.user_detail.username || '')
-          : (matchLocal?.client_name || '');
-        const userDoc = (matchLocal?.identity_document || '');
-        const isPublished = (displayStatus === 'Aprobada' && bItem.is_active);
-
-        return {
-          id: bItem.id,
-          user_id: bItem.user || null,
-          title: bItem.caption ? bItem.caption.split('.')[0].slice(0, 35) : `Imagen #${bItem.id}`,
-          caption: bItem.caption || '',
-          client_name: userFullName,
-          identity_document: userDoc,
-          social_network: bItem.social_network || 'Instagram',
-          social_media_handle: bItem.social_media_handle || '',
-          social_media_url: (bItem.social_media_url && bItem.social_media_url !== '#') ? bItem.social_media_url : '',
-          image: bItem.image || '../../assets/images/gallery/real_space_1.jpg',
-          is_active: Boolean(bItem.is_active),
-          status: displayStatus,
-          status_label: displayStatus === 'Aprobada' ? (bItem.is_active ? 'Activa' : 'Inactiva') : displayStatus,
-          section: isPublished ? 'published' : 'request',
-          created_at: bItem.created_at || new Date().toISOString(),
-          formatted_date: matchLocal?.formatted_date || formatSimpleDate(bItem.created_at)
-        };
-      });
-    }
   } catch (err) {
     console.warn('[TuEstante Gallery API] Backend /gallery/ no disponible, usando contingencia visual:', err);
+  }
+
+  if (backendItems !== null) {
+    const localItems = getLocalGalleryItems();
+    return backendItems.map(bItem => {
+      const matchLocal = localItems.find(l => l.id === bItem.id);
+      
+      let displayStatus = 'Aprobada';
+      if (bItem.status === 'pending' || bItem.status === 'pendiente') {
+        displayStatus = 'Pendiente';
+      } else if (bItem.status === 'rejected' || bItem.status === 'rechazado' || bItem.status === 'rechazada') {
+        displayStatus = 'Rechazada';
+      } else if (bItem.status === 'approved' || bItem.status === 'aprobado' || bItem.status === 'aprobada') {
+        displayStatus = 'Aprobada';
+      } else if (matchLocal?.status) {
+        displayStatus = matchLocal.status;
+      }
+
+      const hasUserDetail = Boolean(bItem.user_detail);
+      const userFullName = hasUserDetail
+        ? (bItem.user_detail.full_name || bItem.user_detail.username || '')
+        : (matchLocal?.client_name || '');
+      const userDoc = (matchLocal?.identity_document || '');
+      const isPublished = (displayStatus === 'Aprobada' && bItem.is_active);
+
+      return {
+        id: bItem.id,
+        user_id: bItem.user || null,
+        title: bItem.caption ? bItem.caption.split('.')[0].slice(0, 35) : `Imagen #${bItem.id}`,
+        caption: bItem.caption || '',
+        client_name: userFullName,
+        identity_document: userDoc,
+        social_network: bItem.social_network || 'Instagram',
+        social_media_handle: bItem.social_media_handle || '',
+        social_media_url: (bItem.social_media_url && bItem.social_media_url !== '#') ? bItem.social_media_url : '',
+        image: resolveImageUrl(bItem.image, '../../assets/images/gallery/real_space_1.jpg'),
+        is_active: Boolean(bItem.is_active),
+        status: displayStatus,
+        status_label: displayStatus === 'Aprobada' ? (bItem.is_active ? 'Activa' : 'Inactiva') : displayStatus,
+        section: isPublished ? 'published' : 'request',
+        created_at: bItem.created_at || new Date().toISOString(),
+        formatted_date: matchLocal?.formatted_date || formatSimpleDate(bItem.created_at)
+      };
+    });
   }
 
   return getLocalGalleryItems();
@@ -293,14 +293,44 @@ export async function createGalleryItem(data) {
   let created = null;
 
   try {
-    // Intentar registrar en backend Django
     created = await postRequest('/gallery/', data, { auth: true });
   } catch (err) {
-    console.warn('[TuEstante Gallery API] Guardando localmente debido a respuesta del servidor:', err);
+    console.warn('[TuEstante Gallery API] Error en postRequest /gallery/:', err);
+  }
+
+  if (created && created.id) {
+    let displayStatus = 'Aprobada';
+    if (created.status === 'pending' || created.status === 'pendiente') {
+      displayStatus = 'Pendiente';
+    } else if (created.status === 'rejected' || created.status === 'rechazada') {
+      displayStatus = 'Rechazada';
+    }
+    const hasUserDetail = Boolean(created.user_detail);
+    const userFullName = hasUserDetail ? (created.user_detail.full_name || created.user_detail.username || '') : '';
+    const isPublished = (displayStatus === 'Aprobada' && created.is_active);
+
+    return {
+      id: created.id,
+      user_id: created.user || null,
+      title: created.caption ? created.caption.split('.')[0].slice(0, 35) : `Imagen #${created.id}`,
+      caption: created.caption || '',
+      client_name: userFullName,
+      identity_document: '',
+      social_network: created.social_network || 'Instagram',
+      social_media_handle: created.social_media_handle || '',
+      social_media_url: (created.social_media_url && created.social_media_url !== '#') ? created.social_media_url : '',
+      image: resolveImageUrl(created.image, '../../assets/images/gallery/real_space_1.jpg'),
+      is_active: Boolean(created.is_active),
+      status: displayStatus,
+      status_label: displayStatus === 'Aprobada' ? (created.is_active ? 'Activa' : 'Inactiva') : displayStatus,
+      section: isPublished ? 'published' : 'request',
+      created_at: created.created_at || new Date().toISOString(),
+      formatted_date: formatSimpleDate(created.created_at)
+    };
   }
 
   const items = getLocalGalleryItems();
-  const nextId = created?.id || (items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1);
+  const nextId = items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
 
   // Extraer valores si es FormData o un objeto plano
   let caption = '';
@@ -344,7 +374,7 @@ export async function createGalleryItem(data) {
     social_network,
     social_media_handle,
     social_media_url,
-    image: created?.image || imageUrl,
+    image: imageUrl,
     is_active: true,
     status: 'Aprobada',
     status_label: 'Activa',
@@ -365,10 +395,42 @@ export async function createGalleryItem(data) {
  * @param {FormData|Object} data 
  */
 export async function updateGalleryItem(id, data) {
+  let updatedBackend = null;
   try {
-    await patchRequest(`/gallery/${id}/`, data, { auth: true });
+    updatedBackend = await patchRequest(`/gallery/${id}/`, data, { auth: true });
   } catch (err) {
-    console.warn(`[TuEstante Gallery API] Actualización en backend omitida o en fallback para #${id}`);
+    console.warn(`[TuEstante Gallery API] Error en patchRequest /gallery/${id}/:`, err);
+  }
+
+  if (updatedBackend && updatedBackend.id) {
+    let displayStatus = 'Aprobada';
+    if (updatedBackend.status === 'pending' || updatedBackend.status === 'pendiente') {
+      displayStatus = 'Pendiente';
+    } else if (updatedBackend.status === 'rejected' || updatedBackend.status === 'rechazada') {
+      displayStatus = 'Rechazada';
+    }
+    const hasUserDetail = Boolean(updatedBackend.user_detail);
+    const userFullName = hasUserDetail ? (updatedBackend.user_detail.full_name || updatedBackend.user_detail.username || '') : '';
+    const isPublished = (displayStatus === 'Aprobada' && updatedBackend.is_active);
+
+    return {
+      id: updatedBackend.id,
+      user_id: updatedBackend.user || null,
+      title: updatedBackend.caption ? updatedBackend.caption.split('.')[0].slice(0, 35) : `Imagen #${updatedBackend.id}`,
+      caption: updatedBackend.caption || '',
+      client_name: userFullName,
+      identity_document: '',
+      social_network: updatedBackend.social_network || 'Instagram',
+      social_media_handle: updatedBackend.social_media_handle || '',
+      social_media_url: (updatedBackend.social_media_url && updatedBackend.social_media_url !== '#') ? updatedBackend.social_media_url : '',
+      image: resolveImageUrl(updatedBackend.image, '../../assets/images/gallery/real_space_1.jpg'),
+      is_active: Boolean(updatedBackend.is_active),
+      status: displayStatus,
+      status_label: displayStatus === 'Aprobada' ? (updatedBackend.is_active ? 'Activa' : 'Inactiva') : displayStatus,
+      section: isPublished ? 'published' : 'request',
+      created_at: updatedBackend.created_at || new Date().toISOString(),
+      formatted_date: formatSimpleDate(updatedBackend.created_at)
+    };
   }
 
   const items = getLocalGalleryItems();
@@ -453,7 +515,7 @@ export async function approveGalleryItem(id) {
   }
 
   return await updateGalleryItem(id, {
-    status: 'Aprobada',
+    status: 'approved',
     is_active: true
   });
 }
@@ -473,7 +535,7 @@ export async function rejectGalleryItem(id) {
   }
 
   return await updateGalleryItem(id, {
-    status: 'Rechazada',
+    status: 'rejected',
     is_active: false
   });
 }

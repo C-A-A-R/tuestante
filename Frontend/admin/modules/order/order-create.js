@@ -1513,7 +1513,7 @@ async function handleCreateOrderSubmit(e) {
   const totalPriceBs = totalPriceUsd * createState.exchangeRate;
   showConfirmationModal({
     title: '¿Confirmar y Registrar Pedido?',
-    message: `Se creará el pedido para "${createState.selectedClient.name}" con entrega en ${shippingCity}, Edo. ${shippingState} por un total de ${formatUsd(totalPriceUsd)} (${formatBs(totalPriceBs)}).`,
+    message: `Se creará el pedido para "${createState.selectedClient.full_name}" con entrega en ${shippingCity}, Edo. ${shippingState} por un total de ${formatUsd(totalPriceUsd)} (${formatBs(totalPriceBs)}).`,
     onConfirm: async () => {
       const btnAccept = document.getElementById('btn-confirm-accept');
       if (btnAccept) {

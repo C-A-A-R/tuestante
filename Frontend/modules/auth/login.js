@@ -275,7 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	// Inicializar autenticación con Google
 	initGoogleAuth({
 		btnContainerId: "googleBtn",
-		customBtnId: "customGoogleBtn",
+		customBtnId: "customGoogleBtnVisual",
 		onError: (msg) => showAuthErrorNotification(msg),
 	});
 });

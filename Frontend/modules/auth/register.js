@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Inicializar Google Sign-In / Registro
     initGoogleAuth({
         btnContainerId: "googleBtn",
-        customBtnId: "customGoogleBtn",
+        customBtnId: "customGoogleBtnVisual",
         onError: (msg) => showErrorNotification(msg),
     });
 });

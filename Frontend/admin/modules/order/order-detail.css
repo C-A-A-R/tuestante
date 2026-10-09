@@ -67,7 +67,7 @@ html, body {
 
 .app-main-content {
   flex: 1;
-  padding: 0;
+  padding: 20px;
 }
 
 .order-detail-container {

@@ -6,7 +6,7 @@
  * con contingencia enriquecida conforme a los bocetos aprobados.
  */
 
-import { getRequest, postRequest, patchRequest, deleteRequest } from '../../js/api.js';
+import { getRequest, postRequest, patchRequest, deleteRequest, resolveImageUrl } from '../../js/api.js';
 
 // Clave para almacenamiento local de proyectos
 const STORAGE_KEY_PROJECTS = 'tu_admin_projects_items';
@@ -125,7 +125,7 @@ function saveLocalProjects(items) {
  * Obtiene el listado de proyectos desde el backend o almacén local.
  */
 export async function getProjects() {
-  let backendItems = [];
+  let backendItems = null;
   try {
     const data = await getRequest('/projects/', {}, { auth: true });
     if (Array.isArray(data)) {
@@ -134,24 +134,27 @@ export async function getProjects() {
       backendItems = data.results;
     }
   } catch (err) {
-    console.warn('[TuEstante Project API] Backend /projects/ no disponible, usando contingencia visual');
+    console.warn('[TuEstante Project API] Backend /projects/ no disponible, usando contingencia visual:', err);
   }
 
   const localItems = getLocalProjects();
 
-  if (backendItems.length > 0) {
+  if (backendItems !== null) {
     const merged = backendItems.map(bItem => {
       const matchLocal = localItems.find(l => l.id === bItem.id);
       const isActive = bItem.is_active !== undefined ? Boolean(bItem.is_active) : (matchLocal ? matchLocal.is_active : true);
+      const resolvedDoc = resolveImageUrl(bItem.project_document || matchLocal?.project_document || '');
+      const resolvedImg = resolveImageUrl(bItem.project_images || matchLocal?.project_images || '', '../../assets/images/gallery/real_space_1.jpg');
+
       return {
         id: bItem.id,
         project_name: bItem.project_name || `Proyecto #${bItem.id}`,
         description: bItem.description || '',
-        project_document: bItem.project_document || matchLocal?.project_document || '../../assets/docs/sample_project.pdf',
-        doc_name: matchLocal?.doc_name || (bItem.project_document ? bItem.project_document.split('/').pop() : 'Proyecto_Documento.pdf'),
+        project_document: resolvedDoc,
+        doc_name: bItem.project_document ? bItem.project_document.split('/').pop() : (matchLocal?.doc_name || 'Proyecto_Documento.pdf'),
         doc_size: matchLocal?.doc_size || '2.0 MB',
-        project_images: bItem.project_images || matchLocal?.project_images || '../../assets/images/gallery/real_space_1.jpg',
-        image_name: matchLocal?.image_name || 'proyecto.jpg',
+        project_images: resolvedImg,
+        image_name: bItem.project_images ? bItem.project_images.split('/').pop() : (matchLocal?.image_name || 'proyecto.jpg'),
         image_size: matchLocal?.image_size || '1.5 MB',
         is_active: isActive,
         status: isActive ? 'Activo' : 'Inactivo',
@@ -176,11 +179,33 @@ export async function createProject(data) {
   try {
     created = await postRequest('/projects/', data, { auth: true });
   } catch (err) {
-    console.warn('[TuEstante Project API] Guardando localmente debido a respuesta del servidor:', err);
+    console.warn('[TuEstante Project API] Error en postRequest /projects/:', err);
+  }
+
+  if (created && created.id) {
+    const isActive = created.is_active !== undefined ? Boolean(created.is_active) : true;
+    const resolvedDoc = resolveImageUrl(created.project_document || '');
+    const resolvedImg = resolveImageUrl(created.project_images || '', '../../assets/images/gallery/real_space_1.jpg');
+    const newProj = {
+      id: created.id,
+      project_name: created.project_name || `Proyecto #${created.id}`,
+      description: created.description || '',
+      project_document: resolvedDoc,
+      doc_name: created.project_document ? created.project_document.split('/').pop() : 'Proyecto_Documento.pdf',
+      doc_size: '2.0 MB',
+      project_images: resolvedImg,
+      image_name: created.project_images ? created.project_images.split('/').pop() : 'proyecto.jpg',
+      image_size: '1.5 MB',
+      is_active: isActive,
+      status: isActive ? 'Activo' : 'Inactivo',
+      created_at: created.created_at || new Date().toISOString(),
+      formatted_date: formatSimpleDate(created.created_at)
+    };
+    return newProj;
   }
 
   const items = getLocalProjects();
-  const nextId = created?.id || (items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1);
+  const nextId = items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
 
   let projectName = '';
   let description = '';
@@ -224,10 +249,10 @@ export async function createProject(data) {
     id: nextId,
     project_name: projectName || `Proyecto #${nextId}`,
     description: description || 'Sin descripción',
-    project_document: created?.project_document || docUrl,
+    project_document: docUrl,
     doc_name: docName,
     doc_size: docSize,
-    project_images: created?.project_images || imageUrl,
+    project_images: imageUrl,
     image_name: imageName,
     image_size: imageSize,
     is_active: true,
@@ -247,10 +272,32 @@ export async function createProject(data) {
  * @param {FormData|Object} data 
  */
 export async function updateProject(id, data) {
+  let backendItem = null;
   try {
-    await patchRequest(`/projects/${id}/`, data, { auth: true });
+    backendItem = await patchRequest(`/projects/${id}/`, data, { auth: true });
   } catch (err) {
-    console.warn(`[TuEstante Project API] Actualización en backend omitida o en fallback para #${id}`);
+    console.warn(`[TuEstante Project API] Error en patchRequest /projects/${id}/:`, err);
+  }
+
+  if (backendItem && backendItem.id) {
+    const isActive = backendItem.is_active !== undefined ? Boolean(backendItem.is_active) : true;
+    const resolvedDoc = resolveImageUrl(backendItem.project_document || '');
+    const resolvedImg = resolveImageUrl(backendItem.project_images || '', '../../assets/images/gallery/real_space_1.jpg');
+    return {
+      id: backendItem.id,
+      project_name: backendItem.project_name || `Proyecto #${backendItem.id}`,
+      description: backendItem.description || '',
+      project_document: resolvedDoc,
+      doc_name: backendItem.project_document ? backendItem.project_document.split('/').pop() : 'Proyecto_Documento.pdf',
+      doc_size: '2.0 MB',
+      project_images: resolvedImg,
+      image_name: backendItem.project_images ? backendItem.project_images.split('/').pop() : 'proyecto.jpg',
+      image_size: '1.5 MB',
+      is_active: isActive,
+      status: isActive ? 'Activo' : 'Inactivo',
+      created_at: backendItem.created_at || new Date().toISOString(),
+      formatted_date: formatSimpleDate(backendItem.created_at)
+    };
   }
 
   const items = getLocalProjects();

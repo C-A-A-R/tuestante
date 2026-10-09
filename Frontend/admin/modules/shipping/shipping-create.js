@@ -6,9 +6,7 @@
  * ==========================================================================
  */
 
-import { initDrawer } from '../../components/drawer/drawer.js';
-import { initNavbar } from '../../components/navbar/navbar.js';
-import { initFooter } from '../../components/footer/footer.js';
+import { loadAdminComponents } from '../../components/navbar/navbar.js';
 import { showSuccessToast, showErrorToast, showInfoToast } from '../../components/toast/toast.js';
 import { 
   getOrdersForShipmentSelect, 
@@ -24,12 +22,9 @@ let availableDistributors = [];
 let selectedDistributor = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1. Cargar componentes visuales estructurales
-  await Promise.all([
-    initDrawer('shipping'),
-    initNavbar(),
-    initFooter()
-  ]);
+  // 1. Cargar componentes visuales estructurales (Drawer, Navbar, Footer)
+  await loadAdminComponents({ title: 'Registrar Envío' });
+  highlightDrawerLink();
 
   // 2. Inicializar selects y catálogos
   initGeoSelects();
@@ -40,6 +35,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 4. Vincular listeners de eventos
   setupEventListeners();
 });
+
+/**
+ * Resalta la pestaña de Envíos en el Drawer lateral
+ */
+function highlightDrawerLink() {
+  setTimeout(() => {
+    document.querySelectorAll('.drawer-link').forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('data-nav-id') === 'envios') {
+        link.classList.add('active');
+      }
+    });
+  }, 200);
+}
 
 /**
  * Llena el select de Estados a partir del catálogo geográfico

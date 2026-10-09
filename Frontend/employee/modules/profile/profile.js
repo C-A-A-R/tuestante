@@ -8,7 +8,7 @@ import { initNavbar } from '../../components/navbar/navbar.js';
 import { initFooter } from '../../components/footer/footer.js';
 import { showAlertModal } from '../../components/dialog/dialog.js';
 import { obtenerEstadoDeCuenta } from './profile.api.js';
-import { resolveImageUrl } from '../../../cliente/js/api.js';
+import { resolveImageUrl } from '../../../js/api.js';
 
 async function loadComponent(placeholderId, filePath) {
   try {

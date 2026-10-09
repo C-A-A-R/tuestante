@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="icon" type="image/jpeg" href="../../../cliente/assets/images/logo.jpeg" />
+  <link rel="icon" type="image/jpeg" href="../../../assets/images/logo.jpeg" />
 
   <!-- Estilos Globales y de Componentes -->
   <link rel="stylesheet" href="../../variables.css?v=2.1" />
@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="../../components/navbar/navbar.css?v=2.1" />
   <link rel="stylesheet" href="../../components/footer/footer.css?v=2.1" />
   <link rel="stylesheet" href="../../components/dialog/dialog.css?v=2.2" />
-  <link rel="stylesheet" href="cart.css?v=2.2" />
+  <link rel="stylesheet" href="cart.css?v=2.3" />
 </head>
 <body>
 
@@ -50,11 +50,11 @@
           <table class="cart-table">
             <thead>
               <tr>
-                <th scope="col">Artículo</th>
-                <th scope="col">Precio Unitario</th>
-                <th scope="col">Cantidad</th>
-                <th scope="col">Subtotal</th>
-                <th scope="col"><span class="sr-only">Acciones</span></th>
+                <th scope="col" class="th-product" style="width: 44%;">Artículo</th>
+                <th scope="col" class="th-price" style="width: 16%;">Precio Unitario</th>
+                <th scope="col" class="th-qty" style="width: 18%;">Cantidad</th>
+                <th scope="col" class="th-subtotal" style="width: 16%;">Subtotal</th>
+                <th scope="col" class="th-actions" style="width: 6%; text-align: right;"><span class="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody id="cart-items-tbody">
@@ -100,7 +100,7 @@
           </div>
 
           <!-- Tarjeta Informativa de Descuento de Nómina -->
-          <div class="payroll-notice-card">
+          <div class="payroll-notice-card" id="cart-payroll-notice">
             <div class="notice-icon">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -111,6 +111,27 @@
             <div class="notice-content">
               <strong>Aviso de Crédito Interno</strong>
               <p>Este monto será descontado directamente en su próximo corte de nómina.</p>
+            </div>
+          </div>
+
+          <!-- Alerta Preventiva de Deuda Pendiente de Cortes Anteriores -->
+          <div class="debt-warning-card" id="cart-debt-warning" style="display: none;" role="alert" aria-live="polite">
+            <div class="debt-warning-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <div class="debt-warning-content">
+              <strong id="cart-debt-warning-title">Deuda Pendiente de Semanas Anteriores</strong>
+              <p id="cart-debt-warning-text">
+                El trabajador tiene una deuda pendiente de semanas anteriores correspondiente a un corte previo. Debe liquidar su saldo anterior antes de realizar nuevas compras.
+              </p>
+              <a href="../profile/profile.html" class="debt-warning-link">
+                <span>Ver Mi Estado de Cuenta</span>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </a>
             </div>
           </div>
 

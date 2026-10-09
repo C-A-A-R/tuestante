@@ -11,6 +11,9 @@ import {
   getProductionOrder, 
   updateProductionOrderStatus, 
   advanceProductionOrderStage,
+  updateProductionProductStatus,
+  bulkUpdateProductionProductsStatus,
+  advanceProductionProductStage,
   getProductionBlueprint,
   getStageConfig,
   getProductImageUrl,
@@ -20,7 +23,8 @@ import {
 // Estado local de la pantalla
 const state = {
   orderId: null,
-  order: null
+  order: null,
+  selectedProductIds: new Set()
 };
 
 // ==========================================================================
@@ -121,8 +125,8 @@ function renderAllOrderDetails(order) {
   // 2. Stepper / Pipeline de Fases
   renderPipelineStepper(order.status);
 
-  // 3. Lista de Productos
-  renderProductsList(order.items || []);
+  // 3. Lista de Productos Físicos con Estado Independiente
+  renderProductsList(order.products && order.products.length > 0 ? order.products : (order.items || []));
 
   // 4. Metadatos de Entrega
   const metaOrderLink = document.getElementById('meta-linked-order-link');
@@ -161,6 +165,25 @@ function renderAllOrderDetails(order) {
 }
 
 /**
+ * Formato compacto para fechas y horas en chips de estado
+ */
+function formatDateShort(dateStr) {
+  if (!dateStr) return 'Pendiente';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Pendiente';
+    return d.toLocaleDateString('es-ES', { 
+      day: '2-digit', 
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (e) {
+    return 'Pendiente';
+  }
+}
+
+/**
  * Renderiza el pipeline visual con las 5 fases oficiales
  */
 function renderPipelineStepper(currentStatus) {
@@ -190,7 +213,7 @@ function renderPipelineStepper(currentStatus) {
 }
 
 /**
- * Renderiza las tarjetas de productos sin SKU ni especificaciones inferiores
+ * Renderiza las tarjetas de productos con número de producto, estado independiente y cronología de fases
  */
 function renderProductsList(items) {
   const listEl = document.getElementById('detail-products-list');
@@ -202,27 +225,166 @@ function renderProductsList(items) {
   }
 
   if (items.length === 0) {
-    listEl.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">No hay productos registrados en esta orden.</p>`;
+    listEl.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">No hay productos registrados en esta orden.</p>`;
     return;
   }
 
-  listEl.innerHTML = items.map(p => `
-    <div class="product-detail-card">
-      <img 
-        src="${escapeHtml(getProductImageUrl(p.image))}" 
-        alt="${escapeHtml(p.product_name)}" 
-        class="product-thumb-large"
-        onerror="this.src='../../assets/images/logo.jpeg'">
-      <div class="product-detail-info" style="justify-content: center;">
-        <div class="product-detail-top">
-          <h4 class="product-name-large">${escapeHtml(p.product_name)}</h4>
-          <span class="qty-pill" style="font-size: 0.85rem; padding: 4px 10px;">
-            ${p.quantity} ${p.quantity === 1 ? 'producto' : 'productos'}
-          </span>
+  listEl.innerHTML = items.map((p, idx) => {
+    const prodId = p.id;
+    const prodStatus = p.status || state.order.status;
+    const stage = getStageConfig(prodStatus);
+    const prodNumber = p.product_number || `PRD-${state.order?.order_number || state.order?.id}-${p.unit_index || (idx + 1)}`;
+    const isChecked = state.selectedProductIds.has(prodId);
+
+    const dates = p.stage_dates || {};
+    const dQueued = p.queued_at || dates.queued;
+    const dAssembling = p.assembling_at || dates.assembling;
+    const dPainting = p.painting_at || dates.painting;
+    const dQuality = p.quality_check_at || dates.quality_check;
+    const dCompleted = p.completed_at || dates.completed;
+
+    return `
+      <div class="product-detail-card" data-product-id="${prodId}">
+        <div class="product-select-wrapper">
+          <input type="checkbox" class="product-select-check" data-id="${prodId}" ${isChecked ? 'checked' : ''} title="Seleccionar para acción por lote">
+        </div>
+        <img 
+          src="${escapeHtml(getProductImageUrl(p.image))}" 
+          alt="${escapeHtml(p.product_name)}" 
+          class="product-thumb-large"
+          onerror="this.src='../../assets/images/logo.jpeg'">
+        <div class="product-detail-info">
+          <div class="product-detail-top">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="product-number-badge">🏷️ ${escapeHtml(prodNumber)}</span>
+              <h4 class="product-name-large">${escapeHtml(p.product_name)}</h4>
+              <span class="qty-pill" style="font-size: 0.78rem; padding: 2px 8px;">
+                Unidad ${p.unit_index || (idx + 1)}
+              </span>
+            </div>
+            <span class="status-stage-badge ${stage.badgeClass}">
+              ${stage.label}
+            </span>
+          </div>
+
+          <!-- Trazabilidad cronológica de fechas de cada estado de fabricación -->
+          <div class="product-stage-timeline">
+            <div class="timeline-chip ${dQueued ? 'is-active' : ''}" title="Fecha en que ingresó a Cola de Espera">
+              <span class="timeline-chip-label">1. Cola:</span>
+              <span class="timeline-chip-date">${formatDateShort(dQueued)}</span>
+            </div>
+            <div class="timeline-chip ${dAssembling ? 'is-active' : ''}" title="Fecha en que pasó a Corte y Ensamblaje">
+              <span class="timeline-chip-label">2. Corte/Ensamble:</span>
+              <span class="timeline-chip-date">${formatDateShort(dAssembling)}</span>
+            </div>
+            <div class="timeline-chip ${dPainting ? 'is-active' : ''}" title="Fecha en que pasó a Pintura y Acabado">
+              <span class="timeline-chip-label">3. Pintura:</span>
+              <span class="timeline-chip-date">${formatDateShort(dPainting)}</span>
+            </div>
+            <div class="timeline-chip ${dQuality ? 'is-active' : ''}" title="Fecha en que pasó a Control de Calidad">
+              <span class="timeline-chip-label">4. Calidad:</span>
+              <span class="timeline-chip-date">${formatDateShort(dQuality)}</span>
+            </div>
+            <div class="timeline-chip ${dCompleted ? 'is-active' : ''}" title="Fecha en que se completó su fabricación">
+              <span class="timeline-chip-label">5. Fin:</span>
+              <span class="timeline-chip-date">${formatDateShort(dCompleted)}</span>
+            </div>
+          </div>
+
+          <!-- Controles de acción por producto individual -->
+          <div class="product-card-footer">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">
+              ${p.notes ? `📝 ${escapeHtml(p.notes)}` : 'Sin notas técnicas específicas'}
+            </span>
+            <div class="product-card-actions">
+              <select class="select-product-stage" data-id="${prodId}" title="Cambiar fase de este producto">
+                <option value="queued" ${prodStatus === 'queued' ? 'selected' : ''}>En cola de espera</option>
+                <option value="assembling" ${prodStatus === 'assembling' ? 'selected' : ''}>En corte y ensamblaje</option>
+                <option value="painting" ${prodStatus === 'painting' ? 'selected' : ''}>En pintura y acabado</option>
+                <option value="quality_check" ${prodStatus === 'quality_check' ? 'selected' : ''}>En control de calidad</option>
+                <option value="completed" ${prodStatus === 'completed' ? 'selected' : ''}>Fabricación completada</option>
+              </select>
+              <button type="button" class="btn btn-sm btn-outline btn-advance-product" data-id="${prodId}" ${prodStatus === 'completed' ? 'disabled' : ''} style="height: 32px; padding: 4px 10px; font-size: 0.78rem;">
+                Avanzar
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
+
+  bindProductListEvents();
+}
+
+/**
+ * Vincula los eventos para cada producto individual y selección por lote
+ */
+function bindProductListEvents() {
+  // 1. Checkboxes individuales
+  document.querySelectorAll('.product-select-check').forEach(chk => {
+    chk.addEventListener('change', (e) => {
+      const id = parseInt(e.target.getAttribute('data-id'), 10);
+      if (e.target.checked) {
+        state.selectedProductIds.add(id);
+      } else {
+        state.selectedProductIds.delete(id);
+      }
+      updateBatchBarState();
+    });
+  });
+
+  // 2. Select de cambio de estado individual
+  document.querySelectorAll('.select-product-stage').forEach(sel => {
+    sel.addEventListener('change', async (e) => {
+      const prodId = parseInt(e.target.getAttribute('data-id'), 10);
+      const newStatus = e.target.value;
+      try {
+        await updateProductionProductStatus(prodId, newStatus);
+        showToast('success', 'Producto Actualizado', 'La fase del producto ha sido actualizada.');
+        await loadOrderDetail();
+      } catch (err) {
+        showToast('error', 'Error al actualizar producto', err.message);
+      }
+    });
+  });
+
+  // 3. Botón de avance individual
+  document.querySelectorAll('.btn-advance-product').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const prodId = parseInt(btn.getAttribute('data-id'), 10);
+      try {
+        await advanceProductionProductStage(prodId);
+        showToast('success', 'Fase Avanzada', 'El producto avanzó a su siguiente fase.');
+        await loadOrderDetail();
+      } catch (err) {
+        showToast('error', 'No se pudo avanzar producto', err.message);
+      }
+    });
+  });
+
+  updateBatchBarState();
+}
+
+/**
+ * Actualiza el contador y visibilidad de la barra flotante de lote
+ */
+function updateBatchBarState() {
+  const batchBar = document.getElementById('batch-product-actions-bar');
+  const countBadge = document.getElementById('batch-selected-count');
+  const selectAllBtn = document.getElementById('btn-select-all-products');
+
+  const count = state.selectedProductIds.size;
+  if (countBadge) countBadge.textContent = count;
+
+  if (batchBar) {
+    batchBar.style.display = count > 0 ? 'flex' : 'none';
+  }
+
+  if (selectAllBtn) {
+    const total = (state.order?.products || state.order?.items || []).length;
+    selectAllBtn.textContent = (count > 0 && count === total) ? 'Deseleccionar Todos' : 'Seleccionar Todos';
+  }
 }
 
 // ==========================================================================
@@ -240,7 +402,65 @@ function setupDetailEvents() {
     });
   }
 
-  // Botón Avanzar a Siguiente Fase
+  // Botón Seleccionar / Deseleccionar Todos
+  const btnSelectAll = document.getElementById('btn-select-all-products');
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener('click', () => {
+      const prods = (state.order?.products || state.order?.items || []);
+      if (state.selectedProductIds.size === prods.length) {
+        state.selectedProductIds.clear();
+      } else {
+        prods.forEach(p => state.selectedProductIds.add(p.id));
+      }
+      renderProductsList(prods);
+    });
+  }
+
+  // Botón Cancelar Selección por Lote
+  const btnCancelBatch = document.getElementById('btn-cancel-batch-selection');
+  if (btnCancelBatch) {
+    btnCancelBatch.addEventListener('click', () => {
+      state.selectedProductIds.clear();
+      const prods = (state.order?.products || state.order?.items || []);
+      renderProductsList(prods);
+    });
+  }
+
+  // Botón Aplicar Fase a Lote de Productos
+  const btnApplyBatch = document.getElementById('btn-apply-batch-stage');
+  if (btnApplyBatch) {
+    btnApplyBatch.addEventListener('click', async () => {
+      const selectStage = document.getElementById('batch-select-stage');
+      const targetStatus = selectStage?.value;
+
+      if (!targetStatus) {
+        showToast('warning', 'Seleccione una fase', 'Debe elegir la fase a aplicar al lote seleccionado.');
+        return;
+      }
+
+      if (state.selectedProductIds.size === 0) {
+        showToast('warning', 'Sin productos seleccionados', 'Seleccione al menos un producto.');
+        return;
+      }
+
+      try {
+        const productIdsArray = Array.from(state.selectedProductIds);
+        await bulkUpdateProductionProductsStatus({
+          productIds: productIdsArray,
+          status: targetStatus,
+          notes: `Actualización por lote en taller a '${getStageConfig(targetStatus).label}'`
+        });
+
+        showToast('success', 'Lote Actualizado', `Se actualizaron ${productIdsArray.length} producto(s) a '${getStageConfig(targetStatus).label}'.`);
+        state.selectedProductIds.clear();
+        await loadOrderDetail();
+      } catch (err) {
+        showToast('error', 'Error en actualización por lote', err.message);
+      }
+    });
+  }
+
+  // Botón Avanzar a Siguiente Fase (Orden Madre)
   const btnQuickAdvance = document.getElementById('btn-quick-advance');
   if (btnQuickAdvance) {
     btnQuickAdvance.addEventListener('click', async () => {
@@ -255,7 +475,7 @@ function setupDetailEvents() {
     });
   }
 
-  // Formulario de Actualización de Fase
+  // Formulario de Actualización de Fase de Orden Madre
   const formStatus = document.getElementById('form-update-detail-status');
   if (formStatus) {
     formStatus.addEventListener('submit', async (e) => {
@@ -395,6 +615,7 @@ async function renderBlueprintCard(order) {
       if (svgToShow) {
         svgContainer.style.display = 'flex';
         svgContainer.innerHTML = svgToShow;
+        svgContainer.scrollTop = 0;
       } else {
         svgContainer.style.display = 'flex';
         svgContainer.innerHTML = `
@@ -404,6 +625,18 @@ async function renderBlueprintCard(order) {
           </div>
         `;
       }
+    }
+
+    const btnToggleFit = document.getElementById('btn-toggle-fit');
+    const btnToggleFitText = document.getElementById('btn-toggle-fit-text');
+    if (btnToggleFit) {
+      btnToggleFit.onclick = () => {
+        if (!svgContainer) return;
+        const isFit = svgContainer.classList.toggle('fit-to-view');
+        if (btnToggleFitText) {
+          btnToggleFitText.textContent = isFit ? 'Ver Tamaño Real' : 'Ajustar al Marco';
+        }
+      };
     }
 
     if (btnDownloadSvg) {

@@ -49,7 +49,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg, 16px);
@@ -61,6 +62,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .screen-main-title {
@@ -81,8 +83,22 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.screen-header-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.screen-header-actions .btn svg {
+  width: 17px;
+  height: 17px;
   flex-shrink: 0;
 }
+
 
 /* Layout Principal a Todo el Ancho (Sin Columna Lateral de Mockup) */
 .create-product-grid {
@@ -125,6 +141,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 /* Tarjetas de Sección de Formulario */
@@ -153,12 +170,16 @@
 
 .header-with-action {
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .header-left-flex {
   display: flex;
   align-items: center;
   gap: 14px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .section-icon-box {
@@ -1491,3 +1512,72 @@
   flex: 1;
 }
 
+/* Adaptabilidad de Cabecera en Pantallas Medianas */
+@media (max-width: 768px) {
+  .screen-header-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 14px;
+    gap: 14px;
+  }
+
+  .screen-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+/* Adaptabilidad móvil para botones de acción y footer */
+@media (max-width: 640px) {
+  .screen-header-card {
+    padding: 14px 12px;
+    gap: 12px;
+  }
+
+  .screen-header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .screen-header-actions .btn {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .header-with-action {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .header-with-action .btn {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .form-footer-flex {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .form-footer-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .form-footer-buttons .btn {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+}

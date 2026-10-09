@@ -535,16 +535,65 @@ export async function getProductionOrders(params = {}) {
 }
 
 /**
- * Consulta la lista aplanada de Productos individuales en fabricación (Vista 1)
+ * Consulta la lista de Productos individuales en fabricación (con su propio estado, número y fechas)
  */
 export async function getProductionProducts(params = {}) {
+  try {
+    const queryParams = {};
+    if (params.search) queryParams.search = params.search;
+    if (params.status && params.status !== 'all') queryParams.status = params.status;
+    if (params.production_order_id) queryParams.production_order_id = params.production_order_id;
+    if (params.order_id) queryParams.order_id = params.order_id;
+    if (params.date_from) queryParams.date_from = params.date_from;
+    if (params.date_to) queryParams.date_to = params.date_to;
+
+    const res = await getRequest('/production-products/', queryParams, { auth: true });
+    if (res && (Array.isArray(res) || Array.isArray(res.results))) {
+      const list = Array.isArray(res) ? res : res.results;
+      if (list.length > 0) {
+        return list.map(p => ({
+          id: p.id,
+          order_id: p.order_id,
+          order_number: p.order_number,
+          production_order_id: p.production_order,
+          production_code: `OF-${String(p.production_order).padStart(5, '0')}`,
+          client_name: p.client_name || 'Cliente registrado',
+          client_phone: p.client_phone || '',
+          product_id: p.product,
+          product_name: p.product_name || 'Producto',
+          product_number: p.product_number || `PRD-${p.id}`,
+          unit_index: p.unit_index || 1,
+          sku: `PROD-${p.product || p.id}`,
+          image: getProductImageUrl(p.product_image),
+          quantity: 1,
+          status: p.status,
+          status_display: p.status_display || getStageConfig(p.status).label,
+          queued_at: p.queued_at,
+          assembling_at: p.assembling_at,
+          painting_at: p.painting_at,
+          quality_check_at: p.quality_check_at,
+          completed_at: p.completed_at,
+          stage_dates: p.stage_dates || {},
+          stage_history: p.stage_history || [],
+          start_date: p.assembling_at || p.queued_at || p.created_at,
+          estimated_completion_date: null,
+          actual_completion_date: p.completed_at,
+          notes: p.notes || ''
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn('[TuEstante Production API] Error consultando /production-products/, usando fallback:', err);
+  }
+
+  // Fallback aplanando órdenes
   const orders = await getProductionOrders(params);
   const productsList = [];
 
   orders.forEach(order => {
     (order.items || []).forEach((item, idx) => {
       productsList.push({
-        id: `${order.id}-${idx}`,
+        id: item.id || `${order.id}-${idx}`,
         order_id: order.order_id,
         order_number: order.order_number,
         production_order_id: order.id,
@@ -554,22 +603,82 @@ export async function getProductionProducts(params = {}) {
         client_phone: order.client_phone,
         product_id: item.product_id,
         product_name: item.product_name,
+        product_number: item.product_number || `PRD-${order.order_number || order.id}-${idx + 1}`,
+        unit_index: item.unit_index || (idx + 1),
         sku: item.sku,
         image: getProductImageUrl(item.image),
         specs: item.specs || '',
         notes: item.notes || order.technical_notes || '',
         quantity: item.quantity,
-        status: order.status,
-        status_display: order.status_display,
+        status: item.status || order.status,
+        status_display: item.status_display || order.status_display,
+        stage_dates: item.stage_dates || {},
+        stage_history: item.stage_history || [],
         order_status: order.order_status,
-        start_date: order.start_date,
+        start_date: item.stage_dates?.assembling || order.start_date,
         estimated_completion_date: order.estimated_completion_date,
-        actual_completion_date: order.actual_completion_date
+        actual_completion_date: item.stage_dates?.completed || order.actual_completion_date
       });
     });
   });
 
   return productsList;
+}
+
+/**
+ * Actualiza el estado y observaciones de un producto físico individual
+ */
+export async function updateProductionProductStatus(productId, statusKey, notes = '') {
+  try {
+    const res = await postRequest(`/production-products/${productId}/update_status/`, {
+      status: statusKey,
+      notes: notes
+    }, { auth: true });
+    if (res && res.product) {
+      return res.product;
+    }
+  } catch (err) {
+    console.warn(`[TuEstante Production API] Error al actualizar estado de producto #${productId}:`, err);
+    throw err;
+  }
+}
+
+/**
+ * Actualiza el estado de múltiples productos en lote o simultáneamente
+ * @param {Object} options { productIds: [1, 2], status: "painting", notes: "...", items: [...] }
+ */
+export async function bulkUpdateProductionProductsStatus({ productIds, status, notes = '', items = null }) {
+  try {
+    const payload = {};
+    if (items && Array.isArray(items)) {
+      payload.items = items;
+    } else {
+      payload.product_ids = productIds;
+      payload.status = status;
+      if (notes) payload.notes = notes;
+    }
+
+    const res = await postRequest('/production-products/bulk_update_status/', payload, { auth: true });
+    return res;
+  } catch (err) {
+    console.warn('[TuEstante Production API] Error en actualización masiva de productos:', err);
+    throw err;
+  }
+}
+
+/**
+ * Avanza automáticamente el producto físico individual a su siguiente fase
+ */
+export async function advanceProductionProductStage(productId) {
+  try {
+    const res = await postRequest(`/production-products/${productId}/advance_stage/`, {}, { auth: true });
+    if (res && res.product) {
+      return res.product;
+    }
+  } catch (err) {
+    console.warn(`[TuEstante Production API] Error al avanzar producto #${productId}:`, err);
+    throw err;
+  }
 }
 
 /**
@@ -734,6 +843,33 @@ function normalizeBackendProductionOrder(backendObj) {
     };
   });
 
+  // Normalizar lista de productos individuales si viene del backend
+  const products = (backendObj.products || []).map(p => ({
+    id: p.id,
+    order_id: p.order_id || backendObj.order,
+    order_number: p.order_number || backendObj.order_number,
+    production_order_id: p.production_order || backendObj.id,
+    production_code: `OF-${String(backendObj.id).padStart(5, '0')}`,
+    client_name: p.client_name || backendObj.client_name,
+    client_phone: p.client_phone || backendObj.client_phone,
+    product_id: p.product,
+    product_name: p.product_name || 'Producto',
+    product_number: p.product_number || `PRD-${p.id}`,
+    unit_index: p.unit_index || 1,
+    image: getProductImageUrl(p.product_image),
+    status: p.status,
+    status_display: p.status_display || getStageConfig(p.status).label,
+    queued_at: p.queued_at,
+    assembling_at: p.assembling_at,
+    painting_at: p.painting_at,
+    quality_check_at: p.quality_check_at,
+    completed_at: p.completed_at,
+    stage_dates: p.stage_dates || {},
+    stage_history: p.stage_history || [],
+    notes: p.notes || '',
+    technical_design: p.technical_design || null,
+  }));
+
   return {
     id: backendObj.id,
     order_id: backendObj.order || null,
@@ -753,6 +889,7 @@ function normalizeBackendProductionOrder(backendObj) {
     technical_design: backendObj.technical_design || null,
     blueprint_svg: backendObj.blueprint_svg || null,
     created_at: backendObj.created_at,
+    products: products,
     items: items.length > 0 ? items : [
       {
         product_id: 1,

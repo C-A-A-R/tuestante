@@ -47,12 +47,38 @@ class GallerySerializer(serializers.ModelSerializer):
                 data['user'] = None
             if 'social_media_url' in data and data['social_media_url'] in ['#', '', 'null']:
                 data['social_media_url'] = None
+            if 'status' in data:
+                st = str(data['status']).strip().lower()
+                if st in ['aprobada', 'aprobado', 'approved', 'activa', 'activo']:
+                    data['status'] = Gallery.STATUS_APPROVED
+                elif st in ['pendiente', 'pending']:
+                    data['status'] = Gallery.STATUS_PENDING
+                elif st in ['rechazada', 'rechazado', 'rejected']:
+                    data['status'] = Gallery.STATUS_REJECTED
+            if 'is_active' in data:
+                val = str(data['is_active']).strip().lower()
+                data['is_active'] = val in ['true', '1', 'yes', 't', 'si']
+            if self.instance and 'image' in data and data['image'] in ['', 'null', 'undefined', None]:
+                data.pop('image', None)
         elif isinstance(data, dict):
             data = dict(data)
             if data.get('user') in ['', 'null', 'undefined', 'None', None]:
                 data['user'] = None
             if data.get('social_media_url') in ['#', '', 'null']:
                 data['social_media_url'] = None
+            if 'status' in data:
+                st = str(data['status']).strip().lower()
+                if st in ['aprobada', 'aprobado', 'approved', 'activa', 'activo']:
+                    data['status'] = Gallery.STATUS_APPROVED
+                elif st in ['pendiente', 'pending']:
+                    data['status'] = Gallery.STATUS_PENDING
+                elif st in ['rechazada', 'rechazado', 'rejected']:
+                    data['status'] = Gallery.STATUS_REJECTED
+            if 'is_active' in data:
+                val = str(data['is_active']).strip().lower()
+                data['is_active'] = val in ['true', '1', 'yes', 't', 'si']
+            if self.instance and data.get('image') in ['', 'null', 'undefined', None]:
+                data.pop('image', None)
         return super().to_internal_value(data)
 
     def validate_social_media_url(self, value):

@@ -177,6 +177,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 /* ==========================================================================
@@ -1171,10 +1172,13 @@ html, body {
   .screen-header-card {
     flex-direction: column;
     align-items: stretch;
+    padding: 18px 16px;
+    gap: 14px;
   }
 
-  .screen-header-actions {
-    justify-content: flex-end;
+  .form-section-card {
+    padding: 18px 16px;
+    gap: 16px;
   }
 
   .form-row {
@@ -1184,6 +1188,120 @@ html, body {
 
   .item-financials-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .screen-header-actions {
+    display: flex;
+    flex-direction: column-reverse;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .screen-header-actions .btn {
+    width: 100%;
+    height: 42px;
+    justify-content: center;
+  }
+
+  .form-section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .form-section-header .section-title-wrapper {
+    width: 100%;
+  }
+
+  .form-section-header #btn-quick-create-client,
+  .form-section-header .btn {
+    width: 100%;
+    justify-content: center;
+    height: 38px;
+  }
+
+  .selected-client-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .selected-client-card .btn-remove-client {
+    width: 100%;
+    justify-content: center;
+    height: 36px;
+  }
+
+  .add-item-footer .btn-add-product {
+    width: 100%;
+    height: 42px;
+    justify-content: center;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    height: 40px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-main-content {
+    padding: 12px 8px 24px;
+  }
+
+  .screen-header-card {
+    padding: 14px 12px;
+    border-radius: var(--radius-md);
+  }
+
+  .form-section-card {
+    padding: 14px 12px;
+    border-radius: var(--radius-md);
+  }
+
+  .screen-main-title {
+    font-size: 1.25rem;
+  }
+
+  .screen-main-desc {
+    font-size: 0.82rem;
+  }
+
+  .form-section-title {
+    font-size: 1rem;
+  }
+
+  .form-section-subtitle {
+    font-size: 0.76rem;
+  }
+
+  .section-icon-badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+  }
+
+  .section-icon-badge svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .btn-submit-full {
+    height: 44px;
+    font-size: 0.9rem;
+  }
+
+  .btn-cancel-full {
+    height: 40px;
   }
 }
 

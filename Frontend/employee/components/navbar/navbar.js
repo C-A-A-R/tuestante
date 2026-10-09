@@ -38,9 +38,57 @@ export function checkEmployeeAuth() {
   return true;
 }
 
+/**
+ * Inyecta o actualiza automáticamente el logotipo como icono de pestaña (Favicon)
+ * en el <head> del documento de forma absoluta e infalible para todas las pantallas.
+ */
+export function setAutoFavicon() {
+  try {
+    const logoUrl = new URL('../../../assets/images/logo.jpeg', import.meta.url).href;
+    const targetHead = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
+    if (!targetHead) return;
+
+    // 1. Favicon principal
+    let linkIcon = document.querySelector("link[rel='icon']");
+    if (!linkIcon) {
+      linkIcon = document.createElement('link');
+      linkIcon.rel = 'icon';
+      targetHead.appendChild(linkIcon);
+    }
+    linkIcon.type = 'image/jpeg';
+    linkIcon.href = logoUrl;
+
+    // 2. Apple Touch Icon (dispositivos iOS y accesos directos)
+    let linkApple = document.querySelector("link[rel='apple-touch-icon']");
+    if (!linkApple) {
+      linkApple = document.createElement('link');
+      linkApple.rel = 'apple-touch-icon';
+      targetHead.appendChild(linkApple);
+    }
+    linkApple.href = logoUrl;
+
+    // 3. Shortcut Icon (compatibilidad universal)
+    let linkShortcut = document.querySelector("link[rel='shortcut icon']");
+    if (!linkShortcut) {
+      linkShortcut = document.createElement('link');
+      linkShortcut.rel = 'shortcut icon';
+      targetHead.appendChild(linkShortcut);
+    }
+    linkShortcut.href = logoUrl;
+  } catch (err) {
+    console.warn('[TuEstante Navbar] Error al inyectar favicon de pestaña:', err);
+  }
+}
+
 // 🚀 EJECUCIÓN INMEDIATA AL IMPORTAR EL MÓDULO:
-// Toda pantalla que importe navbar.js queda automáticamente protegida.
+// 1. Toda pantalla que importe navbar.js queda automáticamente protegida.
 checkEmployeeAuth();
+
+// 2. Toda pantalla que importe navbar.js recibe automáticamente el icono de pestaña (Favicon).
+setAutoFavicon();
+if (typeof document !== 'undefined' && document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setAutoFavicon, { once: true });
+}
 
 let searchDebounceTimer = null;
 
@@ -60,6 +108,7 @@ export function getEmployeeRootPrefix() {
  * Previene cortes causados por inyecciones externas de servidores locales.
  */
 export function renderNavbar(placeholderId = 'navbar-placeholder') {
+  setAutoFavicon();
   const container = document.getElementById(placeholderId);
   if (!container) return;
   const prefix = getEmployeeRootPrefix();
@@ -315,6 +364,7 @@ export function renderNavbar(placeholderId = 'navbar-placeholder') {
  */
 export function initNavbar(placeholderId = 'navbar-placeholder') {
   if (!checkEmployeeAuth()) return;
+  setAutoFavicon();
 
   const placeholder = document.getElementById(placeholderId);
   const cartBtnCheck = document.getElementById('btn-cart-bubble');
@@ -1001,4 +1051,9 @@ function setupLogout() {
       window.location.replace(getLoginUrl());
     }
   });
+}
+
+// Exponer globalmente en window si existe el entorno
+if (typeof window !== 'undefined') {
+  window.setAutoFavicon = setAutoFavicon;
 }

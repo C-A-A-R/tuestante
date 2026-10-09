@@ -811,13 +811,14 @@ function openEditModal(item) {
   if (!modal) return;
 
   // Inicializar combobox de usuario en el formulario de edición
+  const selectedUser = state.clients.find(c => (item.user_id && c.id === item.user_id) || (item.client_name && c.name === item.client_name));
   initCombobox({
     wrapperId: 'edit-user-combobox',
     inputId: 'edit-user-search',
     dropdownId: 'edit-user-dropdown',
     hiddenId: 'edit-user-id',
     clients: state.clients,
-    selectedName: item.client_name || null
+    selectedName: selectedUser?.name || item.client_name || null
   });
 
   // Llenar campos
@@ -1507,7 +1508,10 @@ async function handleCreateSubmit() {
   const formData = new FormData();
   formData.append('image', state.createSelectedFile);
   formData.append('caption', caption);
-  // Solo incluir usuario si se seleccionó uno
+  // Incluir id de usuario si se seleccionó uno
+  if (selectedClient && selectedClient.id) {
+    formData.append('user', selectedClient.id);
+  }
   if (clientName) {
     formData.append('client_name', clientName);
     if (clientDoc) formData.append('identity_document', clientDoc);
@@ -1515,6 +1519,7 @@ async function handleCreateSubmit() {
   formData.append('social_network', socialNetwork);
   if (socialHandle) formData.append('social_media_handle', socialHandle);
   if (socialUrl) formData.append('social_media_url', socialUrl);
+  formData.append('status', 'approved');
   formData.append('is_active', 'true');
 
   try {
@@ -1553,7 +1558,10 @@ async function handleEditSubmit() {
     formData.append('image', state.editSelectedFile);
   }
   formData.append('caption', caption);
-  // Solo incluir usuario si se seleccionó uno
+  // Incluir id de usuario si se seleccionó uno
+  if (selectedClient && selectedClient.id) {
+    formData.append('user', selectedClient.id);
+  }
   if (clientName) {
     formData.append('client_name', clientName);
     if (clientDoc) formData.append('identity_document', clientDoc);
@@ -1561,7 +1569,12 @@ async function handleEditSubmit() {
   formData.append('social_network', socialNetwork);
   formData.append('social_media_handle', socialHandle);
   formData.append('social_media_url', socialUrl);
-  formData.append('status', moderationStatus);
+
+  let normStatus = 'approved';
+  if (moderationStatus === 'Pendiente') normStatus = 'pending';
+  else if (moderationStatus === 'Rechazada') normStatus = 'rejected';
+
+  formData.append('status', normStatus);
   formData.append('is_active', String(isActive));
 
   try {

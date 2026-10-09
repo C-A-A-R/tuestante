@@ -17,6 +17,7 @@ import {
   getCartUnitsCount
 } from './cart-service.js';
 import { obtenerMiPerfilEmpleado, crearOrdenInterna } from './cart.api.js';
+import { formatBackendErrorMessage } from '../../../js/api.js';
 
 /**
  * Carga un componente HTML dinámicamente e inserta su contenido en un placeholder.
@@ -33,18 +34,50 @@ async function loadComponent(placeholderId, filePath) {
 }
 
 let currentEmployeeProfile = null;
+let currentStatement = null;
 
 /**
- * Carga los datos del empleado activo
+ * Carga los datos del empleado activo y su estado de cuenta consolidado
  */
 async function loadEmployeeProfile() {
   try {
     const statement = await obtenerMiPerfilEmpleado();
     if (statement && statement.employee) {
       currentEmployeeProfile = statement.employee;
+      currentStatement = statement;
+      updateEmployeeDebtWarningUI(statement);
     }
   } catch (err) {
     console.warn('[Cart] No se pudo obtener el perfil del empleado:', err);
+  }
+}
+
+/**
+ * Sincroniza la alerta de deuda pendiente de semanas anteriores en la interfaz del carrito
+ * @param {Object} statement
+ */
+function updateEmployeeDebtWarningUI(statement) {
+  const debtCard = document.getElementById('cart-debt-warning');
+  const debtText = document.getElementById('cart-debt-warning-text');
+  const payrollNotice = document.getElementById('cart-payroll-notice');
+
+  if (!debtCard) return;
+
+  if (statement?.has_overdue_debt) {
+    const amount = parseFloat(statement.overdue_debt_amount || 0).toFixed(2);
+    const cutoffDate = statement.cutoff_date || 'corte previo';
+    if (debtText) {
+      debtText.textContent = `El colaborador tiene una deuda pendiente de semanas anteriores ($${amount}) correspondiente al corte del ${cutoffDate}. Debe liquidar su saldo anterior antes de realizar nuevas compras a crédito.`;
+    }
+    debtCard.style.display = 'flex';
+    if (payrollNotice) {
+      payrollNotice.style.display = 'none';
+    }
+  } else {
+    debtCard.style.display = 'none';
+    if (payrollNotice) {
+      payrollNotice.style.display = 'flex';
+    }
   }
 }
 
@@ -94,33 +127,39 @@ function renderCart() {
          </svg>`;
 
     return `
-      <tr data-product-id="${item.id}">
-        <td>
+      <tr data-product-id="${item.id}" class="cart-item-row">
+        <td class="cart-col-product">
           <div class="cart-product-cell">
             <div class="cart-product-thumb">
               ${thumbHtml}
             </div>
             <div class="cart-product-info">
               <h4>${item.name}</h4>
-              <span class="cart-product-barcode">CÓD: ${item.barcode || 'N/A'}</span>
+              <div class="cart-product-meta">
+                <span class="cart-product-barcode">CÓD: ${item.barcode || 'N/A'}</span>
+                <span class="cart-product-unit-price-mobile">$${unitPrice.toFixed(2)} c/u</span>
+              </div>
               ${weeklyLimitText ? `<span class="cart-product-quota">${weeklyLimitText}</span>` : ''}
             </div>
           </div>
         </td>
-        <td>
+        <td class="cart-col-price">
+          <span class="cart-mobile-label">Precio Unitario:</span>
           <strong>$${unitPrice.toFixed(2)}</strong>
         </td>
-        <td>
+        <td class="cart-col-qty">
+          <span class="cart-mobile-label">Cantidad:</span>
           <div class="quantity-control">
             <button type="button" class="btn-qty btn-decrease" data-id="${item.id}" aria-label="Disminuir cantidad">&minus;</button>
             <input type="text" class="qty-input" value="${item.quantity}" readonly aria-label="Cantidad de ${item.name}" />
             <button type="button" class="btn-qty btn-increase" data-id="${item.id}" aria-label="Aumentar cantidad">&plus;</button>
           </div>
         </td>
-        <td>
-          <strong class="text-primary">$${itemSubtotal}</strong>
+        <td class="cart-col-subtotal">
+          <span class="cart-mobile-label">Subtotal:</span>
+          <strong class="text-primary cart-subtotal-val">$${itemSubtotal}</strong>
         </td>
-        <td style="text-align: right;">
+        <td class="cart-col-actions">
           <button type="button" class="btn-remove-item" data-id="${item.id}" title="Eliminar artículo" aria-label="Eliminar ${item.name}">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3 6 5 6 21 6"></polyline>
@@ -215,6 +254,220 @@ function attachRowEvents() {
 }
 
 /**
+ * Extrae de forma exhaustiva y limpia el mensaje retornado por el backend (DRF).
+ * Maneja arreglos nativos de validación, objetos con items/errores y cadenas directas.
+ * @param {Error|Object} err 
+ * @returns {string}
+ */
+function extractCheckoutErrorMessage(err) {
+  if (!err) {
+    return 'Ocurrió un error inesperado al procesar la solicitud.';
+  }
+
+  // 1. Arreglo directo de errores (típico de DRF ValidationError(message))
+  if (Array.isArray(err.data) && err.data.length > 0) {
+    const list = err.data.map((item) => {
+      if (typeof item === 'string') return item;
+      if (typeof item === 'object' && item !== null) return formatBackendErrorMessage(item, err.status);
+      return String(item);
+    }).filter(Boolean);
+    if (list.length > 0) return list.join('\n\n');
+  }
+
+  // 2. Cadena de texto directa
+  if (typeof err.data === 'string' && err.data.trim()) {
+    return err.data;
+  }
+
+  // 3. Objeto estructurado de errores (DRF serializer / validation errors)
+  if (err.data && typeof err.data === 'object') {
+    // Errores en lista de artículos
+    if (err.data.items) {
+      if (Array.isArray(err.data.items)) {
+        const itemMessages = err.data.items.map((it) => {
+          if (typeof it === 'string') return it;
+          if (typeof it === 'object' && it !== null) {
+            return Object.entries(it)
+              .map(([k, v]) => (Array.isArray(v) ? v.join(', ') : String(v)))
+              .join(' - ');
+          }
+          return String(it);
+        }).filter(Boolean);
+        if (itemMessages.length > 0) return itemMessages.join('\n\n');
+      } else if (typeof err.data.items === 'string') {
+        return err.data.items;
+      }
+    }
+
+    if (err.data.detail && typeof err.data.detail === 'string') {
+      return err.data.detail;
+    }
+    if (err.data.error && typeof err.data.error === 'string') {
+      return err.data.error;
+    }
+    if (err.data.message && typeof err.data.message === 'string') {
+      return err.data.message;
+    }
+    if (err.data.non_field_errors) {
+      return Array.isArray(err.data.non_field_errors)
+        ? err.data.non_field_errors.join('\n\n')
+        : String(err.data.non_field_errors);
+    }
+
+    const formatted = formatBackendErrorMessage(err.data, err.status);
+    if (formatted && !formatted.includes('Ocurrió un error inesperado')) {
+      return formatted;
+    }
+  }
+
+  // 4. Mensaje formateado previamente por apiRequest (Error.message)
+  if (err.message && typeof err.message === 'string' && err.message.trim()) {
+    return err.message;
+  }
+
+  return 'Ocurrió un error al procesar tu pedido. Verifica tu cupo disponible o intenta nuevamente.';
+}
+
+/**
+ * Analiza el mensaje del backend y construye la metadata y recomendaciones visuales.
+ * @param {string} rawMessage
+ * @returns {{ title: string, type: 'warning'|'danger'|'info', htmlMessage: string, actionText?: string, actionUrl?: string }}
+ */
+function getCheckoutErrorInfo(rawMessage) {
+  const msgLower = (rawMessage || '').toLowerCase();
+
+  // 1. Deuda de semanas anteriores
+  if (
+    msgLower.includes('deuda pendiente') ||
+    msgLower.includes('liquidar su saldo') ||
+    msgLower.includes('semanas anteriores') ||
+    msgLower.includes('corte del')
+  ) {
+    return {
+      title: 'Deuda Pendiente de Semanas Anteriores',
+      type: 'warning',
+      actionText: 'Ver Mi Estado de Cuenta',
+      actionUrl: '../profile/profile.html',
+      htmlMessage: `
+        <div style="display: flex; flex-direction: column; gap: 0.85rem; text-align: left;">
+          <div style="background-color: #fffbeb; border: 1.5px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 0.85rem 1rem;">
+            <p style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #92400e; line-height: 1.45;">
+              ${rawMessage}
+            </p>
+          </div>
+          <div style="font-size: 0.85rem; color: #475569; line-height: 1.5;">
+            <strong>¿Por qué no puedes comprar en este momento?</strong><br/>
+            Para mantener activo el beneficio de compras a crédito con cargo a nómina, el sistema exige que las deudas de cortes de nómina anteriores estén completamente saldadas antes de autorizar nuevos consumos.
+          </div>
+          <div style="font-size: 0.82rem; color: #64748b; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.65rem 0.85rem;">
+            💡 <em>Puedes consultar el desglose de tus consumos pasados y retenciones en la sección <strong>Estado de Cuenta</strong> de tu perfil, o acudir a Administración / Recursos Humanos.</em>
+          </div>
+        </div>
+      `
+    };
+  }
+
+  // 2. Límite semanal de compra por producto
+  if (
+    msgLower.includes('límite semanal') ||
+    msgLower.includes('limite semanal') ||
+    (msgLower.includes('consumido') && msgLower.includes('últimos 7 días'))
+  ) {
+    return {
+      title: 'Límite Semanal de Compra Excedido',
+      type: 'warning',
+      htmlMessage: `
+        <div style="display: flex; flex-direction: column; gap: 0.85rem; text-align: left;">
+          <div style="background-color: #fffbeb; border: 1.5px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 0.85rem 1rem;">
+            <p style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #92400e; line-height: 1.45;">
+              ${rawMessage}
+            </p>
+          </div>
+          <div style="font-size: 0.85rem; color: #475569; line-height: 1.5;">
+            <strong>Regla de compra interna:</strong><br/>
+            Ciertos productos cuentan con un tope de unidades por colaborador cada 7 días para garantizar el abastecimiento justo entre todo el personal.
+          </div>
+          <div style="font-size: 0.82rem; color: #64748b;">
+            👉 <em>Por favor reduce la cantidad del producto en tu carrito para continuar.</em>
+          </div>
+        </div>
+      `
+    };
+  }
+
+  // 3. Stock insuficiente
+  if (
+    msgLower.includes('stock insuficiente') ||
+    msgLower.includes('disponible:') ||
+    msgLower.includes('solicitado:')
+  ) {
+    return {
+      title: 'Stock Insuficiente en Almacén',
+      type: 'warning',
+      htmlMessage: `
+        <div style="display: flex; flex-direction: column; gap: 0.85rem; text-align: left;">
+          <div style="background-color: #fef2f2; border: 1.5px solid #fecaca; border-left: 4px solid #ef4444; border-radius: 8px; padding: 0.85rem 1rem;">
+            <p style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #991b1b; line-height: 1.45;">
+              ${rawMessage}
+            </p>
+          </div>
+          <div style="font-size: 0.85rem; color: #475569; line-height: 1.5;">
+            La cantidad solicitada supera las existencias físicas disponibles en bodega.
+          </div>
+          <div style="font-size: 0.82rem; color: #64748b;">
+            👉 <em>Ajusta las cantidades en tu carrito según las existencias disponibles para proceder.</em>
+          </div>
+        </div>
+      `
+    };
+  }
+
+  // 4. Empleado no activo
+  if (
+    msgLower.includes('no se encuentra activo') ||
+    msgLower.includes('inactivo para compras')
+  ) {
+    return {
+      title: 'Colaborador No Habilitado',
+      type: 'danger',
+      htmlMessage: `
+        <div style="display: flex; flex-direction: column; gap: 0.85rem; text-align: left;">
+          <div style="background-color: #fef2f2; border: 1.5px solid #fecaca; border-left: 4px solid #ef4444; border-radius: 8px; padding: 0.85rem 1rem;">
+            <p style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #991b1b; line-height: 1.45;">
+              ${rawMessage}
+            </p>
+          </div>
+          <div style="font-size: 0.85rem; color: #475569; line-height: 1.5;">
+            Tu perfil de colaborador no se encuentra habilitado para registrar compras a crédito.
+          </div>
+          <div style="font-size: 0.82rem; color: #64748b;">
+            👉 <em>Comunícate con el departamento de Recursos Humanos o Administración para activar tu cuenta.</em>
+          </div>
+        </div>
+      `
+    };
+  }
+
+  // 5. Fallback general
+  return {
+    title: 'No se Pudo Procesar el Pedido',
+    type: 'danger',
+    htmlMessage: `
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; text-align: left;">
+        <div style="background-color: #fef2f2; border: 1.5px solid #fecaca; border-left: 4px solid #ef4444; border-radius: 8px; padding: 0.85rem 1rem;">
+          <p style="margin: 0; font-size: 0.92rem; font-weight: 600; color: #991b1b; line-height: 1.45;">
+            ${rawMessage}
+          </p>
+        </div>
+        <p style="margin: 0; font-size: 0.84rem; color: #64748b;">
+          Revisa la información de tu carrito o intenta nuevamente más tarde. Si el problema persiste, contacta al supervisor de tienda.
+        </p>
+      </div>
+    `
+  };
+}
+
+/**
  * Procesa la orden de compra atómica POST /api/employee-store/orders/
  */
 async function handleCheckout() {
@@ -235,6 +488,24 @@ async function handleCheckout() {
       title: 'Verificación de Colaborador',
       message: 'No se pudo verificar tu ficha de empleado. Por favor contacta a Recursos Humanos o vuelve a iniciar sesión.',
       type: 'danger'
+    });
+    return;
+  }
+
+  // Pre-validar si el colaborador tiene deuda pendiente de semanas anteriores
+  if (currentStatement?.has_overdue_debt) {
+    const debtAmount = parseFloat(currentStatement.overdue_debt_amount || 0).toFixed(2);
+    const cutoffDate = currentStatement.cutoff_date || 'corte previo';
+    const debtMsg = `El trabajador tiene una deuda pendiente de semanas anteriores ($${debtAmount}) correspondiente al corte del ${cutoffDate}. Debe liquidar su saldo anterior antes de realizar nuevas compras.`;
+    const errorInfo = getCheckoutErrorInfo(debtMsg);
+
+    showAlertModal({
+      title: errorInfo.title,
+      message: errorInfo.htmlMessage,
+      type: errorInfo.type,
+      confirmText: 'Entendido',
+      actionText: errorInfo.actionText || '',
+      actionUrl: errorInfo.actionUrl || ''
     });
     return;
   }
@@ -286,30 +557,16 @@ async function handleCheckout() {
       <span>Confirmar Pedido</span>
     `;
 
-    let msg = 'Ocurrió un error al procesar tu pedido. Verifica tu cupo disponible o intenta nuevamente.';
-    if (err?.data) {
-      if (typeof err.data === 'string') {
-        msg = err.data;
-      } else if (err.data.detail) {
-        msg = err.data.detail;
-      } else if (err.data.error) {
-        msg = err.data.error;
-      } else if (err.data.items) {
-        const itemErrors = Array.isArray(err.data.items)
-          ? err.data.items.map(it => typeof it === 'string' ? it : Object.values(it).flat().join(' ')).filter(Boolean).join('; ')
-          : JSON.stringify(err.data.items);
-        msg = `Problema con artículos en inventario: ${itemErrors}`;
-      } else if (err.data.non_field_errors) {
-        msg = Array.isArray(err.data.non_field_errors) ? err.data.non_field_errors.join(' ') : err.data.non_field_errors;
-      }
-    } else if (err?.message) {
-      msg = err.message;
-    }
+    const rawMessage = extractCheckoutErrorMessage(err);
+    const errorInfo = getCheckoutErrorInfo(rawMessage);
 
     showAlertModal({
-      title: 'Error al Registrar Pedido',
-      message: msg,
-      type: 'danger'
+      title: errorInfo.title,
+      message: errorInfo.htmlMessage,
+      type: errorInfo.type,
+      confirmText: 'Entendido',
+      actionText: errorInfo.actionText || '',
+      actionUrl: errorInfo.actionUrl || ''
     });
   }
 }

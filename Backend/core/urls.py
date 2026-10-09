@@ -60,8 +60,8 @@ from django.utils.http import http_date
 def ranged_media_serve(request, path, document_root=None):
     """
     Sirve archivos estáticos y multimedia en desarrollo con soporte completo para
-    cabeceras HTTP Range (206 Partial Content), permitiendo reproducir, adelantar
-    y retroceder videos (MP4, WebM, etc.) fluidamente en el navegador.
+    cabeceras HTTP Range (RFC 7233, 206 Partial Content), permitiendo reproducir,
+    adelantar y retroceder videos (MP4, WebM, etc.) fluidamente en cualquier navegador.
     """
     if not document_root:
         raise Http404("Document root not specified")
@@ -74,6 +74,21 @@ def ranged_media_serve(request, path, document_root=None):
     if not os.path.exists(full_path) or os.path.isdir(full_path):
         raise Http404("File not found")
 
+    origin = request.headers.get('origin')
+
+    # Manejar peticiones OPTIONS preflight de CORS
+    if request.method == 'OPTIONS':
+        options_response = HttpResponse(status=204)
+        if origin:
+            options_response['Access-Control-Allow-Origin'] = origin
+            options_response['Access-Control-Allow-Credentials'] = 'true'
+        else:
+            options_response['Access-Control-Allow-Origin'] = '*'
+        options_response['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
+        options_response['Access-Control-Allow-Headers'] = 'Range, Authorization, Content-Type, Accept'
+        options_response['Access-Control-Max-Age'] = '86400'
+        return options_response
+
     statobj = os.stat(full_path)
     file_size = statobj.st_size
     content_type, encoding = mimetypes.guess_type(full_path)
@@ -82,25 +97,78 @@ def ranged_media_serve(request, path, document_root=None):
     etag = f'"{int(statobj.st_mtime)}-{file_size}"'
     last_modified = http_date(statobj.st_mtime)
 
-    range_header = request.headers.get('range', '').strip()
-    range_match = re.match(r'bytes=(\d+)-(\d*)', range_header)
+    # Validación de caché condicional (304 Not Modified)
+    if request.headers.get('if-none-match') == etag:
+        not_modified = HttpResponse(status=304)
+        not_modified['ETag'] = etag
+        not_modified['Last-Modified'] = last_modified
+        return not_modified
 
+    # Función auxiliar para configurar cabeceras comunes
+    def set_common_headers(res):
+        res['Accept-Ranges'] = 'bytes'
+        res['Last-Modified'] = last_modified
+        res['ETag'] = etag
+        filename = os.path.basename(full_path)
+        res['Content-Disposition'] = f'inline; filename="{filename}"'
+        if origin:
+            res['Access-Control-Allow-Origin'] = origin
+            res['Access-Control-Allow-Credentials'] = 'true'
+            res['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
+            res['Access-Control-Allow-Headers'] = 'Range, Authorization, Content-Type, Accept'
+        res['Access-Control-Expose-Headers'] = 'Content-Disposition, Content-Range, Content-Length, Accept-Ranges, ETag, Last-Modified'
+        if encoding:
+            res['Content-Encoding'] = encoding
+        return res
+
+    # Peticiones HEAD: retornar cabeceras sin procesar/transmitir el cuerpo
+    if request.method == 'HEAD':
+        head_response = HttpResponse('', status=200, content_type=content_type)
+        head_response['Content-Length'] = str(file_size)
+        return set_common_headers(head_response)
+
+    # Análisis de la cabecera Range según RFC 7233
+    range_header = request.headers.get('range', '').strip()
+    range_match = re.match(r'bytes=(\d*)-(\d*)', range_header) if range_header else None
+
+    range_spec = None
     if range_match:
-        start = int(range_match.group(1))
-        end = int(range_match.group(2)) if range_match.group(2) else file_size - 1
-        if start >= file_size:
-            response = HttpResponse(status=416)
-            response['Content-Range'] = f'bytes */{file_size}'
-            return response
+        s_str, e_str = range_match.groups()
+        if not s_str and not e_str:
+            range_spec = None
+        elif not s_str:  # bytes=-500 (últimos N bytes)
+            suffix_len = int(e_str)
+            if suffix_len > 0:
+                start = max(0, file_size - suffix_len)
+                end = file_size - 1
+                range_spec = (start, end)
+        elif not e_str:  # bytes=500- (desde byte 500 hasta el final)
+            start = int(s_str)
+            end = file_size - 1
+            range_spec = (start, end)
+        else:            # bytes=500-1000
+            start = int(s_str)
+            end = int(e_str)
+            range_spec = (start, end)
+
+    chunk_size = 131072  # 128 KB para streaming fluido
+
+    if range_spec:
+        start, end = range_spec
+        if start >= file_size or start > end:
+            error_response = HttpResponse(status=416)
+            error_response['Content-Range'] = f'bytes */{file_size}'
+            return set_common_headers(error_response)
+
         end = min(end, file_size - 1)
         length = end - start + 1
 
-        def file_iterator(file_path, offset, req_len, chunk_size=32768):
-            with open(file_path, 'rb') as f:
+        def file_iterator_range(fpath, offset, req_len, c_size=chunk_size):
+            with open(fpath, 'rb') as f:
                 f.seek(offset)
                 remaining = req_len
                 while remaining > 0:
-                    read_size = min(remaining, chunk_size)
+                    read_size = min(remaining, c_size)
                     data = f.read(read_size)
                     if not data:
                         break
@@ -108,17 +176,17 @@ def ranged_media_serve(request, path, document_root=None):
                     yield data
 
         response = StreamingHttpResponse(
-            file_iterator(full_path, start, length),
+            file_iterator_range(full_path, start, length),
             status=206,
             content_type=content_type
         )
         response['Content-Range'] = f'bytes {start}-{end}/{file_size}'
         response['Content-Length'] = str(length)
     else:
-        def file_iterator_full(file_path, chunk_size=32768):
-            with open(file_path, 'rb') as f:
+        def file_iterator_full(fpath, c_size=chunk_size):
+            with open(fpath, 'rb') as f:
                 while True:
-                    data = f.read(chunk_size)
+                    data = f.read(c_size)
                     if not data:
                         break
                     yield data
@@ -130,17 +198,7 @@ def ranged_media_serve(request, path, document_root=None):
         )
         response['Content-Length'] = str(file_size)
 
-    response['Accept-Ranges'] = 'bytes'
-    response['Last-Modified'] = last_modified
-    response['ETag'] = etag
-    origin = request.headers.get('origin')
-    if origin:
-        response['Access-Control-Allow-Origin'] = origin
-        response['Access-Control-Allow-Credentials'] = 'true'
-    response['Access-Control-Expose-Headers'] = 'Content-Disposition, Content-Range, Content-Length, Accept-Ranges, ETag, Last-Modified'
-    if encoding:
-        response['Content-Encoding'] = encoding
-    return response
+    return set_common_headers(response)
 
 
 # Configuración para servir archivos multimedia en desarrollo

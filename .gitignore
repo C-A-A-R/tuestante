@@ -3,6 +3,10 @@ Pipfile
 Pipfile.lock
 Backend/Pipfile
 Backend/Pipfile.lock
+Backend/core/media
+Backend/core/db.sqlite3
+Backend/media
+Backend/images
 .vscode/
 *.log
 *.pid

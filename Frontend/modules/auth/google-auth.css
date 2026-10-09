@@ -29,14 +29,14 @@
     background: transparent;
 }
 
-/* Contenedor del Botón de Google - Acercado al botón principal */
+/* Contenedor del Botón de Google - Abarca el 100% del ancho del formulario */
 .google-auth-container {
     width: 100%;
     margin-top: 10px;
     margin-bottom: 8px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
 }
 

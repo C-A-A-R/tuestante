@@ -111,7 +111,9 @@ export function showAlertModal({
   title = 'Aviso',
   message = '',
   type = 'info',
-  confirmText = 'Entendido'
+  confirmText = 'Entendido',
+  actionText = '',
+  actionUrl = ''
 } = {}) {
   ensureDialogStyles();
 
@@ -136,10 +138,15 @@ export function showAlertModal({
           <h3 class="dialog-title" id="dialog-modal-title">${title}</h3>
         </div>
         <div class="dialog-body">
-          <p style="margin: 0;">${message}</p>
+          <div class="dialog-message" style="margin: 0; line-height: 1.55;">${message}</div>
         </div>
         <div class="dialog-footer">
-          <button type="button" class="btn-dialog btn-dialog-confirm" id="btn-dialog-ok">
+          ${actionText && actionUrl ? `
+            <a href="${actionUrl}" class="btn-dialog btn-dialog-cancel" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">
+              ${actionText}
+            </a>
+          ` : ''}
+          <button type="button" class="btn-dialog btn-dialog-confirm ${normalizedType === 'danger' ? 'btn-danger' : ''}" id="btn-dialog-ok">
             ${confirmText}
           </button>
         </div>

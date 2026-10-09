@@ -464,9 +464,6 @@ class SVGBlueprintGenerator:
           {qty_block}
         ''')
 
-        svg_parts.append('</svg>')
-        return "\n".join(svg_parts)
-
     @classmethod
     def _render_cabinet_front(
         cls,
