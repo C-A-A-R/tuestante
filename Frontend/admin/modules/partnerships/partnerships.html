@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Empresas Aliadas | TuEstante Admin</title>
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos de Componentes Compartidos (Drawer, Navbar, Footer) -->
+  <link rel="stylesheet" href="../../components/drawer/drawer.css">
+  <link rel="stylesheet" href="../../components/navbar/navbar.css">
+  <link rel="stylesheet" href="../../components/footer/footer.css">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="../../assets/images/logo.jpeg">
+
+  <!-- Estilos del Módulo de Empresas Aliadas -->
+  <link rel="stylesheet" href="./partnerships.css">
+</head>
+<body data-page-title="Empresas Aliadas">
+
+  <!-- Notificaciones Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Estructura Principal del Panel Administrativo -->
+  <div class="app-layout" id="app-layout">
+
+    <!-- Placeholders para componentes compartidos -->
+    <div id="drawer-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- ======================================================================
+         CONTENIDO PRINCIPAL: GESTIÓN DE EMPRESAS ALIADAS
+         ====================================================================== -->
+    <main class="app-main-content">
+      <div class="partnerships-module-container">
+
+        <!-- 1. Encabezado de la Pantalla -->
+        <section class="screen-header-card" aria-label="Encabezado de Empresas Aliadas">
+          <div class="screen-header-text">
+            <h2 class="screen-main-title">Empresas Aliadas</h2>
+            <p class="screen-main-desc">
+              Gestiona las marcas y empresas que confían en nosotros y se exhiben en el carrusel de la página principal.
+            </p>
+          </div>
+
+          <div class="screen-header-actions">
+            <!-- Botón Registrar Empresa (Abre modal de creación) -->
+            <button type="button" class="btn btn-primary" id="btn-open-create-modal" title="Registrar nueva empresa aliada">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Registrar empresa</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 2. Barra de Búsqueda y Filtros -->
+        <section class="partnerships-filters-card" aria-label="Filtros de empresas aliadas">
+          <!-- Campo de búsqueda -->
+          <div class="filter-search-box">
+            <svg class="filter-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+              type="text" 
+              id="filter-search" 
+              class="filter-search-input" 
+              placeholder="Buscar por nombre de empresa o descripción..." 
+              autocomplete="off">
+          </div>
+
+          <!-- Dropdowns de filtros -->
+          <div class="filters-dropdowns-group">
+            <!-- Filtro Estado -->
+            <div class="filter-select-wrapper">
+              <label for="filter-status" class="filter-select-label">Estado:</label>
+              <select id="filter-status" class="filter-select">
+                <option value="all" selected>Todos</option>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+
+            <!-- Ordenar por -->
+            <div class="filter-select-wrapper">
+              <label for="filter-sort" class="filter-select-label">Ordenar por:</label>
+              <select id="filter-sort" class="filter-select">
+                <option value="newest" selected>Más recientes</option>
+                <option value="oldest">Más antiguos</option>
+                <option value="name-asc">Nombre A-Z</option>
+                <option value="name-desc">Nombre Z-A</option>
+              </select>
+            </div>
+
+            <!-- Botón Limpiar Filtros -->
+            <button type="button" class="btn btn-outline" id="btn-clear-filters" title="Restablecer filtros">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
+              <span>Limpiar filtros</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 3. Sección de Tabla de Empresas -->
+        <section class="partnerships-table-card" id="section-partnerships-list">
+          <div class="table-card-header">
+            <div class="table-card-title-box">
+              <svg class="table-card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <h3 class="table-card-title">Lista de empresas aliadas</h3>
+              <span class="table-card-count" id="partnerships-count-tag">0 empresas</span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="partnerships-table" id="partnerships-table">
+              <thead>
+                <tr>
+                  <th style="width: 80px; text-align: center;">Logo</th>
+                  <th style="min-width: 220px;">Nombre de la empresa</th>
+                  <th style="min-width: 280px;">Descripción</th>
+                  <th style="white-space: nowrap;">Fecha de registro</th>
+                  <th style="text-align: center;">Estado</th>
+                  <th style="text-align: right; min-width: 140px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="partnerships-table-body">
+                <!-- Se inyecta dinámicamente con JavaScript -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginación de la Tabla -->
+          <div class="table-pagination-bar">
+            <span class="pagination-info-text" id="partnerships-pagination-info">
+              Mostrando 0 a 0 de 0 empresas
+            </span>
+            <div class="pagination-controls-box" id="partnerships-pagination-controls">
+              <!-- Botones dinámicos -->
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 1: REGISTRAR EMPRESA ALIADA
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-create" role="dialog" aria-modal="true" aria-labelledby="create-modal-title">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <line x1="19" y1="8" x2="19" y2="14"></line>
+            <line x1="22" y1="11" x2="16" y2="11"></line>
+          </svg>
+          <h3 class="modal-header-title" id="create-modal-title">Registrar empresa aliada</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-create" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-create-partnership" novalidate>
+        <div class="modal-body">
+          <!-- Campo: Nombre de la empresa -->
+          <div class="form-group">
+            <label for="create-name" class="form-label">
+              <span>Nombre de la empresa</span>
+              <span class="required-mark">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="create-name" 
+              class="form-input" 
+              placeholder="Ej. Empresas Polar, Banesco, Farmatodo..." 
+              required>
+            <span class="form-error-msg" id="create-name-error">El nombre de la empresa es obligatorio.</span>
+          </div>
+
+          <!-- Campo: Logo de la empresa -->
+          <div class="form-group">
+            <label class="form-label">
+              <span>Logo de la empresa</span>
+              <span class="optional-tag">(Recomendado)</span>
+            </label>
+            <input type="file" id="create-logo-input" style="display: none;" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+            
+            <div class="file-upload-card" id="create-logo-upload-box">
+              <div class="file-upload-placeholder" id="create-logo-placeholder">
+                <div class="file-upload-icon-circle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                </div>
+                <div class="file-upload-texts">
+                  <p class="file-upload-primary-text">
+                    Arrastra el logo aquí o 
+                    <button type="button" class="btn-link-trigger" id="btn-trigger-create-logo">selecciona un archivo</button>
+                  </p>
+                  <p class="file-upload-hint">PNG, JPG, SVG o WEBP (máximo 5 MB)</p>
+                </div>
+              </div>
+
+              <!-- Preview del Logo Seleccionado -->
+              <div class="file-selected-preview-card" id="create-logo-preview" style="display: none;">
+                <div class="file-preview-left">
+                  <div class="partner-logo-preview-box">
+                    <img src="" alt="Vista previa del logo" class="partner-logo-thumb-img" id="create-logo-preview-img">
+                  </div>
+                  <div class="file-meta-box">
+                    <span class="file-meta-name" id="create-logo-preview-name">logo.png</span>
+                    <span class="file-meta-size" id="create-logo-preview-size">0 KB</span>
+                  </div>
+                </div>
+                <button type="button" class="btn-remove-file" id="btn-remove-create-logo" title="Quitar archivo">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Campo: Descripción -->
+          <div class="form-group">
+            <label for="create-description" class="form-label">Descripción o Notas</label>
+            <textarea 
+              id="create-description" 
+              class="form-textarea" 
+              placeholder="Breve reseña sobre la empresa o la alianza estratégica..."></textarea>
+          </div>
+
+          <!-- Campo: Estado inicial -->
+          <div class="form-group">
+            <label class="switch-control-label">
+              <input type="checkbox" id="create-is-active" class="switch-checkbox" checked>
+              <span class="switch-slider"></span>
+              <span class="switch-label-text">
+                <strong>Empresa Activa</strong>
+                <small>Mostrar de inmediato en el carrusel de la página de inicio</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-create">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-create">
+            <svg class="btn-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display: none;">
+              <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-linecap="round"></circle>
+            </svg>
+            <span>Guardar empresa</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 2: EDITAR EMPRESA ALIADA
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-edit" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <h3 class="modal-header-title" id="edit-modal-title">Editar empresa aliada</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-edit" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="form-edit-partnership" novalidate>
+        <input type="hidden" id="edit-partnership-id">
+        <div class="modal-body">
+          <!-- Campo: Nombre -->
+          <div class="form-group">
+            <label for="edit-name" class="form-label">
+              <span>Nombre de la empresa</span>
+              <span class="required-mark">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="edit-name" 
+              class="form-input" 
+              placeholder="Nombre de la empresa" 
+              required>
+            <span class="form-error-msg" id="edit-name-error">El nombre es obligatorio.</span>
+          </div>
+
+          <!-- Campo: Logo de la empresa -->
+          <div class="form-group">
+            <label class="form-label">Logo de la empresa</label>
+            <input type="file" id="edit-logo-input" style="display: none;" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+            
+            <div class="file-upload-card" id="edit-logo-upload-box">
+              <div class="file-upload-placeholder" id="edit-logo-placeholder">
+                <div class="file-upload-icon-circle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                </div>
+                <div class="file-upload-texts">
+                  <p class="file-upload-primary-text">
+                    Arrastra una nueva imagen o 
+                    <button type="button" class="btn-link-trigger" id="btn-trigger-edit-logo">selecciona un archivo</button>
+                  </p>
+                  <p class="file-upload-hint">Dejar vacío para conservar el logo actual</p>
+                </div>
+              </div>
+
+              <!-- Preview del Logo (Actual o Nuevo) -->
+              <div class="file-selected-preview-card" id="edit-logo-preview" style="display: none;">
+                <div class="file-preview-left">
+                  <div class="partner-logo-preview-box">
+                    <img src="" alt="Vista previa del logo" class="partner-logo-thumb-img" id="edit-logo-preview-img">
+                  </div>
+                  <div class="file-meta-box">
+                    <span class="file-meta-name" id="edit-logo-preview-name">logo.png</span>
+                    <span class="file-meta-size" id="edit-logo-preview-size">Logo actual</span>
+                  </div>
+                </div>
+                <button type="button" class="btn-remove-file" id="btn-remove-edit-logo" title="Cambiar logo">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Campo: Descripción -->
+          <div class="form-group">
+            <label for="edit-description" class="form-label">Descripción</label>
+            <textarea 
+              id="edit-description" 
+              class="form-textarea" 
+              placeholder="Descripción de la empresa..."></textarea>
+          </div>
+
+          <!-- Campo: Estado -->
+          <div class="form-group">
+            <label class="switch-control-label">
+              <input type="checkbox" id="edit-is-active" class="switch-checkbox">
+              <span class="switch-slider"></span>
+              <span class="switch-label-text">
+                <strong>Empresa Activa</strong>
+                <small>Visible en la vitrina pública de TuEstante</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-edit">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-edit">
+            <svg class="btn-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display: none;">
+              <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-linecap="round"></circle>
+            </svg>
+            <span>Guardar cambios</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 3: VER DETALLES DE LA EMPRESA
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-view" role="dialog" aria-modal="true" aria-labelledby="view-modal-title">
+    <div class="modal-window modal-window-md">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <h3 class="modal-header-title" id="view-modal-title">Detalles de la empresa</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-view" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="partner-detail-card">
+          <!-- Logo Header Showcase -->
+          <div class="partner-detail-logo-hero">
+            <div class="partner-detail-logo-wrapper" id="view-logo-container">
+              <img src="" alt="Logo" class="partner-detail-logo-img" id="view-logo-img">
+              <div class="partner-detail-fallback-avatar" id="view-logo-fallback" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                </svg>
+              </div>
+            </div>
+            <div class="partner-detail-title-group">
+              <h4 class="partner-detail-name" id="view-name">Nombre de la Empresa</h4>
+              <div class="partner-detail-badges">
+                <span class="status-badge" id="view-status-badge">Activo</span>
+                <span class="partner-date-tag" id="view-date-tag">Registrado el 10/10/2026</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Campos de Información -->
+          <div class="partner-detail-grid">
+            <div class="detail-group">
+              <span class="detail-label">Descripción de la Alianza</span>
+              <div class="detail-value detail-value-desc" id="view-description">
+                Sin descripción registrada.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-close-view-footer">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="btn-view-to-edit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <span>Editar empresa</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 4: CONFIRMAR CAMBIO DE ESTADO
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-status" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
+    <div class="modal-window modal-window-sm">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <h3 class="modal-header-title" id="status-modal-title">Cambiar estado</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-status" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <p class="status-change-prompt-text" id="status-change-message">
+          ¿Deseas cambiar el estado de la empresa?
+        </p>
+        <div class="status-preview-box">
+          <strong id="status-preview-name">Nombre Empresa</strong>
+          <span class="status-badge" id="status-preview-next-badge">Inactivo</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-cancel-status">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-status">Confirmar cambio</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 5: CONFIRMAR ELIMINACIÓN
+       ====================================================================== -->
+  <div class="modal-backdrop" id="modal-delete" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="modal-window modal-window-sm">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #e11d48;">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <h3 class="modal-header-title" id="delete-modal-title">Eliminar empresa aliada</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-delete" aria-label="Cerrar modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="delete-alert-banner">
+          <svg class="delete-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <div class="delete-alert-text">
+            <strong>¿Estás seguro de eliminar esta empresa aliada?</strong>
+            <p>Esta acción no se puede deshacer. Se removerá del panel de control y de la vitrina pública.</p>
+          </div>
+        </div>
+
+        <div class="delete-partner-preview-card">
+          <div class="delete-preview-thumb-box" id="delete-preview-thumb-box">
+            <img src="" alt="Miniatura" class="delete-preview-thumb" id="delete-preview-thumb">
+          </div>
+          <span class="delete-preview-name" id="delete-preview-name">Empresa</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-cancel-delete">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete">Eliminar empresa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 6: LIGHTBOX / AMPLIAR LOGO EN TAMAÑO COMPLETO
+       ====================================================================== -->
+  <div class="lightbox-backdrop" id="lightbox-modal" role="dialog" aria-modal="true" aria-label="Ampliación de logo">
+    <button type="button" class="lightbox-close-btn" id="btn-close-lightbox" aria-label="Cerrar ampliación">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <div class="lightbox-content-box">
+      <img src="" alt="Logo ampliado" class="lightbox-img" id="lightbox-img">
+      <span class="lightbox-caption-text" id="lightbox-caption">Nombre de la Empresa</span>
+    </div>
+  </div>
+
+  <!-- Scripts del Módulo -->
+  <script type="module" src="./partnerships.js"></script>
+</body>
+</html>

@@ -100,8 +100,11 @@ def checkout_internal_order(employee, items_data, user=None, notes='', is_admin_
     if not employee.is_active or employee.is_deleted:
         raise ValidationError("El empleado no se encuentra activo para compras en la tienda.")
 
-    # 1. Validación de deuda de semana pasada (bloquea solo si no es override administrativo)
-    if not is_admin_override:
+    # 1. Validación de deuda de semana pasada (se omite si un administrador autoriza o realiza la petición)
+    is_user_admin = bool(user and (getattr(user, 'is_staff', False) or getattr(user, 'is_superuser', False)))
+    allow_debt_override = bool(is_admin_override or is_user_admin)
+
+    if not allow_debt_override:
         has_debt, debt_amount, cutoff_date = has_overdue_weekly_debt(employee)
         if has_debt:
             raise ValidationError(

@@ -76,21 +76,21 @@
             <!-- Tarjeta de Datos en Vivo del Trabajador (Fondo #e0f2fe, Borde #cbd5e1) -->
             <div id="employee-live-card" class="employee-live-card hidden">
               <div class="live-card-body">
-                <div class="worker-avatar-box">
-                  <span id="worker-initials">--</span>
-                </div>
-                <div class="worker-details-col">
-                  <h3 class="worker-name" id="emp-name">-</h3>
-                  <div class="worker-meta-row">
-                    <span>Ficha: <strong id="emp-number">-</strong></span>
-                    <span class="meta-sep">•</span>
-                    <span>C.I: <strong id="emp-doc">-</strong></span>
-                    <span class="meta-sep">•</span>
-                    <span>F. Nac: <strong id="emp-birth">-</strong></span>
-                    <span class="meta-sep">•</span>
-                    <span>Cargo/Dpto: <strong id="emp-position-dept">-</strong></span>
+                <div class="live-card-header-row">
+                  <div class="worker-avatar-box">
+                    <span id="worker-initials">--</span>
+                  </div>
+                  <div class="worker-details-col">
+                    <h3 class="worker-name" id="emp-name">-</h3>
+                    <div class="worker-meta-row">
+                      <span class="meta-pill"><span class="meta-label">Ficha:</span> <strong id="emp-number">-</strong></span>
+                      <span class="meta-pill"><span class="meta-label">C.I:</span> <strong id="emp-doc">-</strong></span>
+                      <span class="meta-pill"><span class="meta-label">F. Nac:</span> <strong id="emp-birth">-</strong></span>
+                      <span class="meta-pill"><span class="meta-label">Cargo/Dpto:</span> <strong id="emp-position-dept">-</strong></span>
+                    </div>
                   </div>
                 </div>
+
                 <div class="worker-financials-col">
                   <div class="financial-item">
                     <span class="fin-label">Salario Base Ref.</span>
@@ -98,8 +98,10 @@
                   </div>
                   <div class="financial-item debt-item">
                     <span class="fin-label">Deuda Actual</span>
-                    <strong class="fin-val-debt" id="emp-debt">$0.00</strong>
-                    <small class="fin-val-ves" id="emp-debt-ves">Bs. 0.00</small>
+                    <div class="debt-values-wrap">
+                      <strong class="fin-val-debt" id="emp-debt">$0.00</strong>
+                      <small class="fin-val-ves" id="emp-debt-ves">Bs. 0.00</small>
+                    </div>
                   </div>
                 </div>
               </div>

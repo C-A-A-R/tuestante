@@ -32,7 +32,7 @@ urlpatterns = [
     path('api/gallery/', include('apps.gallery.api.routers')),
     path('api/user/', include('apps.user.api.routers')),
     path('api/', include('apps.orders.api.routers')),
-
+    path('api/', include('apps.partnerships.api.routers')),
     path('api/', include('apps.payment.api.routers')),
     path('api/', include('apps.production.api.routers')),
     path('api/production/', include('apps.production.api.routers')),

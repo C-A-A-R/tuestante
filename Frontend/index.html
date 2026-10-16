@@ -166,7 +166,7 @@
         rel="stylesheet">
 
     <!-- Global Stylesheet -->
-    <link rel="stylesheet" href="index.css?v=3.6">
+    <link rel="stylesheet" href="index.css?v=3.7">
 
     <!-- Component Styles -->
     <link rel="stylesheet" href="components/navbar/navbar.css?v=3.2">
@@ -214,6 +214,23 @@
                 <div class="carousel-dots" id="carousel-dots">
                     <span class="carousel-dot active" data-index="0"></span>
                     <span class="carousel-dot" data-index="1"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección: Empresas que Confían en Nosotros (Carrusel de Logos) -->
+        <section id="empresas-confian" class="partnerships-section" aria-label="Empresas que confían en nosotros" style="display: none;">
+            <div class="partnerships-container">
+                <div class="partnerships-header">
+                    <h2 class="partnerships-title">Empresas que confían en nosotros</h2>
+                    <div class="partnerships-divider"></div>
+                </div>
+
+                <!-- Carrusel Continuo / Infinite Logo Track -->
+                <div class="partnerships-carousel" id="partnerships-carousel" tabindex="0" aria-roledescription="carousel" aria-label="Logos de empresas aliadas">
+                    <div class="partnerships-track" id="partnerships-track">
+                        <!-- Logos inyectados dinámicamente desde la API / Respaldo -->
+                    </div>
                 </div>
             </div>
         </section>
@@ -315,13 +332,13 @@
         </section>
 
         <!-- Nosotros Section -->
-        <section id="nosotros" class="section-container">
+        <!-- <section id="nosotros" class="section-container">
             <div class="about-grid">
                 <div class="about-image-side">
                     <div style="background-image: url('assets/images/imagennosotros.jpg');"
                         class="about-img-placeholder">
-                        <!-- <span class="about-image"><img src="assets/images/imagennosotros.jpg"
-                                class="imagennosotros"></span> -->
+                        <span class="about-image"><img src="assets/images/imagennosotros.jpg"
+                                class="imagennosotros"></span>
                         <div class="story-experience-badge">
                             <span class="badge-number">15</span>
                             <span class="badge-text">Años de<br>Experiencia</span>
@@ -342,7 +359,7 @@
                         una experiencia ágil, confiable y sin complicaciones.</p>
                 </div>
             </div>
-        </section>
+        </section> -->
 
         <!-- Sección Espacios Reales / Galería Preview (Inspirado en la Imagen 1 de Referencia) -->
         <section id="espacios-reales" class="section-container real-spaces-section" style="display: none;">
@@ -472,7 +489,7 @@
     <div id="footer-placeholder"></div>
 
     <!-- Global Application Logic -->
-    <script type="module" src="index.js?v=3.6"></script>
+    <script type="module" src="index.js?v=3.7"></script>
 </body>
 
 </html>

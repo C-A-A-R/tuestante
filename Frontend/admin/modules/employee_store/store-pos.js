@@ -1029,7 +1029,7 @@ async function processImmediateDelivery() {
     })),
     status: 'DELIVERED',
     notes: notesInput?.value.trim() || 'Despacho presencial en bodega',
-    is_admin_override: false // En Punto de Venta POS de mostrador no se omite el límite semanal
+    is_admin_override: overrideCheck ? overrideCheck.checked : true
   };
 
   showLoadingOverlay({

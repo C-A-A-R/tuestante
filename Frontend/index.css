@@ -105,7 +105,7 @@ body {
 }
 
 .section-container {
-    padding: 60px 24px;
+    padding: 20px 24px;
     max-width: 1385px;
     margin: 0 auto;
     width: 100%;
@@ -397,6 +397,219 @@ body {
     width: 28px;
     border-radius: 6px;
     box-shadow: 0 0 8px var(--accent);
+}
+
+/* ==========================================================================
+   Componente: Empresas que Confían en Nosotros (Carrusel de Logos)
+   ========================================================================== */
+.partnerships-section {
+    position: relative;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 50%, #f8fafc 100%);
+    border-top: 1px solid rgba(203, 213, 225, 0.5);
+    border-bottom: 1px solid rgba(203, 213, 225, 0.5);
+    padding: 6px 0 60px;
+    overflow: hidden;
+}
+
+.partnerships-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.partnerships-header {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto 26px auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.partnerships-tagline {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-heading);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--primary);
+    background: rgba(0, 81, 135, 0.08);
+    border: 1px solid rgba(0, 81, 135, 0.15);
+    padding: 5px 14px;
+    border-radius: 999px;
+}
+
+.partnerships-badge-icon {
+    width: 15px;
+    height: 15px;
+    color: var(--primary);
+}
+
+.partnerships-title {
+    font-family: var(--font-heading);
+    font-size: clamp(1.65rem, 3.2vw, 2.35rem);
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.partnerships-divider {
+    width: 54px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    border-radius: 3px;
+    margin: 0 auto;
+}
+
+.partnerships-description {
+    color: var(--text-muted);
+    font-size: 0.98rem;
+    line-height: 1.55;
+    margin: 0 auto;
+}
+
+/* Contenedor del Carrusel con Difuminado Lateral Suave */
+.partnerships-carousel {
+    position: relative;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    overflow: hidden;
+    padding: 4px 0;
+    mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
+.partnerships-track {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    width: max-content;
+    animation: partnershipsMarquee 38s linear infinite;
+    will-change: transform;
+}
+
+.partnerships-carousel:hover .partnerships-track,
+.partnerships-carousel:focus-within .partnerships-track {
+    animation-play-state: paused;
+}
+
+@keyframes partnershipsMarquee {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+/* Tarjeta de cada logo */
+.partner-logo-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 210px;
+    height: 88px;
+    padding: 14px 28px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+    text-decoration: none;
+    flex-shrink: 0;
+    user-select: none;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.partner-logo-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: 0 10px 24px -4px rgba(0, 81, 135, 0.16);
+}
+
+.partner-logo-img,
+.partner-logo-svg {
+    max-height: 52px;
+    max-width: 150px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    filter: none;
+    opacity: 1;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.partner-logo-card:hover .partner-logo-img,
+.partner-logo-card:hover .partner-logo-svg {
+    filter: none;
+    opacity: 1;
+    transform: scale(1.06);
+}
+
+/* Fallback de logotipo monograma cuando no hay archivo de imagen ni svg */
+.partner-monogram-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #005187 0%, #4d82bc 100%);
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(0, 81, 135, 0.2);
+    filter: none;
+    opacity: 1;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.partner-logo-card:hover .partner-monogram-badge {
+    filter: none;
+    opacity: 1;
+    transform: scale(1.08);
+    box-shadow: 0 6px 16px rgba(0, 81, 135, 0.32);
+}
+
+/* Responsividad para móviles y tablets */
+@media (max-width: 768px) {
+    .partnerships-title {
+        font-size: 1.5rem;
+    }
+
+    .partnerships-description {
+        font-size: 0.9rem;
+    }
+
+    .partnerships-track {
+        gap: 20px;
+        animation-duration: 26s;
+    }
+
+    .partner-logo-card {
+        min-width: 165px;
+        height: 74px;
+        padding: 10px 18px;
+        border-radius: 12px;
+    }
+
+    .partner-logo-img {
+        max-height: 40px;
+        max-width: 125px;
+    }
+
+    .partner-name-text {
+        font-size: 0.92rem;
+    }
 }
 
 /* ==========================================================================
@@ -1688,7 +1901,7 @@ body {
    ========================================================================== */
 .real-spaces-section {
     background-color: var(--bg-secondary);
-    padding: 60px 24px;
+    padding: 35px 24px;
     overflow: hidden;
 }
 

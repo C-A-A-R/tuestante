@@ -5,7 +5,7 @@
  */
 
 import { loadAdminComponents } from '../../components/navbar/navbar.js';
-import { crearNotificacionManual, obtenerPedidosSelector } from './notifications.api.js';
+import { crearNotificacionManual, obtenerPedidosSelector, obtenerPedidoPorId } from './notifications.api.js';
 
 // Estado local de la pantalla
 const state = {
@@ -27,12 +27,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initOrdersSearch();
 
     // 3. Revisar si viene un pedido preseleccionado por parámetro URL
-    checkPreselectedOrder();
+    await checkPreselectedOrder();
 
   } catch (error) {
     console.error('[Notification Create] Error al inicializar la pantalla:', error);
   }
 });
+
+/**
+ * Extrae el nombre del cliente de un pedido de forma unificada y robusta
+ * @param {Object} ord Datos del pedido
+ * @returns {string} Nombre legible del cliente
+ */
+export function getOrderClientName(ord) {
+  if (!ord) return 'Cliente';
+
+  // 1. Objeto client estructurado por DRF OrderSerializer
+  if (ord.client && typeof ord.client === 'object') {
+    if (ord.client.name && ord.client.name.trim() && ord.client.name !== 'Cliente') {
+      return ord.client.name.trim();
+    }
+    const full = `${ord.client.first_name || ''} ${ord.client.last_name || ord.client.first_last_name || ''}`.trim();
+    if (full) return full;
+    if (ord.client.email) return ord.client.email;
+  } else if (typeof ord.client === 'string' && ord.client.trim() && ord.client !== 'Cliente') {
+    return ord.client.trim();
+  }
+
+  // 2. Objeto user
+  if (ord.user && typeof ord.user === 'object') {
+    const full = `${ord.user.first_name || ''} ${ord.user.first_last_name || ord.user.last_name || ''}`.trim();
+    if (full) return full;
+    if (ord.user.username) return ord.user.username;
+    if (ord.user.email) return ord.user.email;
+  }
+
+  // 3. Propiedades directas comunes
+  if (ord.user_name && ord.user_name.trim()) return ord.user_name.trim();
+  if (ord.client_name && ord.client_name.trim()) return ord.client_name.trim();
+  if (ord.customer_name && ord.customer_name.trim()) return ord.customer_name.trim();
+
+  if (ord.client && typeof ord.client === 'object' && ord.client.name) {
+    return ord.client.name;
+  }
+
+  return 'Cliente';
+}
 
 /**
  * Contador en vivo de caracteres para el mensaje
@@ -56,7 +96,7 @@ function initCharCounter() {
 }
 
 /**
- * Carga pedidos disponibles y gestiona el buscador interactivo
+ * Carga pedidos disponibles y gestiona el buscador interactivo (por número o nombre de cliente)
  */
 async function initOrdersSearch() {
   const searchInput = document.getElementById('input-order-search');
@@ -65,6 +105,8 @@ async function initOrdersSearch() {
   const cardSelected = document.getElementById('selected-order-card');
   const searchWrapper = document.getElementById('order-search-wrapper');
   const btnChange = document.getElementById('btn-change-order');
+
+  let searchDebounceTimer = null;
 
   try {
     state.orders = await obtenerPedidosSelector();
@@ -85,17 +127,20 @@ async function initOrdersSearch() {
       return;
     }
 
+    // Filtrado en memoria inmediato por número de pedido, id, cliente, email o teléfono
     const filtered = state.orders.filter(ord => {
       const ordNum = (ord.order_number || `#${String(ord.id).padStart(5, '0')}`).toLowerCase();
-      const client = (ord.user_name || ord.user?.first_name || ord.client_name || '').toLowerCase();
       const idStr = String(ord.id);
-      return ordNum.includes(term) || client.includes(term) || idStr.includes(term);
+      const clientName = getOrderClientName(ord).toLowerCase();
+      const clientEmail = (ord.client?.email || ord.user?.email || ord.email || '').toLowerCase();
+      const clientPhone = (ord.client?.phone || ord.user?.phone || ord.phone || '').toLowerCase();
+      return ordNum.includes(term) || idStr.includes(term) || clientName.includes(term) || clientEmail.includes(term) || clientPhone.includes(term);
     });
 
     if (filtered.length === 0) {
       dropdown.innerHTML = `
         <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-          No se encontraron pedidos que coincidan con "<strong>${escapeHtml(term)}</strong>"
+          Buscando pedidos...
         </div>
       `;
     } else {
@@ -103,6 +148,59 @@ async function initOrdersSearch() {
     }
 
     dropdown.classList.add('show');
+
+    // Búsqueda remota complementaria debounced para órdenes fuera de los primeros 100
+    clearTimeout(searchDebounceTimer);
+    if (term.length >= 2) {
+      searchDebounceTimer = setTimeout(async () => {
+        try {
+          const remoteOrders = await obtenerPedidosSelector(term);
+          if (Array.isArray(remoteOrders) && remoteOrders.length > 0) {
+            remoteOrders.forEach(rem => {
+              if (!state.orders.some(loc => String(loc.id) === String(rem.id))) {
+                state.orders.push(rem);
+              }
+            });
+
+            // Re-filtrar si el término sigue siendo el mismo
+            const currentTerm = searchInput.value.trim().toLowerCase();
+            if (currentTerm === term) {
+              const updatedFiltered = state.orders.filter(ord => {
+                const ordNum = (ord.order_number || `#${String(ord.id).padStart(5, '0')}`).toLowerCase();
+                const idStr = String(ord.id);
+                const clientName = getOrderClientName(ord).toLowerCase();
+                const clientEmail = (ord.client?.email || ord.user?.email || ord.email || '').toLowerCase();
+                const clientPhone = (ord.client?.phone || ord.user?.phone || ord.phone || '').toLowerCase();
+                return ordNum.includes(currentTerm) || idStr.includes(currentTerm) || clientName.includes(currentTerm) || clientEmail.includes(currentTerm) || clientPhone.includes(currentTerm);
+              });
+
+              dropdown.innerHTML = '';
+              if (updatedFiltered.length === 0) {
+                dropdown.innerHTML = `
+                  <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                    No se encontraron pedidos que coincidan con "<strong>${escapeHtml(term)}</strong>"
+                  </div>
+                `;
+              } else {
+                renderDropdownItems(updatedFiltered.slice(0, 15));
+              }
+            }
+          } else if (filtered.length === 0) {
+            dropdown.innerHTML = `
+              <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                No se encontraron pedidos que coincidan con "<strong>${escapeHtml(term)}</strong>"
+              </div>
+            `;
+          }
+        } catch (_) {}
+      }, 350);
+    } else if (filtered.length === 0) {
+      dropdown.innerHTML = `
+        <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
+          No se encontraron pedidos que coincidan con "<strong>${escapeHtml(term)}</strong>"
+        </div>
+      `;
+    }
   };
 
   searchInput.addEventListener('input', handleSearch);
@@ -137,9 +235,9 @@ function renderDropdownItems(orders) {
     item.className = 'order-dropdown-item';
 
     const ordNum = ord.order_number || `#${String(ord.id).padStart(5, '0')}`;
-    const clientName = ord.user_name || (ord.user ? `${ord.user.first_name || ''} ${ord.user.first_last_name || ''}`.trim() : '') || ord.client_name || 'Cliente';
+    const clientName = getOrderClientName(ord);
     const ordDate = formatDate(ord.created_at);
-    const ordStatus = ord.order_status_display || ord.status_display || ord.status || 'En proceso';
+    const ordStatus = ord.status_label || ord.order_status_display || ord.status_display || ord.status || 'En proceso';
 
     item.innerHTML = `
       <div class="dropdown-item-left">
@@ -179,9 +277,9 @@ function selectOrder(ord) {
   const searchWrapper = document.getElementById('order-search-wrapper');
 
   const ordNum = ord.order_number || `#${String(ord.id).padStart(5, '0')}`;
-  const clientName = ord.user_name || (ord.user ? `${ord.user.first_name || ''} ${ord.user.first_last_name || ''}`.trim() : '') || ord.client_name || 'Cliente';
+  const clientName = getOrderClientName(ord);
   const ordDate = formatDate(ord.created_at);
-  const ordStatus = ord.order_status_display || ord.status_display || ord.status || 'En fabricación';
+  const ordStatus = ord.status_label || ord.order_status_display || ord.status_display || ord.status || 'En fabricación';
 
   document.getElementById('selected-order-num').textContent = ordNum;
   document.getElementById('selected-order-client').textContent = clientName;
@@ -194,17 +292,34 @@ function selectOrder(ord) {
 }
 
 /**
- * Revisa si existe un `order_id` en la URL para seleccionarlo de forma automática
+ * Revisa si existe un `order_id` o `id` en la URL para seleccionarlo de forma automática
  */
-function checkPreselectedOrder() {
+async function checkPreselectedOrder() {
   const urlParams = new URLSearchParams(window.location.search);
-  const orderId = urlParams.get('order_id') || urlParams.get('id');
+  const orderId = urlParams.get('order_id') || urlParams.get('id') || urlParams.get('order');
 
-  if (orderId && state.orders.length > 0) {
-    const found = state.orders.find(o => String(o.id) === String(orderId));
+  if (!orderId) return;
+
+  // 1. Buscar en los pedidos en memoria
+  if (state.orders.length > 0) {
+    const found = state.orders.find(o => String(o.id) === String(orderId) || String(o.order_number) === String(orderId));
     if (found) {
       selectOrder(found);
+      return;
     }
+  }
+
+  // 2. Si no estaba cargado en memoria, consultarlo directamente a la API por ID
+  try {
+    const directOrder = await obtenerPedidoPorId(orderId);
+    if (directOrder && directOrder.id) {
+      if (!state.orders.some(o => String(o.id) === String(directOrder.id))) {
+        state.orders.unshift(directOrder);
+      }
+      selectOrder(directOrder);
+    }
+  } catch (err) {
+    console.warn('[Notification Create] Error al cargar pedido preseleccionado:', err);
   }
 }
 

@@ -24,7 +24,9 @@ def on_internal_order_change(sender, instance, created, **kwargs):
 
     # Notificar a los administradores ante un nuevo pedido interno
     if created:
-        emp_name = instance.employee.full_name if instance.employee else "Empleado"
+        emp_name = getattr(instance.employee, 'full_name', None) or (
+            instance.employee.user.get_full_name() if instance.employee and getattr(instance.employee, 'user', None) else None
+        ) or "Empleado"
         send_notification_to_admins(
             title=f"Nuevo Pedido Empleado #{instance.order_number}",
             message=f"El empleado {emp_name} ha realizado el pedido #{instance.order_number} por un monto de ${instance.total_amount}.",
@@ -103,7 +105,9 @@ def on_debt_payment_created(sender, instance, created, **kwargs):
     # Sincronizar órdenes acumuladas (FIFO)
     sync_employee_orders_paid_status(instance.employee)
 
-    emp_name = instance.employee.full_name if instance.employee else "Empleado"
+    emp_name = getattr(instance.employee, 'full_name', None) or (
+        instance.employee.user.get_full_name() if instance.employee and getattr(instance.employee, 'user', None) else None
+    ) or "Empleado"
     tipo_display = instance.get_payment_type_display() if hasattr(instance, 'get_payment_type_display') else 'Abono'
 
     # Notificar a los administradores

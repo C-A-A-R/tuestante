@@ -97,6 +97,18 @@ function renderOrderDetail(order) {
   if (breadcrumbCode) breadcrumbCode.textContent = code;
   if (titleCode) titleCode.textContent = `Pedido ${code}`;
 
+  // Botones de Notificaciones vinculados dinámicamente a la creación con este pedido preseleccionado
+  const orderTargetId = order.id || detailState.orderId;
+  const targetNotifUrl = `../notifications/notification-create.html?order_id=${orderTargetId}`;
+  const btnViewNotifs = document.getElementById('btn-view-order-notifs');
+  if (btnViewNotifs) {
+    btnViewNotifs.href = targetNotifUrl;
+  }
+  const btnGotoNotifs = document.getElementById('btn-goto-notifications');
+  if (btnGotoNotifs) {
+    btnGotoNotifs.href = targetNotifUrl;
+  }
+
   // 2. Badge de Estado Principal
   const headerStatusBadge = document.getElementById('order-header-status-badge');
   const headerStatusText = document.getElementById('order-header-status-text');

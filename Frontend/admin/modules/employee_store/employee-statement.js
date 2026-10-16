@@ -175,15 +175,15 @@ function renderWorkerProfile(emp) {
       let age = today.getFullYear() - Number(by);
       const mDiff = today.getMonth() - (Number(bm) - 1);
       if (mDiff < 0 || (mDiff === 0 && today.getDate() < Number(bd))) age--;
-      birthPill.textContent = `🎂 F. Nac: ${bd}/${bm}/${by} (${age} años)`;
+      birthPill.textContent = `F. Nac: ${bd}/${bm}/${by} (${age} años)`;
       birthPill.style.display = 'inline-flex';
     } else {
-      birthPill.textContent = `🎂 F. Nac: No registrada`;
+      birthPill.textContent = `F. Nac: No registrada`;
       birthPill.style.display = 'inline-flex';
     }
   }
 
-  document.getElementById('worker-dept').textContent = `Depto: ${emp.department || 'General'}`;
+  document.getElementById('worker-dept').textContent = `Departamento: ${emp.department || 'General'}`;
   document.getElementById('worker-pos').textContent = `Cargo: ${emp.position || 'Colaborador'}`;
   document.getElementById('worker-salary').textContent = `$${salary.toFixed(2)}`;
 
@@ -614,9 +614,18 @@ function setupEventListeners() {
 
   // Modal Pago
   setupPayVoucherEvents();
+  const paymentModalEl = document.getElementById('payment-modal');
   document.getElementById('btn-open-payment-modal')?.addEventListener('click', openPaymentModal);
   document.getElementById('btn-close-payment')?.addEventListener('click', closePaymentModal);
   document.getElementById('btn-cancel-payment')?.addEventListener('click', closePaymentModal);
+  paymentModalEl?.addEventListener('click', (e) => {
+    if (e.target === paymentModalEl) closePaymentModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && paymentModalEl?.classList.contains('is-active')) {
+      closePaymentModal();
+    }
+  });
   document.getElementById('pay-amount')?.addEventListener('input', updatePayVesPreview);
 
   // Formulario Pago Submit

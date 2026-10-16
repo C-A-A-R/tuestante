@@ -221,6 +221,16 @@ class EmployeeStoreServicesTestCase(TestCase):
         )
         self.assertIsNotNone(admin_order)
 
+        # 2b. El administrador también puede registrar la compra aun con is_admin_override=False por ser admin
+        admin_order_default = checkout_internal_order(
+            employee=self.employee,
+            items_data=[{'barcode': self.product2.barcode, 'quantity': 1}],
+            user=self.admin_user,
+            is_admin_override=False
+        )
+        self.assertIsNotNone(admin_order_default)
+
+
         # 3. El empleado liquida la deuda vieja con un abono de $15.00
         DebtPayment.objects.create(
             employee=self.employee,

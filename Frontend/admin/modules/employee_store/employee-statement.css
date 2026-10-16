@@ -614,14 +614,30 @@ body {
 /* Modals */
 .modal-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(4px);
+  top: 0;
+  left: var(--drawer-current-width, 260px);
+  width: calc(100% - var(--drawer-current-width, 260px));
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 20px;
+  z-index: 1200;
+  padding: calc(var(--navbar-height, 70px) + 20px) 20px 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 1023.98px) {
+  .modal-backdrop {
+    left: 0 !important;
+    width: 100% !important;
+    padding-top: calc(var(--navbar-height, 70px) + 16px);
+  }
 }
 
 .modal-backdrop.is-active {
@@ -632,15 +648,17 @@ body {
 .modal-window {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 20px 45px -10px rgba(0, 30, 60, 0.35), 0 0 0 1px rgba(203, 213, 225, 0.4);
   width: 100%;
   max-width: 540px;
-  max-height: 85vh;
+  max-height: calc(100vh - var(--navbar-height, 70px) - 40px);
+  max-height: calc(100dvh - var(--navbar-height, 70px) - 40px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--border-card);
   animation: slideUp 0.25s ease-out;
+  margin: auto;
 }
 
 .modal-window form {
@@ -1011,6 +1029,8 @@ body {
    MODAL LIGHTBOX PANTALLA COMPLETA
    ========================================================================== */
 .modal-photo-lightbox {
+  left: 0 !important;
+  width: 100% !important;
   background-color: rgba(15, 23, 42, 0.88);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -1018,7 +1038,7 @@ body {
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 24px !important;
 }
 
 .modal-photo-lightbox.is-active,

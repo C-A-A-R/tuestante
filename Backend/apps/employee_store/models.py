@@ -50,6 +50,18 @@ class EmployeeProfile(BaseModel):
         super().save(*args, **kwargs)
 
     @property
+    def full_name(self):
+        """Retorna el nombre completo del trabajador asociado a su usuario de Django."""
+        if not self.user:
+            return ""
+        name = self.user.get_full_name() if hasattr(self.user, 'get_full_name') else ''
+        if not name:
+            first = getattr(self.user, 'first_name', '') or ''
+            last = getattr(self.user, 'last_name', '') or ''
+            name = f"{first} {last}".strip()
+        return name or getattr(self.user, 'username', '')
+
+    @property
     def current_debt(self):
         """
         Calcula la deuda acumulada actual del empleado:

@@ -107,19 +107,40 @@ export async function crearNotificacionManual(formData) {
 }
 
 /**
- * Obtiene la lista de pedidos activos para el selector del modal
+ * Obtiene la lista de pedidos activos para el selector del modal o buscador interactivo
+ * @param {string} search - Término de búsqueda opcional por número de pedido o nombre de cliente
  */
-export async function obtenerPedidosSelector() {
+export async function obtenerPedidosSelector(search = '') {
   try {
+    const params = { limit: 100 };
+    if (search && search.trim()) {
+      params.search = search.trim();
+    }
     const res = await apiRequest({
       path: '/orders/',
       method: 'GET',
-      params: { limit: 100 }
+      params: params
     });
     return Array.isArray(res) ? res : (res?.results || []);
   } catch (e) {
     console.warn('[Notificaciones API] Error al obtener pedidos:', e);
     return [];
+  }
+}
+
+/**
+ * Obtiene el detalle de un pedido específico por ID
+ * @param {number|string} orderId 
+ */
+export async function obtenerPedidoPorId(orderId) {
+  try {
+    return await apiRequest({
+      path: `/orders/${orderId}/`,
+      method: 'GET'
+    });
+  } catch (e) {
+    console.warn(`[Notificaciones API] Error al obtener pedido #${orderId}:`, e);
+    return null;
   }
 }
 

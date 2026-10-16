@@ -40,7 +40,9 @@ async function loadComponent(elementId, filePath) {
     const url = filePath.includes('?') ? `${filePath}&_t=${Date.now()}` : `${filePath}?_t=${Date.now()}`;
     const response = await fetch(url, { cache: 'no-store' });
     if (response.ok) {
-      const html = await response.text();
+      let html = await response.text();
+      // Prevenir 404 inmediato del navegador al buscar logo.svg relativo al módulo de notificaciones
+      html = html.replace(/src="assets\/images\/logo\.svg"/g, 'src="../../assets/images/logo.svg"');
       const el = document.getElementById(elementId);
       if (el) el.innerHTML = html;
     }

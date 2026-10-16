@@ -41,6 +41,7 @@ LOCAL_APPS = [
     'apps.gallery',
     'apps.invoice',
     'apps.employee_store',
+    'apps.partnerships',
 ]
 
 

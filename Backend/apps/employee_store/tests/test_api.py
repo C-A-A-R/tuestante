@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -35,7 +36,8 @@ class EmployeeStoreAPITestCase(APITestCase):
             email='worker@example.com',
             password='WorkerPass123!',
             first_name='Carlos',
-            first_last_name='Gomez'
+            first_last_name='Gomez',
+            is_active=True
         )
         self.employee = EmployeeProfile.objects.create(
             user=self.worker_user,
@@ -181,5 +183,41 @@ class EmployeeStoreAPITestCase(APITestCase):
 
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, stock_before_cancel + 1)
+
+    def test_order_creation_with_overdue_debt(self):
+        """
+        Si un trabajador tiene deuda pendiente de semanas anteriores:
+        - Una petición de admin (o autorizada por admin) DEBE ser permitida.
+        - Una petición de auto-servicio del trabajador sin privilegios DEBE ser rechazada.
+        """
+        # Crear orden vieja sin pagar para self.employee
+        old_date = timezone.now().date() - timedelta(days=14)
+        old_order = InternalOrder.objects.create(
+            employee=self.employee,
+            order_number='ORD-DEBT-OLD',
+            total_amount=Decimal('60.00'),
+            status='COMPLETED',
+            created_by=self.admin
+        )
+        InternalOrder.objects.filter(id=old_order.id).update(created_at=old_date)
+
+        order_url = '/api/employee-store/orders/'
+        payload = {
+            'employee_id': self.employee.id,
+            'items': [{'barcode': self.product.barcode, 'quantity': 1}],
+            'notes': 'Orden admin con deuda vieja'
+        }
+
+        # 1. El admin realiza la orden (sin especificar is_admin_override explícito o con él)
+        res_admin = self.client.post(order_url, payload, format='json')
+        self.assertEqual(res_admin.status_code, status.HTTP_201_CREATED)
+
+        # 2. El trabajador intenta ordenar por auto-servicio
+        refresh_worker = RefreshToken.for_user(self.worker_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh_worker.access_token}')
+        res_worker = self.client.post(order_url, payload, format='json')
+        self.assertEqual(res_worker.status_code, status.HTTP_400_BAD_REQUEST)
+        error_msg = str(res_worker.data)
+        self.assertIn("semanas anteriores", error_msg.lower())
 
 

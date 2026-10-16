@@ -236,8 +236,8 @@ class InternalOrderViewSet(BaseViewSet):
         # Determinar si el usuario tiene privilegios de administrador para override (límites semanales y deudas)
         is_staff = getattr(request.user, 'is_staff', False) or getattr(request.user, 'is_superuser', False)
         requested_override = serializer.validated_data.get('is_admin_override', False)
-        # Se aplica override si el usuario tiene permisos administrativos y se solicita el override
-        is_admin_override = bool(is_staff and requested_override)
+        # Se aplica override si el usuario tiene permisos administrativos y lo solicita o si la orden la crea un administrador
+        is_admin_override = bool(is_staff and (requested_override or 'is_admin_override' not in request.data))
 
         order_status = serializer.validated_data.get('status', 'UNDELIVERED')
         order = checkout_internal_order(

@@ -79,30 +79,23 @@
     color: #003d66;
 }
 
-/* Wrapper del Botón de Google: mismo tamaño exacto (100% ancho y 48px alto) */
+/* Wrapper del Botón de Google: mismo tamaño exacto (100% ancho y min 48px alto) */
 .google-auth-btn-wrapper {
     position: relative;
     width: 100%;
-    height: 48px;
+    min-height: 48px;
     border-radius: var(--radius-sm, 8px);
-    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .google-auth-btn-wrapper:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.google-auth-btn-wrapper:active {
-    transform: translateY(0);
-}
-
-/* Botón con estilos oficiales limpios y elegantes */
+/* Botón con estilos oficiales limpios y elegantes (Placeholder / Fallback) */
 .btn-google-custom {
     display: inline-flex;
     align-items: center;
@@ -139,30 +132,25 @@
     line-height: 1;
 }
 
-/* Overlay interactivo del SDK de Google: captura los clics de forma nativa sin errores */
-.google-btn-hidden-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
+/* Contenedor del Botón Oficial de Google Identity Services */
+.google-gis-btn-container {
     width: 100%;
-    height: 100%;
-    opacity: 0.001;
-    z-index: 5;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    min-height: 44px;
 }
 
-.google-btn-hidden-overlay > div,
-.google-btn-hidden-overlay iframe {
-    width: 100% !important;
-    min-width: 100% !important;
-    height: 100% !important;
-    min-height: 48px !important;
-    transform: scale(1.6);
-    cursor: pointer !important;
+.google-gis-btn-container iframe {
+    margin: 0 auto !important;
+}
+
+/* Compatibilidad retroactiva sin distorsión */
+.google-btn-hidden-overlay {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Efecto de resaltado al hacer clic en registro rápido */
