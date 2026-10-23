@@ -8,6 +8,7 @@
 
 import { registerUser } from "./auth.js";
 import { initGoogleAuth } from "./google-auth.js";
+import { getVenezuelaStates, getCitiesByState } from "../../js/locations.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("registerForm");
@@ -16,6 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
     setupPasswordToggles();
     setupLivePasswordValidation();
     setupNumericInputs();
+    setupLocationSelects();
+    setupInputErrorClearing(form);
     setupFormSubmission(form);
 
     // Inicializar Google Sign-In / Registro
@@ -111,6 +114,62 @@ function setupNumericInputs() {
 }
 
 /**
+ * Configuración de selects en cascada para Estado y Ciudad
+ */
+function setupLocationSelects() {
+    const stateSelect = document.getElementById("state");
+    const citySelect = document.getElementById("city");
+    if (!stateSelect || !citySelect) return;
+
+    // Llenar Estados
+    const states = getVenezuelaStates();
+    stateSelect.innerHTML = '<option value="">Selecciona un estado</option>';
+    states.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        stateSelect.appendChild(opt);
+    });
+
+    stateSelect.addEventListener("change", () => {
+        const selectedState = stateSelect.value;
+        citySelect.innerHTML = '<option value="">Selecciona una ciudad</option>';
+        clearFieldError(stateSelect);
+        clearFieldError(citySelect);
+
+        if (!selectedState) {
+            citySelect.disabled = true;
+            return;
+        }
+
+        const cities = getCitiesByState(selectedState);
+        cities.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            citySelect.appendChild(opt);
+        });
+
+        citySelect.disabled = false;
+    });
+
+    citySelect.addEventListener("change", () => {
+        clearFieldError(citySelect);
+    });
+}
+
+/**
+ * Limpiar errores en tiempo real conforme el usuario escribe o interactúa
+ */
+function setupInputErrorClearing(form) {
+    const inputs = form.querySelectorAll(".form-input, .form-select");
+    inputs.forEach(input => {
+        input.addEventListener("input", () => clearFieldError(input));
+        input.addEventListener("change", () => clearFieldError(input));
+    });
+}
+
+/**
  * Envío y procesamiento del formulario
  */
 function setupFormSubmission(form) {
@@ -132,12 +191,14 @@ function setupFormSubmission(form) {
         const phoneCodeSelect = document.getElementById("phone_code");
         const phoneNumberInput = document.getElementById("phone_number");
         const birthDateInput = document.getElementById("birth_date");
-        const cityInput = document.getElementById("city");
+        const stateSelect = document.getElementById("state");
+        const citySelect = document.getElementById("city");
+        const addressInput = document.getElementById("address");
         const passwordInput = document.getElementById("password");
         const confirmPasswordInput = document.getElementById("confirm_password");
 
         // Limpiar errores previos
-        form.querySelectorAll(".form-input").forEach(clearFieldError);
+        form.querySelectorAll(".form-input, .form-select").forEach(clearFieldError);
 
         let hasError = false;
 
@@ -195,7 +256,54 @@ function setupFormSubmission(form) {
             hasError = true;
         }
 
-        // 6. Validar Contraseña
+        // 6. Validar Fecha de Nacimiento (OBLIGATORIA)
+        const birthDateVal = (birthDateInput?.value || "").trim();
+        if (!birthDateVal) {
+            setFieldError(birthDateInput, "La fecha de nacimiento es obligatoria.");
+            hasError = true;
+        } else {
+            const birthDateObj = new Date(`${birthDateVal}T00:00:00`);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (isNaN(birthDateObj.getTime())) {
+                setFieldError(birthDateInput, "Ingresa una fecha de nacimiento válida.");
+                hasError = true;
+            } else if (birthDateObj > today) {
+                setFieldError(birthDateInput, "La fecha de nacimiento no puede ser una fecha futura.");
+                hasError = true;
+            } else {
+                const ageYears = today.getFullYear() - birthDateObj.getFullYear();
+                if (ageYears > 120 || ageYears < 0) {
+                    setFieldError(birthDateInput, "Por favor ingresa una fecha de nacimiento válida.");
+                    hasError = true;
+                }
+            }
+        }
+
+        // 7. Validar Ubicación: Estado, Ciudad y Dirección (OBLIGATORIOS)
+        const stateVal = (stateSelect?.value || "").trim();
+        if (!stateVal) {
+            setFieldError(stateSelect, "Por favor selecciona tu estado.");
+            hasError = true;
+        }
+
+        const cityVal = (citySelect?.value || "").trim();
+        if (!cityVal) {
+            setFieldError(citySelect, "Por favor selecciona tu ciudad.");
+            hasError = true;
+        }
+
+        const addressVal = (addressInput?.value || "").trim();
+        if (!addressVal) {
+            setFieldError(addressInput, "La dirección es obligatoria.");
+            hasError = true;
+        } else if (addressVal.length < 5) {
+            setFieldError(addressInput, "Por favor ingresa una dirección más detallada (mínimo 5 caracteres).");
+            hasError = true;
+        }
+
+        // 8. Validar Contraseña
         const password = passwordInput?.value || "";
         const confirmPassword = confirmPasswordInput?.value || "";
 
@@ -210,7 +318,10 @@ function setupFormSubmission(form) {
             hasError = true;
         }
 
-        if (password !== confirmPassword) {
+        if (!confirmPassword) {
+            setFieldError(confirmPasswordInput, "Confirma tu contraseña.");
+            hasError = true;
+        } else if (password !== confirmPassword) {
             setFieldError(confirmPasswordInput, "Las contraseñas no coinciden.");
             hasError = true;
         }
@@ -233,8 +344,10 @@ function setupFormSubmission(form) {
             document_type: docType,
             identity_document: formattedDoc,
             phone: formattedPhone,
-            birth_date: birthDateInput?.value || undefined,
-            city: (cityInput?.value || "").trim() || undefined,
+            birth_date: birthDateVal,
+            state: stateVal,
+            city: cityVal,
+            address: addressVal,
             password: password,
             confirm_password: confirmPassword,
             is_registered: true
@@ -358,9 +471,17 @@ function mapBackendFieldErrors(data) {
         username: "usuario",
         email: "email",
         first_name: "first_name",
+        second_name: "second_name",
         first_last_name: "first_last_name",
+        second_last_name: "second_last_name",
         identity_document: "identity_document",
+        document_type: "document_type",
         phone: "phone_number",
+        phone_number: "phone_number",
+        birth_date: "birth_date",
+        state: "state",
+        city: "city",
+        address: "address",
         password: "password",
         confirm_password: "confirm_password"
     };

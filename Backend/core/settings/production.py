@@ -4,20 +4,39 @@ import pymysql
 pymysql.install_as_MySQLdb()
 
 print("---------------- Production settings loaded ----------------")
-# Channel Layers — Redis para producción (escala con múltiples workers)
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [env("REDIS_URL", default="redis://127.0.0.1:6379")],
-        },
+# Channel Layers — Redis para producción si está configurado en .env, o fallback a InMemoryChannelLayer
+REDIS_URL = env("REDIS_URL", default=None)
+if REDIS_URL and str(REDIS_URL).strip():
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [REDIS_URL],
+            },
+        }
     }
-}
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer"
+        }
+    }
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS_DEPLOY', default=['backend.tuestante.com', 'tuestante.com', 'localhost', '127.0.0.1'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS_DEPLOY', default=['backend.tuestante.com', 'tuestante.com', 'www.tuestante.com', 'localhost', '127.0.0.1'])
 
 
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+CORS_ALLOWED_ORIGINS = env.list(
+    'CORS_ALLOWED_ORIGINS',
+    default=[
+        "https://tuestante.com",
+        "https://www.tuestante.com",
+        "https://backend.tuestante.com",
+        "http://localhost:8000",
+        "http://localhost:3000",
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+    ]
+)
 CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
 CORS_ALLOW_CREDENTIALS = True
 

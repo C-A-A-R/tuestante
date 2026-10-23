@@ -180,9 +180,9 @@ async function handleLogin(event) {
 	if (notification) notification.style.display = "none";
 
 	if (!email) {
-		setFieldError(emailField, "El correo electrónico es obligatorio.");
+		setFieldError(emailField, "Ingresa tu correo electrónico o cédula.");
 		hasError = true;
-	} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+	} else if (email.includes("@") && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
 		setFieldError(emailField, "Ingresa un correo electrónico válido.");
 		hasError = true;
 	}
@@ -200,7 +200,9 @@ async function handleLogin(event) {
 
 	try {
 		const result = await loginUser({
+			username: email,
 			email: email,
+			identity_document: email,
 			password: password,
 			contrasena: password,
 		});

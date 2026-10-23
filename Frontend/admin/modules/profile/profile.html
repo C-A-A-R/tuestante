@@ -209,7 +209,40 @@
                     </div>
                   </div>
 
-                  <!-- 2. Usuario -->
+                  <!-- 5. Tipo de Documento -->
+                  <div class="profile-field-group">
+                    <label for="select-document-type" class="profile-field-label">
+                      Tipo de documento
+                    </label>
+                    <div class="profile-input-wrap">
+                      <select id="select-document-type" class="profile-input profile-select" disabled>
+                        <option value="V">V - Venezolano</option>
+                        <option value="E">E - Extranjero</option>
+                        <option value="J">J - Jurídico</option>
+                        <option value="G">G - Gubernamental</option>
+                        <option value="P">P - Pasaporte</option>
+                        <option value="R">R - Firma Personal / Registro</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- 6. Número de Documento -->
+                  <div class="profile-field-group">
+                    <label for="input-identity-document" class="profile-field-label">
+                      Número de documento
+                    </label>
+                    <div class="profile-input-wrap">
+                      <input 
+                        type="text" 
+                        id="input-identity-document" 
+                        class="profile-input" 
+                        placeholder="Ej. 12345678"
+                        disabled
+                      >
+                    </div>
+                  </div>
+
+                  <!-- 7. Usuario -->
                   <div class="profile-field-group">
                     <label for="input-username" class="profile-field-label">
                       Usuario <span class="required-mark">*</span>

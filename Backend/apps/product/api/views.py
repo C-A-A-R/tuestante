@@ -29,7 +29,12 @@ class ProductTypeViewSet(BaseViewSet):
     """
     serializer_class = ProductTypeSerializer
     search_fields = ['product_type_name', 'description']
-    ordering_fields = ['product_type_name', 'created_at', 'id']
+    ordering_fields = ['product_type_name', 'products_count', 'created_at', 'id']
+
+    def get_queryset(self):
+        return ProductType.objects.filter(is_deleted=False).annotate(
+            products_count=Count('products', filter=Q(products__is_deleted=False))
+        )
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:

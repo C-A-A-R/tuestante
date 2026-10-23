@@ -15,6 +15,7 @@ import { initNavbar } from '../../components/navbar/navbar.js';
 import { initFooter } from '../../components/footer/footer.js';
 import { obtenerMisPedidos } from '../order/order.api.js';
 import { resolveImageUrl, extractList } from '../../js/api.js';
+import { getVenezuelaStates, getCitiesByState } from '../../js/locations.js';
 
 // Estado Global de Edición
 let isEditingMode = false;
@@ -52,7 +53,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     initNavbar();
     initFooter();
 
-    // 3. Renderizar Información en el Hero y en el Formulario (datos en caché)
+    // 3. Inicializar Selects de Ubicación (Estados y Ciudades)
+    setupLocationSelects();
+
+    // 4. Renderizar Información en el Hero y en el Formulario (datos en caché)
     renderUserProfile(currentUser);
 
     // 4. Sincronizar en segundo plano con el Backend para traer los datos más recientes
@@ -73,6 +77,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 6. Cargar miniatura de la última compra en 'Mis Compras'
     loadRecentOrderThumbnail();
 });
+
+/**
+ * Configuración de selects de Estado y Ciudad para el perfil del cliente.
+ */
+function setupLocationSelects() {
+    const stateSelect = document.getElementById('input-state');
+    const citySelect = document.getElementById('input-city');
+    if (!stateSelect || !citySelect) return;
+
+    const states = getVenezuelaStates();
+    stateSelect.innerHTML = '<option value="">Selecciona un estado</option>';
+    states.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        stateSelect.appendChild(opt);
+    });
+
+    stateSelect.addEventListener('change', () => {
+        const selectedState = stateSelect.value;
+        citySelect.innerHTML = '<option value="">Selecciona una ciudad</option>';
+        if (!selectedState) {
+            citySelect.disabled = true;
+            return;
+        }
+
+        const cities = getCitiesByState(selectedState);
+        cities.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            citySelect.appendChild(opt);
+        });
+
+        // Habilitar según si estamos en modo edición
+        citySelect.disabled = !isEditingMode;
+    });
+}
 
 /**
  * Renderiza los datos del usuario en la tarjeta Hero y llena los inputs del formulario.
@@ -126,6 +168,28 @@ function renderUserProfile(user) {
     setInputValue('input-phone', user.phone);
     setInputValue('input-email', user.email);
     setInputValue('input-birth-date', user.birth_date);
+
+    // Estado y Ciudad en cascada
+    const stateSelect = document.getElementById('input-state');
+    const citySelect = document.getElementById('input-city');
+    if (stateSelect) {
+        stateSelect.value = user.state || '';
+        if (citySelect) {
+            citySelect.innerHTML = '<option value="">Selecciona una ciudad</option>';
+            if (user.state) {
+                const cities = getCitiesByState(user.state);
+                cities.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    citySelect.appendChild(opt);
+                });
+                citySelect.value = user.city || '';
+            }
+            citySelect.disabled = !isEditingMode || !user.state;
+        }
+    }
+
     setInputValue('input-address', user.address);
 }
 
@@ -166,6 +230,8 @@ function setEditingMode(enable) {
         'input-identity-document',
         'input-phone',
         'input-birth-date',
+        'input-state',
+        'input-city',
         'input-address'
     ];
 
@@ -231,6 +297,8 @@ function setupProfileForm() {
             identity_document: document.getElementById('input-identity-document')?.value.trim(),
             phone: document.getElementById('input-phone')?.value.trim(),
             birth_date: document.getElementById('input-birth-date')?.value || null,
+            state: document.getElementById('input-state')?.value.trim() || '',
+            city: document.getElementById('input-city')?.value.trim() || '',
             address: document.getElementById('input-address')?.value.trim() || '',
         };
 

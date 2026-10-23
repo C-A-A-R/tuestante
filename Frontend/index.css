@@ -508,6 +508,29 @@ body {
     }
 }
 
+/* Modo estático y centrado cuando hay pocos socios (sin duplicar) */
+.partnerships-carousel.is-static {
+    width: 100%;
+    margin-left: 0;
+    overflow: visible;
+    mask-image: none;
+    -webkit-mask-image: none;
+}
+
+.partnerships-track.is-centered {
+    animation: none !important;
+    width: 100% !important;
+    max-width: 100%;
+    margin: 0 auto;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 24px;
+}
+
+.partnerships-track.is-centered .partner-logo-card {
+    flex: 0 1 auto;
+}
+
 /* Tarjeta de cada logo */
 .partner-logo-card {
     display: flex;

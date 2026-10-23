@@ -130,22 +130,8 @@ def checkout_internal_order(employee, items_data, user=None, notes='', is_admin_
         else:
             products_by_id = {}
 
-        # Generar número de orden interno único (format ORD-INT0001-2026)
-        from apps.employee_store.utils import generate_internal_order_number
-        order_number = generate_internal_order_number()
-
-        order = InternalOrder(
-            employee=employee,
-            order_number=order_number,
-            total_amount=Decimal('0.00'),
-            status=status,
-            created_by=user, 
-            notes=notes
-        )
-        order.save()
-
         total_amount = Decimal('0.00')
-        order_items = []
+        prepared_items = []
 
         for item_data in items_data:
             barcode = item_data.get('barcode')
@@ -181,20 +167,39 @@ def checkout_internal_order(employee, items_data, user=None, notes='', is_admin_
             subtotal = unit_price * quantity
             total_amount += subtotal
 
-            order_items.append(
-                InternalOrderItem(
-                    order=order,
-                    product=product,
-                    quantity=quantity,
-                    unit_price=unit_price,
-                    subtotal=subtotal
-                )
+            prepared_items.append({
+                'product': product,
+                'quantity': quantity,
+                'unit_price': unit_price,
+                'subtotal': subtotal
+            })
+
+        # Generar número de orden interno único (format ORD-INT0001-2026)
+        from apps.employee_store.utils import generate_internal_order_number
+        order_number = generate_internal_order_number()
+
+        # Guardar la orden con el monto real calculado
+        order = InternalOrder(
+            employee=employee,
+            order_number=order_number,
+            total_amount=total_amount,
+            status=status,
+            created_by=user, 
+            notes=notes
+        )
+        order.save()
+
+        order_items = [
+            InternalOrderItem(
+                order=order,
+                product=item['product'],
+                quantity=item['quantity'],
+                unit_price=item['unit_price'],
+                subtotal=item['subtotal']
             )
-
+            for item in prepared_items
+        ]
         InternalOrderItem.objects.bulk_create(order_items)
-
-        order.total_amount = total_amount
-        order.save(update_fields=['total_amount', 'updated_at'])
 
         return order
 

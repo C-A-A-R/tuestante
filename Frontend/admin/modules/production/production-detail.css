@@ -1340,3 +1340,49 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   MODAL DE SELECCIÓN DE FORMATO (CON DISEÑO VS SOLO TEXTO)
+   ========================================================================== */
+.modal-export-format-card {
+  max-width: 520px;
+  width: 90%;
+  animation: modalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-export-option-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-primary, #ffffff);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.btn-export-option-card:hover {
+  border-color: #0284c7;
+  background: #f0f9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
+}
+
+.btn-export-option-card:active {
+  transform: translateY(0);
+}
+
+.export-opt-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+

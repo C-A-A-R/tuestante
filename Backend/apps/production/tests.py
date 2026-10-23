@@ -338,18 +338,30 @@ class ProductionOrderTests(TestCase):
         self.assertTrue(sec_locker['accessories']['has_bevels'])
         self.assertTrue(sec_locker['accessories']['has_ventilation'])
 
-    def test_heuristic_filter_logistics_zero_tokens(self):
-        """Verifica que notas puramente logísticas se descartan en 0 tokens sin invocar IA."""
+    def test_ai_customizer_always_called_on_notes(self):
+        """Verifica que cada vez que exista una nota se invoque a la IA de Gemini para evaluar y actualizar el diseño."""
+        from unittest.mock import patch
         from apps.production.services.parametric_service import ParametricDesignService
         from apps.production.services.ai_customizer_service import AICustomizerService
 
         design = ParametricDesignService.build_base_parametric_design(self.product)
         logistics_notes = "Por favor entregar en horas de la mañana, llamar antes al 0414-5555555 y enviar por Tealca. Muchas gracias!"
-        custom_design, has_changes, msg = AICustomizerService.apply_customizations(design, logistics_notes)
 
-        self.assertFalse(has_changes)
-        self.assertIn("0 tokens", msg)
-        self.assertEqual(custom_design['dimensions_mm'], design['dimensions_mm'])
+        with patch.object(AICustomizerService, '_call_gemini', return_value=(design, False, "Nota logística evaluada por IA; sin cambios físicos necesarios.")) as mock_call:
+            custom_design, has_changes, msg = AICustomizerService.apply_customizations(design, logistics_notes)
+            mock_call.assert_called_once()
+            self.assertFalse(has_changes)
+            self.assertEqual(custom_design['dimensions_mm'], design['dimensions_mm'])
+
+        # Prueba con nota de modificación física/visual
+        physical_notes = "Pintar puertas de color azul cobalto y agregar ranuras de ventilación"
+        modified_design = dict(design)
+        modified_design['main_color'] = '#005187'
+        with patch.object(AICustomizerService, '_call_gemini', return_value=(modified_design, True, "Color actualizado a azul cobalto.")) as mock_call2:
+            custom_design2, has_changes2, msg2 = AICustomizerService.apply_customizations(design, physical_notes)
+            mock_call2.assert_called_once()
+            self.assertTrue(has_changes2)
+            self.assertEqual(custom_design2['main_color'], '#005187')
 
     def test_product_type_architecture_inference(self):
         """Verifica la inferencia heurística offline de arquitectura para tipos de productos desconocidos."""

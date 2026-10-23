@@ -886,6 +886,7 @@ function normalizeBackendProductionOrder(backendObj) {
     estimated_completion_date: backendObj.estimated_completion_date,
     actual_completion_date: backendObj.actual_completion_date,
     technical_notes: backendObj.technical_notes || '',
+    order_notes: backendObj.order_notes || '',
     technical_design: backendObj.technical_design || null,
     blueprint_svg: backendObj.blueprint_svg || null,
     created_at: backendObj.created_at,

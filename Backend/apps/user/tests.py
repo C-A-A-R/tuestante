@@ -395,3 +395,126 @@ class UnregisteredUserTests(TestCase):
         emails_reg = [u['email'] for u in results_reg]
         self.assertIn('registered_list@example.com', emails_reg)
         self.assertNotIn('unregistered_list@example.com', emails_reg)
+
+
+class IdentityDocumentLoginTests(TestCase):
+    """Pruebas para inicio de sesión con documento de identidad y cédula."""
+
+    def setUp(self):
+        self.client = APIClient()
+        from apps.employee_store.models import EmployeeProfile
+
+        # Administrador con cédula
+        self.admin = User.objects.create_superuser(
+            username='admin_cedula',
+            email='admin_cedula@example.com',
+            password='AdminPassword123!',
+            identity_document='31701988',
+            document_type='V',
+        )
+
+        # Trabajador activo con cédula y perfil de empleado
+        self.worker = User.objects.create_user(
+            username='worker_cedula',
+            email='worker_cedula@example.com',
+            password='WorkerPassword123!',
+            identity_document='27658671',
+            document_type='V',
+            is_active=True,
+        )
+        self.worker_profile = EmployeeProfile.objects.create(
+            user=self.worker,
+            employee_number='TRA-99001',
+            department='Ventas',
+            position='Asesor',
+            is_active=True,
+        )
+
+        # Cliente normal con cédula
+        self.client_user = User.objects.create_user(
+            username='client_cedula@example.com',
+            email='client_cedula@example.com',
+            password='ClientPassword123!',
+            identity_document='V-12345678',
+            document_type='V',
+            is_active=True,
+        )
+
+    def test_admin_can_login_with_cedula(self):
+        """Verifica que un administrador puede iniciar sesión con su cédula (directa y con prefijo V-)."""
+        # Con número directo
+        res1 = self.client.post('/api/user/login/', {
+            'username': '31701988',
+            'password': 'AdminPassword123!',
+        }, format='json')
+        self.assertEqual(res1.status_code, status.HTTP_200_OK)
+        self.assertTrue(res1.data['is_superuser'])
+        self.assertIn('tokens', res1.data)
+
+        # Con prefijo V-
+        res2 = self.client.post('/api/user/login/', {
+            'username': 'V-31701988',
+            'password': 'AdminPassword123!',
+        }, format='json')
+        self.assertEqual(res2.status_code, status.HTTP_200_OK)
+
+        # Con puntos de formato V-31.701.988
+        res3 = self.client.post('/api/user/login/', {
+            'username': 'V-31.701.988',
+            'password': 'AdminPassword123!',
+        }, format='json')
+        self.assertEqual(res3.status_code, status.HTTP_200_OK)
+
+    def test_worker_can_login_with_cedula_and_employee_number(self):
+        """Verifica que un trabajador puede iniciar sesión con su cédula o ficha de empleado."""
+        # Con cédula directa
+        res1 = self.client.post('/api/user/login/', {
+            'username': '27658671',
+            'password': 'WorkerPassword123!',
+        }, format='json')
+        self.assertEqual(res1.status_code, status.HTTP_200_OK)
+        self.assertTrue(res1.data['is_employee'])
+        self.assertIn('tokens', res1.data)
+
+        # Con formato V-27.658.671
+        res2 = self.client.post('/api/user/login/', {
+            'username': 'V-27.658.671',
+            'password': 'WorkerPassword123!',
+        }, format='json')
+        self.assertEqual(res2.status_code, status.HTTP_200_OK)
+        self.assertTrue(res2.data['is_employee'])
+
+        # Con número de ficha / empleado
+        res3 = self.client.post('/api/user/login/', {
+            'username': 'TRA-99001',
+            'password': 'WorkerPassword123!',
+        }, format='json')
+        self.assertEqual(res3.status_code, status.HTTP_200_OK)
+        self.assertTrue(res3.data['is_employee'])
+
+    def test_client_cannot_login_with_cedula(self):
+        """Verifica que un cliente no puede iniciar sesión con cédula y recibe 403 Forbidden."""
+        res = self.client.post('/api/user/login/', {
+            'username': 'V-12345678',
+            'password': 'ClientPassword123!',
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn('únicamente para trabajadores y administradores', res.data['error'])
+
+        # Intentar con solo números
+        res_digits = self.client.post('/api/user/login/', {
+            'username': '12345678',
+            'password': 'ClientPassword123!',
+        }, format='json')
+        self.assertEqual(res_digits.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_client_can_login_with_email(self):
+        """Verifica que un cliente sí puede iniciar sesión normalmente con su correo electrónico."""
+        res = self.client.post('/api/user/login/', {
+            'email': 'client_cedula@example.com',
+            'password': 'ClientPassword123!',
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(res.data['is_employee'])
+        self.assertFalse(res.data['is_staff'])
+

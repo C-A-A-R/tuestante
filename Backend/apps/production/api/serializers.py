@@ -197,6 +197,7 @@ class ProductionOrderSerializer(serializers.ModelSerializer):
     """Serializador principal para las Órdenes de Fabricación."""
 
     order_number = serializers.CharField(source='order.order_number', read_only=True)
+    order_notes = serializers.CharField(source='order.notes', read_only=True)
     client_name = serializers.SerializerMethodField()
     client_phone = serializers.SerializerMethodField()
     order_status = serializers.CharField(source='order.status', read_only=True)
@@ -211,6 +212,7 @@ class ProductionOrderSerializer(serializers.ModelSerializer):
             'id',
             'order',
             'order_number',
+            'order_notes',
             'client_name',
             'client_phone',
             'order_status',
@@ -233,6 +235,7 @@ class ProductionOrderSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id',
             'iteration',
+            'order_notes',
             'status_display',
             'order_number',
             'client_name',

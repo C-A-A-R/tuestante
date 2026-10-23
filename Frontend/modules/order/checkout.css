@@ -163,6 +163,78 @@
     margin: 0;
 }
 
+/* Tarjeta de Dirección por Defecto */
+.default-address-card {
+    background-color: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: var(--radius-sm, 8px);
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    transition: all 0.2s ease;
+}
+
+.default-address-card:hover {
+    background-color: #dcfce7;
+    border-color: #4ade80;
+}
+
+.default-address-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+    width: 100%;
+}
+
+.default-address-checkbox {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    cursor: pointer;
+    accent-color: var(--primary, #005187);
+    flex-shrink: 0;
+}
+
+.default-address-content {
+    flex: 1;
+}
+
+.default-address-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.default-address-tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: #166534;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.default-address-action-text {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #166534;
+}
+
+.default-address-text {
+    font-size: 0.92rem;
+    color: #1e293b;
+    margin: 0;
+    line-height: 1.4;
+    font-weight: 500;
+}
+
 /* Formularios y Campos */
 .form-row {
     display: grid;

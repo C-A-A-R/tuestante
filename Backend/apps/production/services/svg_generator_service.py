@@ -201,15 +201,20 @@ class SVGBlueprintGenerator:
         width_mm = int(dims_total.get('width', 900))
         depth_mm = int(dims_total.get('max_depth') or dims_total.get('depth', 400))
 
-        grid = technical_design.get('grid', {})
-        rows = max(1, int(grid.get('rows', 1)))
-        cols = max(1, int(grid.get('columns', 1)))
+        grid = technical_design.get('grid') or {}
+        sections = technical_design.get('sections', [])
+        sec_grid = (sections[0].get('grid', {}) if sections and isinstance(sections, list) and isinstance(sections[0], dict) else {})
+        rows = max(1, int(grid.get('rows') or sec_grid.get('rows') or 1))
+        cols = max(1, int(grid.get('columns') or sec_grid.get('columns') or 1))
 
         main_color = technical_design.get('main_color', '#C0392B')
         prod_name = technical_design.get('product_name', 'Mueble Modular')
         furniture_type = technical_design.get('furniture_type', 'Casillero Modular')
         archetype = technical_design.get('archetype', 'caja_cerrada')
-        sections = technical_design.get('sections', [])
+        pname_l = (prod_name or '').lower()
+        ftype_l = (furniture_type or '').lower()
+        if any(term in pname_l or term in ftype_l for term in ['estante', 'estanteria', 'estantería', 'repisa', 'balda', 'librero']):
+            archetype = 'estante_abierto'
 
         # Parámetros de proyección 2.5D Oblicua (Cabinet / Cavalier suave)
         proj_angle_deg = 36.0
@@ -420,12 +425,53 @@ class SVGBlueprintGenerator:
           </g>
         ''')
 
-        # 3. COTA DE PROFUNDIDAD MÁXIMA (Oblicua en perspectiva)
-        depth_label_x = cab_x - (dx / 2) - 30
-        depth_label_y = cab_y + (cab_h / 2) + 20
+        # 3. COTA DE PROFUNDIDAD MÁXIMA (Eje Oblicuo Superior Derecho)
+        # Se proyecta en la arista de profundidad superior derecha (Back-Right -> Front-Right)
+        # con líneas de extensión, línea de cota con flechas y directriz al cajetín de cota,
+        # garantizando cero solapamiento con la cota de ALTO (lateral izq) y ANCHO (superior).
+        x_fr = cab_x + cab_w
+        y_fr = cab_y
+        x_br = cab_x + cab_w - dx
+        y_br = cab_y - dy
+
+        # Vector normal unitario hacia el exterior superior derecho
+        nx = math.sin(proj_angle_rad)
+        ny = -math.cos(proj_angle_rad)
+
+        dim_offset = 32
+        ext_len = 46
+
+        # Puntos de las líneas de extensión
+        p_br_ext_start = (x_br + 4 * nx, y_br + 4 * ny)
+        p_br_ext_end = (x_br + ext_len * nx, y_br + ext_len * ny)
+        p_fr_ext_start = (x_fr + 4 * nx, y_fr + 4 * ny)
+        p_fr_ext_end = (x_fr + ext_len * nx, y_fr + ext_len * ny)
+
+        # Línea de cota paralela a la arista de profundidad
+        dim_start = (x_br + dim_offset * nx, y_br + dim_offset * ny)
+        dim_end = (x_fr + dim_offset * nx, y_fr + dim_offset * ny)
+
+        mid_dim_x = (dim_start[0] + dim_end[0]) / 2
+        mid_dim_y = (dim_start[1] + dim_end[1]) / 2
+
+        badge_w = 120
+        badge_h = 24
+        badge_x = min(mid_dim_x + 32, canvas_w - badge_w - 28)
+        badge_y = mid_dim_y - 12
+
         svg_parts.append(f'''
-          <rect x="{depth_label_x - 55}" y="{depth_label_y - 12}" width="110" height="22" rx="3" fill="#0B1120" stroke="#38BDF8" stroke-width="0.8" opacity="0.9" />
-          <text x="{depth_label_x}" y="{depth_label_y + 3}" fill="#38BDF8" font-size="11" font-weight="700" text-anchor="middle">
+          <!-- Líneas de extensión de profundidad (Eje Z oblicuo) -->
+          <line x1="{p_br_ext_start[0]}" y1="{p_br_ext_start[1]}" x2="{p_br_ext_end[0]}" y2="{p_br_ext_end[1]}" stroke="#38BDF8" stroke-width="1" stroke-dasharray="2 2" />
+          <line x1="{p_fr_ext_start[0]}" y1="{p_fr_ext_start[1]}" x2="{p_fr_ext_end[0]}" y2="{p_fr_ext_end[1]}" stroke="#38BDF8" stroke-width="1" stroke-dasharray="2 2" />
+          <!-- Flecha de cota de profundidad -->
+          <line x1="{dim_start[0]}" y1="{dim_start[1]}" x2="{dim_end[0]}" y2="{dim_end[1]}" 
+                stroke="#38BDF8" stroke-width="1.5" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)" />
+          <!-- Directriz y etiqueta de profundidad -->
+          <polyline points="{mid_dim_x},{mid_dim_y} {mid_dim_x + 16},{mid_dim_y} {badge_x},{badge_y + (badge_h / 2)}" 
+                    stroke="#38BDF8" stroke-width="1" fill="none" />
+          <circle cx="{mid_dim_x}" cy="{mid_dim_y}" r="2" fill="#38BDF8" />
+          <rect x="{badge_x}" y="{badge_y}" width="{badge_w}" height="{badge_h}" rx="4" fill="#0B1120" stroke="#38BDF8" stroke-width="1" />
+          <text x="{badge_x + (badge_w / 2)}" y="{badge_y + 16}" fill="#38BDF8" font-size="12" font-weight="800" text-anchor="middle">
             FONDO {depth_mm} mm
           </text>
         ''')
@@ -502,11 +548,38 @@ class SVGBlueprintGenerator:
                 cy = y + (r - 1) * cell_h
 
                 if not has_doors:
-                    # Celda abierta (estantería)
+                    # Celda abierta (estantería con baldas metálicas y montantes ranurados)
+                    shelf_thick = max(6.0, min(14.0, cell_h * 0.08))
+                    shelf_top_y = cy + cell_h - shelf_thick - 1
+                    inner_fill = "#0B1120"
+                    inner_side = darken_color(main_color, 0.45)
+                    shelf_edge_light = lighten_color(main_color, 0.25)
+                    shelf_edge_dark = darken_color(main_color, 0.40)
+
+                    # Perforaciones / cremallera en montantes laterales de la bahía
+                    slots_html = ""
+                    n_slots = max(3, min(8, int(cell_h / 24)))
+                    slot_step = (cell_h - shelf_thick - 16) / max(1, n_slots)
+                    for s_idx in range(n_slots):
+                        s_y = cy + 10 + s_idx * slot_step
+                        slots_html += f'<rect x="{cx + 6}" y="{s_y:.1f}" width="3" height="7" rx="1" fill="#334155" opacity="0.8" />'
+                        slots_html += f'<rect x="{cx + cell_w - 9}" y="{s_y:.1f}" width="3" height="7" rx="1" fill="#334155" opacity="0.8" />'
+
                     svg_parts.append(f'''
-                      <!-- Baldas y fondo abierto -->
+                      <!-- Vano interior abierto R{r}C{c} -->
                       <rect x="{cx + 2}" y="{cy + 2}" width="{cell_w - 4}" height="{cell_h - 4}" 
-                            fill="#0B1120" stroke="{darken_color(main_color, 0.4)}" stroke-width="2" />
+                            fill="{inner_fill}" stroke="{inner_side}" stroke-width="1.5" />
+                      
+                      <!-- Ranuras cremallera de montante -->
+                      {slots_html}
+                      
+                      <!-- Balda / repisa horizontal metálica inferior -->
+                      <rect x="{cx + 2}" y="{shelf_top_y}" width="{cell_w - 4}" height="{shelf_thick}" 
+                            fill="{main_color}" stroke="{darken_color(main_color, 0.35)}" stroke-width="1" />
+                      <line x1="{cx + 2}" y1="{shelf_top_y}" x2="{cx + cell_w - 2}" y2="{shelf_top_y}" 
+                            stroke="{shelf_edge_light}" stroke-width="1.5" />
+                      <line x1="{cx + 2}" y1="{shelf_top_y + shelf_thick}" x2="{cx + cell_w - 2}" y2="{shelf_top_y + shelf_thick}" 
+                            stroke="{shelf_edge_dark}" stroke-width="1.5" />
                     ''')
                     continue
 

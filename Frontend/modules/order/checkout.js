@@ -12,6 +12,7 @@ import { obtenerDistribuidores, obtenerDistribuidoresDisponibles } from './shipm
 import { getAccessToken, getCurrentUser } from '../../js/storage.js';
 import { initNavbar } from '../../components/navbar/navbar.js';
 import { initFooter } from '../../components/footer/footer.js';
+import { findMunicipalityForCity } from '../../js/locations.js';
 
 // ============================================================================
 // DICCIONARIO DE UBICACIONES DE VENEZUELA (ESTADOS -> MUNICIPIOS -> CIUDADES)
@@ -687,6 +688,110 @@ async function handleConfirmOrder() {
     }
 }
 
+/**
+ * Configura la opción de "Usar mi dirección registrada / por defecto".
+ * Si el usuario autenticado tiene estado, ciudad o dirección configurados en su perfil,
+ * muestra la tarjeta y, al seleccionarla, autorellena los campos del formulario.
+ */
+async function setupDefaultAddressOption() {
+    const container = document.getElementById('default-address-card');
+    const checkbox = document.getElementById('checkout-use-default-address');
+    const previewText = document.getElementById('default-address-text');
+    if (!container || !checkbox || !previewText) return;
+
+    let user = getCurrentUser();
+
+    // Intentar sincronizar con la API para traer la información más reciente de perfil
+    try {
+        const { fetchProfileFromAPI } = await import('../profile/profile.api.js');
+        const freshUser = await fetchProfileFromAPI();
+        if (freshUser) {
+            user = freshUser;
+        }
+    } catch (e) {
+        console.warn('No se pudo refrescar perfil en checkout, usando datos locales:', e);
+    }
+
+    if (!user) return;
+
+    const userState = (user.state || '').trim();
+    const userCity = (user.city || '').trim();
+    const userAddress = (user.address || '').trim();
+
+    // Si el usuario no tiene ningún dato de dirección, no mostramos la opción
+    if (!userState && !userCity && !userAddress) {
+        container.style.display = 'none';
+        return;
+    }
+
+    // Formatear resumen
+    const parts = [];
+    if (userState) parts.push(userState);
+    if (userCity) parts.push(userCity);
+    if (userAddress) parts.push(userAddress);
+    previewText.textContent = parts.join(' — ');
+    container.style.display = 'block';
+
+    // Función para rellenar los inputs con los datos del perfil
+    const applyDefaultAddress = () => {
+        const stateSelect = document.getElementById('checkout-state');
+        const municipalitySelect = document.getElementById('checkout-municipality');
+        const citySelect = document.getElementById('checkout-city');
+        const sectorInput = document.getElementById('checkout-sector');
+
+        if (userState && stateSelect) {
+            // Buscar coincidencia exacta o insensible a mayúsculas/acentos
+            const options = Array.from(stateSelect.options);
+            const match = options.find(opt => opt.value.localeCompare(userState, undefined, { sensitivity: 'base' }) === 0);
+            if (match) {
+                stateSelect.value = match.value;
+            } else {
+                stateSelect.value = userState;
+            }
+
+            // Disparar cambio de estado para actualizar municipios
+            stateSelect.dispatchEvent(new Event('change'));
+
+            // Determinar municipio para la ciudad
+            if (municipalitySelect && userCity) {
+                const matchedMun = findMunicipalityForCity(stateSelect.value, userCity);
+                if (matchedMun) {
+                    municipalitySelect.value = matchedMun;
+                    municipalitySelect.dispatchEvent(new Event('change'));
+
+                    // Seleccionar ciudad
+                    if (citySelect) {
+                        const cityOptions = Array.from(citySelect.options);
+                        const matchCity = cityOptions.find(opt => opt.value.localeCompare(userCity, undefined, { sensitivity: 'base' }) === 0);
+                        if (matchCity) {
+                            citySelect.value = matchCity.value;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (userAddress && sectorInput) {
+            sectorInput.value = userAddress;
+        }
+
+        // Limpiar errores previos si los hubiera
+        clearAllErrors();
+    };
+
+    checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+            applyDefaultAddress();
+        }
+    });
+
+    // Si el usuario tiene dirección completa guardada, auto-seleccionar por defecto
+    if (userState || userCity || userAddress) {
+        checkbox.checked = true;
+        applyDefaultAddress();
+    }
+}
+
 // ============================================================================
 // INICIALIZACIÓN DE LA PÁGINA
 // ============================================================================
@@ -716,6 +821,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 4. Cargar datos de ubicación, productos y cobertura de proveedores
     initLocationSelects();
+    await setupDefaultAddressOption();
     renderCheckoutProducts();
 
     // 5. Configurar validación en tiempo real (limpieza de errores al escribir)

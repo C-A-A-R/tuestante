@@ -257,7 +257,7 @@ class UserViewSet(BaseViewSet):
             return Response({"detail": "No autenticado."}, status=status.HTTP_401_UNAUTHORIZED)
 
         if request.method == 'GET':
-            serializer = self.get_serializer(user)
+            serializer = UserSerializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         # PUT o PATCH
@@ -270,8 +270,13 @@ class UserViewSet(BaseViewSet):
             if len(parts) > 1:
                 data['first_last_name'] = parts[1]
 
-        serializer = self.get_serializer(user, data=data, partial=True)
+        serializer = UserSerializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        if 'address' in data:
+            user.address = data['address']
+            user.save(update_fields=['address'])
+
+        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 

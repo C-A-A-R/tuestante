@@ -445,17 +445,44 @@ export async function getProductTypes() {
     else if (res && Array.isArray(res.results)) items = res.results;
 
     if (items.length > 0) {
-      return items.map(t => ({
-        id: t.id,
-        product_type_name: t.product_type_name,
-        description: t.description || '',
-        archetype: t.archetype || '',
-        layout_template: t.layout_template || null,
-        default_has_doors: t.default_has_doors !== undefined ? Boolean(t.default_has_doors) : false,
-        product_type_image: t.product_type_image || '../../assets/images/logo.jpeg',
-        count: t.products_count !== undefined ? t.products_count : (t.count || 0),
-        is_active: t.is_active !== undefined ? t.is_active : true
-      }));
+      // Verificar si los tipos traen el conteo de productos
+      const hasCount = items.some(t => t.products_count !== undefined || t.count !== undefined);
+      let fallbackCountMap = null;
+
+      if (!hasCount) {
+        try {
+          const prods = await getProducts();
+          fallbackCountMap = {};
+          if (Array.isArray(prods)) {
+            prods.forEach(p => {
+              const tid = p.product_type_id || (p.product_type && p.product_type.id);
+              if (tid) {
+                fallbackCountMap[tid] = (fallbackCountMap[tid] || 0) + 1;
+              }
+            });
+          }
+        } catch (_) {}
+      }
+
+      return items.map(t => {
+        const rawCount = t.products_count !== undefined ? t.products_count : t.count;
+        const count = rawCount !== undefined 
+          ? Number(rawCount) 
+          : (fallbackCountMap && fallbackCountMap[t.id] !== undefined ? fallbackCountMap[t.id] : 0);
+
+        return {
+          id: t.id,
+          product_type_name: t.product_type_name,
+          description: t.description || '',
+          archetype: t.archetype || '',
+          layout_template: t.layout_template || null,
+          default_has_doors: t.default_has_doors !== undefined ? Boolean(t.default_has_doors) : false,
+          product_type_image: t.product_type_image || '../../assets/images/logo.jpeg',
+          products_count: count,
+          count: count,
+          is_active: t.is_active !== undefined ? t.is_active : true
+        };
+      });
     }
     return [];
   } catch (err) {
@@ -469,7 +496,12 @@ export async function getProductTypes() {
 export async function getProductType(id) {
   try {
     const res = await getRequest(`/products/product-types/${id}/`, {}, { auth: true });
-    if (res && res.id) return res;
+    if (res && res.id) {
+      const count = Number(res.products_count !== undefined ? res.products_count : (res.count || 0));
+      res.products_count = count;
+      res.count = count;
+      return res;
+    }
   } catch (err) {
     throw err;
   }

@@ -45,7 +45,11 @@ export async function getAdminProfile() {
     username: localUser.username || 'admin',
     email: localUser.email || 'admin@mitienda.com',
     first_name: localUser.first_name || 'Administrador',
+    second_name: localUser.second_name || '',
     first_last_name: localUser.first_last_name || '',
+    second_last_name: localUser.second_last_name || '',
+    document_type: localUser.document_type || 'V',
+    identity_document: localUser.identity_document || '',
     full_name: localUser.full_name || localUser.first_name || 'Administrador',
     phone: localUser.phone || '+58 412-1234567',
     is_staff: localUser.is_staff !== false,
@@ -70,7 +74,6 @@ export async function updateAdminProfile(updateData) {
 
   try {
     const payload = { ...updateData };
-    delete payload.address; // La dirección física se mantiene sincronizada localmente
 
     const response = await apiRequest({
       path: '/user/me/',
@@ -80,7 +83,7 @@ export async function updateAdminProfile(updateData) {
     });
 
     if (response) {
-      const merged = { ...response, address: getSavedAddress() };
+      const merged = { ...response, address: response.address || getSavedAddress() };
       setCurrentUser(merged);
       return merged;
     }

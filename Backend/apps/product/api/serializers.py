@@ -11,6 +11,8 @@ from apps.product.models import (
 class ProductTypeSerializer(serializers.ModelSerializer):
     """Serializador para el modelo ProductType."""
 
+    products_count = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductType
         fields = [
@@ -21,11 +23,16 @@ class ProductTypeSerializer(serializers.ModelSerializer):
             'layout_template',
             'default_has_doors',
             'product_type_image',
+            'products_count',
             'created_at',
             'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
+    def get_products_count(self, obj):
+        if hasattr(obj, 'products_count'):
+            return obj.products_count
+        return obj.products.filter(is_deleted=False).count()
 
 class ProductColorImageSerializer(serializers.ModelSerializer):
     """Serializador para el modelo ProductColorImage (imágenes por color)."""

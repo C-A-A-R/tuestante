@@ -109,11 +109,13 @@ function renderProfileData(user) {
     sidebarStatus.className = isActive ? 'status-badge-active' : 'status-badge-inactive';
   }
 
-  // 2. Tarjeta Información Personal (4 Campos de Nombre + Usuario + Correo + Rol + Teléfono)
+  // 2. Tarjeta Información Personal (4 Campos de Nombre + Tipo/Nro Documento + Usuario + Correo + Rol + Teléfono)
   const inputFirstName = document.getElementById('input-first-name');
   const inputSecondName = document.getElementById('input-second-name');
   const inputLastName = document.getElementById('input-last-name');
   const inputSecondLastName = document.getElementById('input-second-last-name');
+  const selectDocType = document.getElementById('select-document-type');
+  const inputIdentityDoc = document.getElementById('input-identity-document');
   const inputUsername = document.getElementById('input-username');
   const inputEmail = document.getElementById('input-email');
   const inputRole = document.getElementById('input-role');
@@ -123,6 +125,16 @@ function renderProfileData(user) {
   if (inputSecondName) inputSecondName.value = secondName;
   if (inputLastName) inputLastName.value = lastName;
   if (inputSecondLastName) inputSecondLastName.value = secondLastName;
+
+  let docType = (user.document_type || 'V').toUpperCase();
+  let docNum = user.identity_document || '';
+  if (!user.document_type && docNum) {
+    const m = docNum.match(/^([VEJGPRvejgpr])[\s.\-_/]/);
+    if (m) docType = m[1].toUpperCase();
+  }
+  if (selectDocType) selectDocType.value = ['V', 'E', 'J', 'G', 'P', 'R'].includes(docType) ? docType : 'V';
+  if (inputIdentityDoc) inputIdentityDoc.value = docNum;
+
   if (inputUsername) inputUsername.value = user.username || '';
   if (inputEmail) inputEmail.value = user.email || '';
   if (inputRole) inputRole.value = roleText;
@@ -174,6 +186,8 @@ function enterEditMode() {
     second_name: document.getElementById('input-second-name')?.value || '',
     last_name: document.getElementById('input-last-name')?.value || '',
     second_last_name: document.getElementById('input-second-last-name')?.value || '',
+    document_type: document.getElementById('select-document-type')?.value || 'V',
+    identity_document: document.getElementById('input-identity-document')?.value || '',
     username: document.getElementById('input-username')?.value || '',
     email: document.getElementById('input-email')?.value || '',
     phone: document.getElementById('input-phone')?.value || '',
@@ -186,6 +200,8 @@ function enterEditMode() {
     document.getElementById('input-second-name'),
     document.getElementById('input-last-name'),
     document.getElementById('input-second-last-name'),
+    document.getElementById('select-document-type'),
+    document.getElementById('input-identity-document'),
     document.getElementById('input-username'),
     document.getElementById('input-email'),
     document.getElementById('input-phone'),
@@ -224,6 +240,8 @@ function cancelEditMode() {
     const inputSecondName = document.getElementById('input-second-name');
     const inputLastName = document.getElementById('input-last-name');
     const inputSecondLastName = document.getElementById('input-second-last-name');
+    const selectDocType = document.getElementById('select-document-type');
+    const inputIdentityDoc = document.getElementById('input-identity-document');
     const inputUsername = document.getElementById('input-username');
     const inputEmail = document.getElementById('input-email');
     const inputPhone = document.getElementById('input-phone');
@@ -233,6 +251,8 @@ function cancelEditMode() {
     if (inputSecondName) inputSecondName.value = cached.second_name;
     if (inputLastName) inputLastName.value = cached.last_name;
     if (inputSecondLastName) inputSecondLastName.value = cached.second_last_name;
+    if (selectDocType) selectDocType.value = cached.document_type || 'V';
+    if (inputIdentityDoc) inputIdentityDoc.value = cached.identity_document || '';
     if (inputUsername) inputUsername.value = cached.username;
     if (inputEmail) inputEmail.value = cached.email;
     if (inputPhone) inputPhone.value = cached.phone;
@@ -245,6 +265,8 @@ function cancelEditMode() {
     document.getElementById('input-second-name'),
     document.getElementById('input-last-name'),
     document.getElementById('input-second-last-name'),
+    document.getElementById('select-document-type'),
+    document.getElementById('input-identity-document'),
     document.getElementById('input-username'),
     document.getElementById('input-email'),
     document.getElementById('input-phone'),
@@ -275,6 +297,8 @@ async function handleSaveProfile() {
   const inputSecondName = document.getElementById('input-second-name');
   const inputLastName = document.getElementById('input-last-name');
   const inputSecondLastName = document.getElementById('input-second-last-name');
+  const selectDocType = document.getElementById('select-document-type');
+  const inputIdentityDoc = document.getElementById('input-identity-document');
   const inputUsername = document.getElementById('input-username');
   const inputEmail = document.getElementById('input-email');
   const inputPhone = document.getElementById('input-phone');
@@ -284,6 +308,8 @@ async function handleSaveProfile() {
   const secondName = (inputSecondName?.value || '').trim();
   const lastName = (inputLastName?.value || '').trim();
   const secondLastName = (inputSecondLastName?.value || '').trim();
+  const documentType = (selectDocType?.value || 'V').trim();
+  const identityDocument = (inputIdentityDoc?.value || '').trim();
   const username = (inputUsername?.value || '').trim();
   const email = (inputEmail?.value || '').trim();
   const phone = (inputPhone?.value || '').trim();
@@ -329,6 +355,8 @@ async function handleSaveProfile() {
       first_last_name: lastName,
       second_last_name: secondLastName,
       full_name: fullName,
+      document_type: documentType,
+      identity_document: identityDocument || null,
       username: username,
       email: email,
       phone: phone,
@@ -337,6 +365,20 @@ async function handleSaveProfile() {
 
     const updated = await updateAdminProfile(payload);
     profileState.userData = { ...profileState.userData, ...updated };
+
+    // Actualizar caché con los nuevos valores guardados
+    profileState.cachedValues = {
+      first_name: firstName,
+      second_name: secondName,
+      last_name: lastName,
+      second_last_name: secondLastName,
+      document_type: documentType,
+      identity_document: identityDocument,
+      username: username,
+      email: email,
+      phone: phone,
+      address: address
+    };
 
     // Actualizar sidebar inmediatamente
     document.getElementById('sidebar-user-name').textContent = fullName;

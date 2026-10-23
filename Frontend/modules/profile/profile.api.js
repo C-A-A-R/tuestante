@@ -24,7 +24,7 @@ export function getProfileData() {
 export async function fetchProfileFromAPI() {
     try {
         const data = await apiRequest({
-            path: '/users/profile/',
+            path: '/user/profile/',
             method: 'GET',
             auth: true
         });
@@ -35,7 +35,7 @@ export async function fetchProfileFromAPI() {
             return merged;
         }
     } catch (err) {
-        console.warn('[Profile API] No se pudo consultar /users/profile/, usando datos locales:', err);
+        console.warn('[Profile API] No se pudo consultar /user/profile/, usando datos locales:', err);
     }
     return getCurrentUser();
 }
@@ -49,7 +49,7 @@ export async function updateProfileData(updatedFields) {
     const current = getCurrentUser() || {};
     try {
         const response = await apiRequest({
-            path: '/users/profile/',
+            path: '/user/profile/',
             method: 'PATCH',
             body: updatedFields,
             auth: true

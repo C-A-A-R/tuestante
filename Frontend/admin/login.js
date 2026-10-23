@@ -209,7 +209,7 @@ function setupLoginForm() {
 
     // Validación de campos requeridos
     if (!username) {
-      setFieldError(usernameInput, errorUsername, 'El usuario o correo electrónico es obligatorio.');
+      setFieldError(usernameInput, errorUsername, 'El usuario, correo o cédula es obligatorio.');
       hasError = true;
     }
 
@@ -231,6 +231,7 @@ function setupLoginForm() {
         username,
         nombre_usuario: username,
         email: username,
+        identity_document: username,
         password,
         contrasena: password
       }, { auth: false });

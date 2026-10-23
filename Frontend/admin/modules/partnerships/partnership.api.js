@@ -2,8 +2,8 @@
  * ==========================================================================
  * TUESTANTE ADMIN - SERVICIO API PARA EMPRESAS ALIADAS (PARTNERSHIP.API.JS)
  * ==========================================================================
- * Conexión centralizada con el backend Django (/partnerships/)
- * con contingencia local y persistencia para administración fluida.
+ * Conexión directa y exclusiva con el backend Django REST Framework (/partnerships/).
+ * Trabaja únicamente con datos reales del servidor, sin simulaciones locales ni datos falsos.
  */
 
 import {
@@ -15,37 +15,29 @@ import {
   extractList
 } from '../../js/api.js';
 
-// Clave para almacenamiento local de empresas aliadas
-const STORAGE_KEY_PARTNERSHIPS = 'tu_admin_partnerships_items';
+// Limpieza de cualquier residuo previo de mock en localStorage
+try {
+  localStorage.removeItem('tu_admin_partnerships_items');
+} catch (_) {}
 
 /**
- * Obtiene las empresas almacenadas localmente.
+ * Normaliza un objeto de empresa aliada recibido desde el backend Django.
  */
-
-function getLocalPartnerships() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_PARTNERSHIPS);
-    if (raw !== null) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
-    }
-  } catch (e) {
-    console.warn('[TuEstante Partnerships API] Error leyendo localStorage:', e);
-  }
-  return [];
-}
-
-/**
- * Guarda las empresas en LocalStorage.
- */
-function saveLocalPartnerships(items) {
-  try {
-    localStorage.setItem(STORAGE_KEY_PARTNERSHIPS, JSON.stringify(items || []));
-  } catch (e) {
-    console.warn('[TuEstante Partnerships API] Error guardando localStorage:', e);
-  }
+function normalizePartnership(item) {
+  if (!item) return null;
+  const isActive = item.is_active !== undefined ? Boolean(item.is_active) : true;
+  return {
+    id: item.id,
+    name: item.name || `Empresa #${item.id}`,
+    logo: item.logo ? resolveImageUrl(item.logo) : '',
+    logo_raw: item.logo || '',
+    website: item.website || '',
+    description: item.description || '',
+    is_active: isActive,
+    status: isActive ? 'Activo' : 'Inactivo',
+    created_at: item.created_at || new Date().toISOString(),
+    formatted_date: formatSimpleDate(item.created_at)
+  };
 }
 
 /**
@@ -72,252 +64,47 @@ export function formatSimpleDate(isoString) {
 }
 
 /**
- * Obtiene el listado completo de empresas aliadas.
- * Consulta al backend Django (/partnerships/); si responde (incluso con 0 registros),
- * esa es la fuente de verdad. Solo si el backend falla por red se usa la copia local.
+ * Obtiene el listado completo de empresas aliadas directamente desde el backend.
+ * @param {Object} [params] Filtros opcionales (is_active, search, etc.)
+ * @returns {Promise<Array>} Listado real de empresas registradas.
  */
 export async function getPartnerships(params = {}) {
-  let backendItems = null;
-
-  try {
-    const res = await getRequest('/partnerships/', params, { auth: true });
-    const list = extractList(res);
-    if (Array.isArray(list)) {
-      backendItems = list;
-    }
-  } catch (err) {
-    console.warn('[TuEstante Partnerships API] Backend /partnerships/ no disponible o error:', err);
-  }
-
-  // Si el backend respondió (incluso si está vacío con 0 registros en la BD), esa es la verdad
-  if (backendItems !== null) {
-    const normalized = backendItems.map(item => {
-      const isActive = item.is_active !== undefined ? Boolean(item.is_active) : true;
-      const logoUrl = item.logo ? resolveImageUrl(item.logo) : '';
-
-      return {
-        id: item.id,
-        name: item.name || `Empresa #${item.id}`,
-        logo: logoUrl,
-        logo_raw: item.logo || '',
-        website: item.website || '',
-        description: item.description || '',
-        is_active: isActive,
-        status: isActive ? 'Activo' : 'Inactivo',
-        created_at: item.created_at || new Date().toISOString(),
-        formatted_date: formatSimpleDate(item.created_at)
-      };
-    });
-
-    saveLocalPartnerships(normalized);
-    return normalized;
-  }
-
-  // Si no hubo respuesta del backend (ej. sin conexión), retornamos la copia local previa
-  return getLocalPartnerships();
+  const res = await getRequest('/partnerships/', params, { auth: true });
+  const list = extractList(res);
+  if (!Array.isArray(list)) return [];
+  return list.map(normalizePartnership).filter(Boolean);
 }
 
-
 /**
- * Obtiene una empresa por su ID.
+ * Obtiene una empresa aliada por su ID real desde el backend.
+ * @param {number|string} id ID de la empresa en la base de datos
+ * @returns {Promise<Object|null>} Objeto de la empresa o null
  */
 export async function getPartnershipById(id) {
-  try {
-    const item = await getRequest(`/partnerships/${id}/`, {}, { auth: true });
-    if (item && item.id) {
-      const isActive = item.is_active !== undefined ? Boolean(item.is_active) : true;
-      return {
-        id: item.id,
-        name: item.name,
-        logo: item.logo ? resolveImageUrl(item.logo) : '',
-        logo_raw: item.logo || '',
-        website: item.website || '',
-        description: item.description || '',
-        is_active: isActive,
-        status: isActive ? 'Activo' : 'Inactivo',
-        created_at: item.created_at || new Date().toISOString(),
-        formatted_date: formatSimpleDate(item.created_at)
-      };
-    }
-  } catch (err) {
-    console.warn(`[TuEstante Partnerships API] Fallback para empresa #${id}`);
-  }
-
-  const local = getLocalPartnerships();
-  return local.find(i => String(i.id) === String(id)) || null;
+  const item = await getRequest(`/partnerships/${id}/`, {}, { auth: true });
+  return normalizePartnership(item);
 }
 
 /**
- * Crea una nueva empresa aliada (POST /partnerships/).
- * Soporta tanto FormData (para envío de imágenes de logo) como objeto regular.
+ * Registra una nueva empresa aliada en el backend Django (POST /partnerships/).
+ * Soporta FormData (con archivo logo) u objeto regular.
+ * @param {FormData|Object} data Datos reales a enviar
+ * @returns {Promise<Object>} Registro creado en la base de datos
  */
 export async function createPartnership(data) {
-  let createdBackend = null;
-
-  try {
-    createdBackend = await postRequest('/partnerships/', data, { auth: true });
-  } catch (err) {
-    console.warn('[TuEstante Partnerships API] Error en postRequest /partnerships/:', err);
-    // Si el error fue por validación o de red, propagar si es relevante o registrar localmente
-    if (err && err.status && err.status >= 400 && err.status < 500) {
-      throw err;
-    }
-  }
-
-  const items = getLocalPartnerships();
-  const nextId = items.length > 0 ? Math.max(...items.map(i => Number(i.id) || 0)) + 1 : 1;
-
-  let name = '';
-  let website = '';
-  let description = '';
-  let logoUrl = '';
-  let isActive = true;
-
-  if (data instanceof FormData) {
-    name = data.get('name') || '';
-    website = data.get('website') || '';
-    description = data.get('description') || '';
-    const activeVal = data.get('is_active');
-    isActive = activeVal === 'true' || activeVal === true || activeVal === '1' || activeVal === 'on';
-
-    const logoFile = data.get('logo');
-    if (logoFile && logoFile instanceof File && logoFile.size > 0) {
-      logoUrl = URL.createObjectURL(logoFile);
-    }
-  } else if (typeof data === 'object') {
-    name = data.name || '';
-    website = data.website || '';
-    description = data.description || '';
-    isActive = data.is_active !== undefined ? Boolean(data.is_active) : true;
-    logoUrl = data.logo || '';
-  }
-
-  if (createdBackend && createdBackend.id) {
-    const isAct = createdBackend.is_active !== undefined ? Boolean(createdBackend.is_active) : true;
-    const finalItem = {
-      id: createdBackend.id,
-      name: createdBackend.name || name,
-      logo: createdBackend.logo ? resolveImageUrl(createdBackend.logo) : logoUrl,
-      logo_raw: createdBackend.logo || '',
-      website: createdBackend.website || website,
-      description: createdBackend.description || description,
-      is_active: isAct,
-      status: isAct ? 'Activo' : 'Inactivo',
-      created_at: createdBackend.created_at || new Date().toISOString(),
-      formatted_date: formatSimpleDate(createdBackend.created_at)
-    };
-
-    items.unshift(finalItem);
-    saveLocalPartnerships(items);
-    return finalItem;
-  }
-
-  // Respaldo local
-  const now = new Date();
-  const newPartner = {
-    id: nextId,
-    name: name || `Empresa #${nextId}`,
-    logo: logoUrl,
-    logo_raw: '',
-    website: website,
-    description: description || 'Sin descripción',
-    is_active: isActive,
-    status: isActive ? 'Activo' : 'Inactivo',
-    created_at: now.toISOString(),
-    formatted_date: formatSimpleDate(now)
-  };
-
-  items.unshift(newPartner);
-  saveLocalPartnerships(items);
-  return newPartner;
+  const res = await postRequest('/partnerships/', data, { auth: true });
+  return normalizePartnership(res);
 }
 
 /**
- * Actualiza una empresa aliada existente (PATCH /partnerships/{id}/).
+ * Actualiza una empresa aliada existente en la base de datos (PATCH /partnerships/{id}/).
+ * @param {number|string} id ID de la empresa
+ * @param {FormData|Object} data Campos reales a actualizar
+ * @returns {Promise<Object>} Registro actualizado
  */
 export async function updatePartnership(id, data) {
-  let backendItem = null;
-
-  try {
-    backendItem = await patchRequest(`/partnerships/${id}/`, data, { auth: true });
-  } catch (err) {
-    console.warn(`[TuEstante Partnerships API] Error en patchRequest /partnerships/${id}/:`, err);
-    if (err && err.status && err.status >= 400 && err.status < 500) {
-      throw err;
-    }
-  }
-
-  const items = getLocalPartnerships();
-  const idx = items.findIndex(i => String(i.id) === String(id));
-
-  let name = '';
-  let website = '';
-  let description = '';
-  let logoUrl = null;
-  let isActive = undefined;
-
-  if (data instanceof FormData) {
-    name = data.get('name');
-    website = data.get('website');
-    description = data.get('description');
-    const actVal = data.get('is_active');
-    if (actVal !== null) {
-      isActive = actVal === 'true' || actVal === true || actVal === '1' || actVal === 'on';
-    }
-    const logoFile = data.get('logo');
-    if (logoFile && logoFile instanceof File && logoFile.size > 0) {
-      logoUrl = URL.createObjectURL(logoFile);
-    }
-  } else if (typeof data === 'object') {
-    name = data.name;
-    website = data.website;
-    description = data.description;
-    isActive = data.is_active;
-    if (data.logo) logoUrl = data.logo;
-  }
-
-  if (backendItem && backendItem.id) {
-    const isAct = backendItem.is_active !== undefined ? Boolean(backendItem.is_active) : true;
-    const updated = {
-      id: backendItem.id,
-      name: backendItem.name || name || '',
-      logo: backendItem.logo ? resolveImageUrl(backendItem.logo) : (logoUrl || (idx >= 0 ? items[idx].logo : '')),
-      logo_raw: backendItem.logo || '',
-      website: backendItem.website || website || '',
-      description: backendItem.description || description || '',
-      is_active: isAct,
-      status: isAct ? 'Activo' : 'Inactivo',
-      created_at: backendItem.created_at || (idx >= 0 ? items[idx].created_at : new Date().toISOString()),
-      formatted_date: formatSimpleDate(backendItem.created_at || (idx >= 0 ? items[idx].created_at : null))
-    };
-
-    if (idx >= 0) {
-      items[idx] = updated;
-    } else {
-      items.unshift(updated);
-    }
-    saveLocalPartnerships(items);
-    return updated;
-  }
-
-  // Si solo fue actualización local
-  if (idx >= 0) {
-    const current = items[idx];
-    const newIsActive = isActive !== undefined ? isActive : current.is_active;
-    items[idx] = {
-      ...current,
-      name: name !== null && name !== undefined ? name : current.name,
-      website: website !== null && website !== undefined ? website : current.website,
-      description: description !== null && description !== undefined ? description : current.description,
-      logo: logoUrl ? logoUrl : current.logo,
-      is_active: newIsActive,
-      status: newIsActive ? 'Activo' : 'Inactivo'
-    };
-    saveLocalPartnerships(items);
-    return items[idx];
-  }
-
-  return null;
+  const res = await patchRequest(`/partnerships/${id}/`, data, { auth: true });
+  return normalizePartnership(res);
 }
 
 /**
@@ -332,18 +119,12 @@ export async function updatePartnershipStatus(id, newStatusOrBool) {
 }
 
 /**
- * Elimina una empresa aliada (DELETE /partnerships/{id}/).
+ * Elimina una empresa aliada de la base de datos (DELETE /partnerships/{id}/).
+ * @param {number|string} id ID de la empresa
+ * @returns {Promise<boolean>}
  */
 export async function deletePartnership(id) {
-  try {
-    await deleteRequest(`/partnerships/${id}/`, { auth: true });
-  } catch (err) {
-    console.warn(`[TuEstante Partnerships API] Eliminación local para empresa #${id}`);
-  }
-
-  const items = getLocalPartnerships();
-  const filtered = items.filter(i => String(i.id) !== String(id));
-  saveLocalPartnerships(filtered);
+  await deleteRequest(`/partnerships/${id}/`, { auth: true });
   return true;
 }
 

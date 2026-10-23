@@ -96,6 +96,8 @@ class TechnicalDesignSchema(BaseModel):
         description="Familia geométrica base (caja_cerrada, estante_abierto, banca, compuesto_locker_banca, generico_modular)"
     )
     main_color: str = Field(default="#2C3E50", description="Color principal estructural en formato hexadecimal (#RRGGBB)")
+    main_color_hex: Optional[str] = Field(default=None, description="Hexadecimal del color principal")
+    grid: Optional[GridConfig] = Field(default_factory=GridConfig, description="Distribución de filas y columnas")
     dimensions_total_mm: TotalDimensionsMM = Field(default_factory=TotalDimensionsMM)
     sections: List[SectionConfig] = Field(default_factory=list, description="Lista de secciones modulares apiladas")
     notes: Optional[str] = Field(default="", description="Instrucciones consolidadas de taller")

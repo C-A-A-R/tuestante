@@ -986,16 +986,30 @@
 }
 
 .related-single-row-track {
-    display: grid !important;
-    grid-template-rows: 1fr !important;
-    grid-auto-flow: column !important;
-    grid-auto-columns: calc((100% - 60px) / 4) !important;
-    gap: 20px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    gap: var(--related-gap, 20px) !important;
+    width: max-content !important;
+    will-change: transform;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.related-single-row-track.is-centered {
+    width: 100% !important;
+    justify-content: center !important;
+    transform: none !important;
 }
 
 /* Carta de Producto Unificada en Relacionados (estilos gestionados centralizadamente por product-cart.css) */
 .related-single-row-track .unified-product-card {
-    height: 100%;
+    flex: 0 0 var(--related-card-width, 280px) !important;
+    width: var(--related-card-width, 280px) !important;
+    max-width: var(--related-card-width, 280px) !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
 }
 
 /* 5. Lightbox Modal (Ventana Flotante SIN Marco Blanco y Botón X en la Esquina de la Pantalla) */
@@ -1090,8 +1104,7 @@
 /* Pantallas Medianas / Laptops Pequeñas (<= 1100px) */
 @media (max-width: 1100px) {
     .related-single-row-track {
-        grid-auto-columns: calc((100% - 40px) / 3) !important;
-        gap: 20px !important;
+        gap: var(--related-gap, 20px) !important;
     }
 }
 
@@ -1151,8 +1164,7 @@
     }
 
     .related-single-row-track {
-        grid-auto-columns: calc((100% - 32px) / 3) !important;
-        gap: 16px !important;
+        gap: var(--related-gap, 16px) !important;
     }
 
     .carousel-nav-btn.prev-btn {
@@ -1221,8 +1233,7 @@
     }
 
     .related-single-row-track {
-        grid-auto-columns: calc((100% - 16px) / 2) !important;
-        gap: 16px !important;
+        gap: var(--related-gap, 16px) !important;
     }
 
     .carousel-nav-btn {
@@ -1319,8 +1330,7 @@
     }
 
     .related-single-row-track {
-        grid-auto-columns: calc((100% - 10px) / 2) !important;
-        gap: 10px !important;
+        gap: var(--related-gap, 10px) !important;
     }
 
     .carousel-nav-btn {

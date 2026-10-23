@@ -45,16 +45,27 @@ class ParametricDesignService:
         cls,
         product: Product,
         order_detail=None,
-        custom_notes: str = ""
+        custom_notes: str = "",
+        force_rebuild: bool = False
     ) -> Dict[str, Any]:
         """
         Genera el diccionario técnico paramétrico base en milímetros.
         Sin llamadas externas ni consumo de tokens (0 tokens).
         """
-        # Si el detalle de pedido ya posee un diseño técnico inmutable definitivo, respetarlo
-        if order_detail and hasattr(order_detail, 'technical_design') and order_detail.technical_design:
+        pname_l = (product.product_name or '').lower()
+        product_type = getattr(product, 'product_type', None)
+        furniture_type = getattr(product_type, 'product_type_name', 'Mobiliario Modular') if product_type else 'Mobiliario Modular'
+        ftype_l = (furniture_type or '').lower()
+        is_shelf = any(term in pname_l or term in ftype_l for term in ['estante', 'estanteria', 'estantería', 'repisa', 'balda', 'librero', 'biblioteca'])
+
+        # Si el detalle de pedido ya posee un diseño técnico inmutable definitivo, respetarlo solo si no es reconstrucción forzada y no está corrupto
+        if not force_rebuild and order_detail and hasattr(order_detail, 'technical_design') and order_detail.technical_design:
             if isinstance(order_detail.technical_design, dict) and order_detail.technical_design.get('sections'):
-                return order_detail.technical_design
+                td = order_detail.technical_design
+                # Si es un estante pero fue guardado con caja_cerrada o sin grid, ignorar caché corrupta
+                is_stale_shelf = is_shelf and (td.get('archetype') != 'estante_abierto' or not td.get('grid'))
+                if not is_stale_shelf:
+                    return order_detail.technical_design
 
         # 1. Dimensiones en milímetros (cm * 10)
         height_cm = float(product.height_cm or 0)
@@ -79,12 +90,13 @@ class ParametricDesignService:
             main_color = cls.normalize_color(product.main_color)
         main_color_hex = main_color  # garantizamos que siempre sea hex
 
-        product_type = getattr(product, 'product_type', None)
-        furniture_type = getattr(product_type, 'product_type_name', 'Mobiliario Modular') if product_type else 'Mobiliario Modular'
         archetype = getattr(product_type, 'archetype', 'caja_cerrada') or 'caja_cerrada'
         layout_template = getattr(product_type, 'layout_template', None)
 
-        if not default_has_doors and product_type and getattr(product_type, 'default_has_doors', False):
+        if is_shelf:
+            archetype = 'estante_abierto'
+            default_has_doors = False
+        elif not default_has_doors and product_type and getattr(product_type, 'default_has_doors', False):
             default_has_doors = True
 
         # 4. Construcción modular de Secciones (Stacking Layout Engine)
@@ -110,9 +122,9 @@ class ParametricDesignService:
                 compartments.append({
                     "row": r,
                     "col": c,
-                    "has_door": default_has_doors,
-                    "door_color": main_color,
-                    "has_ventilation": archetype in ['caja_cerrada', 'compuesto_locker_banca'],
+                    "has_door": default_has_doors if not is_shelf else False,
+                    "door_color": main_color if (default_has_doors and not is_shelf) else None,
+                    "has_ventilation": (archetype in ['caja_cerrada', 'compuesto_locker_banca']) and not is_shelf,
                     "notes": ""
                 })
 
@@ -417,18 +429,17 @@ class ParametricDesignService:
             item_combined_notes = " | ".join([p for p in item_notes_parts if p])
 
             # 1. Generar diseño base en milímetros (0 tokens si no hay notas de personalización)
-            base_design = cls.build_base_parametric_design(target_product, detail, custom_notes=item_combined_notes)
+            base_design = cls.build_base_parametric_design(target_product, detail, custom_notes=item_combined_notes, force_rebuild=True)
 
             # 2. Aplicar IA para personalizaciones si existen notas físicas
             final_design, has_changes, item_summary = AICustomizerService.apply_customizations(base_design, item_combined_notes)
 
-            # 3. Persistir inmutabilidad en OrderDetail
-            if not detail.technical_design:
-                try:
-                    detail.technical_design = final_design
-                    detail.save(update_fields=['technical_design'])
-                except Exception:
-                    pass
+            # 3. Persistir diseño actualizado en OrderDetail
+            try:
+                detail.technical_design = final_design
+                detail.save(update_fields=['technical_design'])
+            except Exception:
+                pass
 
             # 4. Generar plano individual para este producto
             item_title = f"{target_product.product_name.upper()} — CANTIDAD: {detail.quantity} UDS."

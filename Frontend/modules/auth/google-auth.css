@@ -29,14 +29,14 @@
     background: transparent;
 }
 
-/* Contenedor del Botón de Google - Abarca el 100% del ancho del formulario */
+/* Contenedor del Botón de Google */
 .google-auth-container {
     width: 100%;
-    margin-top: 10px;
-    margin-bottom: 8px;
+    max-width: 400px;
+    margin: 10px auto 8px;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     justify-content: center;
 }
 
@@ -79,11 +79,12 @@
     color: #003d66;
 }
 
-/* Wrapper del Botón de Google: mismo tamaño exacto (100% ancho y min 48px alto) */
+/* Wrapper del Botón de Google: mismo tamaño exacto (max-width 400px y 44px alto) */
 .google-auth-btn-wrapper {
     position: relative;
     width: 100%;
-    min-height: 48px;
+    max-width: 400px;
+    min-height: 44px;
     border-radius: var(--radius-sm, 8px);
     display: flex;
     align-items: center;
@@ -102,7 +103,8 @@
     justify-content: center;
     gap: 12px;
     width: 100%;
-    height: 48px;
+    max-width: 400px;
+    height: 44px;
     padding: 0 16px;
     background-color: #ffffff;
     color: #374151;
@@ -135,6 +137,7 @@
 /* Contenedor del Botón Oficial de Google Identity Services */
 .google-gis-btn-container {
     width: 100%;
+    max-width: 400px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -142,6 +145,8 @@
 }
 
 .google-gis-btn-container iframe {
+    width: 100% !important;
+    max-width: 400px !important;
     margin: 0 auto !important;
 }
 

@@ -41,7 +41,8 @@ const state = {
     itemsPerPage: 5,
     totalItems: 0
   },
-  activeModalOrder: null
+  activeModalOrder: null,
+  pendingExportOrderId: null
 };
 
 // ==========================================================================
@@ -729,12 +730,12 @@ function renderOrdersTable() {
     });
   });
 
-  // Vincular eventos de exportación
+  // Vincular eventos de exportación (Abre modal de selección de formato)
   tbody.querySelectorAll('.btn-action-export').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const pId = parseInt(btn.getAttribute('data-order-id'), 10);
-      exportProductionWorksheet(pId);
+      openExportFormatModal(pId);
     });
   });
 }
@@ -966,16 +967,37 @@ function closeProductionProductsModal() {
 }
 
 // ==========================================================================
+// MODAL DE SELECCIÓN DE FORMATO (CON DISEÑO VS SOLO TEXTO)
+// ==========================================================================
+
+export function openExportFormatModal(orderId) {
+  state.pendingExportOrderId = orderId;
+  const modal = document.getElementById('modal-export-options-backdrop');
+  if (modal) {
+    modal.classList.add('is-open');
+  } else {
+    // Fallback directo con diseño
+    exportProductionWorksheet(orderId, 'with_design');
+  }
+}
+
+export function closeExportFormatModal() {
+  state.pendingExportOrderId = null;
+  const modal = document.getElementById('modal-export-options-backdrop');
+  if (modal) modal.classList.remove('is-open');
+}
+
+// ==========================================================================
 // EXPORTAR / IMPRIMIR ORDEN DE FABRICACIÓN (HOJA DE TRABAJO TALLER)
 // ==========================================================================
 
-export async function exportProductionWorksheet(orderId) {
+export async function exportProductionWorksheet(orderId, mode = 'with_design') {
   try {
     const order = await getProductionOrder(orderId);
     if (!order) throw new Error('No se encontró la orden de fabricación solicitada.');
 
     // Si no trae blueprint_svg, intentar consultar el endpoint de blueprint
-    if (!order.blueprint_svg) {
+    if (!order.blueprint_svg && mode === 'with_design') {
       try {
         const bpData = await getProductionBlueprint(orderId);
         if (bpData && bpData.blueprint_svg) {
@@ -1002,99 +1024,236 @@ export async function exportProductionWorksheet(orderId) {
 
     let blueprintSectionHtml = '';
     if (isMulti) {
-      blueprintSectionHtml = `
-        <div style="margin-bottom: 24px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #005187; padding-bottom: 6px;">
-            <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
-              📐 Dossier Técnico de Fabricación Multi-Producto (${design.items.length} Modelos Distintos)
-            </h4>
-            <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
-              Tolerancia: ±1.5 mm | Norma ISO
-            </span>
-          </div>
-          ${design.items.map((item, idx) => {
-            const itDesign = item.technical_design || {};
-            const itDims = itDesign.dimensions_total_mm || itDesign.dimensions_mm || { height: 1800, width: 900, depth: 400 };
-            const itGrid = itDesign.grid || { rows: 1, columns: 1 };
-            const itColor = itDesign.main_color || '#334155';
-            const itSvg = item.blueprint_svg || '';
+      if (mode === 'text_only') {
+        // DOSSIER TÉCNICO MULTI-PRODUCTO EN SOLO TEXTO
+        blueprintSectionHtml = `
+          <div style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #005187; padding-bottom: 6px;">
+              <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
+                📋 Especificación Técnica de Fabricación (${design.items.length} Modelos Distintos - Solo Texto)
+              </h4>
+              <span style="font-size: 11px; background: #f1f5f9; color: #334155; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #cbd5e1;">
+                Tolerancia: ±1.5 mm | Norma ISO
+              </span>
+            </div>
+            ${design.items.map((item, idx) => {
+              const itDesign = item.technical_design || {};
+              const itDims = itDesign.dimensions_total_mm || itDesign.dimensions_mm || { height: 1800, width: 900, depth: 400 };
+              const itGrid = itDesign.grid || { rows: 1, columns: 1 };
+              const itColor = itDesign.main_color || '#334155';
+              const itArchetype = (itDesign.archetype || 'caja_cerrada').toUpperCase();
+              const comps = itDesign.compartments || [];
+              const hasDoors = comps.length > 0 ? comps.some(c => c.has_door) : true;
+              const hasVent = comps.length > 0 ? comps.some(c => c.has_ventilation) : true;
+              const handleType = comps[0]?.handle_type || 'Tirador con cerradura';
 
-            return `
-              <div style="margin-bottom: 24px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
-                <div style="background: #f1f5f9; padding: 8px 14px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                  <div style="font-weight: 800; font-size: 12px; color: #0f172a;">
-                    [MODELO ${idx + 1} DE ${design.items.length}] ${escapeHtml(item.product_name.toUpperCase())}
-                  </div>
-                  <div style="background: #0284c7; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">
-                    CANTIDAD: ${item.quantity} UDS.
-                  </div>
-                </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; padding: 8px 14px; font-size: 11px; border-bottom: 1px solid #e2e8f0;">
-                  <span><strong>Alto:</strong> ${itDims.height || 1800} mm</span>
-                  <span style="color: #cbd5e1;">|</span>
-                  <span><strong>Ancho:</strong> ${itDims.width || 900} mm</span>
-                  <span style="color: #cbd5e1;">|</span>
-                  <span><strong>Fondo:</strong> ${itDims.max_depth || itDims.depth || 400} mm</span>
-                  <span style="color: #cbd5e1;">|</span>
-                  <span><strong>Distribución:</strong> ${itGrid.rows || 1}F × ${itGrid.columns || 1}C</span>
-                  <span style="color: #cbd5e1;">|</span>
-                  <span><strong>Color:</strong> ${escapeHtml(itColor)}</span>
-                </div>
-                ${itSvg ? `
-                  <div style="background: #0b1120; padding: 12px; text-align: center;">
-                    <div style="max-height: 440px; display: flex; justify-content: center; align-items: center;">
-                      ${itSvg}
+              return `
+                <div style="margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
+                  <div style="background: #0f172a; color: #ffffff; padding: 9px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div style="font-weight: 800; font-size: 12px; letter-spacing: 0.5px;">
+                      [MODELO ${idx + 1} DE ${design.items.length}] ${escapeHtml(item.product_name.toUpperCase())}
+                    </div>
+                    <div style="background: #0284c7; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">
+                      CANTIDAD: ${item.quantity} UDS.
                     </div>
                   </div>
-                ` : ''}
+                  <table style="width: 100%; border-collapse: collapse; margin-bottom: 0; font-size: 12px;">
+                    <tbody>
+                      <tr style="background: #f8fafc;">
+                        <td style="width: 25%; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Dimensiones:</td>
+                        <td style="width: 25%; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;"><strong>Alto:</strong> ${itDims.height || 1800} mm &nbsp;|&nbsp; <strong>Ancho:</strong> ${itDims.width || 900} mm &nbsp;|&nbsp; <strong>Fondo:</strong> ${itDims.max_depth || itDims.depth || 400} mm</td>
+                        <td style="width: 25%; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Distribución:</td>
+                        <td style="width: 25%; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">${itGrid.rows || 1} Filas × ${itGrid.columns || 1} Columnas (${(itGrid.rows || 1) * (itGrid.columns || 1)} Casillas)</td>
+                      </tr>
+                      <tr>
+                        <td style="font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Arquetipo:</td>
+                        <td style="border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">${itArchetype}</td>
+                        <td style="font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Acabado Pintura:</td>
+                        <td style="border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">
+                          <span style="display: inline-block; width: 12px; height: 12px; border-radius: 2px; background: ${escapeHtml(itColor)}; vertical-align: middle; margin-right: 4px; border: 1px solid #94a3b8;"></span>
+                          <strong>${escapeHtml(itColor)}</strong>
+                        </td>
+                      </tr>
+                      <tr style="background: #f8fafc;">
+                        <td style="font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Puertas y Ventilación:</td>
+                        <td style="border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Puertas: ${hasDoors ? 'Sí (bisel 3D)' : 'Sin puerta'} &nbsp;|&nbsp; Ventilación: ${hasVent ? 'Troquelada' : 'Sin ranuras'}</td>
+                        <td style="font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Herrajes:</td>
+                        <td style="border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">${escapeHtml(handleType)}</td>
+                      </tr>
+                      ${item.notes ? `
+                      <tr>
+                        <td style="font-weight: 700; color: #92400e; background: #fffbeb; padding: 8px 12px;" colspan="4">
+                          <strong>Notas Técnicas del Producto:</strong> ${escapeHtml(item.notes)}
+                        </td>
+                      </tr>` : ''}
+                    </tbody>
+                  </table>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } else {
+        // DOSSIER CON DISEÑO VECTORIAL (SVG)
+        blueprintSectionHtml = `
+          <div style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #005187; padding-bottom: 6px;">
+              <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
+                📐 Dossier Técnico de Fabricación Multi-Producto (${design.items.length} Modelos Distintos)
+              </h4>
+              <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
+                Tolerancia: ±1.5 mm | Norma ISO
+              </span>
+            </div>
+            ${design.items.map((item, idx) => {
+              const itDesign = item.technical_design || {};
+              const itDims = itDesign.dimensions_total_mm || itDesign.dimensions_mm || { height: 1800, width: 900, depth: 400 };
+              const itGrid = itDesign.grid || { rows: 1, columns: 1 };
+              const itColor = itDesign.main_color || '#334155';
+              const itSvg = item.blueprint_svg || '';
+
+              return `
+                <div style="margin-bottom: 24px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
+                  <div style="background: #f1f5f9; padding: 8px 14px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div style="font-weight: 800; font-size: 12px; color: #0f172a;">
+                      [MODELO ${idx + 1} DE ${design.items.length}] ${escapeHtml(item.product_name.toUpperCase())}
+                    </div>
+                    <div style="background: #0284c7; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">
+                      CANTIDAD: ${item.quantity} UDS.
+                    </div>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; padding: 8px 14px; font-size: 11px; border-bottom: 1px solid #e2e8f0;">
+                    <span><strong>Alto:</strong> ${itDims.height || 1800} mm</span>
+                    <span style="color: #cbd5e1;">|</span>
+                    <span><strong>Ancho:</strong> ${itDims.width || 900} mm</span>
+                    <span style="color: #cbd5e1;">|</span>
+                    <span><strong>Fondo:</strong> ${itDims.max_depth || itDims.depth || 400} mm</span>
+                    <span style="color: #cbd5e1;">|</span>
+                    <span><strong>Distribución:</strong> ${itGrid.rows || 1}F × ${itGrid.columns || 1}C</span>
+                    <span style="color: #cbd5e1;">|</span>
+                    <span><strong>Color:</strong> ${escapeHtml(itColor)}</span>
+                  </div>
+                  ${(item.notes || itDesign.original_notes || item.customization_summary) ? `
+                    <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 8px 14px; font-size: 11px; color: #92400e; border-bottom: 1px solid #fef3c7;">
+                      <strong>📝 Especificaciones / Notas de Fabricación:</strong> ${escapeHtml(item.notes || itDesign.original_notes)}
+                      ${item.customization_summary ? `<div style="font-size: 10px; color: #b45309; margin-top: 3px;"><em>⚙️ ${escapeHtml(item.customization_summary)}</em></div>` : ''}
+                    </div>
+                  ` : ''}
+                  ${itSvg ? `
+                    <div style="background: #0b1120; padding: 12px; text-align: center;">
+                      <div style="max-height: 440px; display: flex; justify-content: center; align-items: center;">
+                        ${itSvg}
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+    } else {
+      if (mode === 'text_only') {
+        // FICHA TÉCNICA PRODUCTO ÚNICO EN SOLO TEXTO
+        const archetype = (design?.archetype || 'caja_cerrada').toUpperCase();
+        blueprintSectionHtml = `
+          <div style="margin-bottom: 24px; border: 1.5px solid #005187; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
+            <div style="background: #005187; color: #ffffff; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div style="font-weight: 800; font-size: 13px; letter-spacing: 0.5px;">
+                📋 ESPECIFICACIONES TÉCNICAS Y DIMENSIONALES DE FABRICACIÓN (SOLO TEXTO)
               </div>
-            `;
-          }).join('')}
-        </div>
-      `;
-    } else if (order.blueprint_svg) {
-      blueprintSectionHtml = `
-        <div style="margin-bottom: 24px; page-break-inside: avoid;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1.5px solid #005187; padding-bottom: 6px;">
-            <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
-              📐 Especificaciones Paramétricas y Plano Vectorial de Taller (Cotas en mm)
-            </h4>
-            <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
-              Tolerancia: ±1.5 mm
-            </span>
+              <div style="background: #ffffff; color: #005187; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 4px;">
+                Tolerancia: ±1.5 mm | Norma ISO
+              </div>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 0; font-size: 12px;">
+              <tbody>
+                <tr style="background: #f8fafc;">
+                  <td style="width: 25%; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Dimensiones Exteriores:</td>
+                  <td style="width: 25%; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;"><strong>Alto:</strong> ${dims.height || 1800} mm &nbsp;|&nbsp; <strong>Ancho:</strong> ${dims.width || 900} mm &nbsp;|&nbsp; <strong>Fondo:</strong> ${dims.depth || 400} mm</td>
+                  <td style="width: 25%; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Distribución Modular:</td>
+                  <td style="width: 25%; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">${grid.rows || 1} Filas × ${grid.columns || 1} Columnas (${(grid.rows || 1) * (grid.columns || 1)} Casillas)</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Arquetipo Constructivo:</td>
+                  <td style="border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">${escapeHtml(archetype)}</td>
+                  <td style="font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Acabado Pintura:</td>
+                  <td style="border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">
+                    <span style="display: inline-block; width: 12px; height: 12px; border-radius: 2px; background: ${escapeHtml(color)}; vertical-align: middle; margin-right: 4px; border: 1px solid #94a3b8;"></span>
+                    <strong>${escapeHtml(color)}</strong> (Pintura Electrostática)
+                  </td>
+                </tr>
+                <tr style="background: #f8fafc;">
+                  <td style="font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Detalle de Puertas:</td>
+                  <td style="border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">${(design?.archetype === 'estante_abierto') ? 'Sin puertas (Estructura abierta)' : 'Puertas metálicas con bisel 3D perimetral'}</td>
+                  <td style="font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Ventilación y Cerradura:</td>
+                  <td style="border-bottom: 1px solid #e2e8f0; padding: 8px 12px;">Ranuras troqueladas (louvers) &nbsp;|&nbsp; Placa empotrada con bombín</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
+        `;
+      } else if (order.blueprint_svg) {
+        // PRODUCTO ÚNICO CON DISEÑO VECTORIAL (SVG)
+        blueprintSectionHtml = `
+          <div style="margin-bottom: 24px; page-break-inside: avoid;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1.5px solid #005187; padding-bottom: 6px;">
+              <h4 style="font-size: 13px; text-transform: uppercase; color: #005187; font-weight: 800; letter-spacing: 0.5px;">
+                📐 Especificaciones Paramétricas y Plano Vectorial de Taller (Cotas en mm)
+              </h4>
+              <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid #bae6fd;">
+                Tolerancia: ±1.5 mm
+              </span>
+            </div>
 
-          <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;">
-            <span><strong>Alto:</strong> ${dims.height || 1800} mm</span>
-            <span style="color: #cbd5e1;">|</span>
-            <span><strong>Ancho:</strong> ${dims.width || 900} mm</span>
-            <span style="color: #cbd5e1;">|</span>
-            <span><strong>Fondo:</strong> ${dims.depth || 400} mm</span>
-            <span style="color: #cbd5e1;">|</span>
-            <span><strong>Distribución:</strong> ${grid.rows || 1} Filas × ${grid.columns || 1} Columnas</span>
-            <span style="color: #cbd5e1;">|</span>
-            <span><strong>Color / Acabado:</strong> ${escapeHtml(color)}</span>
-          </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;">
+              <span><strong>Alto:</strong> ${dims.height || 1800} mm</span>
+              <span style="color: #cbd5e1;">|</span>
+              <span><strong>Ancho:</strong> ${dims.width || 900} mm</span>
+              <span style="color: #cbd5e1;">|</span>
+              <span><strong>Fondo:</strong> ${dims.depth || 400} mm</span>
+              <span style="color: #cbd5e1;">|</span>
+              <span><strong>Distribución:</strong> ${grid.rows || 1} Filas × ${grid.columns || 1} Columnas</span>
+              <span style="color: #cbd5e1;">|</span>
+              <span><strong>Color / Acabado:</strong> ${escapeHtml(color)}</span>
+            </div>
 
-          <div style="border: 1px solid #334155; border-radius: 6px; overflow: hidden; background: #0f172a; text-align: center; padding: 12px;">
-            <div style="max-height: 480px; display: flex; justify-content: center; align-items: center;">
-              ${order.blueprint_svg}
+            ${(order.items?.[0]?.notes || design?.original_notes) ? `
+              <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 10px 14px; font-size: 12px; color: #92400e; border-radius: 4px; margin-bottom: 12px; border: 1px solid #fde68a;">
+                <strong>📝 Especificaciones / Notas de Fabricación del Producto:</strong>
+                <div style="margin-top: 3px;">${escapeHtml(order.items?.[0]?.notes || design?.original_notes)}</div>
+              </div>
+            ` : ''}
+
+            <div style="border: 1px solid #334155; border-radius: 6px; overflow: hidden; background: #0f172a; text-align: center; padding: 12px;">
+              <div style="max-height: 480px; display: flex; justify-content: center; align-items: center;">
+                ${order.blueprint_svg}
+              </div>
             </div>
           </div>
-        </div>
-      `;
+        `;
+      }
     }
+
+    const now = new Date();
+    const exportDate = now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const exportTime = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    const exportTimestamp = `${exportDate} ${exportTime}`;
 
     const itemsHtml = (order.items || []).map((item, idx) => `
       <tr>
         <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
         <td>
-          <strong>${escapeHtml(item.product_name)}</strong><br>
-          <small style="color: #64748b;">SKU: ${escapeHtml(item.sku)}</small>
+          <strong style="color: #0f172a; font-size: 13px;">${escapeHtml(item.product_name)}</strong>
+          ${item.notes ? `<div style="margin-top: 4px; font-size: 11px; color: #92400e; background: #fffbeb; padding: 4px 8px; border-radius: 4px; border: 1px solid #fde68a;"><strong>Nota de Fabricación:</strong> ${escapeHtml(item.notes)}</div>` : ''}
         </td>
-        <td>${escapeHtml(item.specs || 'Estándar')}</td>
-        <td style="text-align: center; font-weight: bold; font-size: 1.1rem;">${item.quantity}</td>
-        <td style="text-align: center; color: #64748b;">[ &nbsp; ] Pendiente &nbsp;&nbsp; [ &nbsp; ] Listo</td>
+        <td style="color: #334155;">${escapeHtml(item.specs || item.notes || 'Estándar')}</td>
+        <td style="text-align: center; font-weight: bold; font-size: 1.1rem; color: #0f172a;">${item.quantity}</td>
+        <td style="text-align: center; color: #334155; white-space: nowrap;">
+          <span style="display: inline-block; white-space: nowrap; margin-right: 14px;">[ &nbsp; ] Pendiente</span>
+          <span style="display: inline-block; white-space: nowrap;">[ &nbsp; ] Listo</span>
+        </td>
       </tr>
     `).join('');
 
@@ -1106,27 +1265,31 @@ export async function exportProductionWorksheet(orderId) {
         <title>Orden de Fabricación - ${order.production_code}</title>
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #0f172a; padding: 30px; background: #fff; line-height: 1.4; }
-          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #005187; padding-bottom: 16px; margin-bottom: 20px; }
+          @page {
+            size: auto;
+            margin: 8mm 12mm 10mm 12mm;
+          }
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #0f172a; padding: 24px; background: #fff; line-height: 1.4; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #005187; padding-bottom: 14px; margin-bottom: 18px; }
           .logo-text { font-size: 22px; font-weight: 800; color: #005187; }
           .logo-sub { font-size: 12px; color: #64748b; }
           .order-code-box { text-align: right; }
           .order-code { font-size: 24px; font-weight: 800; color: #005187; }
-          .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8fafc; padding: 14px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; }
-          .meta-item strong { display: block; color: #475569; font-size: 11px; text-transform: uppercase; }
-          .tech-notes-box { background: #fffbeb; border: 1px solid #fde68a; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #92400e; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
-          th { background: #005187; color: #fff; padding: 10px 8px; text-align: left; font-size: 11px; text-transform: uppercase; }
-          td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; }
-          .checklist-section { margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 16px; }
+          .meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; background: #f8fafc; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 12px; }
+          .meta-item strong { display: block; color: #475569; font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
+          .tech-notes-box { background: #fffbeb; border: 1px solid #fde68a; padding: 12px; border-radius: 6px; margin-bottom: 18px; font-size: 13px; color: #92400e; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+          th { background: #005187; color: #fff; padding: 9px 8px; text-align: left; font-size: 11px; text-transform: uppercase; }
+          td { padding: 9px 8px; border-bottom: 1px solid #e2e8f0; }
+          .checklist-section { margin-top: 24px; border-top: 1px dashed #cbd5e1; padding-top: 14px; }
           .checklist-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 12px; }
           .checklist-box { border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px; text-align: center; }
-          .signature-section { margin-top: 50px; display: flex; justify-content: space-between; font-size: 12px; }
+          .signature-section { margin-top: 36px; display: flex; justify-content: space-between; font-size: 12px; }
           .sig-line { width: 200px; border-top: 1px solid #000; text-align: center; padding-top: 6px; }
           svg { max-width: 100%; max-height: 460px; height: auto; display: block; margin: 0 auto; }
           @media print {
-            body { padding: 10px; }
-            .no-print { display: none; }
+            body { padding: 0 !important; margin: 0 !important; }
+            .no-print { display: none !important; }
             svg { max-height: 430px !important; }
           }
         </style>
@@ -1140,6 +1303,9 @@ export async function exportProductionWorksheet(orderId) {
           <div class="order-code-box">
             <div class="order-code">${escapeHtml(order.production_code)}</div>
             <div style="font-size: 12px; color: #475569;">Pedido Asociado: <strong>${escapeHtml(order.order_number)}</strong></div>
+            <div style="font-size: 11px; color: #005187; margin-top: 4px; font-weight: 700;">
+              🕒 Emitida: ${exportTimestamp}
+            </div>
           </div>
         </div>
 
@@ -1153,15 +1319,20 @@ export async function exportProductionWorksheet(orderId) {
             ${formatDate(order.start_date || order.created_at)}
           </div>
           <div class="meta-item">
-            <strong>Fecha Estimada de Entrega:</strong>
+            <strong>Fecha Estimada Entrega:</strong>
             <span style="font-weight: bold; color: #005187;">${formatDate(order.estimated_completion_date)}</span>
+          </div>
+          <div class="meta-item">
+            <strong>Fecha/Hora Emisión:</strong>
+            <span style="font-weight: 700; color: #0f172a;">${exportTimestamp}</span>
           </div>
         </div>
 
-        ${order.technical_notes ? `
+        ${(order.technical_notes || order.order_notes) ? `
           <div class="tech-notes-box">
             <strong>Instrucciones y Observaciones Técnicas de Taller:</strong>
-            <p style="margin-top: 4px;">${escapeHtml(order.technical_notes)}</p>
+            ${order.technical_notes ? `<p style="margin-top: 4px;"><strong>Taller:</strong> ${escapeHtml(order.technical_notes)}</p>` : ''}
+            ${order.order_notes ? `<p style="margin-top: 4px;"><strong>Pedido / Cliente:</strong> ${escapeHtml(order.order_notes)}</p>` : ''}
           </div>
         ` : ''}
 
@@ -1171,10 +1342,10 @@ export async function exportProductionWorksheet(orderId) {
           <thead>
             <tr>
               <th style="width: 40px; text-align: center;">#</th>
-              <th>Producto & SKU</th>
+              <th>Producto</th>
               <th>Especificaciones / Acabados</th>
               <th style="width: 70px; text-align: center;">Cant.</th>
-              <th style="width: 150px; text-align: center;">Control Taller</th>
+              <th style="width: 210px; text-align: center; white-space: nowrap;">Control Taller</th>
             </tr>
           </thead>
           <tbody>
@@ -1190,6 +1361,26 @@ export async function exportProductionWorksheet(orderId) {
             <div class="checklist-box">3. Pintura / Acabado<br><br>[ &nbsp; ] Firma: _________</div>
             <div class="checklist-box">4. Control de Calidad<br><br>[ &nbsp; ] Firma: _________</div>
           </div>
+        </div>
+
+        <!-- Notas y Resultados de Taller antes de las firmas -->
+        <div style="margin-top: 20px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
+            <thead>
+              <tr>
+                <th style="background: #0f172a; color: #ffffff; padding: 8px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+                  📋 Notas y Resultados de Taller / Control de Calidad y Tolerancias
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="height: 85px; vertical-align: top; padding: 12px; font-size: 11px; color: #94a3b8; background: #ffffff;">
+                  <em>(Espacio en blanco para anotaciones manuales del operario/inspector: tolerancias reales verificadas, incidencias de pintura/ensamble, observaciones de piezas adicionales o visto bueno de taller):</em>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <div class="signature-section">
@@ -1209,9 +1400,18 @@ export async function exportProductionWorksheet(orderId) {
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    try {
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(blob);
+      printWindow.location.href = blobUrl;
+      setTimeout(() => {
+        try { URL.revokeObjectURL(blobUrl); } catch (_) {}
+      }, 60000);
+    } catch (e) {
+      printWindow.document.open();
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+    }
 
     showToast('success', 'Orden Generada', `Se abrió la hoja de fabricación para la orden ${order.production_code}.`);
   } catch (err) {
@@ -1301,8 +1501,43 @@ function setupModals() {
   if (btnModalExport) {
     btnModalExport.addEventListener('click', () => {
       if (state.activeModalOrder && state.activeModalOrder.id) {
-        exportProductionWorksheet(state.activeModalOrder.id);
+        openExportFormatModal(state.activeModalOrder.id);
       }
+    });
+  }
+
+  // Modal de Selección de Formato de Orden (Con Diseño vs De Solo Texto)
+  const btnOptExportDesign = document.getElementById('btn-opt-export-design');
+  const btnOptExportText = document.getElementById('btn-opt-export-text');
+  const btnCloseExportModal = document.getElementById('btn-close-export-modal');
+  const btnCancelExportModal = document.getElementById('btn-cancel-export-modal');
+  const backdropExportModal = document.getElementById('modal-export-options-backdrop');
+
+  if (btnOptExportDesign) {
+    btnOptExportDesign.addEventListener('click', () => {
+      const orderId = state.pendingExportOrderId;
+      closeExportFormatModal();
+      if (orderId) {
+        exportProductionWorksheet(orderId, 'with_design');
+      }
+    });
+  }
+
+  if (btnOptExportText) {
+    btnOptExportText.addEventListener('click', () => {
+      const orderId = state.pendingExportOrderId;
+      closeExportFormatModal();
+      if (orderId) {
+        exportProductionWorksheet(orderId, 'text_only');
+      }
+    });
+  }
+
+  if (btnCloseExportModal) btnCloseExportModal.addEventListener('click', closeExportFormatModal);
+  if (btnCancelExportModal) btnCancelExportModal.addEventListener('click', closeExportFormatModal);
+  if (backdropExportModal) {
+    backdropExportModal.addEventListener('click', (e) => {
+      if (e.target === backdropExportModal) closeExportFormatModal();
     });
   }
 
@@ -1353,7 +1588,7 @@ function setupModals() {
       const selectedOption = orderSelect.options[orderSelect.selectedIndex]?.text || `#00${orderId}`;
 
       try {
-        await createProductionOrder({
+        const created = await createProductionOrder({
           order: orderId,
           order_number: `#00${orderId}`,
           client_name: selectedOption.split('-')[1]?.trim() || 'Cliente TuEstante',
@@ -1365,6 +1600,12 @@ function setupModals() {
         formNew.reset();
         showToast('success', 'Orden Creada', `Orden de fabricación creada exitosamente.`);
         await Promise.all([loadProductionMetrics(), loadProductionData()]);
+
+        // Al solicitar/crear una orden, abrir modal preguntando si se desea con diseño o solo texto
+        const newOrderId = created?.id || orderId;
+        if (newOrderId) {
+          openExportFormatModal(newOrderId);
+        }
       } catch (err) {
         showToast('error', 'Error al crear orden', err.message);
       }

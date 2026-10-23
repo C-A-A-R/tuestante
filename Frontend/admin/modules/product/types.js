@@ -154,7 +154,7 @@ function renderTypesTable() {
     const isActive = t.is_active !== false;
     const statusText = isActive ? 'Activa' : 'Inactiva';
     const statusClass = isActive ? 'status-active' : 'status-inactive';
-    const count = t.count !== undefined ? t.count : (t.products_count || 0);
+    const count = Number(t.count !== undefined ? t.count : (t.products_count !== undefined ? t.products_count : 0));
     const imgUrl = t.product_type_image || '../../assets/images/logo.jpeg';
 
     return `
@@ -740,7 +740,7 @@ function openViewModal(id) {
   const descEl = document.getElementById('view-type-desc');
 
   const isActive = type.is_active !== false;
-  const count = type.count !== undefined ? type.count : (type.products_count || 0);
+  const count = Number(type.count !== undefined ? type.count : (type.products_count !== undefined ? type.products_count : 0));
 
   if (imgEl) {
     const fullImg = type.product_type_image || '../../assets/images/logo.jpeg';
@@ -787,7 +787,7 @@ function openDeleteModal(id) {
     msgEl.innerHTML = `¿Estás seguro de que deseas eliminar la línea <strong>"${escapeHtml(type.product_type_name)}"</strong>? Esta acción no se puede deshacer.`;
   }
 
-  const count = type.count !== undefined ? type.count : (type.products_count || 0);
+  const count = Number(type.count !== undefined ? type.count : (type.products_count !== undefined ? type.products_count : 0));
   if (count > 0) {
     if (warningBox) warningBox.style.display = 'flex';
     if (warningText) {

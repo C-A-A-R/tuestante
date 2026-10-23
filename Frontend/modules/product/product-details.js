@@ -851,7 +851,7 @@ function renderRelatedProducts(currentProduct, related = []) {
 
     function getVisibleCols() {
         const width = window.innerWidth;
-        if (width <= 480) return 1;
+        if (width < 360) return 1;
         if (width <= 768) return 2;
         if (width <= 1100) return 3;
         return 4;
@@ -859,120 +859,144 @@ function renderRelatedProducts(currentProduct, related = []) {
 
     function getGapPixels() {
         const width = window.innerWidth;
-        if (width <= 480) return 12;
-        if (width <= 768) return 16;
+        if (width <= 580) return 10;
+        if (width <= 992) return 16;
         return 20;
     }
 
-    const visibleCols = getVisibleCols();
-    const isInfinite = totalCols > visibleCols;
+    let isInfinite = false;
+    let cloneCount = 0;
+    let currentIndex = 0;
+    let isTransitioning = false;
+    let autoTimer = null;
+    let lastVisibleCols = getVisibleCols();
 
-    function createCardHTML(p, col) {
-        // El componente genera el HTML de la carta; luego se le inyecta el grid-column
-        // necesario para el carrusel de scroll infinito.
+    function createCardHTML(p, isClone = false) {
         const cardHTML = createProductCartHTML(p, {
             detailBaseUrl: 'product-details.html',
             fallbackImage: '../../assets/images/productos/estante-blanco.jpeg',
         });
-        // Insertar estilo de posicionamiento en la columna del grid del carrusel
-        return cardHTML.replace(
-            'class="unified-product-card"',
-            `class="unified-product-card" style="grid-row: 1; grid-column: ${col}; height: 100%;"`
-        );
+        if (isClone) {
+            return cardHTML.replace(
+                'class="unified-product-card"',
+                'class="unified-product-card" aria-hidden="true" data-clone="true"'
+            );
+        }
+        return cardHTML;
     }
 
-    const cloneCount = Math.max(visibleCols, 3);
-    let htmlContent = '';
-
-    if (isInfinite) {
-        related.forEach((p, idx) => {
-            const col = idx + 1;
-            if (col > totalCols - cloneCount) {
-                htmlContent += createCardHTML(p, col - totalCols);
-            }
-        });
-
-        related.forEach((p, idx) => {
-            htmlContent += createCardHTML(p, idx + 1);
-        });
-
-        related.forEach((p, idx) => {
-            const col = idx + 1;
-            if (col <= cloneCount) {
-                htmlContent += createCardHTML(p, col + totalCols);
-            }
-        });
-    } else {
-        related.forEach((p, idx) => {
-            htmlContent += createCardHTML(p, idx + 1);
-        });
-    }
-
-    track.innerHTML = htmlContent;
-
-    let currentCol = 0;
-    let isTransitioning = false;
-    let autoTimer = null;
-
-    function getColOffsetPixels(colIndex) {
+    function calculateDimensions() {
         const vCols = getVisibleCols();
         const gap = getGapPixels();
-        const viewportWidth = viewport.clientWidth;
-        const colWidth = (viewportWidth - (vCols - 1) * gap) / vCols;
+        const viewportWidth = viewport.clientWidth || 300;
+        const cardWidth = Math.max(120, (viewportWidth - (vCols - 1) * gap) / vCols);
+        track.style.setProperty('--related-card-width', `${cardWidth}px`);
+        track.style.setProperty('--related-gap', `${gap}px`);
+        return { vCols, gap, cardWidth, step: cardWidth + gap };
+    }
+
+    function buildCarousel() {
+        const vCols = getVisibleCols();
+        lastVisibleCols = vCols;
+        isInfinite = totalCols > vCols;
+
+        let htmlContent = '';
 
         if (isInfinite) {
-            return (colIndex + cloneCount) * (colWidth + gap);
+            track.classList.remove('is-centered');
+            if (prevBtn) prevBtn.style.display = 'flex';
+            if (nextBtn) nextBtn.style.display = 'flex';
+
+            // Necesitamos exactamente vCols clones al inicio y al final para loop infinito fluido
+            cloneCount = vCols;
+
+            // Clones iniciales (tomados del final de la lista)
+            const prependedClones = related.slice(-cloneCount);
+            prependedClones.forEach(p => {
+                htmlContent += createCardHTML(p, true);
+            });
+
+            // Elementos reales
+            related.forEach(p => {
+                htmlContent += createCardHTML(p, false);
+            });
+
+            // Clones finales (tomados del inicio de la lista)
+            const appendedClones = related.slice(0, cloneCount);
+            appendedClones.forEach(p => {
+                htmlContent += createCardHTML(p, true);
+            });
         } else {
-            return colIndex * (colWidth + gap);
+            track.classList.add('is-centered');
+            if (prevBtn) prevBtn.style.display = 'none';
+            if (nextBtn) nextBtn.style.display = 'none';
+            cloneCount = 0;
+
+            related.forEach(p => {
+                htmlContent += createCardHTML(p, false);
+            });
         }
+
+        track.innerHTML = htmlContent;
+        calculateDimensions();
+        currentIndex = 0;
+        updatePosition(false);
+    }
+
+    function getOffsetPixels(index) {
+        const { step } = calculateDimensions();
+        if (isInfinite) {
+            return (cloneCount + index) * step;
+        }
+        return 0;
     }
 
     function updatePosition(animate = true) {
-        const offset = getColOffsetPixels(currentCol);
+        if (!isInfinite) {
+            track.style.transition = 'none';
+            track.style.transform = 'none';
+            return;
+        }
+
+        const offset = getOffsetPixels(currentIndex);
         if (animate) {
-            track.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+            track.style.transition = 'transform 0.45s cubic-bezier(0.25, 1, 0.5, 1)';
         } else {
             track.style.transition = 'none';
         }
         track.style.transform = `translateX(-${offset}px)`;
-
-        if (!isInfinite) {
-            if (prevBtn) prevBtn.style.display = 'none';
-            if (nextBtn) nextBtn.style.display = 'none';
-        } else {
-            if (prevBtn) prevBtn.style.display = 'flex';
-            if (nextBtn) nextBtn.style.display = 'flex';
-        }
     }
 
     function slideNext() {
         if (!isInfinite || isTransitioning) return;
         isTransitioning = true;
-        currentCol++;
+        currentIndex++;
         updatePosition(true);
 
         setTimeout(() => {
-            if (currentCol >= totalCols) {
-                currentCol = 0;
+            if (currentIndex >= totalCols) {
+                currentIndex = 0;
                 updatePosition(false);
+                void track.offsetHeight;
             }
             isTransitioning = false;
-        }, 500);
+        }, 460);
     }
 
     function slidePrev() {
         if (!isInfinite || isTransitioning) return;
         isTransitioning = true;
-        currentCol--;
+        currentIndex--;
         updatePosition(true);
 
         setTimeout(() => {
-            if (currentCol < 0) {
-                currentCol = totalCols - 1;
+            if (currentIndex < 0) {
+                currentIndex = totalCols - 1;
                 updatePosition(false);
+                void track.offsetHeight;
             }
             isTransitioning = false;
-        }, 500);
+        }, 460);
     }
 
     function startAutoSlide() {
@@ -1002,17 +1026,72 @@ function renderRelatedProducts(currentProduct, related = []) {
         };
     }
 
+    // Pausar autoplay al interactuar con el mouse
     viewport.addEventListener('mouseenter', stopAutoSlide);
     viewport.addEventListener('mouseleave', startAutoSlide);
 
-    window.addEventListener('resize', () => {
-        updatePosition(false);
+    // Gestos táctiles para móviles (Swipe horizontal)
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    viewport.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length === 1) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            touchEndX = touchStartX;
+            touchEndY = touchStartY;
+            stopAutoSlide();
+        }
+    }, { passive: true });
+
+    viewport.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches.length === 1) {
+            touchEndX = e.touches[0].clientX;
+            touchEndY = e.touches[0].clientY;
+        }
+    }, { passive: true });
+
+    viewport.addEventListener('touchend', () => {
+        const diffX = touchStartX - touchEndX;
+        const diffY = touchStartY - touchEndY;
+        if (Math.abs(diffX) > 35 && Math.abs(diffX) > Math.abs(diffY) * 1.3) {
+            if (diffX > 0) {
+                slideNext();
+            } else {
+                slidePrev();
+            }
+        }
+        startAutoSlide();
+    }, { passive: true });
+
+    // Detener autoplay si la pestaña está oculta
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopAutoSlide();
+        } else {
+            startAutoSlide();
+        }
     });
 
-    updatePosition(false);
+    window.addEventListener('resize', () => {
+        const newVCols = getVisibleCols();
+        if (newVCols !== lastVisibleCols) {
+            buildCarousel();
+            startAutoSlide();
+        } else {
+            calculateDimensions();
+            updatePosition(false);
+        }
+    });
+
+    buildCarousel();
     startAutoSlide();
 
-    track.addEventListener('click', async (e) => {
+    if (!track._hasClickListener) {
+        track._hasClickListener = true;
+        track.addEventListener('click', async (e) => {
         const wishlistBtn = e.target.closest('.unified-wishlist-btn');
         if (wishlistBtn) {
             const id = wishlistBtn.getAttribute('data-id');
@@ -1071,5 +1150,6 @@ function renderRelatedProducts(currentProduct, related = []) {
             window.dispatchEvent(new Event('cart-updated'));
             showCartModal({ id, name, price, image });
         }
-    });
+        });
+    }
 }

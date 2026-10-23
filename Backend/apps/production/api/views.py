@@ -96,6 +96,23 @@ class ProductionOrderViewSet(BaseViewSet):
 
         return queryset
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        if instance.order and (not instance.blueprint_svg or instance.technical_notes):
+            try:
+                from apps.production.services.parametric_service import ParametricDesignService
+                design, svg_content, _ = ParametricDesignService.build_order_blueprint(
+                    instance.order,
+                    custom_notes=instance.technical_notes or ''
+                )
+                if svg_content:
+                    instance.technical_design = design
+                    instance.blueprint_svg = svg_content
+                    instance.save(update_fields=['technical_design', 'blueprint_svg'])
+            except Exception:
+                pass
+        instance.ensure_production_products()
+
     def retrieve(self, request, *args, **kwargs):
         """
         Retorna los detalles de la orden de producción. Si aún no cuenta con plano SVG
@@ -105,7 +122,8 @@ class ProductionOrderViewSet(BaseViewSet):
         instance = self.get_object()
         instance.ensure_production_products()
         force_refresh = request.query_params.get('refresh') in ['1', 'true', 'yes']
-        if (force_refresh or not instance.blueprint_svg) and instance.order:
+        has_old_badge = bool(instance.blueprint_svg and 'opacity="0.9"' in instance.blueprint_svg and 'FONDO' in instance.blueprint_svg)
+        if (force_refresh or not instance.blueprint_svg or has_old_badge) and instance.order:
             try:
                 from apps.production.services.parametric_service import ParametricDesignService
                 design, svg_content, _ = ParametricDesignService.build_order_blueprint(
@@ -133,7 +151,8 @@ class ProductionOrderViewSet(BaseViewSet):
         design = po.technical_design
 
         force_refresh = request.query_params.get('refresh') in ['1', 'true', 'yes']
-        if (force_refresh or not svg_content) and po.order:
+        has_old_badge = bool(svg_content and 'opacity="0.9"' in svg_content and 'FONDO' in svg_content)
+        if (force_refresh or not svg_content or has_old_badge) and po.order:
             try:
                 from apps.production.services.parametric_service import ParametricDesignService
                 design, svg_content, _ = ParametricDesignService.build_order_blueprint(
@@ -182,6 +201,18 @@ class ProductionOrderViewSet(BaseViewSet):
         production_order.status = new_status
         if technical_notes is not None:
             production_order.technical_notes = technical_notes
+            if production_order.order:
+                try:
+                    from apps.production.services.parametric_service import ParametricDesignService
+                    design, svg_content, _ = ParametricDesignService.build_order_blueprint(
+                        production_order.order,
+                        custom_notes=production_order.technical_notes or ''
+                    )
+                    if svg_content:
+                        production_order.technical_design = design
+                        production_order.blueprint_svg = svg_content
+                except Exception:
+                    pass
         if actual_completion_date is not None:
             production_order.actual_completion_date = actual_completion_date
 

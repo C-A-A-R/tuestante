@@ -1,3 +1,4 @@
+import re
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.db.models import Q
@@ -129,6 +130,56 @@ class PasswordResetConfirmView(APIView):
         return Response({"message": "Contraseña restablecida exitosamente."})
 
 
+def get_document_candidates(raw_val):
+    """
+    Genera variaciones comunes de documentos de identidad venezolanos y extranjeros (V, E, J, G, P, R).
+    Ejemplo: '31701988' -> {'31701988', 'V-31701988', 'V31701988', 'E-31701988', ...}
+    """
+    if not raw_val:
+        return set()
+    val = str(raw_val).strip()
+    candidates = {val, val.lower(), val.upper()}
+
+    compact = re.sub(r'[\s.\-_/]', '', val).upper()
+    if compact:
+        candidates.add(compact)
+
+    digits = re.sub(r'\D', '', val)
+    if digits:
+        candidates.add(digits)
+        for prefix in ['V', 'E', 'J', 'G', 'P', 'R']:
+            candidates.add(f'{prefix}-{digits}')
+            candidates.add(f'{prefix}{digits}')
+            candidates.add(f'{prefix.lower()}-{digits}')
+            candidates.add(f'{prefix.lower()}{digits}')
+
+    match_prefix = re.match(r'^([vejgprVEJGPR])[\s.\-_/]?(\d+)$', val)
+    if match_prefix:
+        p, d = match_prefix.group(1).upper(), match_prefix.group(2)
+        candidates.add(d)
+        candidates.add(f'{p}-{d}')
+        candidates.add(f'{p}{d}')
+
+    return candidates
+
+
+def is_admin_or_worker_user(user):
+    """Verifica si el usuario es administrador (staff/superuser) o trabajador activo."""
+    if not user:
+        return False
+    if user.is_staff or user.is_superuser:
+        return True
+    try:
+        from apps.employee_store.models import EmployeeProfile
+        return EmployeeProfile.objects.filter(
+            user=user,
+            is_deleted=False,
+            is_active=True
+        ).exists()
+    except Exception:
+        return False
+
+
 class LoginView(APIView):
     """Vista para inicio de sesión."""
 
@@ -140,6 +191,9 @@ class LoginView(APIView):
             or request.data.get("nombre_usuario")
             or request.data.get("email")
             or request.data.get("correo")
+            or request.data.get("identity_document")
+            or request.data.get("cedula")
+            or request.data.get("documento")
         )
         password = request.data.get("password") or request.data.get("contrasena")
 
@@ -149,11 +203,27 @@ class LoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Buscar usuario por nombre de usuario o por correo
+        identifier = str(username).strip()
+
+        # 1. Intentar buscar por coincidencia directa de nombre de usuario o correo electrónico
         user = User.objects.filter(
-            Q(username=username) | Q(email=username),
+            Q(username__iexact=identifier) | Q(email__iexact=identifier),
             is_deleted=False
         ).first()
+
+        matched_by_identity_document = False
+
+        if not user:
+            # 2. Si no coincide con username ni email, buscar por documento de identidad o número de empleado
+            doc_candidates = get_document_candidates(identifier)
+            doc_query = Q(identity_document__in=doc_candidates)
+            doc_query |= Q(
+                employee_profile__employee_number__iexact=identifier,
+                employee_profile__is_deleted=False
+            )
+            user = User.objects.filter(doc_query, is_deleted=False).distinct().first()
+            if user:
+                matched_by_identity_document = True
 
         if not user:
             return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -163,6 +233,26 @@ class LoginView(APIView):
                 {"error": "La cuenta está desactivada"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+
+        # Regla de negocio: El inicio de sesión con documento de identidad solo está permitido
+        # para trabajadores y administradores. Los clientes deben iniciar sesión con su correo electrónico.
+        is_admin_or_worker = is_admin_or_worker_user(user)
+
+        if not is_admin_or_worker:
+            # Si el usuario es un cliente común y está intentando iniciar sesión con cédula/documento
+            is_doc_login = matched_by_identity_document
+            if user.identity_document and identifier in get_document_candidates(user.identity_document):
+                is_doc_login = True
+
+            is_email_login = bool(user.email and identifier.lower() == user.email.lower())
+
+            if is_doc_login and not is_email_login:
+                return Response(
+                    {
+                        "error": "El inicio de sesión mediante cédula o documento de identidad está disponible únicamente para trabajadores y administradores. Los clientes deben ingresar con su correo electrónico."
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         auth_user = authenticate(request, username=user.username, password=password)
         if not auth_user:
@@ -229,7 +319,7 @@ class TokenRefreshView(APIView):
 
     def post(self, request):
         try:
-            refresh_token = request.data.get("refresh_token")
+            refresh_token = request.data.get("refresh_token") or request.data.get("refresh")
             if refresh_token:
                 token = RefreshToken(refresh_token)
                 return Response(
@@ -237,7 +327,7 @@ class TokenRefreshView(APIView):
                     status=status.HTTP_200_OK,
                 )
             return Response(
-                {"error": "Se requiere refresh_token"},
+                {"error": "Se requiere refresh_token o refresh"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception:

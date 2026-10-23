@@ -280,9 +280,38 @@ body.auth-body {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.form-input:focus {
+.form-input:focus,
+.form-select:focus {
     border-color: var(--border-focus);
     box-shadow: 0 0 0 3px rgba(0, 81, 135, 0.14);
+}
+
+.form-select {
+    width: 100%;
+    height: 44px;
+    padding: 0 36px 0 40px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.92rem;
+    color: var(--dark-text);
+    background-color: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: var(--radius-sm);
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-select:disabled {
+    background-color: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+    border-color: #e2e8f0;
 }
 
 .input-wrapper:focus-within .input-icon {
@@ -290,12 +319,14 @@ body.auth-body {
 }
 
 .form-group.error .form-input,
+.form-group.error .form-select,
 .form-group.error .composite-select {
     border-color: var(--danger);
     background-color: #fffbfb;
 }
 
 .form-group.error .form-input:focus,
+.form-group.error .form-select:focus,
 .form-group.error .composite-select:focus {
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14);
 }
@@ -402,8 +433,11 @@ body.auth-body {
 
 /* Botón de Enviar / Registro */
 .btn-auth-submit {
+    box-sizing: border-box;
     width: 100%;
-    height: 48px;
+    max-width: 400px;
+    height: 44px;
+    padding: 0 16px;
     font-family: 'Outfit', sans-serif;
     font-size: 1.05rem;
     font-weight: 700;
@@ -417,7 +451,7 @@ body.auth-body {
     border-radius: var(--radius-sm);
     cursor: pointer;
     box-shadow: 0 4px 14px rgba(0, 81, 135, 0.25);
-    margin-top: 8px;
+    margin: 8px auto 0;
     transition: all 0.25s ease;
 }
 

@@ -479,4 +479,48 @@ class ProductCreationAPITest(TestCase):
         self.assertTrue(data['angle_images'][0]['image'])
 
 
+class ProductTypeProductsCountTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.pt_armarios = ProductType.objects.create(product_type_name='Armarios Test')
+        self.pt_vacio = ProductType.objects.create(product_type_name='Vacio Test')
+
+        Product.objects.create(
+            product_name='Armario 1',
+            product_type=self.pt_armarios,
+            price=100.00
+        )
+        Product.objects.create(
+            product_name='Armario 2',
+            product_type=self.pt_armarios,
+            price=150.00
+        )
+        # Producto eliminado no debe contar
+        deleted_prod = Product.objects.create(
+            product_name='Armario Borrado',
+            product_type=self.pt_armarios,
+            price=200.00
+        )
+        deleted_prod.is_deleted = True
+        deleted_prod.save()
+
+    def test_product_types_endpoint_returns_correct_products_count(self):
+        """Verifica que /api/products/product-types/ devuelve products_count y count exactos."""
+        response = self.client.get('/api/products/product-types/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        items = response.data if isinstance(response.data, list) else response.data.get('results', [])
+        armarios_data = next((item for item in items if item['id'] == self.pt_armarios.id), None)
+        vacio_data = next((item for item in items if item['id'] == self.pt_vacio.id), None)
+
+        self.assertIsNotNone(armarios_data)
+        self.assertEqual(armarios_data['products_count'], 2)
+        self.assertEqual(armarios_data['count'], 2)
+
+        self.assertIsNotNone(vacio_data)
+        self.assertEqual(vacio_data['products_count'], 0)
+        self.assertEqual(vacio_data['count'], 0)
+
+
+
 
