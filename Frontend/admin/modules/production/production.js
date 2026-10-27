@@ -13,6 +13,7 @@ import {
   getProductionMetrics, 
   getProductionOrder, 
   getProductionBlueprint,
+  getProductionWorksheet,
   createProductionOrder,
   getStageConfig,
   getProductImageUrl,
@@ -1009,10 +1010,36 @@ export async function exportProductionWorksheet(orderId, mode = 'with_design') {
       }
     }
 
-    const printWindow = window.open('', '_blank', 'width=950,height=800');
+    const printWindow = window.open('', '_blank', 'width=980,height=850');
     if (!printWindow) {
       showToast('info', 'Permitir Ventanas Emergentes', 'Por favor permite ventanas emergentes para generar e imprimir la orden de fabricación.');
       return;
+    }
+    printWindow.document.write('<div style="font-family: sans-serif; padding: 40px; text-align: center; color: #005187;"><h3>Generando Hoja de Taller desde el Backend...</h3><p style="color: #64748b;">Por favor espere un momento.</p></div>');
+
+    // 1. Consultar el documento oficial compilado por el servicio de Backend (ProductionWorksheetService)
+    if (order.id) {
+      try {
+        const wsData = await getProductionWorksheet(order.id, mode);
+        if (wsData && wsData.html) {
+          try {
+            const blob = new Blob([wsData.html], { type: 'text/html;charset=utf-8' });
+            const blobUrl = URL.createObjectURL(blob);
+            printWindow.location.href = blobUrl;
+            setTimeout(() => {
+              try { URL.revokeObjectURL(blobUrl); } catch (_) {}
+            }, 60000);
+          } catch (e) {
+            printWindow.document.open();
+            printWindow.document.write(wsData.html);
+            printWindow.document.close();
+          }
+          showToast('success', 'Orden Generada', `Se generó la hoja de fabricación desde el Backend para la orden ${order.production_code}.`);
+          return;
+        }
+      } catch (err) {
+        console.warn('[TuEstante Production] Fallback a generador local:', err);
+      }
     }
 
     const design = order.technical_design;
@@ -1264,12 +1291,26 @@ export async function exportProductionWorksheet(orderId, mode = 'with_design') {
         <meta charset="UTF-8">
         <title>Orden de Fabricación - ${order.production_code}</title>
         <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           @page {
             size: auto;
-            margin: 8mm 12mm 10mm 12mm;
+            margin: 0;
           }
-          body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #0f172a; padding: 24px; background: #fff; line-height: 1.4; }
+          body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            color: #0f172a;
+            padding: 14mm 16mm 16mm 16mm;
+            background: #fff;
+            line-height: 1.4;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #005187; padding-bottom: 14px; margin-bottom: 18px; }
           .logo-text { font-size: 22px; font-weight: 800; color: #005187; }
           .logo-sub { font-size: 12px; color: #64748b; }
@@ -1279,16 +1320,16 @@ export async function exportProductionWorksheet(orderId, mode = 'with_design') {
           .meta-item strong { display: block; color: #475569; font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
           .tech-notes-box { background: #fffbeb; border: 1px solid #fde68a; padding: 12px; border-radius: 6px; margin-bottom: 18px; font-size: 13px; color: #92400e; }
           table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
-          th { background: #005187; color: #fff; padding: 9px 8px; text-align: left; font-size: 11px; text-transform: uppercase; }
+          th { background: #005187 !important; color: #fff !important; padding: 9px 8px; text-align: left; font-size: 11px; text-transform: uppercase; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           td { padding: 9px 8px; border-bottom: 1px solid #e2e8f0; }
           .checklist-section { margin-top: 24px; border-top: 1px dashed #cbd5e1; padding-top: 14px; }
           .checklist-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 12px; }
           .checklist-box { border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px; text-align: center; }
-          .signature-section { margin-top: 36px; display: flex; justify-content: space-between; font-size: 12px; }
-          .sig-line { width: 200px; border-top: 1px solid #000; text-align: center; padding-top: 6px; }
+          .signature-section { margin-top: 80px; display: flex; justify-content: space-between; font-size: 12px; page-break-inside: avoid; }
+          .sig-line { width: 220px; border-top: 1.5px solid #0f172a; text-align: center; padding-top: 8px; font-weight: 700; color: #1e293b; }
           svg { max-width: 100%; max-height: 460px; height: auto; display: block; margin: 0 auto; }
           @media print {
-            body { padding: 0 !important; margin: 0 !important; }
+            body { padding: 12mm 15mm 15mm 15mm !important; margin: 0 !important; }
             .no-print { display: none !important; }
             svg { max-height: 430px !important; }
           }
@@ -1363,21 +1404,19 @@ export async function exportProductionWorksheet(orderId, mode = 'with_design') {
           </div>
         </div>
 
-        <!-- Notas y Resultados de Taller antes de las firmas -->
-        <div style="margin-top: 20px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
+        <!-- Notas y Resultados de Taller antes de las firmas (al menos media hoja, completamente vacía) -->
+        <div style="margin-top: 20px; border: 1.5px solid #0f172a; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
             <thead>
               <tr>
-                <th style="background: #0f172a; color: #ffffff; padding: 8px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+                <th style="background-color: #0f172a !important; color: #ffffff !important; padding: 10px 14px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; border-bottom: 2px solid #0f172a;">
                   📋 Notas y Resultados de Taller / Control de Calidad y Tolerancias
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style="height: 85px; vertical-align: top; padding: 12px; font-size: 11px; color: #94a3b8; background: #ffffff;">
-                  <em>(Espacio en blanco para anotaciones manuales del operario/inspector: tolerancias reales verificadas, incidencias de pintura/ensamble, observaciones de piezas adicionales o visto bueno de taller):</em>
-                </td>
+                <td style="height: 400px; min-height: 400px; background: #ffffff;">&nbsp;</td>
               </tr>
             </tbody>
           </table>

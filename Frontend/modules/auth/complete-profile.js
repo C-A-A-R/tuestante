@@ -8,6 +8,7 @@
 
 import { completeUserProfile, getCurrentUserProfile } from "./auth.js";
 import { getAccessToken, getCurrentUser, setCurrentUser } from "../../js/storage.js";
+import { getVenezuelaStates, getCitiesByState } from "../../js/locations.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     // 1. Verificar si hay sesión activa; si no, volver a login
@@ -26,10 +27,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 3. Configurar validación estricta de teléfono (+ y números) y cédula (números)
     setupStrictInputs();
 
-    // 4. Cargar y precargar datos del usuario
+    // 4. Configurar selects de ubicación en cascada (Estado y Ciudad)
+    setupLocationSelects();
+
+    // 5. Cargar y precargar datos del usuario
     await loadAndPrepopulateUserData();
 
-    // 5. Configurar envío del formulario
+    // 6. Configurar envío del formulario
     const form = document.getElementById("completeProfileForm");
     if (form) {
         form.addEventListener("submit", handleCompleteProfileSubmit);
@@ -45,6 +49,51 @@ function setupBirthDateConstraints() {
         const today = new Date().toISOString().split("T")[0];
         birthDateInput.setAttribute("max", today);
     }
+}
+
+/**
+ * Configuración de selects en cascada para Estado y Ciudad
+ */
+function setupLocationSelects() {
+    const stateSelect = document.getElementById("state");
+    const citySelect = document.getElementById("city");
+    if (!stateSelect || !citySelect) return;
+
+    // Llenar Estados
+    const states = getVenezuelaStates();
+    stateSelect.innerHTML = '<option value="">Selecciona un estado</option>';
+    states.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        stateSelect.appendChild(opt);
+    });
+
+    stateSelect.addEventListener("change", () => {
+        const selectedState = stateSelect.value;
+        citySelect.innerHTML = '<option value="">Selecciona una ciudad</option>';
+        clearFieldError("state");
+        clearFieldError("city");
+
+        if (!selectedState) {
+            citySelect.disabled = true;
+            return;
+        }
+
+        const cities = getCitiesByState(selectedState);
+        cities.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            citySelect.appendChild(opt);
+        });
+
+        citySelect.disabled = false;
+    });
+
+    citySelect.addEventListener("change", () => {
+        clearFieldError("city");
+    });
 }
 
 /**
@@ -124,8 +173,8 @@ function setupStrictInputs() {
         });
     }
 
-    // Limpiar errores en inputs de texto estándar
-    ["first_name", "first_last_name", "birth_date"].forEach((id) => {
+    // Limpiar errores en inputs de texto estándar y selects
+    ["first_name", "first_last_name", "birth_date", "state", "city", "address"].forEach((id) => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener("input", () => clearFieldError(id));
@@ -179,12 +228,34 @@ async function loadAndPrepopulateUserData() {
     setInputValue("identity_document", user.identity_document);
     setInputValue("phone", user.phone);
     setInputValue("birth_date", user.birth_date);
-    setInputValue("city", user.city);
+    setInputValue("address", user.address);
 
     if (user.document_type) {
         const docTypeSelect = document.getElementById("document_type");
         if (docTypeSelect) {
             docTypeSelect.value = user.document_type;
+        }
+    }
+
+    if (user.state) {
+        const stateSelect = document.getElementById("state");
+        const citySelect = document.getElementById("city");
+        if (stateSelect) {
+            stateSelect.value = user.state;
+            if (citySelect) {
+                const cities = getCitiesByState(user.state);
+                citySelect.innerHTML = '<option value="">Selecciona una ciudad</option>';
+                cities.forEach(c => {
+                    const opt = document.createElement("option");
+                    opt.value = c;
+                    opt.textContent = c;
+                    citySelect.appendChild(opt);
+                });
+                citySelect.disabled = false;
+                if (user.city) {
+                    citySelect.value = user.city;
+                }
+            }
         }
     }
 }
@@ -214,8 +285,9 @@ async function handleCompleteProfileSubmit(e) {
     const secondName = document.getElementById("second_name")?.value.trim() || "";
     const firstLastName = document.getElementById("first_last_name")?.value.trim();
     const secondLastName = document.getElementById("second_last_name")?.value.trim() || "";
-    const city = document.getElementById("city")?.value.trim() || "";
-    const address = document.getElementById("address")?.value.trim() || "";
+    const stateVal = document.getElementById("state")?.value.trim() || "";
+    const cityVal = document.getElementById("city")?.value.trim() || "";
+    const addressVal = document.getElementById("address")?.value.trim() || "";
 
     // Validación de Cédula (Obligatoria, al menos 5 dígitos)
     if (!identityDoc) {
@@ -260,6 +332,25 @@ async function handleCompleteProfileSubmit(e) {
         isValid = false;
     }
 
+    // Validación de Ubicación (Estado, Ciudad y Dirección OBLIGATORIOS)
+    if (!stateVal) {
+        setFieldError("state", "Por favor selecciona tu estado.");
+        isValid = false;
+    }
+
+    if (!cityVal) {
+        setFieldError("city", "Por favor selecciona tu ciudad.");
+        isValid = false;
+    }
+
+    if (!addressVal) {
+        setFieldError("address", "La dirección es obligatoria.");
+        isValid = false;
+    } else if (addressVal.length < 5) {
+        setFieldError("address", "Por favor ingresa una dirección más detallada (mínimo 5 caracteres).");
+        isValid = false;
+    }
+
     if (!isValid) {
         showErrorNotification("Por favor completa los campos obligatorios señalados en rojo.");
         return;
@@ -276,8 +367,9 @@ async function handleCompleteProfileSubmit(e) {
         second_name: secondName,
         first_last_name: firstLastName,
         second_last_name: secondLastName,
-        city: city,
-        address: address,
+        state: stateVal,
+        city: cityVal,
+        address: addressVal,
     };
 
     try {
@@ -307,6 +399,9 @@ async function handleCompleteProfileSubmit(e) {
                 else if (key === "first_name") setFieldError("first_name", msg);
                 else if (key === "first_last_name") setFieldError("first_last_name", msg);
                 else if (key === "document_type") setFieldError("identity_document", msg);
+                else if (key === "state") setFieldError("state", msg);
+                else if (key === "city") setFieldError("city", msg);
+                else if (key === "address") setFieldError("address", msg);
             });
 
             if (data.detail) mainMessage = data.detail;
@@ -315,7 +410,7 @@ async function handleCompleteProfileSubmit(e) {
 
         showErrorNotification(mainMessage);
     }
-}
+
 
 function setFieldError(fieldId, message) {
     const errorEl = document.getElementById(`${fieldId}Error`);

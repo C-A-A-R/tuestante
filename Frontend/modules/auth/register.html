@@ -75,203 +75,219 @@
 
             <form class="auth-form" id="registerForm" novalidate>
                 
-                <!-- Fila 1: Usuario & Correo -->
-                <div class="form-row-2col">
-                    <div class="form-group">
-                        <label for="usuario" class="form-label">Nombre de Usuario <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                            </span>
-                            <input type="text" id="usuario" name="usuario" class="form-input" placeholder="tu_usuario" required autocomplete="username">
+                <!-- SECCIÓN 1: INFORMACIÓN PERSONAL -->
+                <div class="auth-form-section">
+                    <div class="auth-section-header">
+                        <span class="auth-section-icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </span>
+                        <div class="auth-section-title-wrap">
+                            <h2 class="auth-section-title">Información Personal</h2>
+                            <p class="auth-section-subtitle">Datos de contacto e identificación del titular de la cuenta</p>
                         </div>
-                        <span class="field-error-message" id="usuarioError"></span>
                     </div>
 
-                    <div class="form-group">
-                        <label for="email" class="form-label">Correo Electrónico <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                                    <polyline points="22,6 12,13 2,6"></polyline>
-                                </svg>
-                            </span>
-                            <input type="email" id="email" name="email" class="form-input" placeholder="ejemplo@correo.com" required autocomplete="email">
+                    <!-- Fila 1: Correo Electrónico & Fecha de Nacimiento -->
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label for="email" class="form-label">Correo Electrónico <span class="req-star">*</span></label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                        <polyline points="22,6 12,13 2,6"></polyline>
+                                    </svg>
+                                </span>
+                                <input type="email" id="email" name="email" class="form-input" placeholder="ejemplo@correo.com" required autocomplete="email">
+                            </div>
+                            <span class="field-error-message" id="emailError"></span>
                         </div>
-                        <span class="field-error-message" id="emailError"></span>
-                    </div>
-                </div>
 
-                <!-- Fila 2: Nombres -->
-                <div class="form-row-2col">
-                    <div class="form-group">
-                        <label for="first_name" class="form-label">Primer Nombre <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                            </span>
-                            <input type="text" id="first_name" name="first_name" class="form-input" placeholder="Ej. Juan" required autocomplete="given-name">
-                        </div>
-                        <span class="field-error-message" id="first_nameError"></span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="second_name" class="form-label">Segundo Nombre <span class="opt-label">(opcional)</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                            </span>
-                            <input type="text" id="second_name" name="second_name" class="form-input" placeholder="Ej. Carlos" autocomplete="additional-name">
-                        </div>
-                        <span class="field-error-message" id="second_nameError"></span>
-                    </div>
-                </div>
-
-                <!-- Fila 3: Apellidos -->
-                <div class="form-row-2col">
-                    <div class="form-group">
-                        <label for="first_last_name" class="form-label">Primer Apellido <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                            </span>
-                            <input type="text" id="first_last_name" name="first_last_name" class="form-input" placeholder="Ej. Pérez" required autocomplete="family-name">
-                        </div>
-                        <span class="field-error-message" id="first_last_nameError"></span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="second_last_name" class="form-label">Segundo Apellido <span class="opt-label">(opcional)</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                            </span>
-                            <input type="text" id="second_last_name" name="second_last_name" class="form-input" placeholder="Ej. Gómez">
-                        </div>
-                        <span class="field-error-message" id="second_last_nameError"></span>
-                    </div>
-                </div>
-
-                <!-- Fila 4: Documento de Identidad & Teléfono -->
-                <div class="form-row-2col">
-                    <div class="form-group">
-                        <label for="identity_document" class="form-label">Documento de Identidad <span class="req-star">*</span></label>
-                        <div class="composite-input-row">
-                            <select id="document_type" name="document_type" class="composite-select" aria-label="Tipo de documento">
-                                <option value="V" selected>V</option>
-                                <option value="E">E</option>
-                                <option value="J">J</option>
-                                <option value="G">G</option>
-                                <option value="P">P</option>
-                            </select>
-                            <div class="input-wrapper composite-input-flex">
+                        <div class="form-group">
+                            <label for="birth_date" class="form-label">Fecha de Nacimiento <span class="req-star">*</span></label>
+                            <div class="input-wrapper">
                                 <span class="input-icon">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                        <line x1="7" y1="8" x2="17" y2="8"></line>
-                                        <line x1="7" y1="12" x2="13" y2="12"></line>
+                                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                                        <line x1="3" y1="10" x2="21" y2="10"></line>
                                     </svg>
                                 </span>
-                                <input type="text" id="identity_document" name="identity_document" class="form-input" placeholder="12345678" required inputmode="numeric">
+                                <input type="date" id="birth_date" name="birth_date" class="form-input" required>
                             </div>
+                            <span class="field-error-message" id="birth_dateError"></span>
                         </div>
-                        <span class="field-error-message" id="identity_documentError"></span>
                     </div>
 
-                    <div class="form-group">
-                        <label for="phone_number" class="form-label">Teléfono Principal <span class="req-star">*</span></label>
-                        <div class="composite-input-row">
-                            <select id="phone_code" name="phone_code" class="composite-select" aria-label="Código de operadora">
-                                <option value="0412" selected>0412</option>
-                                <option value="0414">0414</option>
-                                <option value="0424">0424</option>
-                                <option value="0416">0416</option>
-                                <option value="0426">0426</option>
-                            </select>
-                            <div class="input-wrapper composite-input-flex">
+                    <!-- Fila 2: Nombres -->
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label for="first_name" class="form-label">Primer Nombre <span class="req-star">*</span></label>
+                            <div class="input-wrapper">
                                 <span class="input-icon">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
                                     </svg>
                                 </span>
-                                <input type="text" id="phone_number" name="phone_number" class="form-input" placeholder="1234567" maxlength="7" required inputmode="numeric">
+                                <input type="text" id="first_name" name="first_name" class="form-input" placeholder="Ej. Juan" required autocomplete="given-name">
                             </div>
+                            <span class="field-error-message" id="first_nameError"></span>
                         </div>
-                        <span class="field-error-message" id="phone_numberError"></span>
+
+                        <div class="form-group">
+                            <label for="second_name" class="form-label">Segundo Nombre <span class="opt-label">(opcional)</span></label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </span>
+                                <input type="text" id="second_name" name="second_name" class="form-input" placeholder="Ej. Carlos" autocomplete="additional-name">
+                            </div>
+                            <span class="field-error-message" id="second_nameError"></span>
+                        </div>
+                    </div>
+
+                    <!-- Fila 3: Apellidos -->
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label for="first_last_name" class="form-label">Primer Apellido <span class="req-star">*</span></label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </span>
+                                <input type="text" id="first_last_name" name="first_last_name" class="form-input" placeholder="Ej. Pérez" required autocomplete="family-name">
+                            </div>
+                            <span class="field-error-message" id="first_last_nameError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="second_last_name" class="form-label">Segundo Apellido <span class="opt-label">(opcional)</span></label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </span>
+                                <input type="text" id="second_last_name" name="second_last_name" class="form-input" placeholder="Ej. Gómez">
+                            </div>
+                            <span class="field-error-message" id="second_last_nameError"></span>
+                        </div>
+                    </div>
+
+                    <!-- Fila 4: Documento de Identidad & Teléfono Principal -->
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label for="identity_document" class="form-label">Documento de Identidad <span class="req-star">*</span></label>
+                            <div class="composite-input-row">
+                                <select id="document_type" name="document_type" class="composite-select" aria-label="Tipo de documento">
+                                    <option value="V" selected>V</option>
+                                    <option value="E">E</option>
+                                    <option value="J">J</option>
+                                    <option value="G">G</option>
+                                    <option value="P">P</option>
+                                </select>
+                                <div class="input-wrapper composite-input-flex">
+                                    <span class="input-icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="7" y1="8" x2="17" y2="8"></line>
+                                            <line x1="7" y1="12" x2="13" y2="12"></line>
+                                        </svg>
+                                    </span>
+                                    <input type="text" id="identity_document" name="identity_document" class="form-input" placeholder="12345678" required inputmode="numeric">
+                                </div>
+                            </div>
+                            <span class="field-error-message" id="identity_documentError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone_number" class="form-label">Teléfono Principal <span class="req-star">*</span></label>
+                            <div class="composite-input-row">
+                                <select id="phone_code" name="phone_code" class="composite-select" aria-label="Código de operadora">
+                                    <option value="0412" selected>0412</option>
+                                    <option value="0414">0414</option>
+                                    <option value="0424">0424</option>
+                                    <option value="0416">0416</option>
+                                    <option value="0426">0426</option>
+                                </select>
+                                <div class="input-wrapper composite-input-flex">
+                                    <span class="input-icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                        </svg>
+                                    </span>
+                                    <input type="text" id="phone_number" name="phone_number" class="form-input" placeholder="1234567" maxlength="7" required inputmode="numeric">
+                                </div>
+                            </div>
+                            <span class="field-error-message" id="phone_numberError"></span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Fila 5: Fecha de Nacimiento & Estado -->
-                <div class="form-row-2col">
-                    <div class="form-group">
-                        <label for="birth_date" class="form-label">Fecha de Nacimiento <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                                </svg>
-                            </span>
-                            <input type="date" id="birth_date" name="birth_date" class="form-input" required>
+                <!-- SECCIÓN 2: INFORMACIÓN DE RESIDENCIA -->
+                <div class="auth-form-section">
+                    <div class="auth-section-header">
+                        <span class="auth-section-icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                        </span>
+                        <div class="auth-section-title-wrap">
+                            <h2 class="auth-section-title">Información de Residencia</h2>
+                            <p class="auth-section-subtitle">Dirección para entrega de pedidos y facturación</p>
                         </div>
-                        <span class="field-error-message" id="birth_dateError"></span>
                     </div>
 
-                    <div class="form-group">
-                        <label for="state" class="form-label">Estado <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                    <circle cx="12" cy="10" r="3"></circle>
-                                </svg>
-                            </span>
-                            <select id="state" name="state" class="form-select" required>
-                                <option value="">Selecciona un estado</option>
-                            </select>
+                    <!-- Fila 1: Estado & Ciudad en Cascada -->
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label for="state" class="form-label">Estado <span class="req-star">*</span></label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                        <circle cx="12" cy="10" r="3"></circle>
+                                    </svg>
+                                </span>
+                                <select id="state" name="state" class="form-select" required>
+                                    <option value="">Selecciona un estado</option>
+                                </select>
+                            </div>
+                            <span class="field-error-message" id="stateError"></span>
                         </div>
-                        <span class="field-error-message" id="stateError"></span>
-                    </div>
-                </div>
 
-                <!-- Fila 6: Ciudad & Dirección Exacta -->
-                <div class="form-row-2col">
-                    <div class="form-group">
-                        <label for="city" class="form-label">Ciudad <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
-                                    <line x1="8" y1="2" x2="8" y2="18"></line>
-                                    <line x1="16" y1="6" x2="16" y2="22"></line>
-                                </svg>
-                            </span>
-                            <select id="city" name="city" class="form-select" disabled required>
-                                <option value="">Selecciona una ciudad</option>
-                            </select>
+                        <div class="form-group">
+                            <label for="city" class="form-label">Ciudad <span class="req-star">*</span></label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                                        <line x1="8" y1="2" x2="8" y2="18"></line>
+                                        <line x1="16" y1="6" x2="16" y2="22"></line>
+                                    </svg>
+                                </span>
+                                <select id="city" name="city" class="form-select" disabled required>
+                                    <option value="">Selecciona una ciudad</option>
+                                </select>
+                            </div>
+                            <span class="field-error-message" id="cityError"></span>
                         </div>
-                        <span class="field-error-message" id="cityError"></span>
                     </div>
 
-                    <div class="form-group">
+                    <!-- Fila 2: Dirección Exacta -->
+                    <div class="form-group" style="margin-bottom: 24px;">
                         <label for="address" class="form-label">Dirección <span class="req-star">*</span></label>
                         <div class="input-wrapper">
                             <span class="input-icon">
@@ -286,67 +302,83 @@
                     </div>
                 </div>
 
-                <!-- Fila 6: Contraseña & Confirmación -->
-                <div class="form-row-2col">
-                    <div class="form-group">
-                        <label for="password" class="form-label">Contraseña <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                            </span>
-                            <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required autocomplete="new-password">
-                            <button type="button" class="password-toggle-btn" id="passwordToggle" aria-label="Mostrar u ocultar contraseña">
-                                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
-                                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                                    <line x1="1" y1="1" x2="23" y2="23"></line>
-                                </svg>
-                            </button>
+                <!-- SECCIÓN 3: SEGURIDAD DE LA CUENTA -->
+                <div class="auth-form-section">
+                    <div class="auth-section-header">
+                        <span class="auth-section-icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </span>
+                        <div class="auth-section-title-wrap">
+                            <h2 class="auth-section-title">Seguridad de la Cuenta</h2>
+                            <p class="auth-section-subtitle">Crea una contraseña segura para proteger tu cuenta</p>
                         </div>
-                        <span class="field-error-message" id="passwordError"></span>
                     </div>
 
-                    <div class="form-group">
-                        <label for="confirm_password" class="form-label">Confirmar Contraseña <span class="req-star">*</span></label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                            </span>
-                            <input type="password" id="confirm_password" name="confirm_password" class="form-input" placeholder="••••••••" required autocomplete="new-password">
-                            <button type="button" class="password-toggle-btn" id="confirmPasswordToggle" aria-label="Mostrar u ocultar contraseña">
-                                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
-                                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                                    <line x1="1" y1="1" x2="23" y2="23"></line>
-                                </svg>
-                            </button>
+                    <!-- Fila 1: Contraseña & Confirmación -->
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label for="password" class="form-label">Contraseña <span class="req-star">*</span></label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                </span>
+                                <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required autocomplete="new-password">
+                                <button type="button" class="password-toggle-btn" id="passwordToggle" aria-label="Mostrar u ocultar contraseña">
+                                    <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                    <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="field-error-message" id="passwordError"></span>
                         </div>
-                        <span class="field-error-message" id="confirm_passwordError"></span>
-                    </div>
-                </div>
 
-                <!-- Requisitos en vivo de contraseña -->
-                <div class="password-rules-box" id="passwordRulesBox">
-                    <div class="rule-item" id="rule-len">
-                        <span class="rule-bullet">•</span> Al menos 6 caracteres
+                        <div class="form-group">
+                            <label for="confirm_password" class="form-label">Confirmar Contraseña <span class="req-star">*</span></label>
+                            <div class="input-wrapper">
+                                <span class="input-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                </span>
+                                <input type="password" id="confirm_password" name="confirm_password" class="form-input" placeholder="••••••••" required autocomplete="new-password">
+                                <button type="button" class="password-toggle-btn" id="confirmPasswordToggle" aria-label="Mostrar u ocultar contraseña">
+                                    <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                    <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="field-error-message" id="confirm_passwordError"></span>
+                        </div>
                     </div>
-                    <div class="rule-item" id="rule-upper">
-                        <span class="rule-bullet">•</span> Una letra mayúscula
-                    </div>
-                    <div class="rule-item" id="rule-match">
-                        <span class="rule-bullet">•</span> Las contraseñas coinciden
+
+                    <!-- Requisitos en vivo de contraseña -->
+                    <div class="password-rules-box" id="passwordRulesBox">
+                        <div class="rule-item" id="rule-len">
+                            <span class="rule-bullet">•</span> Al menos 6 caracteres
+                        </div>
+                        <div class="rule-item" id="rule-upper">
+                            <span class="rule-bullet">•</span> Una letra mayúscula
+                        </div>
+                        <div class="rule-item" id="rule-match">
+                            <span class="rule-bullet">•</span> Las contraseñas coinciden
+                        </div>
                     </div>
                 </div>
 

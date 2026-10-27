@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Count, Q, Prefetch
-from rest_framework import permissions, status
+from rest_framework import permissions, status, renderers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -36,7 +36,7 @@ class ProductionOrderViewSet(BaseViewSet):
     ordering_fields = ['created_at', 'status', 'iteration', 'id']
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'by_order', 'my_orders', 'blueprint']:
+        if self.action in ['list', 'retrieve', 'by_order', 'my_orders', 'blueprint', 'worksheet']:
             return [permissions.IsAuthenticated()]
         return [permissions.IsAdminUser()]
 
@@ -177,6 +177,39 @@ class ProductionOrderViewSet(BaseViewSet):
             "technical_design": design,
             "blueprint_svg": svg_content
         }, status=status.HTTP_200_OK)
+
+    @action(
+        detail=True,
+        methods=['get'],
+        url_path='worksheet',
+        permission_classes=[permissions.IsAuthenticated],
+        renderer_classes=[renderers.StaticHTMLRenderer, renderers.JSONRenderer]
+    )
+    def worksheet(self, request, pk=None):
+        """
+        Genera y retorna la Hoja de Ruta de Taller / Orden de Fabricación construida en el Backend.
+        Parámetros query:
+        - mode: 'with_design' (default) o 'text_only'
+        - format: 'html' (default) o 'json'
+        """
+        po = self.get_object()
+        mode = request.query_params.get('mode', 'with_design')
+        format_param = request.query_params.get('export_format') or request.query_params.get('format', 'html')
+
+        from apps.production.services.worksheet_service import ProductionWorksheetService
+        html_content = ProductionWorksheetService.generate_worksheet_html(po, mode=mode)
+
+        if format_param == 'json' or (hasattr(request, 'accepted_renderer') and request.accepted_renderer.format == 'json' and format_param != 'html'):
+            year_code = po.created_at.year if po.created_at else timezone.now().year
+            prod_code = f"OF-{year_code}-{po.id:04d}"
+            return Response({
+                "production_order_id": po.id,
+                "production_code": prod_code,
+                "mode": mode,
+                "html": html_content
+            }, status=status.HTTP_200_OK)
+
+        return Response(html_content, content_type='text/html; charset=utf-8')
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     @transaction.atomic

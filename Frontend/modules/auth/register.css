@@ -211,7 +211,7 @@ body.auth-body {
 .auth-form {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 25px;
 }
 
 /* Grid de 2 Columnas */
@@ -219,6 +219,7 @@ body.auth-body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
+    padding-bottom: 10px;
 }
 
 .form-group {
@@ -525,9 +526,56 @@ body.auth-body {
     transition: color 0.2s ease;
 }
 
-.back-home-link:hover {
-    color: var(--primary);
+/* =============================================================
+   SECCIONES DEL FORMULARIO DE AUTENTICACIÓN
+   Organización visual para mejorar la experiencia de usuario
+   ============================================================= */
+
+.auth-form-section:not(:first-child) {
+    border-top: 1px dashed var(--border-color);
 }
+
+.auth-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.auth-section-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--primary-light);
+    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0, 81, 135, 0.08);
+}
+
+.auth-section-title-wrap {
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-section-title {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--dark-text);
+    line-height: 1.25;
+    margin: 0;
+}
+
+.auth-section-subtitle {
+    font-size: 0.8rem;
+    color: var(--muted-text);
+    line-height: 1.35;
+    margin-top: 2px;
+}
+
 
 /* Responsive */
 @media (max-width: 640px) {
@@ -539,6 +587,7 @@ body.auth-body {
     .form-row-2col {
         grid-template-columns: 1fr;
         gap: 14px;
+        padding-bottom: 9px;
     }
 
     .auth-title {

@@ -180,7 +180,6 @@ function setupFormSubmission(form) {
         hideNotifications();
 
         // Obtener campos
-        const usuarioInput = document.getElementById("usuario");
         const emailInput = document.getElementById("email");
         const firstNameInput = document.getElementById("first_name");
         const secondNameInput = document.getElementById("second_name");
@@ -202,17 +201,7 @@ function setupFormSubmission(form) {
 
         let hasError = false;
 
-        // 1. Validar Usuario
-        const usuario = (usuarioInput?.value || "").trim();
-        if (!usuario) {
-            setFieldError(usuarioInput, "El nombre de usuario es obligatorio.");
-            hasError = true;
-        } else if (usuario.length < 3) {
-            setFieldError(usuarioInput, "El usuario debe tener al menos 3 caracteres.");
-            hasError = true;
-        }
-
-        // 2. Validar Correo
+        // 1. Validar Correo Electrónico
         const email = (emailInput?.value || "").trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!email) {
@@ -335,7 +324,7 @@ function setupFormSubmission(form) {
         const formattedDoc = `${docType}-${identityDoc}`;
 
         const payload = {
-            username: usuario,
+            username: email,
             email: email,
             first_name: firstName,
             second_name: (secondNameInput?.value || "").trim() || undefined,
@@ -468,7 +457,7 @@ function mapBackendFieldErrors(data) {
     if (!data || typeof data !== "object") return;
 
     const fieldMap = {
-        username: "usuario",
+        username: "email",
         email: "email",
         first_name: "first_name",
         second_name: "second_name",

@@ -941,6 +941,24 @@ export async function getProductionBlueprint(productionOrderId) {
 }
 
 /**
+ * Consulta la Hoja de Ruta de Taller / Orden de Fabricación generada por el Backend
+ * @param {number|string} productionOrderId ID de la orden de producción
+ * @param {string} mode 'with_design' o 'text_only'
+ * @param {string} format 'json' (retorna { html, ... }) o 'html'
+ */
+export async function getProductionWorksheet(productionOrderId, mode = 'with_design', format = 'json') {
+  try {
+    const res = await getRequest(`/production-orders/${productionOrderId}/worksheet/`, { mode, format }, { auth: true });
+    if (res && res.html) {
+      return res;
+    }
+  } catch (err) {
+    console.warn(`[TuEstante Production API] Error al obtener worksheet del backend para orden #${productionOrderId}:`, err);
+  }
+  return null;
+}
+
+/**
  * Crea una nueva orden de fabricación conectando al endpoint de Django
  * @param {Object} data Datos de la orden a crear
  */
