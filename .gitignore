@@ -12,4 +12,5 @@ Backend/images
 *.pid
 __pycache__/
 *.pyc
+fiveserver.config.js
 
